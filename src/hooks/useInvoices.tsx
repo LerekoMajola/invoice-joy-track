@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -48,8 +49,23 @@ export function useInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getActiveUser = async (): Promise<User | null> => {
+    if (user) return user;
+
+    // Prefer local session (no network) to avoid timing issues on first load
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData.session?.user ?? null;
+    if (sessionUser) return sessionUser;
+
+    // Fallback to fetching the user from the API
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return null;
+    return data.user ?? null;
+  };
+
   const fetchInvoices = async () => {
-    if (!user) {
+    const activeUser = await getActiveUser();
+    if (!activeUser) {
       setInvoices([]);
       setIsLoading(false);
       return;
@@ -136,7 +152,8 @@ export function useInvoices() {
   };
 
   const createInvoice = async (invoice: InvoiceInsert): Promise<Invoice | null> => {
-    if (!user) {
+    const activeUser = await getActiveUser();
+    if (!activeUser) {
       toast.error('You must be logged in to create an invoice');
       return null;
     }
@@ -149,7 +166,7 @@ export function useInvoices() {
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: user.id,
+          user_id: activeUser.id,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,
           client_id: invoice.clientId || null,

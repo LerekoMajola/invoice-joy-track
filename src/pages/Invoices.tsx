@@ -42,10 +42,10 @@ export default function Invoices() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
 
-  // Check for new invoice from quote conversion - wait for user to be ready
+  // Check for new invoice from quote conversion (auth can restore after mount)
   useEffect(() => {
     const newInvoiceData = sessionStorage.getItem('newInvoiceFromQuote');
-    if (newInvoiceData && user && !isCreatingFromQuote) {
+    if (newInvoiceData && !isCreatingFromQuote) {
       setIsCreatingFromQuote(true);
       const data = JSON.parse(newInvoiceData);
       
