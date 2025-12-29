@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useCompanyProfile, CompanyProfileInput } from '@/hooks/useCompanyProfile';
 import { Building2, MapPin, Phone, CreditCard, FileText, Upload, X, Loader2 } from 'lucide-react';
 
@@ -33,9 +33,13 @@ export default function Settings() {
     bank_swift_code: '',
     default_terms: 'Payment is due within 30 days of invoice date.',
     default_tax_rate: 15,
+    vat_enabled: true,
     signature_url: null,
     footer_text: '',
   });
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
@@ -62,13 +66,14 @@ export default function Settings() {
         bank_swift_code: profile.bank_swift_code || '',
         default_terms: profile.default_terms || 'Payment is due within 30 days of invoice date.',
         default_tax_rate: profile.default_tax_rate || 15,
+        vat_enabled: profile.vat_enabled ?? true,
         signature_url: profile.signature_url,
         footer_text: profile.footer_text || '',
       });
     }
   }, [profile]);
 
-  const handleChange = (field: keyof CompanyProfileInput, value: string | number | null) => {
+  const handleChange = (field: keyof CompanyProfileInput, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -155,15 +160,30 @@ export default function Settings() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="vat_number">VAT Number</Label>
-              <Input
-                id="vat_number"
-                value={formData.vat_number || ''}
-                onChange={(e) => handleChange('vat_number', e.target.value)}
-                placeholder="VAT registration number"
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="vat_enabled" className="text-base">Enable VAT</Label>
+                <p className="text-sm text-muted-foreground">
+                  Include VAT calculations on documents
+                </p>
+              </div>
+              <Switch
+                id="vat_enabled"
+                checked={formData.vat_enabled ?? true}
+                onCheckedChange={(checked) => handleChange('vat_enabled', checked)}
               />
             </div>
+            {formData.vat_enabled && (
+              <div className="space-y-2">
+                <Label htmlFor="vat_number">VAT Number</Label>
+                <Input
+                  id="vat_number"
+                  value={formData.vat_number || ''}
+                  onChange={(e) => handleChange('vat_number', e.target.value)}
+                  placeholder="VAT registration number"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -204,29 +224,31 @@ export default function Settings() {
                   </div>
                 )}
                 <div>
-                  <Input
+                  <input
                     type="file"
                     accept="image/*"
                     onChange={handleLogoUpload}
                     className="hidden"
-                    id="logo-upload"
+                    ref={logoInputRef}
                     disabled={isUploadingLogo}
                   />
-                  <Label htmlFor="logo-upload" asChild>
-                    <Button variant="outline" disabled={isUploadingLogo} className="cursor-pointer">
-                      {isUploadingLogo ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Logo
-                        </>
-                      )}
-                    </Button>
-                  </Label>
+                  <Button 
+                    variant="outline" 
+                    disabled={isUploadingLogo} 
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {isUploadingLogo ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Logo
+                      </>
+                    )}
+                  </Button>
                   <p className="text-xs text-muted-foreground mt-1">
                     Recommended: 200x200px, PNG or JPG
                   </p>
@@ -491,29 +513,31 @@ export default function Settings() {
                 </div>
               )}
               <div>
-                <Input
+                <input
                   type="file"
                   accept="image/*"
                   onChange={handleSignatureUpload}
                   className="hidden"
-                  id="signature-upload"
+                  ref={signatureInputRef}
                   disabled={isUploadingSignature}
                 />
-                <Label htmlFor="signature-upload" asChild>
-                  <Button variant="outline" disabled={isUploadingSignature} className="cursor-pointer">
-                    {isUploadingSignature ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Signature
-                      </>
-                    )}
-                  </Button>
-                </Label>
+                <Button 
+                  variant="outline" 
+                  disabled={isUploadingSignature}
+                  onClick={() => signatureInputRef.current?.click()}
+                >
+                  {isUploadingSignature ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Signature
+                    </>
+                  )}
+                </Button>
                 <p className="text-xs text-muted-foreground mt-1">
                   Transparent PNG recommended
                 </p>
