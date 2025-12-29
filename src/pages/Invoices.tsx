@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -11,11 +12,12 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2 } from 'lucide-react';
+import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2, CheckCircle, Truck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -26,7 +28,9 @@ import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
+import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground border-border',
@@ -36,11 +40,20 @@ const statusStyles = {
 };
 
 export default function Invoices() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice, refetch } = useInvoices();
+  const { deliveryNotes } = useDeliveryNotes();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
+
+  // Track which invoices have delivery notes
+  const invoicesWithDeliveryNotes = new Set(
+    deliveryNotes
+      .filter(dn => dn.invoiceId)
+      .map(dn => dn.invoiceId)
+  );
 
   // Check for new invoice from quote conversion (auth can restore after mount)
   useEffect(() => {
@@ -114,6 +127,32 @@ export default function Invoices() {
 
   const handleDeleteInvoice = async (id: string) => {
     await deleteInvoice(id);
+  };
+
+  const handleStatusChange = async (invoiceId: string, newStatus: Invoice['status']) => {
+    await updateInvoice(invoiceId, { status: newStatus });
+    toast.success(`Invoice marked as ${newStatus}`);
+    // Update selected invoice if it's the one being changed
+    if (selectedInvoice?.id === invoiceId) {
+      setSelectedInvoice({ ...selectedInvoice, status: newStatus });
+    }
+  };
+
+  const handleGenerateDeliveryNote = (invoice: Invoice) => {
+    const deliveryNoteData = {
+      invoiceId: invoice.id,
+      clientId: invoice.clientId,
+      clientName: invoice.clientName,
+      deliveryAddress: invoice.clientAddress || '',
+      items: invoice.lineItems.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+      })),
+    };
+    
+    sessionStorage.setItem('newDeliveryNoteFromInvoice', JSON.stringify(deliveryNoteData));
+    toast.success('Creating delivery note from invoice');
+    navigate('/delivery-notes');
   };
 
   const formatDisplayDate = (dateStr: string) => {
@@ -223,10 +262,37 @@ export default function Invoices() {
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <Send className="h-4 w-4 mr-2" />
-                            Send
-                          </DropdownMenuItem>
+                          
+                          {/* Status Actions */}
+                          <DropdownMenuSeparator />
+                          {invoice.status === 'draft' && (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'sent'); }}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Mark as Sent
+                            </DropdownMenuItem>
+                          )}
+                          {invoice.status === 'sent' && (
+                            <>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'paid'); }} className="text-success">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Paid
+                              </DropdownMenuItem>
+                              {!invoicesWithDeliveryNotes.has(invoice.id) && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                                  <Truck className="h-4 w-4 mr-2" />
+                                  Generate Delivery Note
+                                </DropdownMenuItem>
+                              )}
+                            </>
+                          )}
+                          {invoice.status === 'paid' && !invoicesWithDeliveryNotes.has(invoice.id) && (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                              <Truck className="h-4 w-4 mr-2" />
+                              Generate Delivery Note
+                            </DropdownMenuItem>
+                          )}
+                          
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                             <Download className="h-4 w-4 mr-2" />
                             Download PDF
@@ -267,7 +333,10 @@ export default function Invoices() {
                 status: selectedInvoice.status,
                 purchaseOrderNumber: selectedInvoice.purchaseOrderNumber || undefined,
               }}
+              hasDeliveryNote={invoicesWithDeliveryNotes.has(selectedInvoice.id)}
               onUpdate={handleUpdateInvoice}
+              onStatusChange={(newStatus) => handleStatusChange(selectedInvoice.id, newStatus)}
+              onGenerateDeliveryNote={() => handleGenerateDeliveryNote(selectedInvoice)}
               onClose={() => setPreviewOpen(false)}
             />
           )}

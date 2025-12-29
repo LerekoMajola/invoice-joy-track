@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
+import { toast } from 'sonner';
 
 const statusStyles = {
   pending: 'bg-warning/10 text-warning border-warning/20',
@@ -26,7 +28,34 @@ const statusStyles = {
 };
 
 export default function DeliveryNotes() {
-  const { deliveryNotes, isLoading, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
+  const { deliveryNotes, isLoading, createDeliveryNote, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
+  const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
+
+  // Handle creation from invoice
+  useEffect(() => {
+    const newDeliveryNoteData = sessionStorage.getItem('newDeliveryNoteFromInvoice');
+    if (newDeliveryNoteData && !isCreatingFromInvoice) {
+      setIsCreatingFromInvoice(true);
+      const data = JSON.parse(newDeliveryNoteData);
+      
+      // Remove immediately to prevent duplicate creation
+      sessionStorage.removeItem('newDeliveryNoteFromInvoice');
+      
+      // Create delivery note from invoice data
+      createDeliveryNote({
+        invoiceId: data.invoiceId,
+        clientId: data.clientId,
+        clientName: data.clientName,
+        date: new Date().toISOString().split('T')[0],
+        deliveryAddress: data.deliveryAddress || '',
+        status: 'pending',
+        items: data.items,
+      }).then(() => {
+        toast.success('Delivery note created from invoice');
+        setIsCreatingFromInvoice(false);
+      });
+    }
+  }, []);
 
   const handleMarkDelivered = async (id: string) => {
     await markAsDelivered(id);

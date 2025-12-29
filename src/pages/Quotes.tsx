@@ -41,6 +41,7 @@ import { QuotePreview } from '@/components/quotes/QuotePreview';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuotes, Quote, LineItem } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
+import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
 
 const statusStyles = {
@@ -55,6 +56,20 @@ export default function Quotes() {
   const { profile } = useCompanyProfile();
   const { quotes, isLoading, createQuote, updateQuote, deleteQuote } = useQuotes();
   const { clients } = useClients();
+  const { invoices } = useInvoices();
+
+  // Create a set of quote IDs that have been converted to invoices
+  const convertedQuoteIds = new Set(
+    invoices
+      .filter(inv => inv.sourceQuoteId)
+      .map(inv => inv.sourceQuoteId)
+  );
+
+  // Get invoice number for a converted quote
+  const getLinkedInvoiceNumber = (quoteId: string) => {
+    const invoice = invoices.find(inv => inv.sourceQuoteId === quoteId);
+    return invoice?.invoiceNumber || null;
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
@@ -247,9 +262,14 @@ export default function Quotes() {
                               <RotateCcw className="h-4 w-4 mr-2" />Revise (Back to Draft)
                             </DropdownMenuItem>
                           )}
-                          {quote.status === 'accepted' && (
+                          {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
                             <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
                               <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                            </DropdownMenuItem>
+                          )}
+                          {quote.status === 'accepted' && convertedQuoteIds.has(quote.id) && (
+                            <DropdownMenuItem disabled className="text-muted-foreground">
+                              <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
                             </DropdownMenuItem>
                           )}
                           
@@ -352,6 +372,8 @@ export default function Quotes() {
             termsAndConditions: previewQuote.termsAndConditions || '',
             description: previewQuote.description || undefined,
           }}
+          isConverted={convertedQuoteIds.has(previewQuote.id)}
+          linkedInvoiceNumber={getLinkedInvoiceNumber(previewQuote.id)}
           onUpdate={handleUpdateQuote}
           onStatusChange={async (newStatus) => {
             await handleStatusChange(previewQuote.id, newStatus);

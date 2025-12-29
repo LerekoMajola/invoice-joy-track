@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import html2pdf from 'html2pdf.js';
 import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
@@ -44,13 +45,15 @@ interface QuoteData {
 
 interface QuotePreviewProps {
   quoteData: QuoteData;
+  isConverted?: boolean;
+  linkedInvoiceNumber?: string | null;
   onUpdate: (data: QuoteData) => void;
   onStatusChange?: (status: QuoteStatus) => void;
   onConvertToInvoice?: () => void;
   onClose: () => void;
 }
 
-export function QuotePreview({ quoteData, onUpdate, onStatusChange, onConvertToInvoice, onClose }: QuotePreviewProps) {
+export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUpdate, onStatusChange, onConvertToInvoice, onClose }: QuotePreviewProps) {
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [data, setData] = useState<QuoteData>({
@@ -227,7 +230,13 @@ export function QuotePreview({ quoteData, onUpdate, onStatusChange, onConvertToI
                 Revise
               </Button>
             )}
-            {onConvertToInvoice && quoteData.status === 'accepted' && (
+            {quoteData.status === 'accepted' && isConverted && (
+              <Badge variant="outline" className="gap-2 px-3 py-1.5 bg-success/10 text-success border-success/20">
+                <CheckCircle className="h-4 w-4" />
+                Converted to {linkedInvoiceNumber}
+              </Badge>
+            )}
+            {onConvertToInvoice && quoteData.status === 'accepted' && !isConverted && (
               <Button variant="outline" onClick={onConvertToInvoice} className="gap-2 text-success border-success/30 hover:bg-success/10">
                 <Receipt className="h-4 w-4" />
                 Convert to Invoice
