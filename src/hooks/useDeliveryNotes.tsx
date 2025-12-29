@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -38,8 +39,23 @@ export function useDeliveryNotes() {
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getActiveUser = async (): Promise<User | null> => {
+    if (user) return user;
+
+    // Prefer local session (no network) to avoid timing issues on first load
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionUser = sessionData.session?.user ?? null;
+    if (sessionUser) return sessionUser;
+
+    // Fallback to fetching the user from the API
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return null;
+    return data.user ?? null;
+  };
+
   const fetchDeliveryNotes = async () => {
-    if (!user) {
+    const activeUser = await getActiveUser();
+    if (!activeUser) {
       setDeliveryNotes([]);
       setIsLoading(false);
       return;
@@ -120,7 +136,8 @@ export function useDeliveryNotes() {
   };
 
   const createDeliveryNote = async (note: DeliveryNoteInsert): Promise<DeliveryNote | null> => {
-    if (!user) {
+    const activeUser = await getActiveUser();
+    if (!activeUser) {
       toast.error('You must be logged in to create a delivery note');
       return null;
     }
@@ -131,7 +148,7 @@ export function useDeliveryNotes() {
       const { data: noteData, error: noteError } = await supabase
         .from('delivery_notes')
         .insert({
-          user_id: user.id,
+          user_id: activeUser.id,
           note_number: noteNumber,
           client_id: note.clientId || null,
           invoice_id: note.invoiceId || null,
