@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useCompanyProfile, CompanyProfileInput } from '@/hooks/useCompanyProfile';
+import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { Building2, MapPin, Phone, CreditCard, FileText, Upload, X, Loader2 } from 'lucide-react';
 
 export default function Settings() {
@@ -36,6 +37,13 @@ export default function Settings() {
     vat_enabled: true,
     signature_url: null,
     footer_text: '',
+    template_primary_color: 'hsl(230, 35%, 18%)',
+    template_secondary_color: 'hsl(230, 25%, 95%)',
+    template_accent_color: 'hsl(230, 35%, 25%)',
+    template_font_family: 'DM Sans',
+    template_font_url: null,
+    template_header_style: 'classic',
+    template_table_style: 'striped',
   });
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +77,13 @@ export default function Settings() {
         vat_enabled: profile.vat_enabled ?? true,
         signature_url: profile.signature_url,
         footer_text: profile.footer_text || '',
+        template_primary_color: profile.template_primary_color || 'hsl(230, 35%, 18%)',
+        template_secondary_color: profile.template_secondary_color || 'hsl(230, 25%, 95%)',
+        template_accent_color: profile.template_accent_color || 'hsl(230, 35%, 25%)',
+        template_font_family: profile.template_font_family || 'DM Sans',
+        template_font_url: profile.template_font_url,
+        template_header_style: profile.template_header_style || 'classic',
+        template_table_style: profile.template_table_style || 'striped',
       });
     }
   }, [profile]);
@@ -272,6 +287,20 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Document Template */}
+        <TemplateEditor
+          value={{
+            template_primary_color: formData.template_primary_color || 'hsl(230, 35%, 18%)',
+            template_secondary_color: formData.template_secondary_color || 'hsl(230, 25%, 95%)',
+            template_accent_color: formData.template_accent_color || 'hsl(230, 35%, 25%)',
+            template_font_family: formData.template_font_family || 'DM Sans',
+            template_font_url: formData.template_font_url || null,
+            template_header_style: formData.template_header_style || 'classic',
+            template_table_style: formData.template_table_style || 'striped',
+          }}
+          onChange={(field, value) => handleChange(field, value)}
+        />
 
         {/* Contact Details */}
         <Card>

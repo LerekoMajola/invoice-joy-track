@@ -28,6 +28,13 @@ export interface CompanyProfile {
   vat_enabled: boolean | null;
   signature_url: string | null;
   footer_text: string | null;
+  template_primary_color: string | null;
+  template_secondary_color: string | null;
+  template_accent_color: string | null;
+  template_font_family: string | null;
+  template_font_url: string | null;
+  template_header_style: string | null;
+  template_table_style: string | null;
   created_at: string;
   updated_at: string;
 }
