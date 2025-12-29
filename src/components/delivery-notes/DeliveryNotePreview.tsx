@@ -146,12 +146,12 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             }}
           >
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-3">
               {/* Company Info */}
               <div className="flex-1 max-w-md">
-                <div className="text-sm" style={{ color: primaryColor }}>
+                <div className="text-sm leading-tight" style={{ color: primaryColor }}>
                   {getCompanyDetails().map((line, idx) => (
-                    <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
+                    <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-0.5' : 'text-gray-600'}>
                       {line}
                     </p>
                   ))}
@@ -161,9 +161,9 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
               {/* Logo from profile */}
               <div>
                 {profile?.logo_url ? (
-                  <img src={profile.logo_url} alt="Company Logo" className="h-16 object-contain" />
+                  <img src={profile.logo_url} alt="Company Logo" className="h-14 object-contain" />
                 ) : (
-                  <div className="h-16 w-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                  <div className="h-14 w-28 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">
                     No Logo
                   </div>
                 )}
@@ -171,9 +171,9 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             </div>
 
             {/* Document Title */}
-            <div className="text-right mb-6">
+            <div className="text-right mb-3">
               <h1 
-                className="text-4xl font-light tracking-widest uppercase"
+                className="text-3xl font-light tracking-widest uppercase"
                 style={{ color: primaryColor }}
               >
                 Delivery Note
@@ -181,10 +181,10 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             </div>
 
             {/* Client & Document Info */}
-            <div className="flex justify-between items-end mb-8">
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: primaryColor }}>Deliver To</p>
-                <h3 className="text-lg font-bold text-gray-900">
+            <div className="flex justify-between items-end mb-4">
+              <div className="leading-tight">
+                <p className="text-sm font-semibold mb-1" style={{ color: primaryColor }}>Deliver To</p>
+                <h3 className="text-base font-bold text-gray-900">
                   {deliveryNote.client_name}
                 </h3>
                 {deliveryNote.delivery_address && (
