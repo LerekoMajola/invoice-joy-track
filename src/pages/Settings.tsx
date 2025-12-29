@@ -174,14 +174,29 @@ export default function Settings() {
               />
             </div>
             {formData.vat_enabled && (
-              <div className="space-y-2">
-                <Label htmlFor="vat_number">VAT Number</Label>
-                <Input
-                  id="vat_number"
-                  value={formData.vat_number || ''}
-                  onChange={(e) => handleChange('vat_number', e.target.value)}
-                  placeholder="VAT registration number"
-                />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="vat_number">VAT Number</Label>
+                  <Input
+                    id="vat_number"
+                    value={formData.vat_number || ''}
+                    onChange={(e) => handleChange('vat_number', e.target.value)}
+                    placeholder="VAT registration number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="default_tax_rate">Default VAT Rate (%)</Label>
+                  <Input
+                    id="default_tax_rate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={formData.default_tax_rate || 15}
+                    onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
+                    placeholder="15"
+                  />
+                </div>
               </div>
             )}
           </CardContent>
@@ -441,22 +456,6 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {formData.vat_enabled && (
-              <div className="space-y-2">
-                <Label htmlFor="default_tax_rate">Default VAT Rate (%)</Label>
-                <Input
-                  id="default_tax_rate"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={formData.default_tax_rate || 15}
-                  onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
-                  placeholder="15"
-                  className="w-32"
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="default_terms">Default Terms & Conditions</Label>
               <Textarea
