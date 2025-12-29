@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
+import { useAuth } from '@/hooks/useAuth';
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground border-border',
@@ -35,15 +36,21 @@ const statusStyles = {
 };
 
 export default function Invoices() {
+  const { user } = useAuth();
   const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
 
-  // Check for new invoice from quote conversion
+  // Check for new invoice from quote conversion - wait for user to be ready
   useEffect(() => {
     const newInvoiceData = sessionStorage.getItem('newInvoiceFromQuote');
-    if (newInvoiceData) {
+    if (newInvoiceData && user && !isCreatingFromQuote) {
+      setIsCreatingFromQuote(true);
       const data = JSON.parse(newInvoiceData);
+      
+      // Remove immediately to prevent duplicate creation
+      sessionStorage.removeItem('newInvoiceFromQuote');
       
       // Create invoice in database
       createInvoice({
@@ -62,11 +69,10 @@ export default function Invoices() {
           setSelectedInvoice(newInvoice);
           setPreviewOpen(true);
         }
+        setIsCreatingFromQuote(false);
       });
-      
-      sessionStorage.removeItem('newInvoiceFromQuote');
     }
-  }, []);
+  }, [user]);
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
