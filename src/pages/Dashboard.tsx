@@ -5,6 +5,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { UpcomingTasks } from '@/components/dashboard/UpcomingTasks';
 import { TendersList } from '@/components/dashboard/TendersList';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
+import { formatMaluti } from '@/lib/currency';
 
 export default function Dashboard() {
   return (
@@ -19,7 +20,7 @@ export default function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Revenue"
-            value="M48,250"
+            value={formatMaluti(48250)}
             change="+12.5% from last month"
             changeType="positive"
             icon={TrendingUp}
@@ -35,7 +36,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Unpaid Invoices"
-            value="M8,420"
+            value={formatMaluti(8420)}
             change="5 invoices outstanding"
             changeType="negative"
             icon={Receipt}

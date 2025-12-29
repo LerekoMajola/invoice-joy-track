@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { formatMaluti } from '@/lib/currency';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
@@ -332,7 +333,7 @@ export default function Quotes() {
                   <TableCell className="text-muted-foreground">{formatDisplayDate(quote.date)}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDisplayDate(quote.validUntil)}</TableCell>
                   <TableCell className="text-right font-semibold">
-                    M{quote.total.toLocaleString()}
+                    {formatMaluti(quote.total)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>

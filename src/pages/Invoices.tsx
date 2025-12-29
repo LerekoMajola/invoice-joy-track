@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { formatMaluti } from '@/lib/currency';
 
 interface Invoice {
   id: string;
@@ -100,10 +101,10 @@ export default function Invoices() {
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           {[
-            { label: 'Total Invoiced', value: 'M48,250', color: 'text-primary' },
-            { label: 'Paid', value: 'M39,830', color: 'text-success' },
-            { label: 'Pending', value: 'M5,220', color: 'text-info' },
-            { label: 'Overdue', value: 'M3,200', color: 'text-destructive' },
+            { label: 'Total Invoiced', value: formatMaluti(48250), color: 'text-primary' },
+            { label: 'Paid', value: formatMaluti(39830), color: 'text-success' },
+            { label: 'Pending', value: formatMaluti(5220), color: 'text-info' },
+            { label: 'Overdue', value: formatMaluti(3200), color: 'text-destructive' },
           ].map((stat, index) => (
             <div 
               key={stat.label}
@@ -151,7 +152,7 @@ export default function Invoices() {
                   <TableCell className="text-muted-foreground">{invoice.date}</TableCell>
                   <TableCell className="text-muted-foreground">{invoice.dueDate}</TableCell>
                   <TableCell className="text-right font-semibold">
-                    M{invoice.total.toLocaleString()}
+                    {formatMaluti(invoice.total)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('capitalize', statusStyles[invoice.status])}>
