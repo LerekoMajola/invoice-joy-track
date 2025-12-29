@@ -30,10 +30,10 @@ import {
 
 interface Client {
   id: string;
-  name: string;
+  company: string;
+  contactPerson: string;
   email: string;
   phone: string;
-  company: string;
   address: string;
   totalSpent: number;
   invoices: number;
@@ -42,41 +42,41 @@ interface Client {
 const initialClients: Client[] = [
   {
     id: '1',
-    name: 'John Smith',
-    email: 'john@acmecorp.com',
-    phone: '+1 234 567 890',
     company: 'Acme Corporation',
-    address: '123 Business Ave, New York',
+    contactPerson: 'John Smith',
+    email: 'john@acmecorp.com',
+    phone: '+266 2231 1234',
+    address: '123 Kingsway, Maseru',
     totalSpent: 15420,
     invoices: 8,
   },
   {
     id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@techstart.io',
-    phone: '+1 234 567 891',
     company: 'TechStart Inc',
-    address: '456 Innovation Blvd, San Francisco',
+    contactPerson: 'Sarah Johnson',
+    email: 'sarah@techstart.io',
+    phone: '+266 2231 5678',
+    address: '456 Pioneer Mall, Maseru',
     totalSpent: 28750,
     invoices: 12,
   },
   {
     id: '3',
-    name: 'Michael Chen',
-    email: 'michael@globalsolutions.com',
-    phone: '+1 234 567 892',
     company: 'Global Solutions Ltd',
-    address: '789 Enterprise St, Chicago',
+    contactPerson: 'Michael Chen',
+    email: 'michael@globalsolutions.com',
+    phone: '+266 2231 9012',
+    address: '789 LNDC Building, Maseru',
     totalSpent: 9800,
     invoices: 5,
   },
   {
     id: '4',
-    name: 'Emily Davis',
-    email: 'emily@startuplabs.co',
-    phone: '+1 234 567 893',
     company: 'StartUp Labs',
-    address: '321 Venture Way, Austin',
+    contactPerson: 'Emily Davis',
+    email: 'emily@startuplabs.co',
+    phone: '+266 2231 3456',
+    address: '321 Ha Hoohlo, Maseru',
     totalSpent: 42100,
     invoices: 18,
   },
@@ -86,10 +86,10 @@ export default function Clients() {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [isOpen, setIsOpen] = useState(false);
   const [newClient, setNewClient] = useState({
-    name: '',
+    company: '',
+    contactPerson: '',
     email: '',
     phone: '',
-    company: '',
     address: '',
   });
 
@@ -101,7 +101,7 @@ export default function Clients() {
       invoices: 0,
     };
     setClients([...clients, client]);
-    setNewClient({ name: '', email: '', phone: '', company: '', address: '' });
+    setNewClient({ company: '', contactPerson: '', email: '', phone: '', address: '' });
     setIsOpen(false);
   };
 
@@ -121,9 +121,9 @@ export default function Clients() {
           <Table>
             <TableHeader>
               <TableRow className="bg-secondary/50">
-                <TableHead className="font-semibold">Client</TableHead>
-                <TableHead className="font-semibold">Contact</TableHead>
-                <TableHead className="font-semibold">Company</TableHead>
+                <TableHead className="font-semibold">Organisation</TableHead>
+                <TableHead className="font-semibold">Contact Person</TableHead>
+                <TableHead className="font-semibold">Contact Details</TableHead>
                 <TableHead className="font-semibold text-right">Total Spent</TableHead>
                 <TableHead className="font-semibold text-center">Invoices</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
@@ -138,17 +138,20 @@ export default function Clients() {
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                        {client.name.charAt(0)}
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
+                        <Building2 className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-medium text-card-foreground">{client.name}</p>
+                        <p className="font-medium text-card-foreground">{client.company}</p>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {client.address}
                         </p>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-medium">{client.contactPerson}</span>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -160,12 +163,6 @@ export default function Clients() {
                         <Phone className="h-3 w-3 text-muted-foreground" />
                         {client.phone}
                       </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span>{client.company}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold">
@@ -207,11 +204,20 @@ export default function Clients() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="company">Organisation Name</Label>
               <Input
-                id="name"
-                value={newClient.name}
-                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                id="company"
+                value={newClient.company}
+                onChange={(e) => setNewClient({ ...newClient, company: e.target.value })}
+                placeholder="Company / Organisation Name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Input
+                id="contactPerson"
+                value={newClient.contactPerson}
+                onChange={(e) => setNewClient({ ...newClient, contactPerson: e.target.value })}
                 placeholder="John Smith"
               />
             </div>
@@ -231,16 +237,7 @@ export default function Clients() {
                 id="phone"
                 value={newClient.phone}
                 onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                placeholder="+1 234 567 890"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="company">Company</Label>
-              <Input
-                id="company"
-                value={newClient.company}
-                onChange={(e) => setNewClient({ ...newClient, company: e.target.value })}
-                placeholder="Company Name"
+                placeholder="+266 2231 1234"
               />
             </div>
             <div className="grid gap-2">
@@ -249,7 +246,7 @@ export default function Clients() {
                 id="address"
                 value={newClient.address}
                 onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-                placeholder="123 Business St, City"
+                placeholder="123 Kingsway, Maseru"
               />
             </div>
           </div>
