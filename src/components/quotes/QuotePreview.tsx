@@ -2,8 +2,14 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Upload, Plus, X, Pencil, Save } from 'lucide-react';
+import { Download, Upload, Plus, X, Pencil, Save, Palette } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface LineItem {
   id: string;
@@ -28,6 +34,7 @@ interface QuoteData {
   lineItems: LineItem[];
   taxRate: number;
   termsAndConditions: string;
+  description?: string;
 }
 
 interface CompanyInfo {
@@ -43,11 +50,15 @@ interface QuotePreviewProps {
 
 export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [data, setData] = useState<QuoteData>(quoteData);
+  const [data, setData] = useState<QuoteData>({
+    ...quoteData,
+    description: quoteData.description || '',
+  });
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
     details: 'Your Company Inc.\n1234 Company St.\nMaseru, Lesotho 100\nTel: +266 2222 1234\nEmail: info@company.co.ls',
     logo: null,
   });
+  const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
   const quoteRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -127,6 +138,23 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Palette className="h-4 w-4" />
+                  Template
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[500px]" align="start">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Choose Template</h4>
+                  <TemplateSelector
+                    selectedTemplate={selectedTemplate}
+                    onSelectTemplate={setSelectedTemplate}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex items-center gap-2">
             {isEditing ? (
@@ -151,7 +179,10 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
         <div 
           ref={quoteRef}
           className="bg-white text-gray-900 rounded-lg shadow-xl p-8 md:p-12"
-          style={{ minHeight: '297mm' }}
+          style={{ 
+            minHeight: '297mm',
+            fontFamily: selectedTemplate.fontFamily,
+          }}
         >
           {/* Header */}
           <div className="flex justify-between items-start mb-12">
@@ -166,7 +197,7 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                   rows={5}
                 />
               ) : (
-                <div className="whitespace-pre-line text-sm text-[hsl(230,35%,18%)]">
+              <div className="whitespace-pre-line text-sm" style={{ color: selectedTemplate.primaryColor }}>
                   {companyInfo.details.split('\n').map((line, idx) => (
                     <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
                       {line}
@@ -211,13 +242,18 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
 
           {/* Quote Title */}
           <div className="text-right mb-8">
-            <h1 className="text-4xl font-light tracking-widest text-primary uppercase">Quote</h1>
+            <h1 
+              className="text-4xl font-light tracking-widest uppercase"
+              style={{ color: selectedTemplate.primaryColor }}
+            >
+              Quote
+            </h1>
           </div>
 
           {/* Client & Quote Info */}
           <div className="flex justify-between items-start mb-8">
             <div>
-              <p className="text-sm font-semibold text-primary mb-2">To</p>
+              <p className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>To</p>
               <h3 className="text-lg font-bold text-gray-900">
                 {data.client?.company || 'Customer Name'}
               </h3>
@@ -240,11 +276,11 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             </div>
             <div className="text-right space-y-1">
               <div className="flex justify-end gap-4">
-                <span className="text-sm font-semibold text-primary">Quote #</span>
+                <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Quote #</span>
                 <span className="text-sm text-gray-900 w-28">{data.quoteNumber}</span>
               </div>
               <div className="flex justify-end gap-4">
-                <span className="text-sm font-semibold text-primary">Quote date</span>
+                <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Quote date</span>
                 {isEditing ? (
                   <Input
                     type="date"
@@ -257,7 +293,7 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                 )}
               </div>
               <div className="flex justify-end gap-4">
-                <span className="text-sm font-semibold text-primary">Due date</span>
+                <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Due date</span>
                 {isEditing ? (
                   <Input
                     type="date"
@@ -272,11 +308,29 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             </div>
           </div>
 
+          {/* Quote Description */}
+          <div className="mb-8">
+            <h4 className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>Description / Scope of Work</h4>
+            {isEditing ? (
+              <Textarea
+                value={data.description || ''}
+                onChange={(e) => setData({ ...data, description: e.target.value })}
+                placeholder="Enter a detailed description of the work to be performed, project scope, deliverables, etc..."
+                className="text-sm border-dashed min-h-[100px]"
+                rows={4}
+              />
+            ) : (
+              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                {data.description || 'No description provided.'}
+              </p>
+            )}
+          </div>
+
           {/* Line Items Table */}
           <div className="mb-8">
             <table className="w-full">
               <thead>
-                <tr className="bg-primary text-white">
+                <tr style={{ backgroundColor: selectedTemplate.primaryColor, color: 'white' }}>
                   <th className="text-left py-3 px-4 text-sm font-semibold">QTY</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold">Description</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold">Unit Price</th>
@@ -286,7 +340,7 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
               </thead>
               <tbody>
                 {data.lineItems.map((item, index) => (
-                  <tr key={item.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                  <tr key={item.id} style={{ backgroundColor: index % 2 === 0 ? selectedTemplate.secondaryColor : 'white' }}>
                     <td className="py-3 px-4 text-sm">
                       {isEditing ? (
                         <Input
@@ -380,15 +434,15 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                 <span className="text-sm text-gray-900">M{calculateTax().toFixed(2)}</span>
               </div>
               <div className="flex justify-between border-t border-gray-200 pt-2">
-                <span className="text-sm font-semibold text-primary">Total (M)</span>
-                <span className="text-lg font-bold text-primary">M{calculateTotal().toFixed(2)}</span>
+                <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Total (M)</span>
+                <span className="text-lg font-bold" style={{ color: selectedTemplate.primaryColor }}>M{calculateTotal().toFixed(2)}</span>
               </div>
             </div>
           </div>
 
           {/* Terms and Conditions */}
           <div className="mb-12">
-            <h4 className="text-sm font-semibold text-primary mb-2">Terms and Conditions</h4>
+            <h4 className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>Terms and Conditions</h4>
             {isEditing ? (
               <Textarea
                 value={data.termsAndConditions}

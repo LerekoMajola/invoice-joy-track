@@ -63,6 +63,7 @@ interface Quote {
   lineItems: LineItem[];
   taxRate: number;
   termsAndConditions: string;
+  description?: string;
 }
 
 // Mock clients - in production this would come from shared state/database
@@ -89,6 +90,7 @@ const initialQuotes: Quote[] = [
     ],
     taxRate: 5,
     termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
+    description: 'Professional consulting services for digital transformation initiative including strategic planning, process optimization, and implementation support.',
   },
   {
     id: '2',
@@ -222,6 +224,7 @@ export default function Quotes() {
       lineItems: [...lineItems],
       taxRate: 5,
       termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
+      description: '',
     };
 
     setQuotes([newQuote, ...quotes]);
@@ -234,7 +237,7 @@ export default function Quotes() {
     setPreviewQuote(quote);
   };
 
-  const handleUpdateQuote = (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string }) => {
+  const handleUpdateQuote = (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string; description?: string }) => {
     if (!previewQuote) return;
     
     const total = updatedData.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -246,6 +249,7 @@ export default function Quotes() {
       date: updatedData.date,
       validUntil: updatedData.dueDate,
       total: total * (1 + updatedData.taxRate / 100),
+      description: updatedData.description,
     };
 
     setQuotes(quotes.map(q => q.id === updatedQuote.id ? updatedQuote : q));
@@ -500,6 +504,7 @@ export default function Quotes() {
             lineItems: previewQuote.lineItems,
             taxRate: previewQuote.taxRate,
             termsAndConditions: previewQuote.termsAndConditions,
+            description: previewQuote.description,
           }}
           onUpdate={handleUpdateQuote}
           onClose={() => setPreviewQuote(null)}
