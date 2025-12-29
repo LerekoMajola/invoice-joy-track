@@ -72,6 +72,11 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
   const getCompanyDetails = () => {
     if (!profile) return ['Company Name'];
     
+    // Use header_info if available, otherwise fall back to individual fields
+    if (profile.header_info) {
+      return profile.header_info.split('\n');
+    }
+    
     const lines = [profile.company_name];
     if (profile.address_line_1) lines.push(profile.address_line_1);
     if (profile.address_line_2) lines.push(profile.address_line_2);

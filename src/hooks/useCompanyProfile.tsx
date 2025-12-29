@@ -35,6 +35,7 @@ export interface CompanyProfile {
   template_font_url: string | null;
   template_header_style: string | null;
   template_table_style: string | null;
+  header_info: string | null;
   created_at: string;
   updated_at: string;
 }

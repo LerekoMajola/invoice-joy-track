@@ -67,6 +67,7 @@ export type Database = {
           default_terms: string | null
           email: string | null
           footer_text: string | null
+          header_info: string | null
           id: string
           logo_url: string | null
           phone: string | null
@@ -102,6 +103,7 @@ export type Database = {
           default_terms?: string | null
           email?: string | null
           footer_text?: string | null
+          header_info?: string | null
           id?: string
           logo_url?: string | null
           phone?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           default_terms?: string | null
           email?: string | null
           footer_text?: string | null
+          header_info?: string | null
           id?: string
           logo_url?: string | null
           phone?: string | null
