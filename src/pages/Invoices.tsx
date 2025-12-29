@@ -46,6 +46,7 @@ interface Invoice {
   taxRate: number;
   total: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
+  purchaseOrderNumber?: string;
 }
 
 const invoices: Invoice[] = [
@@ -179,6 +180,21 @@ export default function Invoices() {
     setPreviewOpen(true);
   };
 
+  const handleUpdateInvoice = (updatedInvoice: Omit<Invoice, 'id' | 'total'>) => {
+    const subtotal = updatedInvoice.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const total = subtotal * (1 + updatedInvoice.taxRate / 100);
+    
+    setInvoicesList(prev => prev.map(inv => 
+      inv.id === selectedInvoice?.id 
+        ? { ...inv, ...updatedInvoice, total }
+        : inv
+    ));
+    
+    if (selectedInvoice) {
+      setSelectedInvoice({ ...selectedInvoice, ...updatedInvoice, total });
+    }
+  };
+
   return (
     <DashboardLayout>
       <Header 
@@ -293,6 +309,7 @@ export default function Invoices() {
           {selectedInvoice && (
             <InvoicePreview 
               invoice={selectedInvoice}
+              onUpdate={handleUpdateInvoice}
               onClose={() => setPreviewOpen(false)}
             />
           )}
