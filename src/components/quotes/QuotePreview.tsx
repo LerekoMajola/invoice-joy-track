@@ -31,9 +31,7 @@ interface QuoteData {
 }
 
 interface CompanyInfo {
-  name: string;
-  address: string;
-  city: string;
+  details: string;
   logo: string | null;
 }
 
@@ -47,9 +45,7 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
   const [isEditing, setIsEditing] = useState(false);
   const [data, setData] = useState<QuoteData>(quoteData);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
-    name: 'Your Company Inc.',
-    address: '1234 Company St.',
-    city: 'Maseru, Lesotho 100',
+    details: 'Your Company Inc.\n1234 Company St.\nMaseru, Lesotho 100\nTel: +266 2222 1234\nEmail: info@company.co.ls',
     logo: null,
   });
   const quoteRef = useRef<HTMLDivElement>(null);
@@ -160,31 +156,23 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
           {/* Header */}
           <div className="flex justify-between items-start mb-12">
             {/* Company Info */}
-            <div>
+            <div className="flex-1 max-w-md">
               {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={companyInfo.name}
-                    onChange={(e) => setCompanyInfo({ ...companyInfo, name: e.target.value })}
-                    className="text-xl font-bold border-dashed"
-                  />
-                  <Input
-                    value={companyInfo.address}
-                    onChange={(e) => setCompanyInfo({ ...companyInfo, address: e.target.value })}
-                    className="text-sm border-dashed"
-                  />
-                  <Input
-                    value={companyInfo.city}
-                    onChange={(e) => setCompanyInfo({ ...companyInfo, city: e.target.value })}
-                    className="text-sm border-dashed"
-                  />
-                </div>
+                <Textarea
+                  value={companyInfo.details}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, details: e.target.value })}
+                  className="text-sm border-dashed min-h-[120px] resize-none"
+                  placeholder="Company name, address, phone, email..."
+                  rows={5}
+                />
               ) : (
-                <>
-                  <h2 className="text-xl font-bold text-gray-900">{companyInfo.name}</h2>
-                  <p className="text-sm text-gray-600">{companyInfo.address}</p>
-                  <p className="text-sm text-gray-600">{companyInfo.city}</p>
-                </>
+                <div className="whitespace-pre-line text-sm text-[hsl(230,35%,18%)]">
+                  {companyInfo.details.split('\n').map((line, idx) => (
+                    <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
 
