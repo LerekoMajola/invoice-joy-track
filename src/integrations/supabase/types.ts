@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      company_profiles: {
+        Row: {
+          address_line_1: string | null
+          address_line_2: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_branch_code: string | null
+          bank_name: string | null
+          bank_swift_code: string | null
+          city: string | null
+          company_name: string
+          country: string | null
+          created_at: string
+          default_tax_rate: number | null
+          default_terms: string | null
+          email: string | null
+          footer_text: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          postal_code: string | null
+          registration_number: string | null
+          signature_url: string | null
+          updated_at: string
+          user_id: string
+          vat_number: string | null
+          website: string | null
+        }
+        Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          bank_swift_code?: string | null
+          city?: string | null
+          company_name: string
+          country?: string | null
+          created_at?: string
+          default_tax_rate?: number | null
+          default_terms?: string | null
+          email?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          registration_number?: string | null
+          signature_url?: string | null
+          updated_at?: string
+          user_id: string
+          vat_number?: string | null
+          website?: string | null
+        }
+        Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          bank_swift_code?: string | null
+          city?: string | null
+          company_name?: string
+          country?: string | null
+          created_at?: string
+          default_tax_rate?: number | null
+          default_terms?: string | null
+          email?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          registration_number?: string | null
+          signature_url?: string | null
+          updated_at?: string
+          user_id?: string
+          vat_number?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
