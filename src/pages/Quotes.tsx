@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
 interface Client {
   id: string;
@@ -164,6 +165,7 @@ const statusStyles = {
 };
 
 export default function Quotes() {
+  const { profile } = useCompanyProfile();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -172,6 +174,10 @@ export default function Quotes() {
   ]);
   const [validityDays, setValidityDays] = useState(30);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
+
+  // Get default tax rate and terms from company profile
+  const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
+  const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
 
   const generateQuoteNumber = () => {
     const lastQuote = quotes.reduce((max, quote) => {
@@ -222,8 +228,8 @@ export default function Quotes() {
       total: calculateTotal(),
       status: 'draft',
       lineItems: [...lineItems],
-      taxRate: 5,
-      termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
+      taxRate: defaultTaxRate,
+      termsAndConditions: defaultTerms,
       description: '',
     };
 
