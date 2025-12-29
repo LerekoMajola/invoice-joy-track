@@ -39,6 +39,7 @@ export type Database = {
           signature_url: string | null
           updated_at: string
           user_id: string
+          vat_enabled: boolean | null
           vat_number: string | null
           website: string | null
         }
@@ -66,6 +67,7 @@ export type Database = {
           signature_url?: string | null
           updated_at?: string
           user_id: string
+          vat_enabled?: boolean | null
           vat_number?: string | null
           website?: string | null
         }
@@ -93,6 +95,7 @@ export type Database = {
           signature_url?: string | null
           updated_at?: string
           user_id?: string
+          vat_enabled?: boolean | null
           vat_number?: string | null
           website?: string | null
         }
