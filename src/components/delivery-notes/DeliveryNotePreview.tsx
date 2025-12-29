@@ -62,7 +62,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
     if (profile.country) lines.push(profile.country);
     if (profile.phone) lines.push(`Tel: ${profile.phone}`);
     if (profile.email) lines.push(`Email: ${profile.email}`);
-    if (profile.registration_number) lines.push(`Reg: ${profile.registration_number}`);
+    if (profile.registration_number) lines.push(`IBR NO: ${profile.registration_number}`);
     
     return lines;
   };
