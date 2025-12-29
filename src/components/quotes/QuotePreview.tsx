@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,8 +51,47 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
     ...quoteData,
     description: quoteData.description || '',
   });
-  const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
+  
+  // Create a custom template from profile or use first predefined template
+  const getCustomTemplate = (): DocumentTemplate => {
+    if (profile?.template_primary_color) {
+      return {
+        id: 'custom',
+        name: 'Custom',
+        primaryColor: profile.template_primary_color,
+        secondaryColor: profile.template_secondary_color || 'hsl(230, 25%, 95%)',
+        accentColor: profile.template_accent_color || 'hsl(230, 35%, 25%)',
+        fontFamily: profile.template_font_family ? `'${profile.template_font_family}', sans-serif` : "'DM Sans', sans-serif",
+        headerStyle: (profile.template_header_style as 'classic' | 'modern' | 'minimal') || 'classic',
+        tableStyle: (profile.template_table_style as 'striped' | 'bordered' | 'clean') || 'striped',
+      };
+    }
+    return templates[0];
+  };
+
+  const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(getCustomTemplate());
   const quoteRef = useRef<HTMLDivElement>(null);
+
+  // Load custom font from profile
+  useEffect(() => {
+    if (profile?.template_font_url) {
+      const existingLink = document.querySelector(`link[href="${profile.template_font_url}"]`);
+      if (!existingLink) {
+        const link = document.createElement('link');
+        link.href = profile.template_font_url;
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+      }
+    }
+  }, [profile?.template_font_url]);
+
+  // Update template when profile loads
+  useEffect(() => {
+    if (profile && !selectedTemplate.id.startsWith('custom')) {
+      // Only update if we haven't already selected a different template
+      setSelectedTemplate(getCustomTemplate());
+    }
+  }, [profile]);
 
   // Build company details from profile
   const getCompanyDetails = () => {
@@ -297,19 +336,34 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
 
           {/* Line Items Table */}
           <div className="mb-8">
-            <table className="w-full">
+            <table className="w-full" style={{ 
+              borderCollapse: selectedTemplate.tableStyle === 'bordered' ? 'collapse' : undefined 
+            }}>
               <thead>
                 <tr style={{ backgroundColor: selectedTemplate.primaryColor, color: 'white' }}>
-                  <th className="text-left py-3 px-4 text-sm font-semibold">QTY</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold">Description</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold">Unit Price</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold">Amount</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold" style={{ border: selectedTemplate.tableStyle === 'bordered' ? '1px solid #ccc' : undefined }}>QTY</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold" style={{ border: selectedTemplate.tableStyle === 'bordered' ? '1px solid #ccc' : undefined }}>Description</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold" style={{ border: selectedTemplate.tableStyle === 'bordered' ? '1px solid #ccc' : undefined }}>Unit Price</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold" style={{ border: selectedTemplate.tableStyle === 'bordered' ? '1px solid #ccc' : undefined }}>Amount</th>
                   {isEditing && <th className="w-10"></th>}
                 </tr>
               </thead>
               <tbody>
-                {data.lineItems.map((item, index) => (
-                  <tr key={item.id} style={{ backgroundColor: index % 2 === 0 ? selectedTemplate.secondaryColor : 'white' }}>
+                {data.lineItems.map((item, index) => {
+                  const getRowStyle = () => {
+                    switch (selectedTemplate.tableStyle) {
+                      case 'striped':
+                        return { backgroundColor: index % 2 === 0 ? selectedTemplate.secondaryColor : 'white' };
+                      case 'bordered':
+                        return {};
+                      case 'clean':
+                        return { borderBottom: index < data.lineItems.length - 1 ? '1px solid #eee' : undefined };
+                      default:
+                        return {};
+                    }
+                  };
+                  return (
+                  <tr key={item.id} style={getRowStyle()}>
                     <td className="py-3 px-4 text-sm">
                       {isEditing ? (
                         <Input
@@ -360,7 +414,8 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                       </td>
                     )}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
