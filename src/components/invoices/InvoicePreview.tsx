@@ -417,46 +417,46 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
         {/* Banking Details */}
         {hasBankingDetails && (
           <div 
-            className="mb-6 p-4 rounded border-2"
+            className="mb-3 py-2 px-3 rounded border"
             style={{ 
               backgroundColor: secondaryColor,
               borderColor: primaryColor,
             }}
           >
             <h3 
-              className="text-sm font-bold uppercase tracking-wider mb-3"
+              className="text-xs font-bold uppercase tracking-wider mb-1"
               style={{ color: primaryColor }}
             >
               Payment Details
             </h3>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+            <div className="flex flex-col gap-y-0.5 text-xs">
               {profile?.bank_name && (
                 <div className="flex">
-                  <span className="w-32" style={{ color: accentColor }}>Bank Name:</span>
+                  <span className="w-24" style={{ color: accentColor }}>Bank Name:</span>
                   <span className="font-medium">{profile.bank_name}</span>
                 </div>
               )}
               {profile?.bank_account_name && (
                 <div className="flex">
-                  <span className="w-32" style={{ color: accentColor }}>Account Name:</span>
+                  <span className="w-24" style={{ color: accentColor }}>Account Name:</span>
                   <span className="font-medium">{profile.bank_account_name}</span>
                 </div>
               )}
               {profile?.bank_account_number && (
                 <div className="flex">
-                  <span className="w-32" style={{ color: accentColor }}>Account No:</span>
+                  <span className="w-24" style={{ color: accentColor }}>Account No:</span>
                   <span className="font-medium">{profile.bank_account_number}</span>
                 </div>
               )}
               {profile?.bank_branch_code && (
                 <div className="flex">
-                  <span className="w-32" style={{ color: accentColor }}>Branch Code:</span>
+                  <span className="w-24" style={{ color: accentColor }}>Branch Code:</span>
                   <span className="font-medium">{profile.bank_branch_code}</span>
                 </div>
               )}
               {profile?.bank_swift_code && (
                 <div className="flex">
-                  <span className="w-32" style={{ color: accentColor }}>SWIFT Code:</span>
+                  <span className="w-24" style={{ color: accentColor }}>SWIFT Code:</span>
                   <span className="font-medium">{profile.bank_swift_code}</span>
                 </div>
               )}
