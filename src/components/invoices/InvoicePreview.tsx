@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Printer } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -33,6 +33,38 @@ interface InvoicePreviewProps {
 export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
+
+  // Load custom font from profile
+  useEffect(() => {
+    if (profile?.template_font_url) {
+      const existingLink = document.querySelector(`link[href="${profile.template_font_url}"]`);
+      if (!existingLink) {
+        const link = document.createElement('link');
+        link.href = profile.template_font_url;
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+      }
+    }
+  }, [profile?.template_font_url]);
+
+  // Build company details from profile
+  const getCompanyDetails = () => {
+    if (!profile) return ['Company Name'];
+    
+    const lines = [profile.company_name];
+    if (profile.address_line_1) lines.push(profile.address_line_1);
+    if (profile.address_line_2) lines.push(profile.address_line_2);
+    if (profile.city || profile.postal_code) {
+      lines.push([profile.city, profile.postal_code].filter(Boolean).join(', '));
+    }
+    if (profile.country) lines.push(profile.country);
+    if (profile.phone) lines.push(`Tel: ${profile.phone}`);
+    if (profile.email) lines.push(`Email: ${profile.email}`);
+    if (profile.registration_number) lines.push(`Reg: ${profile.registration_number}`);
+    if (profile.vat_enabled && profile.vat_number) lines.push(`VAT: ${profile.vat_number}`);
+    
+    return lines;
+  };
 
   const calculateSubtotal = () => {
     return invoice.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -115,94 +147,70 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
         }}
       >
         {/* Header */}
-        <div 
-          className="flex justify-between items-start pb-6 mb-6"
-          style={{ 
-            borderBottom: headerStyle === 'modern' ? `3px solid ${primaryColor}` : `1px solid ${primaryColor}`,
-          }}
-        >
-          {/* Company Logo & Info */}
-          <div className="flex items-start gap-4">
-            {profile?.logo_url && (
-              <img 
-                src={profile.logo_url} 
-                alt="Company Logo" 
-                className="h-16 w-auto object-contain"
-              />
-            )}
-            <div>
-              <h1 
-                className="text-xl font-bold"
-                style={{ color: primaryColor }}
-              >
-                {profile?.company_name || 'Your Company'}
-              </h1>
-              <div className="text-xs mt-1 space-y-0.5" style={{ color: accentColor }}>
-                {profile?.address_line_1 && <p>{profile.address_line_1}</p>}
-                {profile?.address_line_2 && <p>{profile.address_line_2}</p>}
-                {(profile?.city || profile?.postal_code) && (
-                  <p>{[profile.city, profile.postal_code].filter(Boolean).join(', ')}</p>
-                )}
-                {profile?.country && <p>{profile.country}</p>}
-              </div>
+        <div className="flex justify-between items-start mb-12">
+          {/* Company Info */}
+          <div className="flex-1 max-w-md">
+            <div className="text-sm" style={{ color: primaryColor }}>
+              {getCompanyDetails().map((line, idx) => (
+                <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
+                  {line}
+                </p>
+              ))}
             </div>
           </div>
 
-          {/* Invoice Title */}
-          <div className="text-right">
-            <h2 
-              className="text-3xl font-bold tracking-wide"
-              style={{ color: primaryColor }}
-            >
-              INVOICE
-            </h2>
-            {invoice.sourceQuoteNumber && (
-              <p className="text-xs mt-1" style={{ color: accentColor }}>
-                From Quote: {invoice.sourceQuoteNumber}
-              </p>
+          {/* Logo from profile */}
+          <div>
+            {profile?.logo_url ? (
+              <img src={profile.logo_url} alt="Company Logo" className="h-16 object-contain" />
+            ) : (
+              <div className="h-16 w-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                No Logo
+              </div>
             )}
           </div>
         </div>
 
-        {/* Invoice Details Row */}
-        <div className="flex justify-between mb-8">
-          {/* Bill To */}
+        {/* Invoice Title */}
+        <div className="text-right mb-8">
+          <h1 
+            className="text-4xl font-light tracking-widest uppercase"
+            style={{ color: primaryColor }}
+          >
+            Invoice
+          </h1>
+          {invoice.sourceQuoteNumber && (
+            <p className="text-xs mt-1" style={{ color: accentColor }}>
+              From Quote: {invoice.sourceQuoteNumber}
+            </p>
+          )}
+        </div>
+
+        {/* Client & Invoice Info */}
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h3 
-              className="text-xs font-semibold uppercase tracking-wider mb-2"
-              style={{ color: accentColor }}
-            >
-              Bill To
+            <p className="text-sm font-semibold mb-2" style={{ color: primaryColor }}>To</p>
+            <h3 className="text-lg font-bold text-gray-900">
+              {invoice.clientName}
             </h3>
-            <p className="font-semibold">{invoice.clientName}</p>
             {invoice.clientAddress && (
-              <p className="text-sm whitespace-pre-line" style={{ color: accentColor }}>
+              <p className="text-sm text-gray-600 whitespace-pre-line">
                 {invoice.clientAddress}
               </p>
             )}
           </div>
-
-          {/* Invoice Info */}
-          <div className="text-right">
-            <div className="space-y-1">
-              <div className="flex justify-end gap-4">
-                <span className="text-xs uppercase tracking-wider" style={{ color: accentColor }}>
-                  Invoice #
-                </span>
-                <span className="font-semibold">{invoice.invoiceNumber}</span>
-              </div>
-              <div className="flex justify-end gap-4">
-                <span className="text-xs uppercase tracking-wider" style={{ color: accentColor }}>
-                  Invoice Date
-                </span>
-                <span>{invoice.date}</span>
-              </div>
-              <div className="flex justify-end gap-4">
-                <span className="text-xs uppercase tracking-wider" style={{ color: accentColor }}>
-                  Due Date
-                </span>
-                <span className="font-semibold" style={{ color: primaryColor }}>{invoice.dueDate}</span>
-              </div>
+          <div className="text-right space-y-1">
+            <div className="flex justify-end gap-4">
+              <span className="text-sm font-semibold" style={{ color: primaryColor }}>Invoice #</span>
+              <span className="text-sm text-gray-900 w-28">{invoice.invoiceNumber}</span>
+            </div>
+            <div className="flex justify-end gap-4">
+              <span className="text-sm font-semibold" style={{ color: primaryColor }}>Invoice date</span>
+              <span className="text-sm text-gray-900 w-28">{new Date(invoice.date).toLocaleDateString()}</span>
+            </div>
+            <div className="flex justify-end gap-4">
+              <span className="text-sm font-semibold" style={{ color: primaryColor }}>Due date</span>
+              <span className="text-sm text-gray-900 w-28">{new Date(invoice.dueDate).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
