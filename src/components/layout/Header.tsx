@@ -1,6 +1,8 @@
-import { Bell, Search, Plus } from 'lucide-react';
+import { Bell, Search, Plus, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +14,8 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, action }: HeaderProps) {
+  const navigate = useNavigate();
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div>
@@ -31,10 +35,28 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           />
         </div>
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Notifications</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/settings')}
+            >
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Company Settings</TooltipContent>
+        </Tooltip>
 
         {action && (
           <Button onClick={action.onClick} className="gap-2">

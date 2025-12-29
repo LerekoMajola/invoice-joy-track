@@ -8,7 +8,8 @@ import {
   CheckSquare, 
   Briefcase,
   LogOut,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
