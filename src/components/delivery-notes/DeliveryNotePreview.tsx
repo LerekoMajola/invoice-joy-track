@@ -146,7 +146,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             }}
           >
             {/* Header */}
-            <div className="flex justify-between items-start mb-12">
+            <div className="flex justify-between items-start mb-6">
               {/* Company Info */}
               <div className="flex-1 max-w-md">
                 <div className="text-sm" style={{ color: primaryColor }}>
@@ -171,7 +171,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             </div>
 
             {/* Document Title */}
-            <div className="text-right mb-8">
+            <div className="text-right mb-6">
               <h1 
                 className="text-4xl font-light tracking-widest uppercase"
                 style={{ color: primaryColor }}

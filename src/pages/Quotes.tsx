@@ -359,19 +359,28 @@ export default function Quotes() {
         </DialogContent>
       </Dialog>
 
-      {previewQuote && (
-        <QuotePreview
-          quoteData={{
-            quoteNumber: previewQuote.quoteNumber,
-            date: previewQuote.date,
-            dueDate: previewQuote.validUntil,
-            status: previewQuote.status,
-            client: clients.find(c => c.id === previewQuote.clientId) ? { id: previewQuote.clientId!, company: previewQuote.clientName, contactPerson: '', email: '' } : null,
-            lineItems: previewQuote.lineItems,
-            taxRate: previewQuote.taxRate,
-            termsAndConditions: previewQuote.termsAndConditions || '',
-            description: previewQuote.description || undefined,
-          }}
+      {previewQuote && (() => {
+        const client = clients.find(c => c.id === previewQuote.clientId);
+        return (
+          <QuotePreview
+            quoteData={{
+              quoteNumber: previewQuote.quoteNumber,
+              date: previewQuote.date,
+              dueDate: previewQuote.validUntil,
+              status: previewQuote.status,
+              client: client ? { 
+                id: client.id, 
+                company: client.company, 
+                contactPerson: client.contactPerson || '', 
+                email: client.email || '',
+                phone: client.phone || undefined,
+                address: client.address || undefined,
+              } : null,
+              lineItems: previewQuote.lineItems,
+              taxRate: previewQuote.taxRate,
+              termsAndConditions: previewQuote.termsAndConditions || '',
+              description: previewQuote.description || undefined,
+            }}
           isConverted={convertedQuoteIds.has(previewQuote.id)}
           linkedInvoiceNumber={getLinkedInvoiceNumber(previewQuote.id)}
           onUpdate={handleUpdateQuote}
@@ -381,8 +390,9 @@ export default function Quotes() {
           }}
           onConvertToInvoice={() => handleConvertToInvoice(previewQuote)}
           onClose={() => setPreviewQuote(null)}
-        />
-      )}
+          />
+        );
+      })()}
     </DashboardLayout>
   );
 }

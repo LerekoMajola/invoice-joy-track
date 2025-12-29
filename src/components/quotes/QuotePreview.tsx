@@ -26,6 +26,7 @@ interface Client {
   company: string;
   contactPerson: string;
   email: string;
+  phone?: string;
   address?: string;
 }
 
@@ -276,7 +277,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           }}
         >
           {/* Header */}
-          <div className="flex justify-between items-start mb-12">
+          <div className="flex justify-between items-start mb-6">
             {/* Company Info */}
             <div className="flex-1 max-w-md">
               <div className="whitespace-pre-line text-sm" style={{ color: selectedTemplate.primaryColor }}>
@@ -301,7 +302,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Quote Title */}
-          <div className="text-right mb-8">
+          <div className="text-right mb-6">
             <h1 
               className="text-4xl font-light tracking-widest uppercase"
               style={{ color: selectedTemplate.primaryColor }}
@@ -317,6 +318,9 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               <h3 className="text-lg font-bold text-gray-900">
                 {data.client?.company || 'Customer Name'}
               </h3>
+              {data.client?.contactPerson && (
+                <p className="text-sm text-gray-600">Contact: {data.client.contactPerson}</p>
+              )}
               {isEditing ? (
                 <Textarea
                   value={data.client?.address || ''}
@@ -329,9 +333,17 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
                   rows={2}
                 />
               ) : (
-                <p className="text-sm text-gray-600 whitespace-pre-line">
-                  {data.client?.address || 'Client Address'}
-                </p>
+                data.client?.address && (
+                  <p className="text-sm text-gray-600 whitespace-pre-line">
+                    {data.client.address}
+                  </p>
+                )
+              )}
+              {data.client?.phone && (
+                <p className="text-sm text-gray-600">Tel: {data.client.phone}</p>
+              )}
+              {data.client?.email && (
+                <p className="text-sm text-gray-600">Email: {data.client.email}</p>
               )}
             </div>
             <div className="text-right space-y-1">
