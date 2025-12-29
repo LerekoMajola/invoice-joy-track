@@ -19,8 +19,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
+import { useDeliveryNotes, DeliveryNote } from '@/hooks/useDeliveryNotes';
+import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
+import { DeliveryNotePreview } from '@/components/delivery-notes/DeliveryNotePreview';
 
 const statusStyles = {
   pending: 'bg-warning/10 text-warning border-warning/20',
@@ -29,7 +31,9 @@ const statusStyles = {
 
 export default function DeliveryNotes() {
   const { deliveryNotes, isLoading, createDeliveryNote, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
+  const { invoices } = useInvoices();
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
 
   // Handle creation from invoice
   useEffect(() => {
@@ -67,6 +71,16 @@ export default function DeliveryNotes() {
 
   const formatDisplayDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getInvoiceNumber = (invoiceId: string | null) => {
+    if (!invoiceId) return undefined;
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    return invoice?.invoiceNumber;
+  };
+
+  const handleView = (note: DeliveryNote) => {
+    setSelectedNote(note);
   };
 
   // Calculate summary stats
@@ -167,7 +181,7 @@ export default function DeliveryNotes() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleView(note)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </DropdownMenuItem>
@@ -177,7 +191,7 @@ export default function DeliveryNotes() {
                               Mark Delivered
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleView(note)}>
                             <Download className="h-4 w-4 mr-2" />
                             Download PDF
                           </DropdownMenuItem>
@@ -198,6 +212,28 @@ export default function DeliveryNotes() {
           )}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {selectedNote && (
+        <DeliveryNotePreview
+          deliveryNote={{
+            id: selectedNote.id,
+            note_number: selectedNote.noteNumber,
+            client_name: selectedNote.clientName,
+            date: selectedNote.date,
+            delivery_address: selectedNote.deliveryAddress,
+            status: selectedNote.status,
+            invoice_id: selectedNote.invoiceId,
+            items: selectedNote.items.map(item => ({
+              id: item.id,
+              description: item.description,
+              quantity: item.quantity,
+            })),
+          }}
+          invoiceNumber={getInvoiceNumber(selectedNote.invoiceId)}
+          onClose={() => setSelectedNote(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
