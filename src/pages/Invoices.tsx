@@ -100,10 +100,10 @@ export default function Invoices() {
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           {[
-            { label: 'Total Invoiced', value: '$48,250', color: 'text-primary' },
-            { label: 'Paid', value: '$39,830', color: 'text-success' },
-            { label: 'Pending', value: '$5,220', color: 'text-info' },
-            { label: 'Overdue', value: '$3,200', color: 'text-destructive' },
+            { label: 'Total Invoiced', value: 'M48,250', color: 'text-primary' },
+            { label: 'Paid', value: 'M39,830', color: 'text-success' },
+            { label: 'Pending', value: 'M5,220', color: 'text-info' },
+            { label: 'Overdue', value: 'M3,200', color: 'text-destructive' },
           ].map((stat, index) => (
             <div 
               key={stat.label}
@@ -151,7 +151,7 @@ export default function Invoices() {
                   <TableCell className="text-muted-foreground">{invoice.date}</TableCell>
                   <TableCell className="text-muted-foreground">{invoice.dueDate}</TableCell>
                   <TableCell className="text-right font-semibold">
-                    ${invoice.total.toLocaleString()}
+                    M{invoice.total.toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('capitalize', statusStyles[invoice.status])}>

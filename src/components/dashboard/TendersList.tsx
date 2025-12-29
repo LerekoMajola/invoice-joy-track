@@ -9,7 +9,7 @@ const tenders = [
     title: 'Office Supplies Contract',
     organization: 'City Council',
     dueDate: 'Jan 5, 2025',
-    value: '$45,000',
+    value: 'M45,000',
     status: 'open',
   },
   {
@@ -17,7 +17,7 @@ const tenders = [
     title: 'IT Infrastructure Upgrade',
     organization: 'TechCorp Inc',
     dueDate: 'Jan 10, 2025',
-    value: '$120,000',
+    value: 'M120,000',
     status: 'open',
   },
   {
@@ -25,7 +25,7 @@ const tenders = [
     title: 'Marketing Services RFQ',
     organization: 'StartUp Labs',
     dueDate: 'Jan 15, 2025',
-    value: '$25,000',
+    value: 'M25,000',
     status: 'open',
   },
 ];

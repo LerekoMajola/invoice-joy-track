@@ -19,7 +19,7 @@ export default function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Revenue"
-            value="$48,250"
+            value="M48,250"
             change="+12.5% from last month"
             changeType="positive"
             icon={TrendingUp}
@@ -35,7 +35,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Unpaid Invoices"
-            value="$8,420"
+            value="M8,420"
             change="5 invoices outstanding"
             changeType="negative"
             icon={Receipt}
