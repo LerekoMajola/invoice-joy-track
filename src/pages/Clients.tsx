@@ -17,73 +17,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Building2, Mail, Phone, MapPin, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-interface Client {
-  id: string;
-  company: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  totalSpent: number;
-  invoices: number;
-}
-
-const initialClients: Client[] = [
-  {
-    id: '1',
-    company: 'Acme Corporation',
-    contactPerson: 'John Smith',
-    email: 'john@acmecorp.com',
-    phone: '+266 2231 1234',
-    address: '123 Kingsway, Maseru',
-    totalSpent: 15420,
-    invoices: 8,
-  },
-  {
-    id: '2',
-    company: 'TechStart Inc',
-    contactPerson: 'Sarah Johnson',
-    email: 'sarah@techstart.io',
-    phone: '+266 2231 5678',
-    address: '456 Pioneer Mall, Maseru',
-    totalSpent: 28750,
-    invoices: 12,
-  },
-  {
-    id: '3',
-    company: 'Global Solutions Ltd',
-    contactPerson: 'Michael Chen',
-    email: 'michael@globalsolutions.com',
-    phone: '+266 2231 9012',
-    address: '789 LNDC Building, Maseru',
-    totalSpent: 9800,
-    invoices: 5,
-  },
-  {
-    id: '4',
-    company: 'StartUp Labs',
-    contactPerson: 'Emily Davis',
-    email: 'emily@startuplabs.co',
-    phone: '+266 2231 3456',
-    address: '321 Ha Hoohlo, Maseru',
-    totalSpent: 42100,
-    invoices: 18,
-  },
-];
+import { useClients } from '@/hooks/useClients';
 
 export default function Clients() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const { clients, isLoading, createClient, deleteClient } = useClients();
   const [isOpen, setIsOpen] = useState(false);
   const [newClient, setNewClient] = useState({
     company: '',
@@ -93,16 +39,23 @@ export default function Clients() {
     address: '',
   });
 
-  const handleAddClient = () => {
-    const client: Client = {
-      id: Date.now().toString(),
-      ...newClient,
-      totalSpent: 0,
-      invoices: 0,
-    };
-    setClients([...clients, client]);
+  const handleAddClient = async () => {
+    if (!newClient.company) return;
+    
+    await createClient({
+      company: newClient.company,
+      contactPerson: newClient.contactPerson || undefined,
+      email: newClient.email || undefined,
+      phone: newClient.phone || undefined,
+      address: newClient.address || undefined,
+    });
+    
     setNewClient({ company: '', contactPerson: '', email: '', phone: '', address: '' });
     setIsOpen(false);
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    await deleteClient(id);
   };
 
   return (
@@ -118,82 +71,95 @@ export default function Clients() {
       
       <div className="p-6">
         <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/50">
-                <TableHead className="font-semibold">Organisation</TableHead>
-                <TableHead className="font-semibold">Contact Person</TableHead>
-                <TableHead className="font-semibold">Contact Details</TableHead>
-                <TableHead className="font-semibold text-right">Total Spent</TableHead>
-                <TableHead className="font-semibold text-center">Invoices</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client, index) => (
-                <TableRow 
-                  key={client.id} 
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
-                        <Building2 className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-card-foreground">{client.company}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {client.address}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-medium">{client.contactPerson}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-sm flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {client.email}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        {client.phone}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    M{client.totalSpent.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="secondary">{client.invoices}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <Building2 className="h-12 w-12 mb-4" />
+              <p className="text-lg font-medium">No clients yet</p>
+              <p className="text-sm">Add your first client to get started</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50">
+                  <TableHead className="font-semibold">Organisation</TableHead>
+                  <TableHead className="font-semibold">Contact Person</TableHead>
+                  <TableHead className="font-semibold">Contact Details</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {clients.map((client, index) => (
+                  <TableRow 
+                    key={client.id} 
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
+                          <Building2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-card-foreground">{client.company}</p>
+                          {client.address && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {client.address}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-medium">{client.contactPerson || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {client.email && (
+                          <p className="text-sm flex items-center gap-1">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            {client.email}
+                          </p>
+                        )}
+                        {client.phone && (
+                          <p className="text-sm flex items-center gap-1">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            {client.phone}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDeleteClient(client.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
@@ -254,7 +220,9 @@ export default function Clients() {
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddClient}>Add Client</Button>
+            <Button onClick={handleAddClient} disabled={!newClient.company}>
+              Add Client
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
