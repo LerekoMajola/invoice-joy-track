@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Upload, Plus, X, Pencil, Save, Palette } from 'lucide-react';
+import { Download, Plus, X, Pencil, Save, Palette } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
 import {
@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
 interface LineItem {
   id: string;
@@ -37,11 +38,6 @@ interface QuoteData {
   description?: string;
 }
 
-interface CompanyInfo {
-  details: string;
-  logo: string | null;
-}
-
 interface QuotePreviewProps {
   quoteData: QuoteData;
   onUpdate: (data: QuoteData) => void;
@@ -49,18 +45,33 @@ interface QuotePreviewProps {
 }
 
 export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps) {
+  const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [data, setData] = useState<QuoteData>({
     ...quoteData,
     description: quoteData.description || '',
   });
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
-    details: 'Your Company Inc.\n1234 Company St.\nMaseru, Lesotho 100\nTel: +266 2222 1234\nEmail: info@company.co.ls',
-    logo: null,
-  });
-  const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
+  const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
   const quoteRef = useRef<HTMLDivElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Build company details from profile
+  const getCompanyDetails = () => {
+    if (!profile) return 'Company Name\nAddress\nPhone\nEmail';
+    
+    const lines = [profile.company_name];
+    if (profile.address_line_1) lines.push(profile.address_line_1);
+    if (profile.address_line_2) lines.push(profile.address_line_2);
+    if (profile.city || profile.postal_code) {
+      lines.push([profile.city, profile.postal_code].filter(Boolean).join(', '));
+    }
+    if (profile.country) lines.push(profile.country);
+    if (profile.phone) lines.push(`Tel: ${profile.phone}`);
+    if (profile.email) lines.push(`Email: ${profile.email}`);
+    if (profile.registration_number) lines.push(`Reg: ${profile.registration_number}`);
+    if (profile.vat_enabled && profile.vat_number) lines.push(`VAT: ${profile.vat_number}`);
+    
+    return lines.join('\n');
+  };
 
   const calculateSubtotal = () => {
     return data.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -72,17 +83,6 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
 
   const calculateTotal = () => {
     return calculateSubtotal() + calculateTax();
-  };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCompanyInfo({ ...companyInfo, logo: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const addLineItem = () => {
@@ -188,55 +188,24 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
           <div className="flex justify-between items-start mb-12">
             {/* Company Info */}
             <div className="flex-1 max-w-md">
-              {isEditing ? (
-                <Textarea
-                  value={companyInfo.details}
-                  onChange={(e) => setCompanyInfo({ ...companyInfo, details: e.target.value })}
-                  className="text-sm border-dashed min-h-[120px] resize-none"
-                  placeholder="Company name, address, phone, email..."
-                  rows={5}
-                />
-              ) : (
               <div className="whitespace-pre-line text-sm" style={{ color: selectedTemplate.primaryColor }}>
-                  {companyInfo.details.split('\n').map((line, idx) => (
-                    <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              )}
+                {getCompanyDetails().split('\n').map((line, idx) => (
+                  <p key={idx} className={idx === 0 ? 'text-xl font-bold mb-1' : 'text-gray-600'}>
+                    {line}
+                  </p>
+                ))}
+              </div>
             </div>
 
-            {/* Logo Upload */}
+            {/* Logo from profile */}
             <div>
-              {companyInfo.logo ? (
-                <div className="relative group">
-                  <img src={companyInfo.logo} alt="Company Logo" className="h-16 object-contain" />
-                  {isEditing && (
-                    <button
-                      onClick={() => setCompanyInfo({ ...companyInfo, logo: null })}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
+              {profile?.logo_url ? (
+                <img src={profile.logo_url} alt="Company Logo" className="h-16 object-contain" />
               ) : (
-                <button
-                  onClick={() => logoInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-primary hover:text-primary transition-colors"
-                >
-                  <Upload className="h-5 w-5" />
-                  Upload Logo
-                </button>
+                <div className="h-16 w-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                  No Logo
+                </div>
               )}
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="hidden"
-              />
             </div>
           </div>
 
@@ -455,16 +424,31 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             )}
           </div>
 
-          {/* Signature */}
-          <div className="flex justify-end">
+          {/* Authorized Signature from Settings */}
+          {profile?.signature_url && (
+            <div className="mb-8">
+              <p className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>Authorized Signature</p>
+              <img src={profile.signature_url} alt="Signature" className="h-12 object-contain" />
+            </div>
+          )}
+
+          {/* Customer Signature */}
+          <div className="flex justify-end mb-8">
             <div className="text-center">
               <div className="w-48 border-t border-gray-300 pt-2">
                 <p className="text-sm text-gray-400 italic">customer signature</p>
               </div>
             </div>
           </div>
+
+          {/* Footer */}
+          <div className="text-center text-sm text-gray-500 pt-6 border-t border-gray-200">
+            <p>{profile?.footer_text || 'Thank you for your business!'}</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default QuotePreview;
