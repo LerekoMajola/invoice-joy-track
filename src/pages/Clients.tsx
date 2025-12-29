@@ -169,7 +169,7 @@ export default function Clients() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    ${client.totalSpent.toLocaleString()}
+                    M{client.totalSpent.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge variant="secondary">{client.invoices}</Badge>

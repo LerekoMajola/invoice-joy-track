@@ -7,10 +7,12 @@ import {
   Truck, 
   CheckSquare, 
   Briefcase,
-  Settings,
+  LogOut,
   FileSpreadsheet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -24,6 +26,7 @@ const navigation = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar">
@@ -60,15 +63,22 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Settings */}
-        <div className="border-t border-sidebar-border p-3">
-          <Link
-            to="/settings"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        {/* User & Logout */}
+        <div className="border-t border-sidebar-border p-3 space-y-2">
+          {user && (
+            <div className="px-3 py-2">
+              <p className="text-xs text-sidebar-foreground/50">Logged in as</p>
+              <p className="text-sm text-sidebar-foreground truncate">{user.email}</p>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            onClick={signOut}
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Link>
+            <LogOut className="h-5 w-5" />
+            Sign out
+          </Button>
         </div>
       </div>
     </aside>

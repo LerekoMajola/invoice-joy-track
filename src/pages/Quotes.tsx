@@ -152,7 +152,7 @@ export default function Quotes() {
                   <TableCell className="text-muted-foreground">{quote.date}</TableCell>
                   <TableCell className="text-muted-foreground">{quote.validUntil}</TableCell>
                   <TableCell className="text-right font-semibold">
-                    ${quote.total.toLocaleString()}
+                    M{quote.total.toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>
