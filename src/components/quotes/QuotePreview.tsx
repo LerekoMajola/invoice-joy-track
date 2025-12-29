@@ -312,7 +312,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Client & Quote Info */}
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>To</p>
               <h3 className="text-lg font-bold text-gray-900">

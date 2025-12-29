@@ -181,7 +181,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             </div>
 
             {/* Client & Document Info */}
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-end mb-8">
               <div>
                 <p className="text-sm font-semibold mb-2" style={{ color: primaryColor }}>Deliver To</p>
                 <h3 className="text-lg font-bold text-gray-900">
