@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Table, 
   TableBody, 
@@ -35,12 +34,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { QuotePreview } from '@/components/quotes/QuotePreview';
 
 interface Client {
   id: string;
   company: string;
   contactPerson: string;
   email: string;
+  address?: string;
 }
 
 interface LineItem {
@@ -59,14 +60,17 @@ interface Quote {
   validUntil: string;
   total: number;
   status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  lineItems: LineItem[];
+  taxRate: number;
+  termsAndConditions: string;
 }
 
 // Mock clients - in production this would come from shared state/database
 const clients: Client[] = [
-  { id: '1', company: 'Acme Corporation', contactPerson: 'John Smith', email: 'john@acmecorp.com' },
-  { id: '2', company: 'TechStart Inc', contactPerson: 'Sarah Johnson', email: 'sarah@techstart.io' },
-  { id: '3', company: 'Global Solutions Ltd', contactPerson: 'Michael Chen', email: 'michael@globalsolutions.com' },
-  { id: '4', company: 'StartUp Labs', contactPerson: 'Emily Davis', email: 'emily@startuplabs.co' },
+  { id: '1', company: 'Acme Corporation', contactPerson: 'John Smith', email: 'john@acmecorp.com', address: '123 Business St.\nMaseru, Lesotho' },
+  { id: '2', company: 'TechStart Inc', contactPerson: 'Sarah Johnson', email: 'sarah@techstart.io', address: '456 Tech Park\nMaseru, Lesotho' },
+  { id: '3', company: 'Global Solutions Ltd', contactPerson: 'Michael Chen', email: 'michael@globalsolutions.com', address: '789 Global Ave\nMaseru, Lesotho' },
+  { id: '4', company: 'StartUp Labs', contactPerson: 'Emily Davis', email: 'emily@startuplabs.co', address: '321 Innovation Hub\nMaseru, Lesotho' },
 ];
 
 const initialQuotes: Quote[] = [
@@ -75,50 +79,78 @@ const initialQuotes: Quote[] = [
     quoteNumber: 'QT-0089',
     clientId: '1',
     clientName: 'Acme Corporation',
-    date: 'Dec 20, 2024',
-    validUntil: 'Jan 20, 2025',
+    date: '2024-12-20',
+    validUntil: '2025-01-20',
     total: 4500,
     status: 'accepted',
+    lineItems: [
+      { id: '1', description: 'Consulting services', quantity: 10, unitPrice: 350 },
+      { id: '2', description: 'Implementation support', quantity: 5, unitPrice: 200 },
+    ],
+    taxRate: 5,
+    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
   },
   {
     id: '2',
     quoteNumber: 'QT-0088',
     clientId: '2',
     clientName: 'TechStart Inc',
-    date: 'Dec 18, 2024',
-    validUntil: 'Jan 18, 2025',
+    date: '2024-12-18',
+    validUntil: '2025-01-18',
     total: 12800,
     status: 'sent',
+    lineItems: [
+      { id: '1', description: 'Software development', quantity: 40, unitPrice: 300 },
+      { id: '2', description: 'Project management', quantity: 8, unitPrice: 100 },
+    ],
+    taxRate: 5,
+    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
   },
   {
     id: '3',
     quoteNumber: 'QT-0087',
     clientId: '3',
     clientName: 'Global Solutions Ltd',
-    date: 'Dec 15, 2024',
-    validUntil: 'Jan 15, 2025',
+    date: '2024-12-15',
+    validUntil: '2025-01-15',
     total: 3200,
     status: 'sent',
+    lineItems: [
+      { id: '1', description: 'Training sessions', quantity: 8, unitPrice: 400 },
+    ],
+    taxRate: 5,
+    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
   },
   {
     id: '4',
     quoteNumber: 'QT-0086',
     clientId: '4',
     clientName: 'StartUp Labs',
-    date: 'Dec 12, 2024',
-    validUntil: 'Jan 12, 2025',
+    date: '2024-12-12',
+    validUntil: '2025-01-12',
     total: 8900,
     status: 'draft',
+    lineItems: [
+      { id: '1', description: 'Product development', quantity: 20, unitPrice: 400 },
+      { id: '2', description: 'QA testing', quantity: 10, unitPrice: 90 },
+    ],
+    taxRate: 5,
+    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
   },
   {
     id: '5',
     quoteNumber: 'QT-0085',
     clientId: '1',
     clientName: 'Innovation Hub',
-    date: 'Dec 10, 2024',
-    validUntil: 'Jan 10, 2025',
+    date: '2024-12-10',
+    validUntil: '2025-01-10',
     total: 2100,
     status: 'rejected',
+    lineItems: [
+      { id: '1', description: 'Initial assessment', quantity: 3, unitPrice: 700 },
+    ],
+    taxRate: 5,
+    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
   },
 ];
 
@@ -137,6 +169,7 @@ export default function Quotes() {
     { id: '1', description: '', quantity: 1, unitPrice: 0 }
   ]);
   const [validityDays, setValidityDays] = useState(30);
+  const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
 
   const generateQuoteNumber = () => {
     const lastQuote = quotes.reduce((max, quote) => {
@@ -182,16 +215,45 @@ export default function Quotes() {
       quoteNumber: generateQuoteNumber(),
       clientId: client.id,
       clientName: client.company,
-      date: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      validUntil: validUntil.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      date: today.toISOString().split('T')[0],
+      validUntil: validUntil.toISOString().split('T')[0],
       total: calculateTotal(),
       status: 'draft',
+      lineItems: [...lineItems],
+      taxRate: 5,
+      termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
     };
 
     setQuotes([newQuote, ...quotes]);
     setIsOpen(false);
     setSelectedClientId('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0 }]);
+  };
+
+  const handleViewQuote = (quote: Quote) => {
+    setPreviewQuote(quote);
+  };
+
+  const handleUpdateQuote = (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string }) => {
+    if (!previewQuote) return;
+    
+    const total = updatedData.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const updatedQuote: Quote = {
+      ...previewQuote,
+      lineItems: updatedData.lineItems,
+      taxRate: updatedData.taxRate,
+      termsAndConditions: updatedData.termsAndConditions,
+      date: updatedData.date,
+      validUntil: updatedData.dueDate,
+      total: total * (1 + updatedData.taxRate / 100),
+    };
+
+    setQuotes(quotes.map(q => q.id === updatedQuote.id ? updatedQuote : q));
+    setPreviewQuote(updatedQuote);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -257,8 +319,8 @@ export default function Quotes() {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{quote.clientName}</TableCell>
-                  <TableCell className="text-muted-foreground">{quote.date}</TableCell>
-                  <TableCell className="text-muted-foreground">{quote.validUntil}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDisplayDate(quote.date)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDisplayDate(quote.validUntil)}</TableCell>
                   <TableCell className="text-right font-semibold">
                     M{quote.total.toLocaleString()}
                   </TableCell>
@@ -275,7 +337,7 @@ export default function Quotes() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewQuote(quote)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </DropdownMenuItem>
@@ -426,6 +488,23 @@ export default function Quotes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quote Preview */}
+      {previewQuote && (
+        <QuotePreview
+          quoteData={{
+            quoteNumber: previewQuote.quoteNumber,
+            date: previewQuote.date,
+            dueDate: previewQuote.validUntil,
+            client: clients.find(c => c.id === previewQuote.clientId) || null,
+            lineItems: previewQuote.lineItems,
+            taxRate: previewQuote.taxRate,
+            termsAndConditions: previewQuote.termsAndConditions,
+          }}
+          onUpdate={handleUpdateQuote}
+          onClose={() => setPreviewQuote(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
