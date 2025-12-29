@@ -1,6 +1,7 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Printer } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Download, Printer, Pencil, Save } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
 import html2pdf from 'html2pdf.js';
@@ -23,16 +24,32 @@ interface InvoiceData {
   lineItems: LineItem[];
   taxRate: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
+  purchaseOrderNumber?: string;
 }
 
 interface InvoicePreviewProps {
   invoice: InvoiceData;
+  onUpdate?: (data: InvoiceData) => void;
   onClose?: () => void;
 }
 
-export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
+export function InvoicePreview({ invoice, onUpdate, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
+  const [isEditing, setIsEditing] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>(invoice);
+
+  // Sync with incoming invoice prop
+  useEffect(() => {
+    setInvoiceData(invoice);
+  }, [invoice]);
+
+  const handleSave = () => {
+    if (onUpdate) {
+      onUpdate(invoiceData);
+    }
+    setIsEditing(false);
+  };
 
   // Load custom font from profile
   useEffect(() => {
@@ -67,11 +84,11 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
   };
 
   const calculateSubtotal = () => {
-    return invoice.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    return invoiceData.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   };
 
   const calculateTax = () => {
-    return calculateSubtotal() * (invoice.taxRate / 100);
+    return calculateSubtotal() * (invoiceData.taxRate / 100);
   };
 
   const calculateTotal = () => {
@@ -84,7 +101,7 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
     const element = previewRef.current;
     const opt = {
       margin: 0,
-      filename: `${invoice.invoiceNumber}.pdf`,
+      filename: `${invoiceData.invoiceNumber}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
@@ -121,15 +138,30 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
   return (
     <div className="space-y-4">
       {/* Action Buttons */}
-      <div className="flex gap-2 print:hidden">
-        <Button onClick={handleDownloadPDF} variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
-        </Button>
-        <Button onClick={handlePrint} variant="outline" size="sm">
-          <Printer className="h-4 w-4 mr-2" />
-          Print
-        </Button>
+      <div className="flex justify-between items-center print:hidden">
+        <div className="flex gap-2">
+          {isEditing ? (
+            <Button onClick={handleSave} size="sm">
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
+          ) : (
+            <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleDownloadPDF} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </Button>
+          <Button onClick={handlePrint} variant="outline" size="sm">
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+        </div>
       </div>
 
       {/* Invoice Document */}
@@ -179,9 +211,9 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
           >
             Invoice
           </h1>
-          {invoice.sourceQuoteNumber && (
+          {invoiceData.sourceQuoteNumber && (
             <p className="text-xs mt-1" style={{ color: accentColor }}>
-              From Quote: {invoice.sourceQuoteNumber}
+              From Quote: {invoiceData.sourceQuoteNumber}
             </p>
           )}
         </div>
@@ -191,32 +223,64 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
           <div>
             <p className="text-sm font-semibold mb-2" style={{ color: primaryColor }}>To</p>
             <h3 className="text-lg font-bold text-gray-900">
-              {invoice.clientName}
+              {invoiceData.clientName}
             </h3>
-            {invoice.clientAddress && (
+            {invoiceData.clientAddress && (
               <p className="text-sm text-gray-600 whitespace-pre-line">
-                {invoice.clientAddress}
+                {invoiceData.clientAddress}
               </p>
             )}
           </div>
           <div className="text-right space-y-1">
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 items-center">
               <span className="text-sm font-semibold" style={{ color: primaryColor }}>Invoice #</span>
-              <span className="text-sm text-gray-900 w-28">{invoice.invoiceNumber}</span>
+              <span className="text-sm text-gray-900 w-32">{invoiceData.invoiceNumber}</span>
             </div>
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 items-center">
               <span className="text-sm font-semibold" style={{ color: primaryColor }}>Invoice date</span>
-              <span className="text-sm text-gray-900 w-28">{new Date(invoice.date).toLocaleDateString()}</span>
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={invoiceData.date.split('T')[0]}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })}
+                  className="text-sm w-32 h-7 border-dashed"
+                />
+              ) : (
+                <span className="text-sm text-gray-900 w-32">{new Date(invoiceData.date).toLocaleDateString()}</span>
+              )}
             </div>
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 items-center">
               <span className="text-sm font-semibold" style={{ color: primaryColor }}>Due date</span>
-              <span className="text-sm text-gray-900 w-28">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={invoiceData.dueDate.split('T')[0]}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, dueDate: e.target.value })}
+                  className="text-sm w-32 h-7 border-dashed"
+                />
+              ) : (
+                <span className="text-sm text-gray-900 w-32">{new Date(invoiceData.dueDate).toLocaleDateString()}</span>
+              )}
+            </div>
+            <div className="flex justify-end gap-4 items-center">
+              <span className="text-sm font-semibold" style={{ color: primaryColor }}>PO #</span>
+              {isEditing ? (
+                <Input
+                  type="text"
+                  value={invoiceData.purchaseOrderNumber || ''}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, purchaseOrderNumber: e.target.value })}
+                  placeholder="Enter PO #"
+                  className="text-sm w-32 h-7 border-dashed"
+                />
+              ) : (
+                <span className="text-sm text-gray-900 w-32">{invoiceData.purchaseOrderNumber || '-'}</span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Description/Scope */}
-        {invoice.description && (
+        {invoiceData.description && (
           <div 
             className="mb-6 p-4 rounded"
             style={{ backgroundColor: secondaryColor }}
@@ -227,7 +291,7 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
             >
               Description
             </h3>
-            <p className="text-sm whitespace-pre-line">{invoice.description}</p>
+            <p className="text-sm whitespace-pre-line">{invoiceData.description}</p>
           </div>
         )}
 
@@ -251,7 +315,7 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
               </tr>
             </thead>
             <tbody>
-              {invoice.lineItems.map((item, index) => (
+              {invoiceData.lineItems.map((item, index) => (
                 <tr 
                   key={item.id}
                   style={{ 
@@ -280,10 +344,10 @@ export function InvoicePreview({ invoice, onClose }: InvoicePreviewProps) {
               <span style={{ color: accentColor }}>Subtotal</span>
               <span>{formatMaluti(calculateSubtotal())}</span>
             </div>
-            {profile?.vat_enabled && invoice.taxRate > 0 && (
+            {profile?.vat_enabled && invoiceData.taxRate > 0 && (
               <div className="flex justify-between py-2 border-b" style={{ borderColor: '#e5e5e5' }}>
                 <span style={{ color: accentColor }}>
-                  VAT ({invoice.taxRate}%)
+                  VAT ({invoiceData.taxRate}%)
                 </span>
                 <span>{formatMaluti(calculateTax())}</span>
               </div>
