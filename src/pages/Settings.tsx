@@ -441,20 +441,22 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
-              <Input
-                id="default_tax_rate"
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={formData.default_tax_rate || 15}
-                onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
-                placeholder="15"
-                className="w-32"
-              />
-            </div>
+            {formData.vat_enabled && (
+              <div className="space-y-2">
+                <Label htmlFor="default_tax_rate">Default VAT Rate (%)</Label>
+                <Input
+                  id="default_tax_rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={formData.default_tax_rate || 15}
+                  onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
+                  placeholder="15"
+                  className="w-32"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="default_terms">Default Terms & Conditions</Label>
               <Textarea
