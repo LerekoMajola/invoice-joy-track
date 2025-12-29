@@ -143,38 +143,219 @@ export default function Settings() {
       />
       
       <div className="p-6 space-y-6 max-w-4xl">
-        {/* Company Information */}
+        {/* Document Header */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Document Header
+            </CardTitle>
+            <CardDescription>
+              This information appears at the top of all your documents (quotes, invoices, delivery notes)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Company Name & Logo Row */}
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="company_name">Company Name *</Label>
+                  <Input
+                    id="company_name"
+                    value={formData.company_name || ''}
+                    onChange={(e) => handleChange('company_name', e.target.value)}
+                    placeholder="Your Company Name"
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="registration_number">Registration Number</Label>
+                    <Input
+                      id="registration_number"
+                      value={formData.registration_number || ''}
+                      onChange={(e) => handleChange('registration_number', e.target.value)}
+                      placeholder="Company registration number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vat_number">VAT Number</Label>
+                    <Input
+                      id="vat_number"
+                      value={formData.vat_number || ''}
+                      onChange={(e) => handleChange('vat_number', e.target.value)}
+                      placeholder="VAT registration number"
+                      disabled={!formData.vat_enabled}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Logo */}
+              <div className="space-y-2">
+                <Label>Company Logo</Label>
+                <div className="flex items-center gap-4">
+                  {formData.logo_url ? (
+                    <div className="relative">
+                      <img 
+                        src={formData.logo_url} 
+                        alt="Company logo" 
+                        className="h-20 w-20 object-contain rounded-lg border bg-background"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={() => handleChange('logo_url', null)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                      <Building2 className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      ref={logoInputRef}
+                      disabled={isUploadingLogo}
+                    />
+                    <Button 
+                      variant="outline" 
+                      disabled={isUploadingLogo} 
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      {isUploadingLogo ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Logo
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Recommended: 200x200px
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-4 pt-4 border-t">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Address
+              </h4>
+              <div className="space-y-2">
+                <Label htmlFor="address_line_1">Address Line 1</Label>
+                <Input
+                  id="address_line_1"
+                  value={formData.address_line_1 || ''}
+                  onChange={(e) => handleChange('address_line_1', e.target.value)}
+                  placeholder="Street address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_line_2">Address Line 2</Label>
+                <Input
+                  id="address_line_2"
+                  value={formData.address_line_2 || ''}
+                  onChange={(e) => handleChange('address_line_2', e.target.value)}
+                  placeholder="Apartment, suite, etc. (optional)"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city || ''}
+                    onChange={(e) => handleChange('city', e.target.value)}
+                    placeholder="City"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postal_code">Postal Code</Label>
+                  <Input
+                    id="postal_code"
+                    value={formData.postal_code || ''}
+                    onChange={(e) => handleChange('postal_code', e.target.value)}
+                    placeholder="Postal code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={formData.country || ''}
+                    onChange={(e) => handleChange('country', e.target.value)}
+                    placeholder="Country"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Details */}
+            <div className="space-y-4 pt-4 border-t">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                Contact Details
+              </h4>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone || ''}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                    placeholder="+266 XXXX XXXX"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email || ''}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="company@example.com"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  value={formData.website || ''}
+                  onChange={(e) => handleChange('website', e.target.value)}
+                  placeholder="https://www.example.com"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* VAT Settings */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              Company Information
+              VAT Settings
             </CardTitle>
             <CardDescription>
-              Basic information about your company that appears on documents
+              Configure VAT calculations for your documents
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="company_name">Company Name *</Label>
-                <Input
-                  id="company_name"
-                  value={formData.company_name || ''}
-                  onChange={(e) => handleChange('company_name', e.target.value)}
-                  placeholder="Your Company Name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="registration_number">Registration Number</Label>
-                <Input
-                  id="registration_number"
-                  value={formData.registration_number || ''}
-                  onChange={(e) => handleChange('registration_number', e.target.value)}
-                  placeholder="Company registration number"
-                />
-              </div>
-            </div>
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="vat_enabled" className="text-base">Enable VAT</Label>
@@ -189,102 +370,21 @@ export default function Settings() {
               />
             </div>
             {formData.vat_enabled && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="vat_number">VAT Number</Label>
-                  <Input
-                    id="vat_number"
-                    value={formData.vat_number || ''}
-                    onChange={(e) => handleChange('vat_number', e.target.value)}
-                    placeholder="VAT registration number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="default_tax_rate">Default VAT Rate (%)</Label>
-                  <Input
-                    id="default_tax_rate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={formData.default_tax_rate || 15}
-                    onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
-                    placeholder="15"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="default_tax_rate">Default VAT Rate (%)</Label>
+                <Input
+                  id="default_tax_rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={formData.default_tax_rate || 15}
+                  onChange={(e) => handleChange('default_tax_rate', parseFloat(e.target.value) || 0)}
+                  placeholder="15"
+                  className="max-w-[120px]"
+                />
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Branding */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-primary" />
-              Branding
-            </CardTitle>
-            <CardDescription>
-              Upload your company logo to display on all documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Company Logo</Label>
-              <div className="flex items-center gap-4">
-                {formData.logo_url ? (
-                  <div className="relative">
-                    <img 
-                      src={formData.logo_url} 
-                      alt="Company logo" 
-                      className="h-20 w-20 object-contain rounded-lg border bg-background"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => handleChange('logo_url', null)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
-                    <Building2 className="h-8 w-8 text-muted-foreground/50" />
-                  </div>
-                )}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                    ref={logoInputRef}
-                    disabled={isUploadingLogo}
-                  />
-                  <Button 
-                    variant="outline" 
-                    disabled={isUploadingLogo} 
-                    onClick={() => logoInputRef.current?.click()}
-                  >
-                    {isUploadingLogo ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Logo
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Recommended: 200x200px, PNG or JPG
-                  </p>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -301,113 +401,6 @@ export default function Settings() {
           }}
           onChange={(field, value) => handleChange(field, value)}
         />
-
-        {/* Contact Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              Contact Details
-            </CardTitle>
-            <CardDescription>
-              Contact information displayed on your documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="company@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="+266 XXXX XXXX"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                value={formData.website || ''}
-                onChange={(e) => handleChange('website', e.target.value)}
-                placeholder="https://www.example.com"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Address */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              Address
-            </CardTitle>
-            <CardDescription>
-              Your business address for documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="address_line_1">Address Line 1</Label>
-              <Input
-                id="address_line_1"
-                value={formData.address_line_1 || ''}
-                onChange={(e) => handleChange('address_line_1', e.target.value)}
-                placeholder="Street address"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address_line_2">Address Line 2</Label>
-              <Input
-                id="address_line_2"
-                value={formData.address_line_2 || ''}
-                onChange={(e) => handleChange('address_line_2', e.target.value)}
-                placeholder="Apartment, suite, etc. (optional)"
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.city || ''}
-                  onChange={(e) => handleChange('city', e.target.value)}
-                  placeholder="City"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
-                <Input
-                  id="postal_code"
-                  value={formData.postal_code || ''}
-                  onChange={(e) => handleChange('postal_code', e.target.value)}
-                  placeholder="Postal code"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={formData.country || ''}
-                  onChange={(e) => handleChange('country', e.target.value)}
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Banking Details */}
         <Card>
