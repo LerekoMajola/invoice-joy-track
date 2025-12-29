@@ -81,8 +81,8 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
     if (profile.country) lines.push(profile.country);
     if (profile.phone) lines.push(`Tel: ${profile.phone}`);
     if (profile.email) lines.push(`Email: ${profile.email}`);
-    if (profile.registration_number) lines.push(`Reg: ${profile.registration_number}`);
-    if (profile.vat_enabled && profile.vat_number) lines.push(`VAT: ${profile.vat_number}`);
+    if (profile.registration_number) lines.push(`IBR NO: ${profile.registration_number}`);
+    if (profile.vat_enabled && profile.vat_number) lines.push(`TIN NO: ${profile.vat_number}`);
     
     return lines;
   };
