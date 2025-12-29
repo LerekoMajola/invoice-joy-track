@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Plus, X, Pencil, Save, Palette } from 'lucide-react';
+import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
@@ -28,10 +28,13 @@ interface Client {
   address?: string;
 }
 
+type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected';
+
 interface QuoteData {
   quoteNumber: string;
   date: string;
   dueDate: string;
+  status?: QuoteStatus;
   client: Client | null;
   lineItems: LineItem[];
   taxRate: number;
@@ -42,10 +45,12 @@ interface QuoteData {
 interface QuotePreviewProps {
   quoteData: QuoteData;
   onUpdate: (data: QuoteData) => void;
+  onStatusChange?: (status: QuoteStatus) => void;
+  onConvertToInvoice?: () => void;
   onClose: () => void;
 }
 
-export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps) {
+export function QuotePreview({ quoteData, onUpdate, onStatusChange, onConvertToInvoice, onClose }: QuotePreviewProps) {
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [data, setData] = useState<QuoteData>({
@@ -197,6 +202,38 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             </Popover>
           </div>
           <div className="flex items-center gap-2">
+            {/* Status Action Buttons */}
+            {onStatusChange && quoteData.status === 'draft' && (
+              <Button variant="outline" onClick={() => onStatusChange('sent')} className="gap-2 text-info border-info/30 hover:bg-info/10">
+                <Send className="h-4 w-4" />
+                Mark as Sent
+              </Button>
+            )}
+            {onStatusChange && quoteData.status === 'sent' && (
+              <>
+                <Button variant="outline" onClick={() => onStatusChange('accepted')} className="gap-2 text-success border-success/30 hover:bg-success/10">
+                  <CheckCircle className="h-4 w-4" />
+                  Accept
+                </Button>
+                <Button variant="outline" onClick={() => onStatusChange('rejected')} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </Button>
+              </>
+            )}
+            {onStatusChange && quoteData.status === 'rejected' && (
+              <Button variant="outline" onClick={() => onStatusChange('draft')} className="gap-2">
+                <RotateCcw className="h-4 w-4" />
+                Revise
+              </Button>
+            )}
+            {onConvertToInvoice && quoteData.status === 'accepted' && (
+              <Button variant="outline" onClick={onConvertToInvoice} className="gap-2 text-success border-success/30 hover:bg-success/10">
+                <Receipt className="h-4 w-4" />
+                Convert to Invoice
+              </Button>
+            )}
+            
             {isEditing ? (
               <Button onClick={handleSave} className="gap-2">
                 <Save className="h-4 w-4" />

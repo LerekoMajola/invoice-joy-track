@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2 } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,6 +150,11 @@ export default function Quotes() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const handleStatusChange = async (quoteId: string, newStatus: Quote['status']) => {
+    await updateQuote(quoteId, { status: newStatus });
+    toast.success(`Quote marked as ${newStatus}`);
+  };
+
   return (
     <DashboardLayout>
       <Header 
@@ -218,16 +223,36 @@ export default function Quotes() {
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
-                          <DropdownMenuItem><Send className="h-4 w-4 mr-2" />Send</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
-                          {quote.status === 'accepted' && (
+                          
+                          {/* Status Actions */}
+                          <DropdownMenuSeparator />
+                          {quote.status === 'draft' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'sent')}>
+                              <Send className="h-4 w-4 mr-2" />Mark as Sent
+                            </DropdownMenuItem>
+                          )}
+                          {quote.status === 'sent' && (
                             <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
-                                <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'accepted')} className="text-success">
+                                <CheckCircle className="h-4 w-4 mr-2" />Mark as Accepted
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'rejected')} className="text-destructive">
+                                <XCircle className="h-4 w-4 mr-2" />Mark as Rejected
                               </DropdownMenuItem>
                             </>
                           )}
+                          {quote.status === 'rejected' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'draft')}>
+                              <RotateCcw className="h-4 w-4 mr-2" />Revise (Back to Draft)
+                            </DropdownMenuItem>
+                          )}
+                          {quote.status === 'accepted' && (
+                            <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
+                              <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                            </DropdownMenuItem>
+                          )}
+                          
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteQuote(quote.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />Delete
@@ -320,6 +345,7 @@ export default function Quotes() {
             quoteNumber: previewQuote.quoteNumber,
             date: previewQuote.date,
             dueDate: previewQuote.validUntil,
+            status: previewQuote.status,
             client: clients.find(c => c.id === previewQuote.clientId) ? { id: previewQuote.clientId!, company: previewQuote.clientName, contactPerson: '', email: '' } : null,
             lineItems: previewQuote.lineItems,
             taxRate: previewQuote.taxRate,
@@ -327,6 +353,11 @@ export default function Quotes() {
             description: previewQuote.description || undefined,
           }}
           onUpdate={handleUpdateQuote}
+          onStatusChange={async (newStatus) => {
+            await handleStatusChange(previewQuote.id, newStatus);
+            setPreviewQuote({ ...previewQuote, status: newStatus });
+          }}
+          onConvertToInvoice={() => handleConvertToInvoice(previewQuote)}
           onClose={() => setPreviewQuote(null)}
         />
       )}
