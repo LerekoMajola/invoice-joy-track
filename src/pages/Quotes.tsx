@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,127 +39,9 @@ import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useQuotes, Quote, LineItem } from '@/hooks/useQuotes';
+import { useClients } from '@/hooks/useClients';
 import { toast } from 'sonner';
-
-interface Client {
-  id: string;
-  company: string;
-  contactPerson: string;
-  email: string;
-  address?: string;
-}
-
-interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-}
-
-interface Quote {
-  id: string;
-  quoteNumber: string;
-  clientId: string;
-  clientName: string;
-  date: string;
-  validUntil: string;
-  total: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
-  lineItems: LineItem[];
-  taxRate: number;
-  termsAndConditions: string;
-  description?: string;
-}
-
-// Mock clients - in production this would come from shared state/database
-const clients: Client[] = [
-  { id: '1', company: 'Acme Corporation', contactPerson: 'John Smith', email: 'john@acmecorp.com', address: '123 Business St.\nMaseru, Lesotho' },
-  { id: '2', company: 'TechStart Inc', contactPerson: 'Sarah Johnson', email: 'sarah@techstart.io', address: '456 Tech Park\nMaseru, Lesotho' },
-  { id: '3', company: 'Global Solutions Ltd', contactPerson: 'Michael Chen', email: 'michael@globalsolutions.com', address: '789 Global Ave\nMaseru, Lesotho' },
-  { id: '4', company: 'StartUp Labs', contactPerson: 'Emily Davis', email: 'emily@startuplabs.co', address: '321 Innovation Hub\nMaseru, Lesotho' },
-];
-
-const initialQuotes: Quote[] = [
-  {
-    id: '1',
-    quoteNumber: 'QT-0089',
-    clientId: '1',
-    clientName: 'Acme Corporation',
-    date: '2024-12-20',
-    validUntil: '2025-01-20',
-    total: 4500,
-    status: 'accepted',
-    lineItems: [
-      { id: '1', description: 'Consulting services', quantity: 10, unitPrice: 350 },
-      { id: '2', description: 'Implementation support', quantity: 5, unitPrice: 200 },
-    ],
-    taxRate: 5,
-    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
-    description: 'Professional consulting services for digital transformation initiative including strategic planning, process optimization, and implementation support.',
-  },
-  {
-    id: '2',
-    quoteNumber: 'QT-0088',
-    clientId: '2',
-    clientName: 'TechStart Inc',
-    date: '2024-12-18',
-    validUntil: '2025-01-18',
-    total: 12800,
-    status: 'sent',
-    lineItems: [
-      { id: '1', description: 'Software development', quantity: 40, unitPrice: 300 },
-      { id: '2', description: 'Project management', quantity: 8, unitPrice: 100 },
-    ],
-    taxRate: 5,
-    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
-  },
-  {
-    id: '3',
-    quoteNumber: 'QT-0087',
-    clientId: '3',
-    clientName: 'Global Solutions Ltd',
-    date: '2024-12-15',
-    validUntil: '2025-01-15',
-    total: 3200,
-    status: 'sent',
-    lineItems: [
-      { id: '1', description: 'Training sessions', quantity: 8, unitPrice: 400 },
-    ],
-    taxRate: 5,
-    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
-  },
-  {
-    id: '4',
-    quoteNumber: 'QT-0086',
-    clientId: '4',
-    clientName: 'StartUp Labs',
-    date: '2024-12-12',
-    validUntil: '2025-01-12',
-    total: 8900,
-    status: 'draft',
-    lineItems: [
-      { id: '1', description: 'Product development', quantity: 20, unitPrice: 400 },
-      { id: '2', description: 'QA testing', quantity: 10, unitPrice: 90 },
-    ],
-    taxRate: 5,
-    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
-  },
-  {
-    id: '5',
-    quoteNumber: 'QT-0085',
-    clientId: '1',
-    clientName: 'Innovation Hub',
-    date: '2024-12-10',
-    validUntil: '2025-01-10',
-    total: 2100,
-    status: 'rejected',
-    lineItems: [
-      { id: '1', description: 'Initial assessment', quantity: 3, unitPrice: 700 },
-    ],
-    taxRate: 5,
-    termsAndConditions: 'Payment is due in 14 days\nPlease make checks payable to: Your Company Inc.',
-  },
-];
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground border-border',
@@ -171,62 +53,39 @@ const statusStyles = {
 export default function Quotes() {
   const navigate = useNavigate();
   const { profile } = useCompanyProfile();
-  const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
+  const { quotes, isLoading, createQuote, updateQuote, deleteQuote } = useQuotes();
+  const { clients } = useClients();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [lineItems, setLineItems] = useState<LineItem[]>([
+  const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number }[]>([
     { id: '1', description: '', quantity: 1, unitPrice: 0 }
   ]);
   const [validityDays, setValidityDays] = useState(30);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
 
-  // Get default tax rate and terms from company profile
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
   const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
 
   const handleConvertToInvoice = (quote: Quote) => {
     const client = clients.find(c => c.id === quote.clientId);
     
-    // Generate invoice number from quote number
-    const invoiceNumber = quote.quoteNumber.replace('QT-', 'INV-');
-    
-    // Calculate due date (30 days from today)
-    const today = new Date();
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + 30);
-    
-    // Create invoice data and store in sessionStorage for the Invoices page to pick up
     const invoiceData = {
-      invoiceNumber,
-      sourceQuoteNumber: quote.quoteNumber,
+      sourceQuoteId: quote.id,
+      clientId: quote.clientId,
       clientName: quote.clientName,
       clientAddress: client?.address || '',
-      date: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      dueDate: dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       description: quote.description || '',
       lineItems: quote.lineItems,
       taxRate: quote.taxRate,
-      status: 'draft' as const,
     };
     
     sessionStorage.setItem('newInvoiceFromQuote', JSON.stringify(invoiceData));
-    toast.success(`Invoice ${invoiceNumber} created from ${quote.quoteNumber}`);
+    toast.success(`Converting ${quote.quoteNumber} to invoice`);
     navigate('/invoices');
   };
 
-  const generateQuoteNumber = () => {
-    const lastQuote = quotes.reduce((max, quote) => {
-      const num = parseInt(quote.quoteNumber.replace('QT-', ''));
-      return num > max ? num : max;
-    }, 0);
-    return `QT-${String(lastQuote + 1).padStart(4, '0')}`;
-  };
-
   const addLineItem = () => {
-    setLineItems([
-      ...lineItems,
-      { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0 }
-    ]);
+    setLineItems([...lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0 }]);
   };
 
   const removeLineItem = (id: string) => {
@@ -235,17 +94,15 @@ export default function Quotes() {
     }
   };
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
-    setLineItems(lineItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+  const updateLineItem = (id: string, field: string, value: string | number) => {
+    setLineItems(lineItems.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
   const calculateTotal = () => {
     return lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   };
 
-  const handleCreateQuote = () => {
+  const handleCreateQuote = async () => {
     const client = clients.find(c => c.id === selectedClientId);
     if (!client) return;
 
@@ -253,22 +110,17 @@ export default function Quotes() {
     const validUntil = new Date(today);
     validUntil.setDate(validUntil.getDate() + validityDays);
 
-    const newQuote: Quote = {
-      id: Date.now().toString(),
-      quoteNumber: generateQuoteNumber(),
+    await createQuote({
       clientId: client.id,
       clientName: client.company,
       date: today.toISOString().split('T')[0],
       validUntil: validUntil.toISOString().split('T')[0],
-      total: calculateTotal(),
       status: 'draft',
-      lineItems: [...lineItems],
       taxRate: defaultTaxRate,
       termsAndConditions: defaultTerms,
-      description: '',
-    };
+      lineItems: lineItems.map(({ description, quantity, unitPrice }) => ({ description, quantity, unitPrice })),
+    });
 
-    setQuotes([newQuote, ...quotes]);
     setIsOpen(false);
     setSelectedClientId('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0 }]);
@@ -278,23 +130,17 @@ export default function Quotes() {
     setPreviewQuote(quote);
   };
 
-  const handleUpdateQuote = (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string; description?: string }) => {
+  const handleUpdateQuote = async (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string; description?: string }) => {
     if (!previewQuote) return;
     
-    const total = updatedData.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const updatedQuote: Quote = {
-      ...previewQuote,
+    await updateQuote(previewQuote.id, {
       lineItems: updatedData.lineItems,
       taxRate: updatedData.taxRate,
       termsAndConditions: updatedData.termsAndConditions,
       date: updatedData.date,
       validUntil: updatedData.dueDate,
-      total: total * (1 + updatedData.taxRate / 100),
       description: updatedData.description,
-    };
-
-    setQuotes(quotes.map(q => q.id === updatedQuote.id ? updatedQuote : q));
-    setPreviewQuote(updatedQuote);
+    });
   };
 
   const formatDisplayDate = (dateStr: string) => {
@@ -306,14 +152,10 @@ export default function Quotes() {
       <Header 
         title="Quotes" 
         subtitle="Create and manage your quotations"
-        action={{
-          label: 'New Quote',
-          onClick: () => setIsOpen(true),
-        }}
+        action={{ label: 'New Quote', onClick: () => setIsOpen(true) }}
       />
       
       <div className="p-6">
-        {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           {[
             { label: 'Total Quotes', value: quotes.length.toString(), color: 'text-primary' },
@@ -321,141 +163,101 @@ export default function Quotes() {
             { label: 'Accepted', value: quotes.filter(q => q.status === 'accepted').length.toString(), color: 'text-success' },
             { label: 'Rejected', value: quotes.filter(q => q.status === 'rejected').length.toString(), color: 'text-destructive' },
           ].map((stat, index) => (
-            <div 
-              key={stat.label}
-              className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
+            <div key={stat.label} className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
               <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>
-                {stat.value}
-              </p>
+              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>{stat.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Quotes Table */}
         <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/50">
-                <TableHead className="font-semibold">Quote</TableHead>
-                <TableHead className="font-semibold">Client</TableHead>
-                <TableHead className="font-semibold">Date</TableHead>
-                <TableHead className="font-semibold">Valid Until</TableHead>
-                <TableHead className="font-semibold text-right">Amount</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {quotes.map((quote, index) => (
-                <TableRow 
-                  key={quote.id}
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className="font-medium">{quote.quoteNumber}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{quote.clientName}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDisplayDate(quote.date)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDisplayDate(quote.validUntil)}</TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatMaluti(quote.total)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>
-                      {quote.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleViewQuote(quote)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Send className="h-4 w-4 mr-2" />
-                          Send
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        {quote.status === 'accepted' && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleConvertToInvoice(quote)}
-                              className="text-success"
-                            >
-                              <Receipt className="h-4 w-4 mr-2" />
-                              Convert to Invoice
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          ) : quotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <FileText className="h-12 w-12 mb-4" />
+              <p className="text-lg font-medium">No quotes yet</p>
+              <p className="text-sm">Create your first quote to get started</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50">
+                  <TableHead className="font-semibold">Quote</TableHead>
+                  <TableHead className="font-semibold">Client</TableHead>
+                  <TableHead className="font-semibold">Date</TableHead>
+                  <TableHead className="font-semibold">Valid Until</TableHead>
+                  <TableHead className="font-semibold text-right">Amount</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {quotes.map((quote, index) => (
+                  <TableRow key={quote.id} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <span className="font-medium">{quote.quoteNumber}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{quote.clientName}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDisplayDate(quote.date)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDisplayDate(quote.validUntil)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatMaluti(quote.total)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>{quote.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                          <DropdownMenuItem><Send className="h-4 w-4 mr-2" />Send</DropdownMenuItem>
+                          <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
+                          {quote.status === 'accepted' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
+                                <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteQuote(quote.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
-      {/* New Quote Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display">Create New Quote</DialogTitle>
-          </DialogHeader>
-          
+          <DialogHeader><DialogTitle className="font-display">Create New Quote</DialogTitle></DialogHeader>
           <div className="grid gap-6 py-4">
-            {/* Quote Number */}
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <Label>Quote Number</Label>
-                <div className="mt-1 text-lg font-semibold text-primary">
-                  {generateQuoteNumber()}
-                </div>
+                <div className="mt-1 text-lg font-semibold text-primary">Auto-generated</div>
               </div>
               <div className="flex-1">
                 <Label htmlFor="validity">Valid for (days)</Label>
-                <Input
-                  id="validity"
-                  type="number"
-                  value={validityDays}
-                  onChange={(e) => setValidityDays(parseInt(e.target.value) || 30)}
-                  className="mt-1"
-                />
+                <Input id="validity" type="number" value={validityDays} onChange={(e) => setValidityDays(parseInt(e.target.value) || 30)} className="mt-1" />
               </div>
             </div>
-
-            {/* Client Selection */}
             <div>
               <Label>Select Client Organisation</Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Choose a client..." />
-                </SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a client..." /></SelectTrigger>
                 <SelectContent>
                   {clients.map(client => (
                     <SelectItem key={client.id} value={client.id}>
@@ -468,97 +270,47 @@ export default function Quotes() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Line Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>Line Items</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Item
-                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={addLineItem}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
               </div>
-              
               <div className="space-y-3">
-                {lineItems.map((item, index) => (
+                {lineItems.map((item) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
-                    <div className="col-span-6">
-                      <Input
-                        placeholder="Description"
-                        value={item.description}
-                        onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-3">
-                      <Input
-                        type="number"
-                        placeholder="Unit Price"
-                        value={item.unitPrice}
-                        onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-1 flex justify-center">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeLineItem(item.id)}
-                        disabled={lineItems.length === 1}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <div className="col-span-6"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
+                    <div className="col-span-2"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} /></div>
+                    <div className="col-span-3"><Input type="number" placeholder="Unit Price" value={item.unitPrice} onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} /></div>
+                    <div className="col-span-1 flex justify-center"><Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button></div>
                   </div>
                 ))}
               </div>
-
-              {/* Total */}
               <div className="flex justify-end mt-4 pt-4 border-t border-border">
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-2xl font-display font-semibold text-primary">
-                    M{calculateTotal().toLocaleString()}
-                  </p>
+                  <p className="text-2xl font-display font-semibold text-primary">M{calculateTotal().toLocaleString()}</p>
                 </div>
               </div>
             </div>
           </div>
-
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCreateQuote}
-              disabled={!selectedClientId || lineItems.every(item => !item.description)}
-            >
-              Create Quote
-            </Button>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateQuote} disabled={!selectedClientId || lineItems.every(item => !item.description)}>Create Quote</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Quote Preview */}
       {previewQuote && (
         <QuotePreview
           quoteData={{
             quoteNumber: previewQuote.quoteNumber,
             date: previewQuote.date,
             dueDate: previewQuote.validUntil,
-            client: clients.find(c => c.id === previewQuote.clientId) || null,
+            client: clients.find(c => c.id === previewQuote.clientId) ? { id: previewQuote.clientId!, company: previewQuote.clientName, contactPerson: '', email: '' } : null,
             lineItems: previewQuote.lineItems,
             taxRate: previewQuote.taxRate,
-            termsAndConditions: previewQuote.termsAndConditions,
-            description: previewQuote.description,
+            termsAndConditions: previewQuote.termsAndConditions || '',
+            description: previewQuote.description || undefined,
           }}
           onUpdate={handleUpdateQuote}
           onClose={() => setPreviewQuote(null)}
