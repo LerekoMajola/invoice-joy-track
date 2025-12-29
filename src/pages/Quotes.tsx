@@ -57,6 +57,7 @@ export default function Quotes() {
   const { clients } = useClients();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [quoteDescription, setQuoteDescription] = useState('');
   const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number }[]>([
     { id: '1', description: '', quantity: 1, unitPrice: 0 }
   ]);
@@ -118,11 +119,13 @@ export default function Quotes() {
       status: 'draft',
       taxRate: defaultTaxRate,
       termsAndConditions: defaultTerms,
+      description: quoteDescription || undefined,
       lineItems: lineItems.map(({ description, quantity, unitPrice }) => ({ description, quantity, unitPrice })),
     });
 
     setIsOpen(false);
     setSelectedClientId('');
+    setQuoteDescription('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0 }]);
   };
 
@@ -269,6 +272,17 @@ export default function Quotes() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="description">Quote Description</Label>
+              <Input 
+                id="description" 
+                placeholder="e.g., Laptop Supply, Website Development, etc."
+                value={quoteDescription}
+                onChange={(e) => setQuoteDescription(e.target.value)}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Brief description of what this quote is for</p>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
