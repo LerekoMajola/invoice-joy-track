@@ -106,6 +106,11 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
   const getCompanyDetails = () => {
     if (!profile) return 'Company Name\nAddress\nPhone\nEmail';
     
+    // Use header_info if available, otherwise fall back to individual fields
+    if (profile.header_info) {
+      return profile.header_info;
+    }
+    
     const lines = [profile.company_name];
     if (profile.address_line_1) lines.push(profile.address_line_1);
     if (profile.address_line_2) lines.push(profile.address_line_2);

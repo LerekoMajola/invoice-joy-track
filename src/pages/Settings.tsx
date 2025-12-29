@@ -44,6 +44,7 @@ export default function Settings() {
     template_font_url: null,
     template_header_style: 'classic',
     template_table_style: 'striped',
+    header_info: '',
   });
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +85,7 @@ export default function Settings() {
         template_font_url: profile.template_font_url,
         template_header_style: profile.template_header_style || 'classic',
         template_table_style: profile.template_table_style || 'striped',
+        header_info: profile.header_info || '',
       });
     }
   }, [profile]);
@@ -155,39 +157,20 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Company Name & Logo Row */}
+            {/* Top Information & Logo Row */}
             <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company_name">Company Name *</Label>
-                  <Input
-                    id="company_name"
-                    value={formData.company_name || ''}
-                    onChange={(e) => handleChange('company_name', e.target.value)}
-                    placeholder="Your Company Name"
-                  />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="registration_number">Registration Number</Label>
-                    <Input
-                      id="registration_number"
-                      value={formData.registration_number || ''}
-                      onChange={(e) => handleChange('registration_number', e.target.value)}
-                      placeholder="Company registration number"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="vat_number">VAT Number</Label>
-                    <Input
-                      id="vat_number"
-                      value={formData.vat_number || ''}
-                      onChange={(e) => handleChange('vat_number', e.target.value)}
-                      placeholder="VAT registration number"
-                      disabled={!formData.vat_enabled}
-                    />
-                  </div>
-                </div>
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="header_info">Top Information</Label>
+                <Textarea
+                  id="header_info"
+                  value={formData.header_info || ''}
+                  onChange={(e) => handleChange('header_info', e.target.value)}
+                  placeholder={`LEEKAY GROUP OF COMPANIES\nIBR NO: IBR79926\nTIN NO: 200127017-8\nPHYSICAL ADDRESS: MASERU EAST,\nHA MAKOTOKO, MASERU, LESOTHO\nTEL: +266 58335233,\nEMAIL: leekaygroupofcompanies@gmail.com`}
+                  className="min-h-[180px] font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your company header exactly as you want it to appear on documents
+                </p>
               </div>
               
               {/* Logo */}
@@ -246,99 +229,6 @@ export default function Settings() {
                     </p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                Address
-              </h4>
-              <div className="space-y-2">
-                <Label htmlFor="address_line_1">Address Line 1</Label>
-                <Input
-                  id="address_line_1"
-                  value={formData.address_line_1 || ''}
-                  onChange={(e) => handleChange('address_line_1', e.target.value)}
-                  placeholder="Street address"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address_line_2">Address Line 2</Label>
-                <Input
-                  id="address_line_2"
-                  value={formData.address_line_2 || ''}
-                  onChange={(e) => handleChange('address_line_2', e.target.value)}
-                  placeholder="Apartment, suite, etc. (optional)"
-                />
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city || ''}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postal_code">Postal Code</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code || ''}
-                    onChange={(e) => handleChange('postal_code', e.target.value)}
-                    placeholder="Postal code"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country || ''}
-                    onChange={(e) => handleChange('country', e.target.value)}
-                    placeholder="Country"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Details */}
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="text-sm font-medium flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                Contact Details
-              </h4>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone || ''}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                    placeholder="+266 XXXX XXXX"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                    placeholder="company@example.com"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={formData.website || ''}
-                  onChange={(e) => handleChange('website', e.target.value)}
-                  placeholder="https://www.example.com"
-                />
               </div>
             </div>
           </CardContent>
