@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Download, Plus, X, Pencil, Save, Palette } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
 import {
   Popover,
@@ -396,11 +397,11 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                           className="w-24 h-8 text-sm text-right border-dashed ml-auto"
                         />
                       ) : (
-                        `M${item.unitPrice.toFixed(2)}`
+                        formatMaluti(item.unitPrice)
                       )}
                     </td>
                     <td className="py-3 px-4 text-sm text-right">
-                      M{(item.quantity * item.unitPrice).toFixed(2)}
+                      {formatMaluti(item.quantity * item.unitPrice)}
                     </td>
                     {isEditing && (
                       <td className="py-3 px-2">
@@ -435,7 +436,7 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
             <div className="w-64 border-t border-gray-200 pt-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Subtotal</span>
-                <span className="text-sm text-gray-900">M{calculateSubtotal().toFixed(2)}</span>
+                <span className="text-sm text-gray-900">{formatMaluti(calculateSubtotal())}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
@@ -455,11 +456,11 @@ export function QuotePreview({ quoteData, onUpdate, onClose }: QuotePreviewProps
                     {isEditing ? '%)' : `(${data.taxRate}%)`}
                   </span>
                 </div>
-                <span className="text-sm text-gray-900">M{calculateTax().toFixed(2)}</span>
+                <span className="text-sm text-gray-900">{formatMaluti(calculateTax())}</span>
               </div>
               <div className="flex justify-between border-t border-gray-200 pt-2">
                 <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Total (M)</span>
-                <span className="text-lg font-bold" style={{ color: selectedTemplate.primaryColor }}>M{calculateTotal().toFixed(2)}</span>
+                <span className="text-lg font-bold" style={{ color: selectedTemplate.primaryColor }}>{formatMaluti(calculateTotal())}</span>
               </div>
             </div>
           </div>
