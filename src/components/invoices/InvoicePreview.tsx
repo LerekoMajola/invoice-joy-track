@@ -417,10 +417,9 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
         {/* Banking Details */}
         {hasBankingDetails && (
           <div 
-            className="mb-3 py-2 px-3 rounded border"
+            className="mb-3 py-2 px-3 rounded"
             style={{ 
               backgroundColor: secondaryColor,
-              borderColor: primaryColor,
             }}
           >
             <h3 
@@ -479,33 +478,6 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
           </div>
         )}
 
-        {/* Signature Section */}
-        <div className="flex justify-between mt-12 pt-8 border-t" style={{ borderColor: '#e5e5e5' }}>
-          {/* Authorized Signature */}
-          <div className="w-64">
-            <p className="text-xs uppercase tracking-wider mb-4" style={{ color: accentColor }}>
-              Authorized Signature
-            </p>
-            {profile?.signature_url ? (
-              <img 
-                src={profile.signature_url} 
-                alt="Signature" 
-                className="h-12 w-auto object-contain mb-2"
-              />
-            ) : (
-              <div className="h-12 border-b-2" style={{ borderColor: primaryColor }}></div>
-            )}
-          </div>
-
-          {/* Customer Signature */}
-          <div className="w-64">
-            <p className="text-xs uppercase tracking-wider mb-4" style={{ color: accentColor }}>
-              Customer Signature
-            </p>
-            <div className="h-12 border-b-2" style={{ borderColor: primaryColor }}></div>
-            <p className="text-xs mt-2" style={{ color: accentColor }}>Date: _____________</p>
-          </div>
-        </div>
 
         {/* Footer */}
         <div className="mt-8 pt-4 text-center border-t" style={{ borderColor: '#e5e5e5' }}>
