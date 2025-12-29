@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -140,8 +140,39 @@ const statusStyles = {
 };
 
 export default function Invoices() {
+  const [invoicesList, setInvoicesList] = useState<Invoice[]>(invoices);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Check for new invoice from quote conversion
+  useEffect(() => {
+    const newInvoiceData = sessionStorage.getItem('newInvoiceFromQuote');
+    if (newInvoiceData) {
+      const data = JSON.parse(newInvoiceData);
+      const subtotal = data.lineItems.reduce((sum: number, item: LineItem) => sum + (item.quantity * item.unitPrice), 0);
+      const total = subtotal * (1 + data.taxRate / 100);
+      
+      const newInvoice: Invoice = {
+        id: Date.now().toString(),
+        invoiceNumber: data.invoiceNumber,
+        sourceQuoteNumber: data.sourceQuoteNumber,
+        clientName: data.clientName,
+        clientAddress: data.clientAddress,
+        date: data.date,
+        dueDate: data.dueDate,
+        description: data.description,
+        lineItems: data.lineItems,
+        taxRate: data.taxRate,
+        total,
+        status: 'draft',
+      };
+      
+      setInvoicesList(prev => [newInvoice, ...prev]);
+      setSelectedInvoice(newInvoice);
+      setPreviewOpen(true);
+      sessionStorage.removeItem('newInvoiceFromQuote');
+    }
+  }, []);
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
@@ -196,7 +227,7 @@ export default function Invoices() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((invoice, index) => (
+              {invoicesList.map((invoice, index) => (
                 <TableRow 
                   key={invoice.id}
                   className="animate-slide-up cursor-pointer hover:bg-muted/50"

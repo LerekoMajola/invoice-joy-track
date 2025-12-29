@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -26,17 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { toast } from 'sonner';
 
 interface Client {
   id: string;
@@ -166,6 +169,7 @@ const statusStyles = {
 };
 
 export default function Quotes() {
+  const navigate = useNavigate();
   const { profile } = useCompanyProfile();
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [isOpen, setIsOpen] = useState(false);
@@ -179,6 +183,36 @@ export default function Quotes() {
   // Get default tax rate and terms from company profile
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
   const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
+
+  const handleConvertToInvoice = (quote: Quote) => {
+    const client = clients.find(c => c.id === quote.clientId);
+    
+    // Generate invoice number from quote number
+    const invoiceNumber = quote.quoteNumber.replace('QT-', 'INV-');
+    
+    // Calculate due date (30 days from today)
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 30);
+    
+    // Create invoice data and store in sessionStorage for the Invoices page to pick up
+    const invoiceData = {
+      invoiceNumber,
+      sourceQuoteNumber: quote.quoteNumber,
+      clientName: quote.clientName,
+      clientAddress: client?.address || '',
+      date: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      dueDate: dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      description: quote.description || '',
+      lineItems: quote.lineItems,
+      taxRate: quote.taxRate,
+      status: 'draft' as const,
+    };
+    
+    sessionStorage.setItem('newInvoiceFromQuote', JSON.stringify(invoiceData));
+    toast.success(`Invoice ${invoiceNumber} created from ${quote.quoteNumber}`);
+    navigate('/invoices');
+  };
 
   const generateQuoteNumber = () => {
     const lastQuote = quotes.reduce((max, quote) => {
@@ -360,6 +394,19 @@ export default function Quotes() {
                           <Copy className="h-4 w-4 mr-2" />
                           Duplicate
                         </DropdownMenuItem>
+                        {quote.status === 'accepted' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleConvertToInvoice(quote)}
+                              className="text-success"
+                            >
+                              <Receipt className="h-4 w-4 mr-2" />
+                              Convert to Invoice
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
