@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Printer, Pencil, Save } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Download, Printer, Pencil, Save, Send, CheckCircle, Truck } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
 import html2pdf from 'html2pdf.js';
@@ -29,11 +30,14 @@ interface InvoiceData {
 
 interface InvoicePreviewProps {
   invoice: InvoiceData;
+  hasDeliveryNote?: boolean;
   onUpdate?: (data: InvoiceData) => void;
+  onStatusChange?: (status: InvoiceData['status']) => void;
+  onGenerateDeliveryNote?: () => void;
   onClose?: () => void;
 }
 
-export function InvoicePreview({ invoice, onUpdate, onClose }: InvoicePreviewProps) {
+export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusChange, onGenerateDeliveryNote, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
@@ -139,7 +143,7 @@ export function InvoicePreview({ invoice, onUpdate, onClose }: InvoicePreviewPro
     <div className="space-y-4">
       {/* Action Buttons */}
       <div className="flex justify-between items-center print:hidden">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {isEditing ? (
             <Button onClick={handleSave} size="sm">
               <Save className="h-4 w-4 mr-2" />
@@ -150,6 +154,49 @@ export function InvoicePreview({ invoice, onUpdate, onClose }: InvoicePreviewPro
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </Button>
+          )}
+          
+          {/* Status Actions */}
+          {onStatusChange && invoiceData.status === 'draft' && (
+            <Button 
+              onClick={() => onStatusChange('sent')} 
+              variant="outline" 
+              size="sm"
+              className="gap-2 text-info border-info/30 hover:bg-info/10"
+            >
+              <Send className="h-4 w-4" />
+              Mark as Sent
+            </Button>
+          )}
+          {onStatusChange && invoiceData.status === 'sent' && (
+            <Button 
+              onClick={() => onStatusChange('paid')} 
+              variant="outline" 
+              size="sm"
+              className="gap-2 text-success border-success/30 hover:bg-success/10"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Mark as Paid
+            </Button>
+          )}
+          
+          {/* Generate Delivery Note */}
+          {onGenerateDeliveryNote && !hasDeliveryNote && (invoiceData.status === 'sent' || invoiceData.status === 'paid') && (
+            <Button 
+              onClick={onGenerateDeliveryNote} 
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <Truck className="h-4 w-4" />
+              Generate Delivery Note
+            </Button>
+          )}
+          {hasDeliveryNote && (
+            <Badge variant="outline" className="gap-2 px-3 py-1.5 bg-success/10 text-success border-success/20">
+              <Truck className="h-4 w-4" />
+              Delivery Note Created
+            </Badge>
           )}
         </div>
         <div className="flex gap-2">
