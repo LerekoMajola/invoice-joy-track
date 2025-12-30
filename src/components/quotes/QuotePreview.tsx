@@ -501,26 +501,28 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
                 <span className="text-sm text-gray-600">Subtotal</span>
                 <span className="text-sm text-gray-900">{formatMaluti(calculateSubtotal())}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-gray-600">Sales Tax</span>
-                  {isEditing ? (
-                    <span className="text-sm text-gray-600">(</span>
-                  ) : null}
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={data.taxRate}
-                      onChange={(e) => setData({ ...data, taxRate: parseFloat(e.target.value) || 0 })}
-                      className="w-12 h-6 text-xs text-center border-dashed p-1"
-                    />
-                  ) : null}
-                  <span className="text-sm text-gray-600">
-                    {isEditing ? '%)' : `(${data.taxRate}%)`}
-                  </span>
+              {data.taxRate > 0 && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-600">VAT</span>
+                    {isEditing ? (
+                      <span className="text-sm text-gray-600">(</span>
+                    ) : null}
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={data.taxRate}
+                        onChange={(e) => setData({ ...data, taxRate: parseFloat(e.target.value) || 0 })}
+                        className="w-12 h-6 text-xs text-center border-dashed p-1"
+                      />
+                    ) : null}
+                    <span className="text-sm text-gray-600">
+                      {isEditing ? '%)' : `(${data.taxRate}%)`}
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-900">{formatMaluti(calculateTax())}</span>
                 </div>
-                <span className="text-sm text-gray-900">{formatMaluti(calculateTax())}</span>
-              </div>
+              )}
               <div className="flex justify-between border-t border-gray-200 pt-2">
                 <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Total (M)</span>
                 <span className="text-lg font-bold" style={{ color: selectedTemplate.primaryColor }}>{formatMaluti(calculateTotal())}</span>
