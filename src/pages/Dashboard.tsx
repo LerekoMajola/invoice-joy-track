@@ -57,6 +57,9 @@ export default function Dashboard() {
       />
       
       <div className="p-6 space-y-6">
+        {/* Tender Source Links - Top Priority */}
+        <TenderSourceLinks />
+
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -108,9 +111,6 @@ export default function Dashboard() {
             isLoading={isLoading}
           />
         </div>
-
-        {/* Tender Source Links */}
-        <TenderSourceLinks />
 
         {/* Tenders Section */}
         <TendersList />
