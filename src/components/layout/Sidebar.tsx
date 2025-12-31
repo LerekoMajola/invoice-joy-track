@@ -35,7 +35,9 @@ export function Sidebar() {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center px-4 border-b border-sidebar-border">
-          <img src={leekayLogo} alt="Leekay" className="h-8 w-auto" />
+          <div className="bg-white rounded-lg px-3 py-1.5">
+            <img src={leekayLogo} alt="Leekay" className="h-7 w-auto" />
+          </div>
         </div>
 
         {/* Navigation */}
