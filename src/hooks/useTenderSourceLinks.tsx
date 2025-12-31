@@ -21,13 +21,15 @@ export interface TenderSourceLinkInput {
 }
 
 export function useTenderSourceLinks() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: links = [], isLoading } = useQuery({
     queryKey: ['tender-source-links', user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      // Verify session is valid before querying
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) throw new Error('Session expired');
       
       const { data, error } = await supabase
         .from('tender_source_links')
@@ -37,17 +39,21 @@ export function useTenderSourceLinks() {
       if (error) throw error;
       return data as TenderSourceLink[];
     },
-    enabled: !!user,
+    enabled: !!user && !!session,
   });
 
   const createLink = useMutation({
     mutationFn: async (input: TenderSourceLinkInput) => {
-      if (!user) throw new Error('Not authenticated');
+      // Get fresh session to ensure we have valid auth
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user) {
+        throw new Error('Please log in again to continue');
+      }
 
       const { data, error } = await supabase
         .from('tender_source_links')
         .insert({
-          user_id: user.id,
+          user_id: currentSession.user.id,
           name: input.name,
           url: input.url,
           description: input.description || null,
