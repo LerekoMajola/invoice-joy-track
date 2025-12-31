@@ -8,12 +8,12 @@ import {
   CheckSquare, 
   Briefcase,
   LogOut,
-  FileSpreadsheet,
   Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import leekayLogo from '@/assets/leekay-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -34,13 +34,8 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary">
-            <FileSpreadsheet className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-lg font-semibold text-sidebar-foreground">
-            BizFlow
-          </span>
+        <div className="flex h-16 items-center px-4 border-b border-sidebar-border">
+          <img src={leekayLogo} alt="Leekay" className="h-8 w-auto" />
         </div>
 
         {/* Navigation */}
