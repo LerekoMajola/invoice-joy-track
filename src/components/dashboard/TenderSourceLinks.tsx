@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExternalLink, Plus, Pencil, Trash2, Link2 } from 'lucide-react';
+import { ExternalLink, Plus, Pencil, Trash2, Link2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,9 +23,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useTenderSourceLinks, TenderSourceLink, TenderSourceLinkInput } from '@/hooks/useTenderSourceLinks';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 export function TenderSourceLinks() {
-  const { links, isLoading, createLink, updateLink, deleteLink } = useTenderSourceLinks();
+  const { links, isLoading, createLink, updateLink, deleteLink, visitLink } = useTenderSourceLinks();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<TenderSourceLink | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -121,60 +122,73 @@ export function TenderSourceLinks() {
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {links.map((link) => (
-              <div
-                key={link.id}
-                className="group relative flex flex-col p-4 rounded-lg border border-border bg-background hover:border-primary/50 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 min-w-0"
-                  >
-                    <h4 className="font-medium text-foreground truncate hover:text-primary transition-colors">
-                      {link.name}
-                    </h4>
-                  </a>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary shrink-0"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+            {links.map((link) => {
+              const handleLinkClick = () => {
+                visitLink.mutate(link.id);
+                window.open(link.url, '_blank', 'noopener,noreferrer');
+              };
+
+              return (
+                <div
+                  key={link.id}
+                  className="group relative flex flex-col p-4 rounded-lg border border-border bg-background hover:border-primary/50 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={handleLinkClick}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <h4 className="font-medium text-foreground truncate hover:text-primary transition-colors">
+                        {link.name}
+                      </h4>
+                    </button>
+                    <button
+                      onClick={handleLinkClick}
+                      className="text-muted-foreground hover:text-primary shrink-0"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  {link.description && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {link.description}
+                    </p>
+                  )}
+
+                  {/* Last visited indicator */}
+                  <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {link.last_visited_at ? (
+                      <span>Visited {formatDistanceToNow(new Date(link.last_visited_at), { addSuffix: true })}</span>
+                    ) : (
+                      <span>Never visited</span>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-1 mt-auto pt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => openEditDialog(link)}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteConfirmId(link.id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                
-                {link.description && (
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {link.description}
-                  </p>
-                )}
-                
-                <div className="flex gap-1 mt-auto pt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2"
-                    onClick={() => openEditDialog(link)}
-                  >
-                    <Pencil className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-destructive hover:text-destructive"
-                    onClick={() => setDeleteConfirmId(link.id)}
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -11,6 +11,7 @@ export interface TenderSourceLink {
   description: string | null;
   created_at: string;
   updated_at: string;
+  last_visited_at: string | null;
 }
 
 export interface TenderSourceLinkInput {
@@ -109,11 +110,26 @@ export function useTenderSourceLinks() {
     },
   });
 
+  const visitLink = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('tender_source_links')
+        .update({ last_visited_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tender-source-links'] });
+    },
+  });
+
   return {
     links,
     isLoading,
     createLink,
     updateLink,
     deleteLink,
+    visitLink,
   };
 }
