@@ -4,6 +4,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { UpcomingTasks } from '@/components/dashboard/UpcomingTasks';
 import { TendersList } from '@/components/dashboard/TendersList';
+import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -107,6 +108,9 @@ export default function Dashboard() {
             isLoading={isLoading}
           />
         </div>
+
+        {/* Tender Source Links */}
+        <TenderSourceLinks />
 
         {/* Tenders Section */}
         <TendersList />
