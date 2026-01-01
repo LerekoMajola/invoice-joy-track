@@ -36,11 +36,16 @@ export interface CompanyProfile {
   template_header_style: string | null;
   template_table_style: string | null;
   header_info: string | null;
+  tax_clearance_url: string | null;
+  tax_clearance_expiry_date: string | null;
+  business_id_url: string | null;
+  company_profile_doc_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type CompanyProfileInput = Omit<CompanyProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type DocumentType = 'logo' | 'signature' | 'tax-clearance' | 'business-id' | 'company-profile-doc';
 
 export function useCompanyProfile() {
   const { user } = useAuth();
@@ -112,7 +117,7 @@ export function useCompanyProfile() {
     },
   });
 
-  const uploadAsset = async (file: File, type: 'logo' | 'signature'): Promise<string | null> => {
+  const uploadAsset = async (file: File, type: DocumentType): Promise<string | null> => {
     if (!user?.id) return null;
 
     const fileExt = file.name.split('.').pop();

@@ -7,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { useCompanyProfile, CompanyProfileInput } from '@/hooks/useCompanyProfile';
+import { Badge } from '@/components/ui/badge';
+import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/useCompanyProfile';
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
-import { Building2, MapPin, Phone, CreditCard, FileText, Upload, X, Loader2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, differenceInDays, isPast, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, CalendarIcon, FileCheck, Briefcase, FileUser, ExternalLink } from 'lucide-react';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
@@ -45,13 +50,23 @@ export default function Settings() {
     template_header_style: 'classic',
     template_table_style: 'striped',
     header_info: '',
+    tax_clearance_url: null,
+    tax_clearance_expiry_date: null,
+    business_id_url: null,
+    company_profile_doc_url: null,
   });
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
+  const taxClearanceInputRef = useRef<HTMLInputElement>(null);
+  const businessIdInputRef = useRef<HTMLInputElement>(null);
+  const companyProfileDocInputRef = useRef<HTMLInputElement>(null);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [isUploadingTaxClearance, setIsUploadingTaxClearance] = useState(false);
+  const [isUploadingBusinessId, setIsUploadingBusinessId] = useState(false);
+  const [isUploadingCompanyProfileDoc, setIsUploadingCompanyProfileDoc] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -86,6 +101,10 @@ export default function Settings() {
         template_header_style: profile.template_header_style || 'classic',
         template_table_style: profile.template_table_style || 'striped',
         header_info: profile.header_info || '',
+        tax_clearance_url: profile.tax_clearance_url,
+        tax_clearance_expiry_date: profile.tax_clearance_expiry_date,
+        business_id_url: profile.business_id_url,
+        company_profile_doc_url: profile.company_profile_doc_url,
       });
     }
   }, [profile]);
@@ -116,6 +135,40 @@ export default function Settings() {
       setFormData(prev => ({ ...prev, signature_url: url }));
     }
     setIsUploadingSignature(false);
+  };
+
+  const handleDocumentUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: DocumentType,
+    urlField: keyof CompanyProfileInput,
+    setUploading: (v: boolean) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const url = await uploadAsset(file, type);
+    if (url) {
+      setFormData(prev => ({ ...prev, [urlField]: url }));
+    }
+    setUploading(false);
+  };
+
+  const getExpiryStatus = (expiryDate: string | null | undefined) => {
+    if (!expiryDate) return null;
+    
+    const expiry = parseISO(expiryDate);
+    const daysRemaining = differenceInDays(expiry, new Date());
+    
+    if (isPast(expiry)) {
+      return { label: 'EXPIRED', variant: 'destructive' as const, className: 'bg-destructive text-destructive-foreground' };
+    } else if (daysRemaining <= 30) {
+      return { label: `Expires in ${daysRemaining} days`, variant: 'destructive' as const, className: 'bg-destructive/90 text-destructive-foreground' };
+    } else if (daysRemaining <= 60) {
+      return { label: `Expiring soon (${daysRemaining} days)`, variant: 'secondary' as const, className: 'bg-warning text-warning-foreground' };
+    } else {
+      return { label: 'Valid', variant: 'secondary' as const, className: 'bg-success text-success-foreground' };
+    }
   };
 
   const handleSave = () => {
@@ -454,6 +507,228 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Transparent PNG recommended
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company Documents */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-primary" />
+              Company Documents
+            </CardTitle>
+            <CardDescription>
+              Upload and manage your important company documents
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Tax Clearance Certificate */}
+            <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                  <FileCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100">Tax Clearance Certificate</h4>
+                {formData.tax_clearance_expiry_date && (
+                  <Badge className={cn('ml-auto', getExpiryStatus(formData.tax_clearance_expiry_date)?.className)}>
+                    {getExpiryStatus(formData.tax_clearance_expiry_date)?.label}
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 space-y-3">
+                  {formData.tax_clearance_url ? (
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-background border">
+                      <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">Tax Clearance Certificate</p>
+                        <p className="text-xs text-muted-foreground">Document uploaded</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={formData.tax_clearance_url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleChange('tax_clearance_url', null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-blue-200 dark:border-blue-800">
+                      <span className="text-sm text-muted-foreground">No document uploaded</span>
+                    </div>
+                  )}
+                  
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleDocumentUpload(e, 'tax-clearance', 'tax_clearance_url', setIsUploadingTaxClearance)}
+                    className="hidden"
+                    ref={taxClearanceInputRef}
+                    disabled={isUploadingTaxClearance}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={isUploadingTaxClearance}
+                    onClick={() => taxClearanceInputRef.current?.click()}
+                    className="w-full sm:w-auto"
+                  >
+                    {isUploadingTaxClearance ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</>
+                    ) : (
+                      <><Upload className="h-4 w-4 mr-2" />{formData.tax_clearance_url ? 'Replace' : 'Upload'}</>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="sm:w-48 space-y-2">
+                  <Label className="text-xs">Expiry Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.tax_clearance_expiry_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.tax_clearance_expiry_date 
+                          ? format(parseISO(formData.tax_clearance_expiry_date), 'PPP') 
+                          : 'Set expiry date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.tax_clearance_expiry_date ? parseISO(formData.tax_clearance_expiry_date) : undefined}
+                        onSelect={(date) => handleChange('tax_clearance_expiry_date', date ? format(date, 'yyyy-MM-dd') : null)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+
+            {/* Business ID */}
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
+                  <Briefcase className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h4 className="font-semibold text-emerald-900 dark:text-emerald-100">Business Registration / ID</h4>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.business_id_url ? (
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-background border">
+                    <FileText className="h-8 w-8 text-emerald-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Business Registration Certificate</p>
+                      <p className="text-xs text-muted-foreground">Document uploaded</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={formData.business_id_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleChange('business_id_url', null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-emerald-200 dark:border-emerald-800">
+                    <span className="text-sm text-muted-foreground">No document uploaded</span>
+                  </div>
+                )}
+                
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentUpload(e, 'business-id', 'business_id_url', setIsUploadingBusinessId)}
+                  className="hidden"
+                  ref={businessIdInputRef}
+                  disabled={isUploadingBusinessId}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isUploadingBusinessId}
+                  onClick={() => businessIdInputRef.current?.click()}
+                >
+                  {isUploadingBusinessId ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</>
+                  ) : (
+                    <><Upload className="h-4 w-4 mr-2" />{formData.business_id_url ? 'Replace' : 'Upload'}</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Company Profile Document */}
+            <div className="rounded-lg border border-purple-200 dark:border-purple-900 bg-purple-50/50 dark:bg-purple-950/20 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                  <FileUser className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h4 className="font-semibold text-purple-900 dark:text-purple-100">Company Profile Document</h4>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.company_profile_doc_url ? (
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-background border">
+                    <FileText className="h-8 w-8 text-purple-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Company Profile</p>
+                      <p className="text-xs text-muted-foreground">Document uploaded</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={formData.company_profile_doc_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleChange('company_profile_doc_url', null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-purple-200 dark:border-purple-800">
+                    <span className="text-sm text-muted-foreground">No document uploaded</span>
+                  </div>
+                )}
+                
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentUpload(e, 'company-profile-doc', 'company_profile_doc_url', setIsUploadingCompanyProfileDoc)}
+                  className="hidden"
+                  ref={companyProfileDocInputRef}
+                  disabled={isUploadingCompanyProfileDoc}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isUploadingCompanyProfileDoc}
+                  onClick={() => companyProfileDocInputRef.current?.click()}
+                >
+                  {isUploadingCompanyProfileDoc ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</>
+                  ) : (
+                    <><Upload className="h-4 w-4 mr-2" />{formData.company_profile_doc_url ? 'Replace' : 'Upload'}</>
+                  )}
+                </Button>
               </div>
             </div>
           </CardContent>

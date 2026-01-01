@@ -59,8 +59,10 @@ export type Database = {
           bank_branch_code: string | null
           bank_name: string | null
           bank_swift_code: string | null
+          business_id_url: string | null
           city: string | null
           company_name: string
+          company_profile_doc_url: string | null
           country: string | null
           created_at: string
           default_tax_rate: number | null
@@ -74,6 +76,8 @@ export type Database = {
           postal_code: string | null
           registration_number: string | null
           signature_url: string | null
+          tax_clearance_expiry_date: string | null
+          tax_clearance_url: string | null
           template_accent_color: string | null
           template_font_family: string | null
           template_font_url: string | null
@@ -95,8 +99,10 @@ export type Database = {
           bank_branch_code?: string | null
           bank_name?: string | null
           bank_swift_code?: string | null
+          business_id_url?: string | null
           city?: string | null
           company_name: string
+          company_profile_doc_url?: string | null
           country?: string | null
           created_at?: string
           default_tax_rate?: number | null
@@ -110,6 +116,8 @@ export type Database = {
           postal_code?: string | null
           registration_number?: string | null
           signature_url?: string | null
+          tax_clearance_expiry_date?: string | null
+          tax_clearance_url?: string | null
           template_accent_color?: string | null
           template_font_family?: string | null
           template_font_url?: string | null
@@ -131,8 +139,10 @@ export type Database = {
           bank_branch_code?: string | null
           bank_name?: string | null
           bank_swift_code?: string | null
+          business_id_url?: string | null
           city?: string | null
           company_name?: string
+          company_profile_doc_url?: string | null
           country?: string | null
           created_at?: string
           default_tax_rate?: number | null
@@ -146,6 +156,8 @@ export type Database = {
           postal_code?: string | null
           registration_number?: string | null
           signature_url?: string | null
+          tax_clearance_expiry_date?: string | null
+          tax_clearance_url?: string | null
           template_accent_color?: string | null
           template_font_family?: string | null
           template_font_url?: string | null
