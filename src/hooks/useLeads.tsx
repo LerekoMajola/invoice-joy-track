@@ -69,6 +69,42 @@ export function useLeads() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const checkForDuplicate = async (lead: LeadInsert, excludeId?: string) => {
+    if (!user) return null;
+
+    // Check by email
+    if (lead.email?.trim()) {
+      let query = supabase
+        .from('leads')
+        .select('id, name')
+        .ilike('email', lead.email.trim());
+      
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+      
+      const { data } = await query.maybeSingle();
+      if (data) return { field: 'email', existingLead: data };
+    }
+
+    // Check by phone
+    if (lead.phone?.trim()) {
+      let query = supabase
+        .from('leads')
+        .select('id, name')
+        .eq('phone', lead.phone.trim());
+      
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+      
+      const { data } = await query.maybeSingle();
+      if (data) return { field: 'phone', existingLead: data };
+    }
+
+    return null;
+  };
+
   const fetchLeads = async () => {
     if (!user) return;
     
@@ -99,6 +135,17 @@ export function useLeads() {
     if (!user) return null;
 
     try {
+      // Check for duplicates before inserting
+      const duplicateCheck = await checkForDuplicate(lead);
+      if (duplicateCheck) {
+        toast({
+          title: 'Duplicate Lead Found',
+          description: `A lead with this ${duplicateCheck.field} already exists: ${duplicateCheck.existingLead.name}`,
+          variant: 'destructive',
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('leads')
         .insert({
