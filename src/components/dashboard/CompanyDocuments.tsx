@@ -1,138 +1,126 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Building2, Shield, ExternalLink, Upload, Settings } from 'lucide-react';
+import { Shield, Briefcase, FileUser, Upload, ExternalLink, Plus, Settings } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useTaxClearances } from '@/hooks/useTaxClearances';
 import { Link } from 'react-router-dom';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { differenceInDays, isPast, parseISO } from 'date-fns';
 import { PdfThumbnail } from './PdfThumbnail';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DocumentCardProps {
   title: string;
   icon: React.ReactNode;
-  documentUrl: string | null | undefined;
-  accentColor: string;
+  isUploaded: boolean;
+  documentUrl?: string | null;
   expiryDate?: string | null;
+  accentColor: string;
+  activityName?: string;
 }
 
 function getExpiryStatus(expiryDate: string | null | undefined) {
   if (!expiryDate) return null;
   
   const expiry = parseISO(expiryDate);
-  const today = new Date();
-  const daysRemaining = differenceInDays(expiry, today);
+  const daysRemaining = differenceInDays(expiry, new Date());
   
-  if (daysRemaining < 0) {
-    return { label: 'EXPIRED', variant: 'destructive' as const, daysRemaining };
+  if (isPast(expiry)) {
+    return { label: 'Expired', variant: 'destructive' as const };
   } else if (daysRemaining <= 30) {
-    return { label: 'Expires Soon', variant: 'warning' as const, daysRemaining };
+    return { label: `${daysRemaining}d left`, variant: 'destructive' as const };
   } else if (daysRemaining <= 60) {
-    return { label: 'Expiring Soon', variant: 'secondary' as const, daysRemaining };
+    return { label: `${daysRemaining}d left`, variant: 'secondary' as const };
   } else {
-    return { label: 'Valid', variant: 'success' as const, daysRemaining };
+    return { label: 'Valid', variant: 'default' as const };
   }
 }
 
-function DocumentCard({ title, icon, documentUrl, accentColor, expiryDate }: DocumentCardProps) {
-  const expiryStatus = expiryDate ? getExpiryStatus(expiryDate) : null;
-  const isUploaded = !!documentUrl;
+function DocumentCard({ 
+  title, 
+  icon, 
+  isUploaded, 
+  documentUrl, 
+  expiryDate,
+  accentColor,
+  activityName
+}: DocumentCardProps) {
+  const expiryStatus = getExpiryStatus(expiryDate);
+
+  const handleViewDocument = () => {
+    if (documentUrl) {
+      window.open(documentUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
-    <Card className="overflow-hidden">
-      <div className={`h-2 ${accentColor}`} />
-      <CardContent className="pt-6 pb-4 flex flex-col items-center text-center space-y-4">
-        {isUploaded ? (
-          <PdfThumbnail url={documentUrl} className="w-32 h-40" />
+    <Card className="overflow-hidden min-w-[180px] max-w-[200px] flex-shrink-0">
+      <div className={`h-1.5 ${accentColor}`} />
+      <CardContent className="pt-4 pb-3 px-3 flex flex-col items-center text-center space-y-2">
+        {isUploaded && documentUrl ? (
+          <PdfThumbnail url={documentUrl} className="w-full h-28" />
         ) : (
-          <div className="w-32 h-40 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
+          <div className="w-full h-28 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
             {icon}
-            <Upload className="h-5 w-5 text-muted-foreground mt-2" />
+            <Upload className="h-4 w-4 text-muted-foreground mt-1" />
           </div>
         )}
         
-        <div className="space-y-1">
-          <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-            {title}
+        <div className="space-y-1 w-full">
+          <h3 className="font-medium text-xs uppercase tracking-wide text-muted-foreground truncate">
+            {activityName || title}
           </h3>
           
-          {isUploaded ? (
-            <div className="flex items-center justify-center gap-2 text-success">
-              <FileText className="h-4 w-4" />
-              <span className="text-sm font-medium">Uploaded</span>
-            </div>
-          ) : (
-            <span className="text-sm text-muted-foreground">Not uploaded</span>
-          )}
-        </div>
-
-        {expiryStatus && expiryDate && (
-          <div className="space-y-2">
-            <Badge 
-              variant={expiryStatus.daysRemaining < 0 ? 'destructive' : 'default'}
-              className={
-                expiryStatus.daysRemaining < 0 ? '' :
-                expiryStatus.daysRemaining <= 30 ? 'bg-warning text-warning-foreground' :
-                expiryStatus.daysRemaining <= 60 ? 'bg-secondary text-secondary-foreground' :
-                'bg-success text-success-foreground'
-              }
-            >
+          {expiryStatus && (
+            <Badge variant={expiryStatus.variant} className="text-[10px] px-1.5 py-0">
               {expiryStatus.label}
             </Badge>
-            <p className="text-xs text-muted-foreground">
-              Expires: {format(parseISO(expiryDate), 'dd MMM yyyy')}
-            </p>
-            {expiryStatus.daysRemaining >= 0 && (
-              <p className="text-xs text-muted-foreground">
-                ({expiryStatus.daysRemaining} days remaining)
-              </p>
-            )}
-          </div>
-        )}
-
-        {isUploaded ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full"
-            onClick={() => window.open(documentUrl, '_blank')}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Document
-          </Button>
-        ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full text-muted-foreground"
-            asChild
-          >
-            <Link to="/settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Upload in Settings
-            </Link>
-          </Button>
-        )}
+          )}
+          
+          {isUploaded ? (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="w-full text-xs h-7"
+              onClick={handleViewDocument}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              View
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="w-full text-xs h-7 text-muted-foreground"
+              asChild
+            >
+              <Link to="/settings">Upload</Link>
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 export function CompanyDocuments() {
-  const { profile, isLoading } = useCompanyProfile();
+  const { profile, isLoading: isProfileLoading } = useCompanyProfile();
+  const { taxClearances, isLoading: isTaxLoading } = useTaxClearances();
+
+  const isLoading = isProfileLoading || isTaxLoading;
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Company Documents
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex justify-between items-center">
+            <span>Company Documents</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+        <CardContent className="space-y-4">
+          <div className="flex gap-3 overflow-x-auto pb-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
+              <Skeleton key={i} className="h-48 w-44 flex-shrink-0" />
             ))}
           </div>
         </CardContent>
@@ -142,39 +130,78 @@ export function CompanyDocuments() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Company Documents
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex justify-between items-center">
+          <span>Company Documents</span>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/settings" className="text-muted-foreground hover:text-foreground">
+              <Settings className="h-4 w-4 mr-2" />
+              Manage
+            </Link>
+          </Button>
         </CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/settings" className="text-muted-foreground hover:text-foreground">
-            <Settings className="h-4 w-4 mr-2" />
-            Manage
-          </Link>
-        </Button>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
-          <DocumentCard
-            title="Tax Clearance"
-            icon={<Shield className="h-8 w-8 text-primary" />}
-            documentUrl={profile?.tax_clearance_url}
-            accentColor="bg-primary"
-            expiryDate={profile?.tax_clearance_expiry_date}
-          />
-          <DocumentCard
-            title="Business ID"
-            icon={<Building2 className="h-8 w-8 text-success" />}
-            documentUrl={profile?.business_id_url}
-            accentColor="bg-success"
-          />
-          <DocumentCard
-            title="Company Profile"
-            icon={<FileText className="h-8 w-8 text-info" />}
-            documentUrl={profile?.company_profile_doc_url}
-            accentColor="bg-info"
-          />
+      <CardContent className="space-y-4">
+        {/* Tax Clearances Section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              Tax Clearances ({taxClearances.length})
+            </h4>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+              <Link to="/settings">
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Link>
+            </Button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {taxClearances.length > 0 ? (
+              taxClearances.map((doc) => (
+                <DocumentCard
+                  key={doc.id}
+                  title="Tax Clearance"
+                  activityName={doc.activity_name}
+                  icon={<Shield className="h-6 w-6 text-blue-500" />}
+                  isUploaded={true}
+                  documentUrl={doc.document_url}
+                  expiryDate={doc.expiry_date}
+                  accentColor="bg-blue-500"
+                />
+              ))
+            ) : (
+              <div className="flex items-center justify-center h-32 w-full border-2 border-dashed rounded-lg bg-muted/30">
+                <div className="text-center text-muted-foreground">
+                  <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No tax clearances uploaded</p>
+                  <Button variant="link" size="sm" className="mt-1" asChild>
+                    <Link to="/settings">Add in Settings</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Other Documents */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground">Other Documents</h4>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            <DocumentCard
+              title="Business ID"
+              icon={<Briefcase className="h-6 w-6 text-emerald-500" />}
+              isUploaded={!!profile?.business_id_url}
+              documentUrl={profile?.business_id_url}
+              accentColor="bg-emerald-500"
+            />
+            <DocumentCard
+              title="Company Profile"
+              icon={<FileUser className="h-6 w-6 text-purple-500" />}
+              isUploaded={!!profile?.company_profile_doc_url}
+              documentUrl={profile?.company_profile_doc_url}
+              accentColor="bg-purple-500"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -7,14 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/useCompanyProfile';
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format, differenceInDays, isPast, parseISO } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, CalendarIcon, FileCheck, Briefcase, FileUser, ExternalLink } from 'lucide-react';
+import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink } from 'lucide-react';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
@@ -50,21 +46,17 @@ export default function Settings() {
     template_header_style: 'classic',
     template_table_style: 'striped',
     header_info: '',
-    tax_clearance_url: null,
-    tax_clearance_expiry_date: null,
     business_id_url: null,
     company_profile_doc_url: null,
   });
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
-  const taxClearanceInputRef = useRef<HTMLInputElement>(null);
   const businessIdInputRef = useRef<HTMLInputElement>(null);
   const companyProfileDocInputRef = useRef<HTMLInputElement>(null);
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
-  const [isUploadingTaxClearance, setIsUploadingTaxClearance] = useState(false);
   const [isUploadingBusinessId, setIsUploadingBusinessId] = useState(false);
   const [isUploadingCompanyProfileDoc, setIsUploadingCompanyProfileDoc] = useState(false);
 
@@ -101,8 +93,6 @@ export default function Settings() {
         template_header_style: profile.template_header_style || 'classic',
         template_table_style: profile.template_table_style || 'striped',
         header_info: profile.header_info || '',
-        tax_clearance_url: profile.tax_clearance_url,
-        tax_clearance_expiry_date: profile.tax_clearance_expiry_date,
         business_id_url: profile.business_id_url,
         company_profile_doc_url: profile.company_profile_doc_url,
       });
@@ -152,23 +142,6 @@ export default function Settings() {
       setFormData(prev => ({ ...prev, [urlField]: url }));
     }
     setUploading(false);
-  };
-
-  const getExpiryStatus = (expiryDate: string | null | undefined) => {
-    if (!expiryDate) return null;
-    
-    const expiry = parseISO(expiryDate);
-    const daysRemaining = differenceInDays(expiry, new Date());
-    
-    if (isPast(expiry)) {
-      return { label: 'EXPIRED', variant: 'destructive' as const, className: 'bg-destructive text-destructive-foreground' };
-    } else if (daysRemaining <= 30) {
-      return { label: `Expires in ${daysRemaining} days`, variant: 'destructive' as const, className: 'bg-destructive/90 text-destructive-foreground' };
-    } else if (daysRemaining <= 60) {
-      return { label: `Expiring soon (${daysRemaining} days)`, variant: 'secondary' as const, className: 'bg-warning text-warning-foreground' };
-    } else {
-      return { label: 'Valid', variant: 'secondary' as const, className: 'bg-success text-success-foreground' };
-    }
   };
 
   const handleSave = () => {
@@ -524,98 +497,18 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Tax Clearance Certificate */}
+            {/* Tax Clearance Certificates */}
             <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                   <FileCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h4 className="font-semibold text-blue-900 dark:text-blue-100">Tax Clearance Certificate</h4>
-                {formData.tax_clearance_expiry_date && (
-                  <Badge className={cn('ml-auto', getExpiryStatus(formData.tax_clearance_expiry_date)?.className)}>
-                    {getExpiryStatus(formData.tax_clearance_expiry_date)?.label}
-                  </Badge>
-                )}
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100">Tax Clearance Certificates</h4>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 space-y-3">
-                  {formData.tax_clearance_url ? (
-                    <div className="flex items-center gap-3 p-3 rounded-md bg-background border">
-                      <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">Tax Clearance Certificate</p>
-                        <p className="text-xs text-muted-foreground">Document uploaded</p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" asChild>
-                          <a href={formData.tax_clearance_url} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleChange('tax_clearance_url', null)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-blue-200 dark:border-blue-800">
-                      <span className="text-sm text-muted-foreground">No document uploaded</span>
-                    </div>
-                  )}
-                  
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => handleDocumentUpload(e, 'tax-clearance', 'tax_clearance_url', setIsUploadingTaxClearance)}
-                    className="hidden"
-                    ref={taxClearanceInputRef}
-                    disabled={isUploadingTaxClearance}
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={isUploadingTaxClearance}
-                    onClick={() => taxClearanceInputRef.current?.click()}
-                    className="w-full sm:w-auto"
-                  >
-                    {isUploadingTaxClearance ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</>
-                    ) : (
-                      <><Upload className="h-4 w-4 mr-2" />{formData.tax_clearance_url ? 'Replace' : 'Upload'}</>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="sm:w-48 space-y-2">
-                  <Label className="text-xs">Expiry Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.tax_clearance_expiry_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.tax_clearance_expiry_date 
-                          ? format(parseISO(formData.tax_clearance_expiry_date), 'PPP') 
-                          : 'Set expiry date'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.tax_clearance_expiry_date ? parseISO(formData.tax_clearance_expiry_date) : undefined}
-                        onSelect={(date) => handleChange('tax_clearance_expiry_date', date ? format(date, 'yyyy-MM-dd') : null)}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Upload tax clearance documents for different business activities
+              </p>
+              <TaxClearanceList />
             </div>
 
             {/* Business ID */}
