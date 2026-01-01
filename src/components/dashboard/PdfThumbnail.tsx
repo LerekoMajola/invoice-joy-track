@@ -58,9 +58,9 @@ export function PdfThumbnail({ url, className = '' }: PdfThumbnailProps) {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        // Render the page
+        // Render the page - pdfjs-dist v5 requires canvas parameter
         await page.render({
-          canvasContext: context,
+          canvas: canvas,
           viewport: viewport,
         }).promise;
 
