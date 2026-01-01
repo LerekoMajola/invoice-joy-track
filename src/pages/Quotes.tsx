@@ -73,8 +73,8 @@ export default function Quotes() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
-  const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number }[]>([
-    { id: '1', description: '', quantity: 1, unitPrice: 0 }
+  const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number }[]>([
+    { id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0 }
   ]);
   const [validityDays, setValidityDays] = useState(30);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
@@ -101,7 +101,7 @@ export default function Quotes() {
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0 }]);
+    setLineItems([...lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0, costPrice: 0 }]);
   };
 
   const removeLineItem = (id: string) => {
@@ -135,24 +135,35 @@ export default function Quotes() {
       taxRate: defaultTaxRate,
       termsAndConditions: defaultTerms,
       description: quoteDescription || undefined,
-      lineItems: lineItems.map(({ description, quantity, unitPrice }) => ({ description, quantity, unitPrice })),
+      lineItems: lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice })),
     });
 
     setIsOpen(false);
     setSelectedClientId('');
     setQuoteDescription('');
-    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0 }]);
+    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0 }]);
   };
 
   const handleViewQuote = (quote: Quote) => {
     setPreviewQuote(quote);
   };
 
-  const handleUpdateQuote = async (updatedData: { lineItems: LineItem[]; taxRate: number; termsAndConditions: string; date: string; dueDate: string; description?: string }) => {
+  const handleUpdateQuote = async (updatedData: { 
+    lineItems: LineItem[]; 
+    taxRate: number; 
+    termsAndConditions: string; 
+    date: string; 
+    dueDate: string; 
+    description?: string;
+    client?: { address?: string } | null;
+  }) => {
     if (!previewQuote) return;
     
     await updateQuote(previewQuote.id, {
-      lineItems: updatedData.lineItems,
+      lineItems: updatedData.lineItems.map(item => ({
+        ...item,
+        costPrice: item.costPrice || 0,
+      })),
       taxRate: updatedData.taxRate,
       termsAndConditions: updatedData.termsAndConditions,
       date: updatedData.date,
@@ -331,23 +342,75 @@ export default function Quotes() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Line Items</Label>
+                <div>
+                  <Label>Line Items</Label>
+                  <p className="text-xs text-muted-foreground">Cost price is internal only - never shown to clients</p>
+                </div>
                 <Button type="button" variant="outline" size="sm" onClick={addLineItem}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
               </div>
               <div className="space-y-3">
-                {lineItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
-                    <div className="col-span-6"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
-                    <div className="col-span-2"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} /></div>
-                    <div className="col-span-3"><Input type="number" placeholder="Unit Price" value={item.unitPrice} onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} /></div>
-                    <div className="col-span-1 flex justify-center"><Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button></div>
-                  </div>
-                ))}
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground mb-1">
+                  <div className="col-span-4">Description</div>
+                  <div className="col-span-1">Qty</div>
+                  <div className="col-span-2 text-amber-600">Cost Price</div>
+                  <div className="col-span-2">Sell Price</div>
+                  <div className="col-span-2 text-right">Margin</div>
+                  <div className="col-span-1"></div>
+                </div>
+                {lineItems.map((item) => {
+                  const lineProfit = (item.unitPrice - item.costPrice) * item.quantity;
+                  const lineMargin = item.unitPrice > 0 ? ((item.unitPrice - item.costPrice) / item.unitPrice) * 100 : 0;
+                  return (
+                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-4"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
+                      <div className="col-span-1"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} className="text-center" /></div>
+                      <div className="col-span-2"><Input type="number" placeholder="Cost" value={item.costPrice} onChange={(e) => updateLineItem(item.id, 'costPrice', parseFloat(e.target.value) || 0)} className="border-amber-200 bg-amber-50/50" /></div>
+                      <div className="col-span-2"><Input type="number" placeholder="Sell" value={item.unitPrice} onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} /></div>
+                      <div className="col-span-2 text-right">
+                        <span className={`text-sm font-medium ${lineMargin >= 25 ? 'text-emerald-600' : lineMargin >= 10 ? 'text-sky-600' : lineMargin > 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                          {lineMargin.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="col-span-1 flex justify-center"><Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button></div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex justify-end mt-4 pt-4 border-t border-border">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-2xl font-display font-semibold text-primary">M{calculateTotal().toLocaleString()}</p>
+              
+              {/* Profit Summary */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs font-medium text-muted-foreground">Internal Cost Summary</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total Cost:</span>
+                      <span className="font-medium text-rose-600">M{lineItems.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Est. Profit:</span>
+                      <span className="font-semibold text-emerald-600">
+                        M{(calculateTotal() - lineItems.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0)).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Margin:</span>
+                      <span className={`font-semibold ${
+                        calculateTotal() > 0 
+                          ? ((calculateTotal() - lineItems.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0)) / calculateTotal() * 100) >= 25 
+                            ? 'text-emerald-600' 
+                            : 'text-amber-600'
+                          : 'text-muted-foreground'
+                      }`}>
+                        {calculateTotal() > 0 
+                          ? ((calculateTotal() - lineItems.reduce((sum, item) => sum + (item.costPrice * item.quantity), 0)) / calculateTotal() * 100).toFixed(1) 
+                          : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col justify-center">
+                    <p className="text-sm text-muted-foreground">Client Total</p>
+                    <p className="text-2xl font-display font-semibold text-primary">M{calculateTotal().toLocaleString()}</p>
+                  </div>
                 </div>
               </div>
             </div>

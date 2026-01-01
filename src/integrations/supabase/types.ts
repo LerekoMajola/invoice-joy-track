@@ -252,6 +252,7 @@ export type Database = {
       }
       invoice_line_items: {
         Row: {
+          cost_price: number | null
           created_at: string
           description: string
           id: string
@@ -260,6 +261,7 @@ export type Database = {
           unit_price: number | null
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
           description: string
           id?: string
@@ -268,6 +270,7 @@ export type Database = {
           unit_price?: number | null
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
           description?: string
           id?: string
@@ -445,6 +448,7 @@ export type Database = {
       }
       quote_line_items: {
         Row: {
+          cost_price: number | null
           created_at: string
           description: string
           id: string
@@ -453,6 +457,7 @@ export type Database = {
           unit_price: number | null
         }
         Insert: {
+          cost_price?: number | null
           created_at?: string
           description: string
           id?: string
@@ -461,6 +466,7 @@ export type Database = {
           unit_price?: number | null
         }
         Update: {
+          cost_price?: number | null
           created_at?: string
           description?: string
           id?: string

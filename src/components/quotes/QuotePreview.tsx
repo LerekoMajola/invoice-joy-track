@@ -19,6 +19,7 @@ interface LineItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  costPrice: number;
 }
 
 interface Client {
@@ -142,7 +143,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
   const addLineItem = () => {
     setData({
       ...data,
-      lineItems: [...data.lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0 }]
+      lineItems: [...data.lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0, costPrice: 0 }]
     });
   };
 

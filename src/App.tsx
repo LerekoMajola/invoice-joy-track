@@ -13,6 +13,7 @@ import DeliveryNotes from "./pages/DeliveryNotes";
 import Tasks from "./pages/Tasks";
 import Tenders from "./pages/Tenders";
 import Settings from "./pages/Settings";
+import Profitability from "./pages/Profitability";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/delivery-notes" element={<ProtectedRoute><DeliveryNotes /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
           <Route path="/tenders" element={<ProtectedRoute><Tenders /></ProtectedRoute>} />
+          <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

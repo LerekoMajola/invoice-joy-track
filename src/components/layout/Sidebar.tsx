@@ -8,7 +8,8 @@ import {
   CheckSquare, 
   Briefcase,
   LogOut,
-  Settings
+  Settings,
+  TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Quotes', href: '/quotes', icon: FileText },
   { name: 'Invoices', href: '/invoices', icon: Receipt },
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck },
+  { name: 'Profitability', href: '/profitability', icon: TrendingUp },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
   { name: 'Settings', href: '/settings', icon: Settings },

@@ -99,7 +99,7 @@ export default function Invoices() {
     date: string;
     dueDate: string;
     description?: string;
-    lineItems: { id: string; description: string; quantity: number; unitPrice: number }[];
+    lineItems: { id: string; description: string; quantity: number; unitPrice: number; costPrice: number }[];
     taxRate: number;
     status: 'draft' | 'sent' | 'paid' | 'overdue';
     purchaseOrderNumber?: string;

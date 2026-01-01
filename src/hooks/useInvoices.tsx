@@ -9,6 +9,7 @@ export interface LineItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  costPrice: number;
 }
 
 export interface Invoice {
@@ -99,6 +100,7 @@ export function useInvoices() {
           description: item.description,
           quantity: Number(item.quantity),
           unitPrice: Number(item.unit_price),
+          costPrice: Number(item.cost_price) || 0,
         });
       });
 
@@ -191,6 +193,7 @@ export function useInvoices() {
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unitPrice,
+        cost_price: item.costPrice || 0,
       }));
 
       const { data: lineItemsData, error: lineItemsError } = await supabase
@@ -219,6 +222,7 @@ export function useInvoices() {
           description: item.description,
           quantity: Number(item.quantity),
           unitPrice: Number(item.unit_price),
+          costPrice: Number(item.cost_price) || 0,
         })),
         createdAt: invoiceData.created_at,
         updatedAt: invoiceData.updated_at,
@@ -273,6 +277,7 @@ export function useInvoices() {
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unitPrice,
+          cost_price: item.costPrice || 0,
         }));
 
         await supabase.from('invoice_line_items').insert(lineItemsToInsert);
