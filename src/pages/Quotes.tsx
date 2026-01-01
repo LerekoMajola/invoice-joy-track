@@ -304,7 +304,23 @@ export default function Quotes() {
                     <TableCell className="text-muted-foreground max-w-[200px] truncate" title={quote.description || ''}>{quote.description || '-'}</TableCell>
                     <TableCell className="text-right font-semibold">{formatMaluti(quote.total)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>{quote.status}</Badge>
+                      <div className="flex items-center gap-1">
+                        {(['draft', 'sent', 'accepted', 'rejected'] as const).map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => handleStatusChange(quote.id, status)}
+                            disabled={quote.status === status}
+                            className={cn(
+                              'px-2 py-1 text-xs rounded-md capitalize transition-colors',
+                              quote.status === status
+                                ? statusStyles[status]
+                                : 'text-muted-foreground hover:bg-muted disabled:opacity-50'
+                            )}
+                          >
+                            {status}
+                          </button>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -313,37 +329,21 @@ export default function Quotes() {
                           <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
                           
-                          {/* Status Actions */}
-                          <DropdownMenuSeparator />
-                          {quote.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'sent')}>
-                              <Send className="h-4 w-4 mr-2" />Mark as Sent
-                            </DropdownMenuItem>
-                          )}
-                          {quote.status === 'sent' && (
+                          {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
                             <>
-                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'accepted')} className="text-success">
-                                <CheckCircle className="h-4 w-4 mr-2" />Mark as Accepted
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'rejected')} className="text-destructive">
-                                <XCircle className="h-4 w-4 mr-2" />Mark as Rejected
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
+                                <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
                               </DropdownMenuItem>
                             </>
                           )}
-                          {quote.status === 'rejected' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'draft')}>
-                              <RotateCcw className="h-4 w-4 mr-2" />Revise (Back to Draft)
-                            </DropdownMenuItem>
-                          )}
-                          {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
-                            <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
-                              <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
-                            </DropdownMenuItem>
-                          )}
                           {quote.status === 'accepted' && convertedQuoteIds.has(quote.id) && (
-                            <DropdownMenuItem disabled className="text-muted-foreground">
-                              <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled className="text-muted-foreground">
+                                <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
+                              </DropdownMenuItem>
+                            </>
                           )}
                           
                           <DropdownMenuSeparator />
