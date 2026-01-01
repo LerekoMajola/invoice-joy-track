@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,8 +73,8 @@ export default function Quotes() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
-  const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number }[]>([
-    { id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0 }
+  const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number; inputMode: 'price' | 'margin'; marginPercent: number }[]>([
+    { id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }
   ]);
   const [validityDays, setValidityDays] = useState(30);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
@@ -101,7 +101,7 @@ export default function Quotes() {
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0, costPrice: 0 }]);
+    setLineItems([...lineItems, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
   };
 
   const removeLineItem = (id: string) => {
@@ -111,7 +111,69 @@ export default function Quotes() {
   };
 
   const updateLineItem = (id: string, field: string, value: string | number) => {
-    setLineItems(lineItems.map(item => item.id === id ? { ...item, [field]: value } : item));
+    setLineItems(lineItems.map(item => {
+      if (item.id !== id) return item;
+      
+      const updated = { ...item, [field]: value };
+      
+      // If cost price changes, recalculate based on current mode
+      if (field === 'costPrice') {
+        const costPrice = value as number;
+        if (item.inputMode === 'margin' && item.marginPercent > 0) {
+          // Recalculate sell price from margin
+          updated.unitPrice = item.marginPercent >= 100 
+            ? costPrice * 10 
+            : Math.round((costPrice / (1 - item.marginPercent / 100)) * 100) / 100;
+        } else {
+          // Recalculate margin from price
+          updated.marginPercent = item.unitPrice > 0 
+            ? Math.round(((item.unitPrice - costPrice) / item.unitPrice) * 1000) / 10 
+            : 0;
+        }
+      }
+      
+      return updated;
+    }));
+  };
+
+  const updateMargin = (id: string, margin: number) => {
+    setLineItems(lineItems.map(item => {
+      if (item.id !== id) return item;
+      
+      // Calculate sell price from cost and margin
+      const sellPrice = margin >= 100 
+        ? item.costPrice * 10  // Cap at 10x if margin is 100%+
+        : item.costPrice / (1 - margin / 100);
+      
+      return {
+        ...item,
+        marginPercent: margin,
+        unitPrice: Math.round(sellPrice * 100) / 100
+      };
+    }));
+  };
+
+  const updateSellPrice = (id: string, price: number) => {
+    setLineItems(lineItems.map(item => {
+      if (item.id !== id) return item;
+      
+      // Calculate margin from cost and sell price
+      const margin = price > 0 ? ((price - item.costPrice) / price) * 100 : 0;
+      
+      return {
+        ...item,
+        unitPrice: price,
+        marginPercent: Math.round(margin * 10) / 10
+      };
+    }));
+  };
+
+  const toggleInputMode = (id: string) => {
+    setLineItems(lineItems.map(item => 
+      item.id === id 
+        ? { ...item, inputMode: item.inputMode === 'price' ? 'margin' : 'price' } 
+        : item
+    ));
   };
 
   const calculateTotal = () => {
@@ -141,7 +203,7 @@ export default function Quotes() {
     setIsOpen(false);
     setSelectedClientId('');
     setQuoteDescription('');
-    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0 }]);
+    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
   };
 
   const handleViewQuote = (quote: Quote) => {
@@ -353,23 +415,65 @@ export default function Quotes() {
                   <div className="col-span-4">Description</div>
                   <div className="col-span-1">Qty</div>
                   <div className="col-span-2 text-amber-600">Cost Price</div>
-                  <div className="col-span-2">Sell Price</div>
-                  <div className="col-span-2 text-right">Margin</div>
+                  <div className="col-span-4">Sell Price / Margin</div>
                   <div className="col-span-1"></div>
                 </div>
                 {lineItems.map((item) => {
-                  const lineProfit = (item.unitPrice - item.costPrice) * item.quantity;
                   const lineMargin = item.unitPrice > 0 ? ((item.unitPrice - item.costPrice) / item.unitPrice) * 100 : 0;
                   return (
                     <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
                       <div className="col-span-4"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
                       <div className="col-span-1"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} className="text-center" /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Cost" value={item.costPrice} onChange={(e) => updateLineItem(item.id, 'costPrice', parseFloat(e.target.value) || 0)} className="border-amber-200 bg-amber-50/50" /></div>
-                      <div className="col-span-2"><Input type="number" placeholder="Sell" value={item.unitPrice} onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} /></div>
-                      <div className="col-span-2 text-right">
-                        <span className={`text-sm font-medium ${lineMargin >= 25 ? 'text-emerald-600' : lineMargin >= 10 ? 'text-sky-600' : lineMargin > 0 ? 'text-amber-600' : 'text-rose-600'}`}>
-                          {lineMargin.toFixed(0)}%
-                        </span>
+                      <div className="col-span-4 flex items-center gap-1">
+                        {item.inputMode === 'price' ? (
+                          <>
+                            <Input 
+                              type="number" 
+                              placeholder="Sell Price" 
+                              value={item.unitPrice} 
+                              onChange={(e) => updateSellPrice(item.id, parseFloat(e.target.value) || 0)} 
+                              className="flex-1"
+                            />
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => toggleInputMode(item.id)}
+                              title="Switch to margin input"
+                              className="shrink-0 h-8 w-8"
+                            >
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            <span className={`text-sm font-medium w-14 text-right ${lineMargin >= 25 ? 'text-emerald-600' : lineMargin >= 10 ? 'text-sky-600' : lineMargin > 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                              {lineMargin.toFixed(0)}%
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Input 
+                              type="number" 
+                              placeholder="Margin %" 
+                              value={item.marginPercent || ''} 
+                              onChange={(e) => updateMargin(item.id, parseFloat(e.target.value) || 0)}
+                              className="w-20"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => toggleInputMode(item.id)}
+                              title="Switch to price input"
+                              className="shrink-0 h-8 w-8"
+                            >
+                              <ArrowRightLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            <span className="text-sm font-medium text-primary flex-1 text-right">
+                              = M{item.unitPrice.toLocaleString()}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div className="col-span-1 flex justify-center"><Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button></div>
                     </div>
