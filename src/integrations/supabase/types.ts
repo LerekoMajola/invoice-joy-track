@@ -357,6 +357,92 @@ export type Database = {
           },
         ]
       }
+      lead_activities: {
+        Row: {
+          activity_type: string
+          content: string
+          created_at: string | null
+          id: string
+          lead_id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          content: string
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          estimated_value: number | null
+          id: string
+          name: string
+          next_follow_up: string | null
+          notes: string | null
+          phone: string | null
+          priority: string | null
+          source: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          estimated_value?: number | null
+          id?: string
+          name: string
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          estimated_value?: number | null
+          id?: string
+          name?: string
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       quote_line_items: {
         Row: {
           created_at: string
