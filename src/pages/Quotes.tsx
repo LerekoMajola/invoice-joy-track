@@ -282,7 +282,7 @@ export default function Quotes() {
                   <TableHead className="font-semibold">Quote</TableHead>
                   <TableHead className="font-semibold">Client</TableHead>
                   <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Valid Until</TableHead>
+                  <TableHead className="font-semibold">Reference</TableHead>
                   <TableHead className="font-semibold text-right">Amount</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -301,7 +301,7 @@ export default function Quotes() {
                     </TableCell>
                     <TableCell className="font-medium">{quote.clientName}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDisplayDate(quote.date)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDisplayDate(quote.validUntil)}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-[200px] truncate" title={quote.description || ''}>{quote.description || '-'}</TableCell>
                     <TableCell className="text-right font-semibold">{formatMaluti(quote.total)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>{quote.status}</Badge>
