@@ -5,6 +5,7 @@ import { FileText, Building2, Shield, ExternalLink, Upload, Settings } from 'luc
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Link } from 'react-router-dom';
 import { differenceInDays, format, parseISO } from 'date-fns';
+import { PdfThumbnail } from './PdfThumbnail';
 
 interface DocumentCardProps {
   title: string;
@@ -40,9 +41,14 @@ function DocumentCard({ title, icon, documentUrl, accentColor, expiryDate }: Doc
     <Card className="overflow-hidden">
       <div className={`h-2 ${accentColor}`} />
       <CardContent className="pt-6 pb-4 flex flex-col items-center text-center space-y-4">
-        <div className="p-4 rounded-full bg-muted">
-          {icon}
-        </div>
+        {isUploaded ? (
+          <PdfThumbnail url={documentUrl} className="w-32 h-40" />
+        ) : (
+          <div className="w-32 h-40 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
+            {icon}
+            <Upload className="h-5 w-5 text-muted-foreground mt-2" />
+          </div>
+        )}
         
         <div className="space-y-1">
           <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
@@ -55,10 +61,7 @@ function DocumentCard({ title, icon, documentUrl, accentColor, expiryDate }: Doc
               <span className="text-sm font-medium">Uploaded</span>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm">Not uploaded</span>
-            </div>
+            <span className="text-sm text-muted-foreground">Not uploaded</span>
           )}
         </div>
 
