@@ -62,7 +62,6 @@ export function PdfThumbnail({ url, className = '' }: PdfThumbnailProps) {
         await page.render({
           canvasContext: context,
           viewport: viewport,
-          canvas: canvas,
         }).promise;
 
         if (cancelled) return;
