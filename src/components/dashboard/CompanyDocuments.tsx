@@ -49,7 +49,14 @@ function DocumentCard({
 
   const handleViewDocument = () => {
     if (documentUrl) {
-      window.open(documentUrl, '_blank', 'noopener,noreferrer');
+      // Use anchor element approach to avoid popup blockers
+      const link = document.createElement('a');
+      link.href = documentUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
