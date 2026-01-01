@@ -1,26 +1,23 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { UpcomingTasks } from '@/components/dashboard/UpcomingTasks';
 import { TendersList } from '@/components/dashboard/TendersList';
 import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
 import { LeadsPipeline } from '@/components/dashboard/LeadsPipeline';
+import { CompanyDocuments } from '@/components/dashboard/CompanyDocuments';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useClients } from '@/hooks/useClients';
-import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
 import { useMemo } from 'react';
 
 export default function Dashboard() {
   const { quotes, isLoading: quotesLoading } = useQuotes();
   const { invoices, isLoading: invoicesLoading } = useInvoices();
   const { clients, isLoading: clientsLoading } = useClients();
-  const { deliveryNotes, isLoading: deliveryNotesLoading } = useDeliveryNotes();
 
-  const isLoading = quotesLoading || invoicesLoading || clientsLoading || deliveryNotesLoading;
+  const isLoading = quotesLoading || invoicesLoading || clientsLoading;
 
   const stats = useMemo(() => {
     // Total Revenue (paid invoices)
@@ -100,21 +97,8 @@ export default function Dashboard() {
         {/* Leads Pipeline */}
         <LeadsPipeline />
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <RecentActivity 
-            quotes={quotes}
-            invoices={invoices}
-            deliveryNotes={deliveryNotes}
-            clients={clients}
-            isLoading={isLoading}
-          />
-          <UpcomingTasks 
-            quotes={quotes}
-            invoices={invoices}
-            isLoading={isLoading}
-          />
-        </div>
+        {/* Company Documents */}
+        <CompanyDocuments />
 
         {/* Tenders Section */}
         <TendersList />
