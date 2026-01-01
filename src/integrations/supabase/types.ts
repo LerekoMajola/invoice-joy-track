@@ -555,6 +555,36 @@ export type Database = {
           },
         ]
       }
+      tax_clearance_documents: {
+        Row: {
+          activity_name: string
+          created_at: string | null
+          document_url: string
+          expiry_date: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_name: string
+          created_at?: string | null
+          document_url: string
+          expiry_date: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_name?: string
+          created_at?: string | null
+          document_url?: string
+          expiry_date?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tender_source_links: {
         Row: {
           created_at: string
