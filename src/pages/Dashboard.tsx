@@ -5,6 +5,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { UpcomingTasks } from '@/components/dashboard/UpcomingTasks';
 import { TendersList } from '@/components/dashboard/TendersList';
 import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
+import { LeadsPipeline } from '@/components/dashboard/LeadsPipeline';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -95,6 +96,9 @@ export default function Dashboard() {
             iconColor="bg-info/10 text-info"
           />
         </div>
+
+        {/* Leads Pipeline */}
+        <LeadsPipeline />
 
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
