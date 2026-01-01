@@ -304,48 +304,56 @@ export default function Quotes() {
                     <TableCell className="text-muted-foreground max-w-[200px] truncate" title={quote.description || ''}>{quote.description || '-'}</TableCell>
                     <TableCell className="text-right font-semibold">{formatMaluti(quote.total)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn('capitalize', statusStyles[quote.status])}>{quote.status}</Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="focus:outline-none">
+                            <Badge variant="outline" className={cn('capitalize cursor-pointer hover:opacity-80 transition-opacity', statusStyles[quote.status])}>
+                              {quote.status}
+                            </Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="bg-popover">
+                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'draft')} disabled={quote.status === 'draft'}>
+                            <Badge variant="outline" className={cn('mr-2', statusStyles.draft)}>Draft</Badge>
+                            Set as Draft
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'sent')} disabled={quote.status === 'sent'}>
+                            <Badge variant="outline" className={cn('mr-2', statusStyles.sent)}>Sent</Badge>
+                            Set as Sent
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'accepted')} disabled={quote.status === 'accepted'}>
+                            <Badge variant="outline" className={cn('mr-2', statusStyles.accepted)}>Accepted</Badge>
+                            Set as Accepted
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'rejected')} disabled={quote.status === 'rejected'}>
+                            <Badge variant="outline" className={cn('mr-2', statusStyles.rejected)}>Rejected</Badge>
+                            Set as Rejected
+                          </DropdownMenuItem>
+                          {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
+                                <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {quote.status === 'accepted' && convertedQuoteIds.has(quote.id) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled className="text-muted-foreground">
+                                <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="bg-popover">
                           <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
-                          
-                          {/* Status Actions */}
-                          <DropdownMenuSeparator />
-                          {quote.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'sent')}>
-                              <Send className="h-4 w-4 mr-2" />Mark as Sent
-                            </DropdownMenuItem>
-                          )}
-                          {quote.status === 'sent' && (
-                            <>
-                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'accepted')} className="text-success">
-                                <CheckCircle className="h-4 w-4 mr-2" />Mark as Accepted
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'rejected')} className="text-destructive">
-                                <XCircle className="h-4 w-4 mr-2" />Mark as Rejected
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {quote.status === 'rejected' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'draft')}>
-                              <RotateCcw className="h-4 w-4 mr-2" />Revise (Back to Draft)
-                            </DropdownMenuItem>
-                          )}
-                          {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
-                            <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-success">
-                              <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
-                            </DropdownMenuItem>
-                          )}
-                          {quote.status === 'accepted' && convertedQuoteIds.has(quote.id) && (
-                            <DropdownMenuItem disabled className="text-muted-foreground">
-                              <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
-                            </DropdownMenuItem>
-                          )}
-                          
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteQuote(quote.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />Delete
