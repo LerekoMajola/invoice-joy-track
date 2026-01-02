@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ExternalLink, Trash2, Plus, Loader2 } from 'lucide-react';
+import { FileText, Eye, Trash2, Plus, Loader2 } from 'lucide-react';
 import { useTaxClearances, TaxClearanceDocument } from '@/hooks/useTaxClearances';
 import { AddTaxClearanceDialog } from './AddTaxClearanceDialog';
+import { DocumentViewerDialog } from '@/components/documents/DocumentViewerDialog';
 import { differenceInDays, isPast, parseISO, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -36,9 +37,10 @@ interface TaxClearanceItemProps {
   doc: TaxClearanceDocument;
   onDelete: (id: string) => void;
   isDeleting: boolean;
+  onView: (title: string, url: string) => void;
 }
 
-function TaxClearanceItem({ doc, onDelete, isDeleting }: TaxClearanceItemProps) {
+function TaxClearanceItem({ doc, onDelete, isDeleting, onView }: TaxClearanceItemProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const expiryStatus = getExpiryStatus(doc.expiry_date);
 
@@ -56,10 +58,12 @@ function TaxClearanceItem({ doc, onDelete, isDeleting }: TaxClearanceItemProps) 
           {expiryStatus.label}
         </Badge>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" asChild>
-            <a href={doc.document_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-            </a>
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => onView(doc.activity_name, doc.document_url)}
+          >
+            <Eye className="h-4 w-4" />
           </Button>
           <Button 
             size="sm" 
@@ -106,6 +110,15 @@ function TaxClearanceItem({ doc, onDelete, isDeleting }: TaxClearanceItemProps) 
 export function TaxClearanceList() {
   const { taxClearances, isLoading, deleteTaxClearance, isDeleting } = useTaxClearances();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [viewerState, setViewerState] = useState<{ open: boolean; title: string; url: string }>({
+    open: false,
+    title: '',
+    url: ''
+  });
+
+  const handleViewDocument = (title: string, url: string) => {
+    setViewerState({ open: true, title, url });
+  };
 
   if (isLoading) {
     return (
@@ -117,36 +130,46 @@ export function TaxClearanceList() {
   }
 
   return (
-    <div className="space-y-3">
-      {taxClearances.length > 0 ? (
-        taxClearances.map((doc) => (
-          <TaxClearanceItem
-            key={doc.id}
-            doc={doc}
-            onDelete={deleteTaxClearance}
-            isDeleting={isDeleting}
-          />
-        ))
-      ) : (
-        <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-blue-200 dark:border-blue-800">
-          <span className="text-sm text-muted-foreground">No tax clearance documents uploaded</span>
-        </div>
-      )}
-      
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => setShowAddDialog(true)}
-        className="w-full sm:w-auto"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Add Tax Clearance
-      </Button>
+    <>
+      <div className="space-y-3">
+        {taxClearances.length > 0 ? (
+          taxClearances.map((doc) => (
+            <TaxClearanceItem
+              key={doc.id}
+              doc={doc}
+              onDelete={deleteTaxClearance}
+              isDeleting={isDeleting}
+              onView={handleViewDocument}
+            />
+          ))
+        ) : (
+          <div className="flex items-center justify-center h-20 rounded-md border-2 border-dashed border-blue-200 dark:border-blue-800">
+            <span className="text-sm text-muted-foreground">No tax clearance documents uploaded</span>
+          </div>
+        )}
+        
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setShowAddDialog(true)}
+          className="w-full sm:w-auto"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Tax Clearance
+        </Button>
 
-      <AddTaxClearanceDialog 
-        open={showAddDialog} 
-        onOpenChange={setShowAddDialog} 
+        <AddTaxClearanceDialog 
+          open={showAddDialog} 
+          onOpenChange={setShowAddDialog} 
+        />
+      </div>
+
+      <DocumentViewerDialog
+        open={viewerState.open}
+        onOpenChange={(open) => setViewerState((prev) => ({ ...prev, open }))}
+        title={viewerState.title}
+        url={viewerState.url}
       />
-    </div>
+    </>
   );
 }

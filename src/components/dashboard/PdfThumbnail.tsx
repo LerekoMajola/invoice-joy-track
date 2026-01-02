@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+// @ts-ignore - Vite URL import for worker
+import workerSrc from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
-// Set up the worker using the correct v5 approach
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+// Set up the worker using Vite-friendly URL import
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 interface PdfThumbnailProps {
   url: string;
