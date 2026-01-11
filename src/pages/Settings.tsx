@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/useCompanyProfile';
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink } from 'lucide-react';
+import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell } from 'lucide-react';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
@@ -257,6 +258,22 @@ export default function Settings() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              Notifications
+            </CardTitle>
+            <CardDescription>
+              Configure how you receive reminders and alerts
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushNotificationToggle />
           </CardContent>
         </Card>
 
