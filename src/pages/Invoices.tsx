@@ -39,33 +39,111 @@ const statusStyles = {
   overdue: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
+// Mobile Invoice Card Component
+function InvoiceCard({
+  invoice,
+  onView,
+  onStatusChange,
+  onGenerateDeliveryNote,
+  onDelete,
+  hasDeliveryNote,
+}: {
+  invoice: Invoice;
+  onView: () => void;
+  onStatusChange: (status: Invoice['status']) => void;
+  onGenerateDeliveryNote: () => void;
+  onDelete: () => void;
+  hasDeliveryNote: boolean;
+}) {
+  const formatDisplayDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="mobile-card animate-slide-up" onClick={onView}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 flex-shrink-0">
+            <Receipt className="h-5 w-5 text-success" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-card-foreground">{invoice.invoiceNumber}</p>
+            <p className="text-sm text-muted-foreground truncate">{invoice.clientName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge variant="outline" className={cn('capitalize text-xs', statusStyles[invoice.status])}>
+            {invoice.status}
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }}>
+                <Eye className="h-4 w-4 mr-2" />View
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {invoice.status === 'draft' && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange('sent'); }}>
+                  <Send className="h-4 w-4 mr-2" />Mark as Sent
+                </DropdownMenuItem>
+              )}
+              {invoice.status === 'sent' && (
+                <>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange('paid'); }} className="text-success">
+                    <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
+                  </DropdownMenuItem>
+                  {!hasDeliveryNote && (
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onGenerateDeliveryNote(); }}>
+                      <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                <Trash2 className="h-4 w-4 mr-2" />Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <span>{formatDisplayDate(invoice.date)}</span>
+          <span>→</span>
+          <span>{formatDisplayDate(invoice.dueDate)}</span>
+        </div>
+        <span className="font-semibold text-foreground">{formatMaluti(invoice.total)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Invoices() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice, refetch } = useInvoices();
+  const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const { deliveryNotes } = useDeliveryNotes();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
 
-  // Track which invoices have delivery notes
   const invoicesWithDeliveryNotes = new Set(
-    deliveryNotes
-      .filter(dn => dn.invoiceId)
-      .map(dn => dn.invoiceId)
+    deliveryNotes.filter(dn => dn.invoiceId).map(dn => dn.invoiceId)
   );
 
-  // Check for new invoice from quote conversion (auth can restore after mount)
   useEffect(() => {
     const newInvoiceData = sessionStorage.getItem('newInvoiceFromQuote');
     if (newInvoiceData && !isCreatingFromQuote) {
       setIsCreatingFromQuote(true);
       const data = JSON.parse(newInvoiceData);
-      
-      // Remove immediately to prevent duplicate creation
       sessionStorage.removeItem('newInvoiceFromQuote');
       
-      // Create invoice in database
       createInvoice({
         sourceQuoteId: data.sourceQuoteId,
         clientId: data.clientId,
@@ -118,7 +196,6 @@ export default function Invoices() {
       lineItems: updatedData.lineItems,
     });
     
-    // Update the selected invoice for the preview
     const updatedInvoice = invoices.find(i => i.id === selectedInvoice.id);
     if (updatedInvoice) {
       setSelectedInvoice(updatedInvoice);
@@ -132,7 +209,6 @@ export default function Invoices() {
   const handleStatusChange = async (invoiceId: string, newStatus: Invoice['status']) => {
     await updateInvoice(invoiceId, { status: newStatus });
     toast.success(`Invoice marked as ${newStatus}`);
-    // Update selected invoice if it's the one being changed
     if (selectedInvoice?.id === invoiceId) {
       setSelectedInvoice({ ...selectedInvoice, status: newStatus });
     }
@@ -159,7 +235,6 @@ export default function Invoices() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // Calculate summary stats
   const totalInvoiced = invoices.reduce((sum, i) => sum + i.total, 0);
   const paidTotal = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total, 0);
   const pendingTotal = invoices.filter(i => i.status === 'sent' || i.status === 'draft').reduce((sum, i) => sum + i.total, 0);
@@ -170,15 +245,12 @@ export default function Invoices() {
       <Header 
         title="Invoices" 
         subtitle="Track and manage your invoices"
-        action={{
-          label: 'New Invoice',
-          onClick: () => {},
-        }}
+        action={{ label: 'New Invoice', onClick: () => {} }}
       />
       
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
           {[
             { label: 'Total Invoiced', value: formatMaluti(totalInvoiced), color: 'text-primary' },
             { label: 'Paid', value: formatMaluti(paidTotal), color: 'text-success' },
@@ -187,137 +259,140 @@ export default function Invoices() {
           ].map((stat, index) => (
             <div 
               key={stat.label}
-              className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up"
+              className="rounded-xl border border-border bg-card p-3 md:p-4 shadow-card animate-slide-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>
+              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <p className={cn('text-lg md:text-2xl font-display font-semibold mt-1', stat.color)}>
                 {stat.value}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Invoices Table */}
-        <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : invoices.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card shadow-card">
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <Receipt className="h-12 w-12 mb-4" />
               <p className="text-lg font-medium">No invoices yet</p>
               <p className="text-sm">Create a quote and convert it to an invoice</p>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead className="font-semibold">Invoice</TableHead>
-                  <TableHead className="font-semibold">Client</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Due Date</TableHead>
-                  <TableHead className="font-semibold text-right">Amount</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice, index) => (
-                  <TableRow 
-                    key={invoice.id}
-                    className="animate-slide-up cursor-pointer hover:bg-muted/50"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => handleViewInvoice(invoice)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-                          <Receipt className="h-5 w-5 text-success" />
-                        </div>
-                        <span className="font-medium">{invoice.invoiceNumber}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{invoice.clientName}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDisplayDate(invoice.date)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDisplayDate(invoice.dueDate)}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatMaluti(invoice.total)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn('capitalize', statusStyles[invoice.status])}>
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewInvoice(invoice); }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </DropdownMenuItem>
-                          
-                          {/* Status Actions */}
-                          <DropdownMenuSeparator />
-                          {invoice.status === 'draft' && (
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'sent'); }}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Mark as Sent
-                            </DropdownMenuItem>
-                          )}
-                          {invoice.status === 'sent' && (
-                            <>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'paid'); }} className="text-success">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Mark as Paid
-                              </DropdownMenuItem>
-                              {!invoicesWithDeliveryNotes.has(invoice.id) && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
-                                  <Truck className="h-4 w-4 mr-2" />
-                                  Generate Delivery Note
-                                </DropdownMenuItem>
-                              )}
-                            </>
-                          )}
-                          {invoice.status === 'paid' && !invoicesWithDeliveryNotes.has(invoice.id) && (
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
-                              <Truck className="h-4 w-4 mr-2" />
-                              Generate Delivery Note
-                            </DropdownMenuItem>
-                          )}
-                          
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive" 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id); }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {invoices.map((invoice) => (
+                <InvoiceCard
+                  key={invoice.id}
+                  invoice={invoice}
+                  onView={() => handleViewInvoice(invoice)}
+                  onStatusChange={(status) => handleStatusChange(invoice.id, status)}
+                  onGenerateDeliveryNote={() => handleGenerateDeliveryNote(invoice)}
+                  onDelete={() => handleDeleteInvoice(invoice.id)}
+                  hasDeliveryNote={invoicesWithDeliveryNotes.has(invoice.id)}
+                />
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-xl border border-border bg-card shadow-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-secondary/50">
+                    <TableHead className="font-semibold">Invoice</TableHead>
+                    <TableHead className="font-semibold">Client</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">Due Date</TableHead>
+                    <TableHead className="font-semibold text-right">Amount</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {invoices.map((invoice, index) => (
+                    <TableRow 
+                      key={invoice.id}
+                      className="animate-slide-up cursor-pointer hover:bg-muted/50"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                      onClick={() => handleViewInvoice(invoice)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
+                            <Receipt className="h-5 w-5 text-success" />
+                          </div>
+                          <span className="font-medium">{invoice.invoiceNumber}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{invoice.clientName}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDisplayDate(invoice.date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDisplayDate(invoice.dueDate)}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatMaluti(invoice.total)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn('capitalize', statusStyles[invoice.status])}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewInvoice(invoice); }}>
+                              <Eye className="h-4 w-4 mr-2" />View
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {invoice.status === 'draft' && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'sent'); }}>
+                                <Send className="h-4 w-4 mr-2" />Mark as Sent
+                              </DropdownMenuItem>
+                            )}
+                            {invoice.status === 'sent' && (
+                              <>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'paid'); }} className="text-success">
+                                  <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
+                                </DropdownMenuItem>
+                                {!invoicesWithDeliveryNotes.has(invoice.id) && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                                    <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
+                                  </DropdownMenuItem>
+                                )}
+                              </>
+                            )}
+                            {invoice.status === 'paid' && !invoicesWithDeliveryNotes.has(invoice.id) && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                                <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                              <Download className="h-4 w-4 mr-2" />Download PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id); }}>
+                              <Trash2 className="h-4 w-4 mr-2" />Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Invoice Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[240mm] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[240mm] max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] md:max-w-[240mm]">
           {selectedInvoice && (
             <InvoicePreview 
               invoice={{

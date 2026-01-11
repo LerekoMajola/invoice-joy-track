@@ -29,23 +29,89 @@ const statusStyles = {
   delivered: 'bg-success/10 text-success border-success/20',
 };
 
+// Mobile Delivery Note Card
+function DeliveryNoteCard({
+  note,
+  onView,
+  onMarkDelivered,
+  onDelete,
+}: {
+  note: DeliveryNote;
+  onView: () => void;
+  onMarkDelivered: () => void;
+  onDelete: () => void;
+}) {
+  const formatDisplayDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="mobile-card animate-slide-up">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10 flex-shrink-0">
+            <Truck className="h-5 w-5 text-info" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-card-foreground">{note.noteNumber}</p>
+            <p className="text-sm text-muted-foreground truncate">{note.clientName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge variant="outline" className={cn('capitalize text-xs', statusStyles[note.status])}>
+            {note.status}
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onView}>
+                <Eye className="h-4 w-4 mr-2" />View
+              </DropdownMenuItem>
+              {note.status === 'pending' && (
+                <DropdownMenuItem onClick={onMarkDelivered}>
+                  <CheckCircle className="h-4 w-4 mr-2" />Mark Delivered
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={onView}>
+                <Download className="h-4 w-4 mr-2" />Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{formatDisplayDate(note.date)}</span>
+        <Badge variant="secondary" className="text-xs">{note.items.length} items</Badge>
+      </div>
+      
+      {note.deliveryAddress && (
+        <p className="mt-2 text-xs text-muted-foreground truncate">{note.deliveryAddress}</p>
+      )}
+    </div>
+  );
+}
+
 export default function DeliveryNotes() {
   const { deliveryNotes, isLoading, createDeliveryNote, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
   const { invoices } = useInvoices();
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
 
-  // Handle creation from invoice
   useEffect(() => {
     const newDeliveryNoteData = sessionStorage.getItem('newDeliveryNoteFromInvoice');
     if (newDeliveryNoteData && !isCreatingFromInvoice) {
       setIsCreatingFromInvoice(true);
       const data = JSON.parse(newDeliveryNoteData);
-      
-      // Remove immediately to prevent duplicate creation
       sessionStorage.removeItem('newDeliveryNoteFromInvoice');
       
-      // Create delivery note from invoice data
       createDeliveryNote({
         invoiceId: data.invoiceId,
         clientId: data.clientId,
@@ -83,7 +149,6 @@ export default function DeliveryNotes() {
     setSelectedNote(note);
   };
 
-  // Calculate summary stats
   const totalDeliveries = deliveryNotes.length;
   const pendingCount = deliveryNotes.filter(n => n.status === 'pending').length;
   const deliveredCount = deliveryNotes.filter(n => n.status === 'delivered').length;
@@ -93,127 +158,133 @@ export default function DeliveryNotes() {
       <Header 
         title="Delivery Notes" 
         subtitle="Track deliveries and shipments"
-        action={{
-          label: 'New Delivery Note',
-          onClick: () => {},
-        }}
+        action={{ label: 'New Delivery Note', onClick: () => {} }}
       />
       
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
           {[
-            { label: 'Total Deliveries', value: totalDeliveries.toString(), color: 'text-primary' },
+            { label: 'Total', value: totalDeliveries.toString(), color: 'text-primary' },
             { label: 'Pending', value: pendingCount.toString(), color: 'text-warning' },
             { label: 'Delivered', value: deliveredCount.toString(), color: 'text-success' },
           ].map((stat, index) => (
             <div 
               key={stat.label}
-              className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up"
+              className="rounded-xl border border-border bg-card p-3 md:p-4 shadow-card animate-slide-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>
+              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <p className={cn('text-lg md:text-2xl font-display font-semibold mt-1', stat.color)}>
                 {stat.value}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Delivery Notes Table */}
-        <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : deliveryNotes.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : deliveryNotes.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card shadow-card">
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <Truck className="h-12 w-12 mb-4" />
               <p className="text-lg font-medium">No delivery notes yet</p>
               <p className="text-sm">Create your first delivery note to get started</p>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead className="font-semibold">Delivery Note</TableHead>
-                  <TableHead className="font-semibold">Client</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Delivery Address</TableHead>
-                  <TableHead className="font-semibold text-center">Items</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {deliveryNotes.map((note, index) => (
-                  <TableRow 
-                    key={note.id}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
-                          <Truck className="h-5 w-5 text-info" />
-                        </div>
-                        <span className="font-medium">{note.noteNumber}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{note.clientName}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDisplayDate(note.date)}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                      {note.deliveryAddress || '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary">{note.items.length}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn('capitalize', statusStyles[note.status])}>
-                        {note.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleView(note)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </DropdownMenuItem>
-                          {note.status === 'pending' && (
-                            <DropdownMenuItem onClick={() => handleMarkDelivered(note.id)}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Mark Delivered
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => handleView(note)}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => handleDelete(note.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {deliveryNotes.map((note) => (
+                <DeliveryNoteCard
+                  key={note.id}
+                  note={note}
+                  onView={() => handleView(note)}
+                  onMarkDelivered={() => handleMarkDelivered(note.id)}
+                  onDelete={() => handleDelete(note.id)}
+                />
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-xl border border-border bg-card shadow-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-secondary/50">
+                    <TableHead className="font-semibold">Delivery Note</TableHead>
+                    <TableHead className="font-semibold">Client</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">Delivery Address</TableHead>
+                    <TableHead className="font-semibold text-center">Items</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {deliveryNotes.map((note, index) => (
+                    <TableRow 
+                      key={note.id}
+                      className="animate-slide-up"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
+                            <Truck className="h-5 w-5 text-info" />
+                          </div>
+                          <span className="font-medium">{note.noteNumber}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{note.clientName}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDisplayDate(note.date)}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                        {note.deliveryAddress || '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary">{note.items.length}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn('capitalize', statusStyles[note.status])}>
+                          {note.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleView(note)}>
+                              <Eye className="h-4 w-4 mr-2" />View
+                            </DropdownMenuItem>
+                            {note.status === 'pending' && (
+                              <DropdownMenuItem onClick={() => handleMarkDelivered(note.id)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />Mark Delivered
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleView(note)}>
+                              <Download className="h-4 w-4 mr-2" />Download PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(note.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" />Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Preview Modal */}
       {selectedNote && (
         <DeliveryNotePreview
           deliveryNote={{
