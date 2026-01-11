@@ -55,7 +55,7 @@ export default function Dashboard() {
         subtitle="Welcome back! Here's what's happening with your business." 
       />
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-safe">
         {/* To-Do List - Top Priority */}
         <DashboardTodoList />
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
         <TenderSourceLinks />
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <StatCard
             title="Total Revenue"
             value={isLoading ? '...' : formatMaluti(stats.totalRevenue)}
