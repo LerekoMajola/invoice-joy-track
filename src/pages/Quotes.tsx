@@ -251,17 +251,17 @@ export default function Quotes() {
         action={{ label: 'New Quote', onClick: () => setIsOpen(true) }}
       />
       
-      <div className="p-6">
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
+      <div className="p-4 md:p-6">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-6">
           {[
             { label: 'Total Quotes', value: quotes.length.toString(), color: 'text-primary' },
             { label: 'Pending', value: quotes.filter(q => q.status === 'sent').length.toString(), color: 'text-info' },
             { label: 'Accepted', value: quotes.filter(q => q.status === 'accepted').length.toString(), color: 'text-success' },
             { label: 'Rejected', value: quotes.filter(q => q.status === 'rejected').length.toString(), color: 'text-destructive' },
           ].map((stat, index) => (
-            <div key={stat.label} className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>{stat.value}</p>
+            <div key={stat.label} className="rounded-xl border border-border bg-card p-3 md:p-4 shadow-card animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
+              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <p className={cn('text-xl md:text-2xl font-display font-semibold mt-1', stat.color)}>{stat.value}</p>
             </div>
           ))}
         </div>
@@ -276,6 +276,24 @@ export default function Quotes() {
               <p className="text-sm">Create your first quote to get started</p>
             </div>
           ) : (
+            <>
+            {/* Mobile Card View */}
+            <div className="block md:hidden divide-y divide-border">
+              {quotes.map((quote) => (
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  convertedQuoteIds={convertedQuoteIds}
+                  getLinkedInvoiceNumber={getLinkedInvoiceNumber}
+                  onView={handleViewQuote}
+                  onConvert={handleConvertToInvoice}
+                  onStatusChange={handleStatusChange}
+                  onDelete={deleteQuote}
+                />
+              ))}
+            </div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-secondary/50">
@@ -365,6 +383,8 @@ export default function Quotes() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </div>
       </div>
@@ -569,5 +589,106 @@ export default function Quotes() {
         );
       })()}
     </DashboardLayout>
+  );
+}
+
+// Mobile Quote Card Component
+interface QuoteCardProps {
+  quote: Quote;
+  convertedQuoteIds: Set<string | undefined>;
+  getLinkedInvoiceNumber: (quoteId: string) => string | null;
+  onView: (quote: Quote) => void;
+  onConvert: (quote: Quote) => void;
+  onStatusChange: (quoteId: string, status: Quote['status']) => void;
+  onDelete: (quoteId: string) => void;
+}
+
+function QuoteCard({
+  quote,
+  convertedQuoteIds,
+  getLinkedInvoiceNumber,
+  onView,
+  onConvert,
+  onStatusChange,
+  onDelete,
+}: QuoteCardProps) {
+  const formatDisplayDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="p-4 hover:bg-accent/30 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">{quote.quoteNumber}</span>
+              <Badge variant="outline" className={cn('capitalize text-xs', statusStyles[quote.status])}>
+                {quote.status}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">{quote.clientName}</p>
+            <p className="text-xs text-muted-foreground mt-1">{formatDisplayDate(quote.date)}</p>
+            {quote.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{quote.description}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <p className="font-semibold text-sm">{formatMaluti(quote.total)}</p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={() => onView(quote)}>
+                <Eye className="h-4 w-4 mr-2" />View
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Copy className="h-4 w-4 mr-2" />Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onStatusChange(quote.id, 'draft')} disabled={quote.status === 'draft'}>
+                Set as Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange(quote.id, 'sent')} disabled={quote.status === 'sent'}>
+                Set as Sent
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange(quote.id, 'accepted')} disabled={quote.status === 'accepted'}>
+                Set as Accepted
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange(quote.id, 'rejected')} disabled={quote.status === 'rejected'}>
+                Set as Rejected
+              </DropdownMenuItem>
+              {quote.status === 'accepted' && !convertedQuoteIds.has(quote.id) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onConvert(quote)} className="text-success">
+                    <Receipt className="h-4 w-4 mr-2" />Convert to Invoice
+                  </DropdownMenuItem>
+                </>
+              )}
+              {quote.status === 'accepted' && convertedQuoteIds.has(quote.id) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled className="text-muted-foreground">
+                    <CheckCircle className="h-4 w-4 mr-2" />Converted to {getLinkedInvoiceNumber(quote.id)}
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(quote.id)}>
+                <Trash2 className="h-4 w-4 mr-2" />Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
   );
 }

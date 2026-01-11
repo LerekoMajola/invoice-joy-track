@@ -75,58 +75,58 @@ export function LeadsPipeline() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6">
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Users className="h-4 w-4 text-primary" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
+              <div className="p-1.5 md:p-2 rounded-full bg-primary/10 shrink-0">
+                <Users className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{activeLeads}</p>
-                <p className="text-xs text-muted-foreground">Active Leads</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <TrendingUp className="h-4 w-4 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatMaluti(totalPipelineValue)}</p>
-                <p className="text-xs text-muted-foreground">Pipeline Value</p>
+              <div className="min-w-0">
+                <p className="text-lg md:text-2xl font-bold">{activeLeads}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Active Leads</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="p-2 rounded-full bg-green-500/10">
-                <Target className="h-4 w-4 text-green-500" />
+            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
+              <div className="p-1.5 md:p-2 rounded-full bg-blue-500/10 shrink-0">
+                <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{wonLeads.length}</p>
-                <p className="text-xs text-muted-foreground">Won ({formatMaluti(wonValue)})</p>
+              <div className="min-w-0">
+                <p className="text-lg md:text-2xl font-bold truncate">{formatMaluti(totalPipelineValue)}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Pipeline Value</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
+              <div className="p-1.5 md:p-2 rounded-full bg-green-500/10 shrink-0">
+                <Target className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-lg md:text-2xl font-bold">{wonLeads.length}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Won ({formatMaluti(wonValue)})</p>
               </div>
             </div>
             {overdueFollowups > 0 && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
-                <div className="p-2 rounded-full bg-destructive/20">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
+              <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-destructive/10">
+                <div className="p-1.5 md:p-2 rounded-full bg-destructive/20 shrink-0">
+                  <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4 text-destructive" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-destructive">{overdueFollowups}</p>
-                  <p className="text-xs text-muted-foreground">Overdue Follow-ups</p>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold text-destructive">{overdueFollowups}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">Overdue Follow-ups</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Pipeline Status Summary */}
-          <div className="flex flex-wrap gap-2">
+          {/* Pipeline Status Summary - Horizontally scrollable on mobile */}
+          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-hide pb-1">
             {LEAD_STATUSES.map((status) => {
               const count = leadsByStatus[status.value]?.length || 0;
               return (
                 <Badge
                   key={status.value}
                   variant="outline"
-                  className="flex items-center gap-1.5"
+                  className="flex items-center gap-1.5 shrink-0 text-xs"
                 >
                   <div className={`w-2 h-2 rounded-full ${status.color}`} />
                   {status.label}: {count}

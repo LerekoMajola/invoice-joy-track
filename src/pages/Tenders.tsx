@@ -120,9 +120,9 @@ export default function Tenders() {
         }}
       />
       
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-6">
           {[
             { label: 'Open', value: openTenders.length, color: 'text-success' },
             { label: 'Submitted', value: submittedTenders.length, color: 'text-info' },
@@ -131,11 +131,11 @@ export default function Tenders() {
           ].map((stat, index) => (
             <div 
               key={stat.label}
-              className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up"
+              className="rounded-xl border border-border bg-card p-3 md:p-4 shadow-card animate-slide-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>
+              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <p className={cn('text-xl md:text-2xl font-display font-semibold mt-1', stat.color)}>
                 {stat.value}
               </p>
             </div>
@@ -144,12 +144,14 @@ export default function Tenders() {
 
         {/* Tabs */}
         <Tabs defaultValue="open" className="space-y-4">
-          <TabsList className="bg-secondary/50">
-            <TabsTrigger value="open">Open ({openTenders.length})</TabsTrigger>
-            <TabsTrigger value="submitted">Submitted ({submittedTenders.length})</TabsTrigger>
-            <TabsTrigger value="won">Won ({wonTenders.length})</TabsTrigger>
-            <TabsTrigger value="lost">Lost ({lostTenders.length})</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="bg-secondary/50 w-max md:w-auto">
+              <TabsTrigger value="open" className="text-xs md:text-sm">Open ({openTenders.length})</TabsTrigger>
+              <TabsTrigger value="submitted" className="text-xs md:text-sm">Submitted ({submittedTenders.length})</TabsTrigger>
+              <TabsTrigger value="won" className="text-xs md:text-sm">Won ({wonTenders.length})</TabsTrigger>
+              <TabsTrigger value="lost" className="text-xs md:text-sm">Lost ({lostTenders.length})</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="open" className="space-y-4">
             {openTenders.map((tender, index) => (
@@ -247,39 +249,39 @@ export default function Tenders() {
 function TenderCard({ tender, delay = 0 }: { tender: Tender; delay?: number }) {
   return (
     <div 
-      className="rounded-xl border border-border bg-card p-5 shadow-card transition-all hover:shadow-elevated animate-slide-up"
+      className="rounded-xl border border-border bg-card p-4 md:p-5 shadow-card transition-all hover:shadow-elevated animate-slide-up"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="rounded-lg bg-primary/10 p-3">
-            <Briefcase className="h-5 w-5 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex items-start gap-3 md:gap-4">
+          <div className="rounded-lg bg-primary/10 p-2 md:p-3 shrink-0">
+            <Briefcase className="h-4 w-4 md:h-5 md:w-5 text-primary" />
           </div>
-          <div>
-            <h4 className="font-display font-semibold text-card-foreground">{tender.title}</h4>
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            <h4 className="font-display font-semibold text-card-foreground text-sm md:text-base line-clamp-2">{tender.title}</h4>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-xs md:text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Building2 className="h-4 w-4" />
-                {tender.organization}
+                <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                <span className="truncate">{tender.organization}</span>
               </span>
               <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
                 Due: {tender.dueDate}
               </span>
               <span className="flex items-center gap-1">
-                <DollarSign className="h-4 w-4" />
+                <DollarSign className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
                 {tender.value}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={cn('capitalize', statusStyles[tender.status])}>
+        <div className="flex items-center gap-2 self-end sm:self-start shrink-0">
+          <Badge variant="outline" className={cn('capitalize text-xs', statusStyles[tender.status])}>
             {tender.status}
           </Badge>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-8 w-8 md:h-9 md:w-9">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
