@@ -181,8 +181,8 @@ export function DashboardTodoList() {
           )}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-1 mt-3 flex-wrap">
+        {/* Filter Tabs - Horizontally scrollable on mobile */}
+        <div className="flex gap-1 mt-3 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-hide">
           {filterTabs.map(tab => (
             <Button
               key={tab.key}
@@ -190,7 +190,7 @@ export function DashboardTodoList() {
               size="sm"
               onClick={() => setActiveFilter(tab.key)}
               className={cn(
-                "gap-1.5 h-8 text-xs",
+                "gap-1.5 h-9 md:h-8 text-xs min-touch shrink-0",
                 activeFilter === tab.key 
                   ? '' 
                   : 'text-muted-foreground hover:text-foreground'
@@ -216,17 +216,17 @@ export function DashboardTodoList() {
       <CardContent className="space-y-2">
         {/* Quick Add Form */}
         {isAdding && (
-          <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3 animate-fade-in">
+          <div className="p-3 md:p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3 animate-fade-in">
             <Input
               placeholder="What needs to be done?"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="border-0 bg-background focus-visible:ring-1"
+              className="border-0 bg-background focus-visible:ring-1 h-11 md:h-10"
             />
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Priority Selector */}
                 <div className="flex gap-1">
                   {(['low', 'medium', 'high'] as TaskPriority[]).map(p => (
@@ -236,7 +236,7 @@ export function DashboardTodoList() {
                       size="sm"
                       onClick={() => setNewTaskPriority(p)}
                       className={cn(
-                        "h-7 text-xs capitalize",
+                        "h-9 md:h-7 text-xs capitalize min-w-[60px]",
                         newTaskPriority !== p && priorityConfig[p].className
                       )}
                     >
@@ -248,7 +248,7 @@ export function DashboardTodoList() {
                 {/* Due Date Picker */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 gap-1.5">
+                    <Button variant="outline" size="sm" className="h-9 md:h-7 gap-1.5">
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {newTaskDueDate ? format(newTaskDueDate, 'MMM d') : 'Due date'}
                     </Button>
@@ -264,10 +264,11 @@ export function DashboardTodoList() {
                 </Popover>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full md:w-auto">
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="flex-1 md:flex-none h-10 md:h-8"
                   onClick={() => {
                     setIsAdding(false);
                     setNewTaskTitle('');
@@ -277,6 +278,7 @@ export function DashboardTodoList() {
                 </Button>
                 <Button
                   size="sm"
+                  className="flex-1 md:flex-none h-10 md:h-8"
                   onClick={handleAddTask}
                   disabled={!newTaskTitle.trim() || createTask.isPending}
                 >
@@ -360,7 +362,7 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 p-3 rounded-lg border-l-4 bg-card hover:bg-accent/50 transition-all duration-200",
+        "group flex items-center gap-3 p-3 md:p-3 rounded-lg border-l-4 bg-card hover:bg-accent/50 transition-all duration-200",
         priority.borderClass,
         isDone && "opacity-60"
       )}
@@ -368,7 +370,7 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
       <Checkbox
         checked={isDone}
         onCheckedChange={onToggle}
-        className="h-5 w-5 rounded-full"
+        className="h-6 w-6 md:h-5 md:w-5 rounded-full shrink-0"
       />
       
       <div className="flex-1 min-w-0">
@@ -389,10 +391,11 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Always visible on mobile, hover on desktop */}
+      <div className="flex items-center gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         <Badge 
           variant="outline" 
-          className={cn("text-xs capitalize", priority.className)}
+          className={cn("text-xs capitalize hidden md:inline-flex", priority.className)}
         >
           {task.priority}
         </Badge>
@@ -400,7 +403,7 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
           variant="ghost"
           size="icon"
           onClick={onDelete}
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          className="h-9 w-9 md:h-7 md:w-7 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
