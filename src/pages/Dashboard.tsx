@@ -5,6 +5,7 @@ import { TendersList } from '@/components/dashboard/TendersList';
 import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
 import { LeadsPipeline } from '@/components/dashboard/LeadsPipeline';
 import { CompanyDocuments } from '@/components/dashboard/CompanyDocuments';
+import { DashboardTodoList } from '@/components/dashboard/DashboardTodoList';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -55,7 +56,10 @@ export default function Dashboard() {
       />
       
       <div className="p-6 space-y-6">
-        {/* Tender Source Links - Top Priority */}
+        {/* To-Do List - Top Priority */}
+        <DashboardTodoList />
+
+        {/* Tender Source Links */}
         <TenderSourceLinks />
 
         {/* Stats Grid */}
