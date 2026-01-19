@@ -76,7 +76,7 @@ export default function Quotes() {
   const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number; inputMode: 'price' | 'margin'; marginPercent: number }[]>([
     { id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }
   ]);
-  const [validityDays, setValidityDays] = useState(30);
+  const [validityDays, setValidityDays] = useState(profile?.default_validity_days ?? 90);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
 
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
