@@ -25,6 +25,7 @@ export interface CompanyProfile {
   bank_swift_code: string | null;
   default_terms: string | null;
   default_tax_rate: number | null;
+  default_validity_days: number | null;
   vat_enabled: boolean | null;
   signature_url: string | null;
   footer_text: string | null;

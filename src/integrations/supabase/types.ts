@@ -67,6 +67,7 @@ export type Database = {
           created_at: string
           default_tax_rate: number | null
           default_terms: string | null
+          default_validity_days: number | null
           email: string | null
           footer_text: string | null
           header_info: string | null
@@ -107,6 +108,7 @@ export type Database = {
           created_at?: string
           default_tax_rate?: number | null
           default_terms?: string | null
+          default_validity_days?: number | null
           email?: string | null
           footer_text?: string | null
           header_info?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           created_at?: string
           default_tax_rate?: number | null
           default_terms?: string | null
+          default_validity_days?: number | null
           email?: string | null
           footer_text?: string | null
           header_info?: string | null

@@ -36,6 +36,7 @@ export default function Settings() {
     bank_swift_code: '',
     default_terms: 'Payment is due within 30 days of invoice date.',
     default_tax_rate: 15,
+    default_validity_days: 90,
     vat_enabled: true,
     signature_url: null,
     footer_text: '',
@@ -83,6 +84,7 @@ export default function Settings() {
         bank_swift_code: profile.bank_swift_code || '',
         default_terms: profile.default_terms || 'Payment is due within 30 days of invoice date.',
         default_tax_rate: profile.default_tax_rate || 15,
+        default_validity_days: profile.default_validity_days || 90,
         vat_enabled: profile.vat_enabled ?? true,
         signature_url: profile.signature_url,
         footer_text: profile.footer_text || '',
@@ -411,6 +413,22 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="default_validity_days">Default Quote Validity (days)</Label>
+              <Input
+                id="default_validity_days"
+                type="number"
+                min="1"
+                max="365"
+                value={formData.default_validity_days || 90}
+                onChange={(e) => handleChange('default_validity_days', parseInt(e.target.value) || 90)}
+                placeholder="90"
+                className="max-w-[120px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Standard for government tenders is 90 days
+              </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="default_terms">Default Terms & Conditions</Label>
               <Textarea
