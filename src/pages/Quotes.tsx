@@ -180,6 +180,44 @@ export default function Quotes() {
     return lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   };
 
+  const resetForm = () => {
+    setIsOpen(false);
+    setSelectedClientId('');
+    setQuoteDescription('');
+    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
+  };
+
+  const handleSaveDraft = async () => {
+    const client = clients.find(c => c.id === selectedClientId);
+    if (!client) return;
+
+    const today = new Date();
+    const validUntil = new Date(today);
+    validUntil.setDate(validUntil.getDate() + validityDays);
+
+    // Filter out completely empty line items, but allow partial ones
+    const validLineItems = lineItems.filter(item => 
+      item.description.trim() !== '' || item.quantity > 0 || item.unitPrice > 0 || item.costPrice > 0
+    );
+
+    await createQuote({
+      clientId: client.id,
+      clientName: client.company,
+      date: today.toISOString().split('T')[0],
+      validUntil: validUntil.toISOString().split('T')[0],
+      status: 'draft',
+      taxRate: defaultTaxRate,
+      termsAndConditions: defaultTerms,
+      description: quoteDescription || undefined,
+      lineItems: validLineItems.length > 0 
+        ? validLineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice }))
+        : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }],
+    });
+
+    toast.success('Quote saved as draft');
+    resetForm();
+  };
+
   const handleCreateQuote = async () => {
     const client = clients.find(c => c.id === selectedClientId);
     if (!client) return;
@@ -200,10 +238,7 @@ export default function Quotes() {
       lineItems: lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice })),
     });
 
-    setIsOpen(false);
-    setSelectedClientId('');
-    setQuoteDescription('');
-    setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
+    resetForm();
   };
 
   const handleViewQuote = (quote: Quote) => {
@@ -549,7 +584,19 @@ export default function Quotes() {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateQuote} disabled={!selectedClientId || lineItems.every(item => !item.description)}>Create Quote</Button>
+            <Button 
+              variant="secondary" 
+              onClick={handleSaveDraft} 
+              disabled={!selectedClientId}
+            >
+              Save as Draft
+            </Button>
+            <Button 
+              onClick={handleCreateQuote} 
+              disabled={!selectedClientId || lineItems.every(item => !item.description)}
+            >
+              Create Quote
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
