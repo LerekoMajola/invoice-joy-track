@@ -25,14 +25,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useClients } from '@/hooks/useClients';
+import { useClients, Client } from '@/hooks/useClients';
 
 // Mobile Client Card Component
 function ClientCard({ 
   client, 
+  onEdit,
   onDelete 
 }: { 
-  client: { id: string; company: string; contactPerson: string | null; email: string | null; phone: string | null; address: string | null }; 
+  client: Client; 
+  onEdit: (client: Client) => void;
   onDelete: (id: string) => void 
 }) {
   return (
@@ -56,7 +58,7 @@ function ClientCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(client)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </DropdownMenuItem>
@@ -96,9 +98,17 @@ function ClientCard({
 }
 
 export default function Clients() {
-  const { clients, isLoading, createClient, deleteClient } = useClients();
+  const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({
+    company: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+  const [editFormData, setEditFormData] = useState({
     company: '',
     contactPerson: '',
     email: '',
@@ -119,6 +129,31 @@ export default function Clients() {
     
     setNewClient({ company: '', contactPerson: '', email: '', phone: '', address: '' });
     setIsOpen(false);
+  };
+
+  const handleEditClick = (client: Client) => {
+    setEditingClient(client);
+    setEditFormData({
+      company: client.company,
+      contactPerson: client.contactPerson || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      address: client.address || '',
+    });
+  };
+
+  const handleUpdateClient = async () => {
+    if (!editingClient || !editFormData.company) return;
+    
+    await updateClient(editingClient.id, {
+      company: editFormData.company,
+      contactPerson: editFormData.contactPerson || undefined,
+      email: editFormData.email || undefined,
+      phone: editFormData.phone || undefined,
+      address: editFormData.address || undefined,
+    });
+    
+    setEditingClient(null);
   };
 
   const handleDeleteClient = async (id: string) => {
@@ -157,6 +192,7 @@ export default function Clients() {
                 <ClientCard 
                   key={client.id} 
                   client={client} 
+                  onEdit={handleEditClick}
                   onDelete={handleDeleteClient} 
                 />
               ))}
@@ -223,7 +259,7 @@ export default function Clients() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditClick(client)}>
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -246,6 +282,7 @@ export default function Clients() {
         )}
       </div>
 
+      {/* Add Client Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[500px] max-w-[calc(100%-2rem)] mx-auto">
           <DialogHeader>
@@ -305,6 +342,71 @@ export default function Clients() {
             </Button>
             <Button onClick={handleAddClient} disabled={!newClient.company} className="w-full sm:w-auto">
               Add Client
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
+        <DialogContent className="sm:max-w-[500px] max-w-[calc(100%-2rem)] mx-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Client</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-company">Organisation Name</Label>
+              <Input
+                id="edit-company"
+                value={editFormData.company}
+                onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                placeholder="Company / Organisation Name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-contactPerson">Contact Person</Label>
+              <Input
+                id="edit-contactPerson"
+                value={editFormData.contactPerson}
+                onChange={(e) => setEditFormData({ ...editFormData, contactPerson: e.target.value })}
+                placeholder="John Smith"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                placeholder="john@company.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="+266 2231 1234"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input
+                id="edit-address"
+                value={editFormData.address}
+                onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                placeholder="123 Kingsway, Maseru"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <Button variant="outline" onClick={() => setEditingClient(null)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateClient} disabled={!editFormData.company} className="w-full sm:w-auto">
+              Save Changes
             </Button>
           </div>
         </DialogContent>
