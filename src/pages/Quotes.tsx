@@ -531,8 +531,8 @@ export default function Quotes() {
               </div>
               <div className="space-y-3">
                 <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground mb-1">
-                  <div className="col-span-4">Description</div>
-                  <div className="col-span-1">Qty</div>
+                  <div className="col-span-3">Description</div>
+                  <div className="col-span-2">Qty</div>
                   <div className="col-span-2 text-amber-600">Cost Price</div>
                   <div className="col-span-4">Sell Price / Margin</div>
                   <div className="col-span-1"></div>
@@ -541,8 +541,8 @@ export default function Quotes() {
                   const lineMargin = item.unitPrice > 0 ? ((item.unitPrice - item.costPrice) / item.unitPrice) * 100 : 0;
                   return (
                     <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-4"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
-                      <div className="col-span-1"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} className="text-center" /></div>
+                      <div className="col-span-3"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
+                      <div className="col-span-2"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} className="text-center" min="1" /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Cost" value={item.costPrice} onChange={(e) => updateLineItem(item.id, 'costPrice', parseFloat(e.target.value) || 0)} className="border-amber-200 bg-amber-50/50" /></div>
                       <div className="col-span-4 flex items-center gap-1">
                         {item.inputMode === 'price' ? (
