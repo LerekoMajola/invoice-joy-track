@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,6 +175,22 @@ export default function Quotes() {
         ? { ...item, inputMode: item.inputMode === 'price' ? 'margin' : 'price' } 
         : item
     ));
+  };
+
+  const moveLineItemUp = (itemId: string) => {
+    const index = lineItems.findIndex(item => item.id === itemId);
+    if (index <= 0) return;
+    const newItems = [...lineItems];
+    [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+    setLineItems(newItems);
+  };
+
+  const moveLineItemDown = (itemId: string) => {
+    const index = lineItems.findIndex(item => item.id === itemId);
+    if (index === -1 || index >= lineItems.length - 1) return;
+    const newItems = [...lineItems];
+    [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+    setLineItems(newItems);
   };
 
   const calculateTotal = () => {
@@ -534,7 +550,8 @@ export default function Quotes() {
                   <div className="col-span-3">Description</div>
                   <div className="col-span-2">Qty</div>
                   <div className="col-span-2 text-amber-600">Cost Price</div>
-                  <div className="col-span-4">Sell Price / Margin</div>
+                  <div className="col-span-3">Sell Price / Margin</div>
+                  <div className="col-span-1"></div>
                   <div className="col-span-1"></div>
                 </div>
                 {lineItems.map((item) => {
@@ -544,7 +561,7 @@ export default function Quotes() {
                       <div className="col-span-3"><Input placeholder="Description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} className="text-center" min="1" /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Cost" value={item.costPrice} onChange={(e) => updateLineItem(item.id, 'costPrice', parseFloat(e.target.value) || 0)} className="border-amber-200 bg-amber-50/50" /></div>
-                      <div className="col-span-4 flex items-center gap-1">
+                      <div className="col-span-3 flex items-center gap-1">
                         {item.inputMode === 'price' ? (
                           <>
                             <Input 
@@ -564,7 +581,7 @@ export default function Quotes() {
                             >
                               <ArrowRightLeft className="h-3.5 w-3.5" />
                             </Button>
-                            <span className={`text-sm font-medium w-14 text-right ${lineMargin >= 25 ? 'text-emerald-600' : lineMargin >= 10 ? 'text-sky-600' : lineMargin > 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                            <span className={`text-sm font-medium w-12 text-right ${lineMargin >= 25 ? 'text-success' : lineMargin >= 10 ? 'text-info' : lineMargin > 0 ? 'text-warning' : 'text-destructive'}`}>
                               {lineMargin.toFixed(0)}%
                             </span>
                           </>
@@ -575,7 +592,7 @@ export default function Quotes() {
                               placeholder="Margin %" 
                               value={item.marginPercent || ''} 
                               onChange={(e) => updateMargin(item.id, parseFloat(e.target.value) || 0)}
-                              className="w-20"
+                              className="w-16"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                             <Button 
@@ -593,6 +610,28 @@ export default function Quotes() {
                             </span>
                           </>
                         )}
+                      </div>
+                      <div className="col-span-1 flex flex-col items-center justify-center gap-0">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => moveLineItemUp(item.id)}
+                          disabled={lineItems.indexOf(item) === 0}
+                          className="h-5 w-5 text-muted-foreground hover:text-primary"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => moveLineItemDown(item.id)}
+                          disabled={lineItems.indexOf(item) === lineItems.length - 1}
+                          className="h-5 w-5 text-muted-foreground hover:text-primary"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
                       </div>
                       <div className="col-span-1 flex justify-center"><Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></Button></div>
                     </div>
