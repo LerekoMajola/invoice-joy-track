@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +71,7 @@ export default function Quotes() {
     return invoice?.invoiceNumber || null;
   };
   const [isOpen, setIsOpen] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
   const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number; inputMode: 'price' | 'margin'; marginPercent: number }[]>([
@@ -182,9 +183,58 @@ export default function Quotes() {
 
   const resetForm = () => {
     setIsOpen(false);
+    setEditingQuote(null);
     setSelectedClientId('');
     setQuoteDescription('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
+    setValidityDays(profile?.default_validity_days ?? 90);
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    setEditingQuote(quote);
+    setSelectedClientId(quote.clientId || '');
+    setQuoteDescription(quote.description || '');
+    setLineItems(quote.lineItems.map(item => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      costPrice: item.costPrice,
+      inputMode: 'price' as const,
+      marginPercent: item.unitPrice > 0 
+        ? ((item.unitPrice - item.costPrice) / item.unitPrice) * 100 
+        : 0,
+    })));
+    // Calculate validity days from dates
+    const dateStart = new Date(quote.date);
+    const dateEnd = new Date(quote.validUntil);
+    const diffDays = Math.ceil((dateEnd.getTime() - dateStart.getTime()) / (1000 * 60 * 60 * 24));
+    setValidityDays(diffDays > 0 ? diffDays : 90);
+    setIsOpen(true);
+  };
+
+  const handleSaveEditedQuote = async () => {
+    if (!editingQuote) return;
+    
+    const client = clients.find(c => c.id === selectedClientId);
+    if (!client) return;
+
+    const today = new Date(editingQuote.date);
+    const validUntil = new Date(today);
+    validUntil.setDate(validUntil.getDate() + validityDays);
+
+    await updateQuote(editingQuote.id, {
+      clientId: client.id,
+      clientName: client.company,
+      date: editingQuote.date,
+      validUntil: validUntil.toISOString().split('T')[0],
+      description: quoteDescription || undefined,
+      lineItems: lineItems.map(({ id, description, quantity, unitPrice, costPrice }) => ({ 
+        id, description, quantity, unitPrice, costPrice 
+      })),
+    });
+
+    resetForm();
   };
 
   const handleSaveDraft = async () => {
@@ -321,6 +371,7 @@ export default function Quotes() {
                   convertedQuoteIds={convertedQuoteIds}
                   getLinkedInvoiceNumber={getLinkedInvoiceNumber}
                   onView={handleViewQuote}
+                  onEdit={handleEditQuote}
                   onConvert={handleConvertToInvoice}
                   onStatusChange={handleStatusChange}
                   onDelete={deleteQuote}
@@ -406,6 +457,7 @@ export default function Quotes() {
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-popover">
                           <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditQuote(quote)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => deleteQuote(quote.id)}>
@@ -424,9 +476,13 @@ export default function Quotes() {
         </div>
       </div>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsOpen(true); }}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-display">Create New Quote</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {editingQuote ? `Edit Quote: ${editingQuote.quoteNumber}` : 'Create New Quote'}
+            </DialogTitle>
+          </DialogHeader>
           <div className="grid gap-6 py-4">
             <div className="flex items-center gap-4">
               <div className="flex-1">
@@ -583,20 +639,31 @@ export default function Quotes() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button 
-              variant="secondary" 
-              onClick={handleSaveDraft} 
-              disabled={!selectedClientId}
-            >
-              Save as Draft
-            </Button>
-            <Button 
-              onClick={handleCreateQuote} 
-              disabled={!selectedClientId || lineItems.every(item => !item.description)}
-            >
-              Create Quote
-            </Button>
+            <Button variant="outline" onClick={resetForm}>Cancel</Button>
+            {editingQuote ? (
+              <Button 
+                onClick={handleSaveEditedQuote} 
+                disabled={!selectedClientId || lineItems.every(item => !item.description)}
+              >
+                Save Changes
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleSaveDraft} 
+                  disabled={!selectedClientId}
+                >
+                  Save as Draft
+                </Button>
+                <Button 
+                  onClick={handleCreateQuote} 
+                  disabled={!selectedClientId || lineItems.every(item => !item.description)}
+                >
+                  Create Quote
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -645,6 +712,7 @@ interface QuoteCardProps {
   convertedQuoteIds: Set<string | undefined>;
   getLinkedInvoiceNumber: (quoteId: string) => string | null;
   onView: (quote: Quote) => void;
+  onEdit: (quote: Quote) => void;
   onConvert: (quote: Quote) => void;
   onStatusChange: (quoteId: string, status: Quote['status']) => void;
   onDelete: (quoteId: string) => void;
@@ -655,6 +723,7 @@ function QuoteCard({
   convertedQuoteIds,
   getLinkedInvoiceNumber,
   onView,
+  onEdit,
   onConvert,
   onStatusChange,
   onDelete,
@@ -695,6 +764,9 @@ function QuoteCard({
             <DropdownMenuContent align="end" className="bg-popover">
               <DropdownMenuItem onClick={() => onView(quote)}>
                 <Eye className="h-4 w-4 mr-2" />View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(quote)}>
+                <Pencil className="h-4 w-4 mr-2" />Edit
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Copy className="h-4 w-4 mr-2" />Duplicate
