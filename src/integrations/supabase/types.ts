@@ -537,6 +537,8 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          lead_time: string | null
+          notes: string | null
           quote_number: string
           status: string | null
           tax_rate: number | null
@@ -553,6 +555,8 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          lead_time?: string | null
+          notes?: string | null
           quote_number: string
           status?: string | null
           tax_rate?: number | null
@@ -569,6 +573,8 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          lead_time?: string | null
+          notes?: string | null
           quote_number?: string
           status?: string | null
           tax_rate?: number | null
