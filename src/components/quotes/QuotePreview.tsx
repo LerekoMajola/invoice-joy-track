@@ -383,24 +383,6 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             </div>
           </div>
 
-          {/* Lead Time */}
-          {(data.leadTime || isEditing) && (
-            <div className="mb-4">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold" style={{ color: selectedTemplate.primaryColor }}>Lead Time:</span>
-                {isEditing ? (
-                  <Input
-                    value={data.leadTime || ''}
-                    onChange={(e) => setData({ ...data, leadTime: e.target.value })}
-                    placeholder="e.g., 2-3 weeks, 30 days"
-                    className="text-sm border-dashed w-64 h-7"
-                  />
-                ) : (
-                  <span className="text-sm text-gray-900">{data.leadTime}</span>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Quote Description */}
           <div className="mb-8">
@@ -566,6 +548,23 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               <p className="text-sm text-gray-600 whitespace-pre-line">{data.termsAndConditions}</p>
             )}
           </div>
+
+          {/* Lead Time */}
+          {(data.leadTime || isEditing) && (
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold mb-2" style={{ color: selectedTemplate.primaryColor }}>Lead Time</h4>
+              {isEditing ? (
+                <Input
+                  value={data.leadTime || ''}
+                  onChange={(e) => setData({ ...data, leadTime: e.target.value })}
+                  placeholder="e.g., 2-3 weeks, 30 days"
+                  className="text-sm border-dashed w-64 h-7"
+                />
+              ) : (
+                <p className="text-sm text-gray-700">{data.leadTime}</p>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           {(data.notes || isEditing) && (
