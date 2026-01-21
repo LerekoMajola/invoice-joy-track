@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
   Table, 
@@ -74,6 +75,8 @@ export default function Quotes() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
+  const [leadTime, setLeadTime] = useState('');
+  const [notes, setNotes] = useState('');
   const [lineItems, setLineItems] = useState<{ id: string; description: string; quantity: number; unitPrice: number; costPrice: number; inputMode: 'price' | 'margin'; marginPercent: number }[]>([
     { id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }
   ]);
@@ -202,6 +205,8 @@ export default function Quotes() {
     setEditingQuote(null);
     setSelectedClientId('');
     setQuoteDescription('');
+    setLeadTime('');
+    setNotes('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
     setValidityDays(profile?.default_validity_days ?? 90);
   };
@@ -210,6 +215,8 @@ export default function Quotes() {
     setEditingQuote(quote);
     setSelectedClientId(quote.clientId || '');
     setQuoteDescription(quote.description || '');
+    setLeadTime(quote.leadTime || '');
+    setNotes(quote.notes || '');
     setLineItems(quote.lineItems.map(item => ({
       id: item.id,
       description: item.description,
@@ -245,6 +252,8 @@ export default function Quotes() {
       date: editingQuote.date,
       validUntil: validUntil.toISOString().split('T')[0],
       description: quoteDescription || undefined,
+      leadTime: leadTime || undefined,
+      notes: notes || undefined,
       lineItems: lineItems.map(({ id, description, quantity, unitPrice, costPrice }) => ({ 
         id, description, quantity, unitPrice, costPrice 
       })),
@@ -275,6 +284,8 @@ export default function Quotes() {
       taxRate: defaultTaxRate,
       termsAndConditions: defaultTerms,
       description: quoteDescription || undefined,
+      leadTime: leadTime || undefined,
+      notes: notes || undefined,
       lineItems: validLineItems.length > 0 
         ? validLineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice }))
         : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }],
@@ -301,6 +312,8 @@ export default function Quotes() {
       taxRate: defaultTaxRate,
       termsAndConditions: defaultTerms,
       description: quoteDescription || undefined,
+      leadTime: leadTime || undefined,
+      notes: notes || undefined,
       lineItems: lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice })),
     });
 
@@ -318,6 +331,8 @@ export default function Quotes() {
     date: string; 
     dueDate: string; 
     description?: string;
+    leadTime?: string;
+    notes?: string;
     client?: { address?: string } | null;
   }) => {
     if (!previewQuote) return;
@@ -332,6 +347,8 @@ export default function Quotes() {
       date: updatedData.date,
       validUntil: updatedData.dueDate,
       description: updatedData.description,
+      leadTime: updatedData.leadTime,
+      notes: updatedData.notes,
     });
   };
 
@@ -538,6 +555,32 @@ export default function Quotes() {
               <p className="text-xs text-muted-foreground mt-1">Brief description of what this quote is for</p>
             </div>
             <div>
+              <Label htmlFor="leadTime" className="text-sm font-medium">
+                Lead Time <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="leadTime"
+                value={leadTime}
+                onChange={(e) => setLeadTime(e.target.value)}
+                placeholder="e.g., 2-3 weeks, 30 days from order confirmation"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Estimated delivery or completion time for this quote
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Additional notes for this quote..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+            <div>
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <Label>Line Items</Label>
@@ -728,6 +771,8 @@ export default function Quotes() {
               taxRate: previewQuote.taxRate,
               termsAndConditions: previewQuote.termsAndConditions || '',
               description: previewQuote.description || undefined,
+              leadTime: previewQuote.leadTime || undefined,
+              notes: previewQuote.notes || undefined,
             }}
           isConverted={convertedQuoteIds.has(previewQuote.id)}
           linkedInvoiceNumber={getLinkedInvoiceNumber(previewQuote.id)}

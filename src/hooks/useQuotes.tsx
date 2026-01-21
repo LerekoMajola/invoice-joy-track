@@ -24,6 +24,8 @@ export interface Quote {
   taxRate: number;
   termsAndConditions: string | null;
   description: string | null;
+  leadTime: string | null;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +39,8 @@ interface QuoteInsert {
   taxRate?: number;
   termsAndConditions?: string;
   description?: string;
+  leadTime?: string;
+  notes?: string;
   lineItems: Omit<LineItem, 'id'>[];
 }
 
@@ -85,7 +89,7 @@ export function useQuotes() {
       });
 
       setQuotes(
-        (quotesData || []).map((q) => ({
+        (quotesData || []).map((q: any): Quote => ({
           id: q.id,
           quoteNumber: q.quote_number,
           clientId: q.client_id,
@@ -98,6 +102,8 @@ export function useQuotes() {
           taxRate: Number(q.tax_rate),
           termsAndConditions: q.terms_and_conditions,
           description: q.description,
+          leadTime: q.lead_time,
+          notes: q.notes,
           createdAt: q.created_at,
           updatedAt: q.updated_at,
         }))
@@ -156,6 +162,8 @@ export function useQuotes() {
           tax_rate: quote.taxRate || 0,
           terms_and_conditions: quote.termsAndConditions || null,
           description: quote.description || null,
+          lead_time: quote.leadTime || null,
+          notes: quote.notes || null,
         })
         .select()
         .single();
@@ -178,15 +186,16 @@ export function useQuotes() {
 
       if (lineItemsError) throw lineItemsError;
 
+      const quoteDataAny = quoteData as any;
       const newQuote: Quote = {
-        id: quoteData.id,
-        quoteNumber: quoteData.quote_number,
-        clientId: quoteData.client_id,
-        clientName: quoteData.client_name,
-        date: quoteData.date,
-        validUntil: quoteData.valid_until,
-        total: Number(quoteData.total),
-        status: quoteData.status as Quote['status'],
+        id: quoteDataAny.id,
+        quoteNumber: quoteDataAny.quote_number,
+        clientId: quoteDataAny.client_id,
+        clientName: quoteDataAny.client_name,
+        date: quoteDataAny.date,
+        validUntil: quoteDataAny.valid_until,
+        total: Number(quoteDataAny.total),
+        status: quoteDataAny.status as Quote['status'],
         lineItems: (lineItemsData || []).map((item) => ({
           id: item.id,
           description: item.description,
@@ -194,11 +203,13 @@ export function useQuotes() {
           unitPrice: Number(item.unit_price),
           costPrice: Number(item.cost_price) || 0,
         })),
-        taxRate: Number(quoteData.tax_rate),
-        termsAndConditions: quoteData.terms_and_conditions,
-        description: quoteData.description,
-        createdAt: quoteData.created_at,
-        updatedAt: quoteData.updated_at,
+        taxRate: Number(quoteDataAny.tax_rate),
+        termsAndConditions: quoteDataAny.terms_and_conditions,
+        description: quoteDataAny.description,
+        leadTime: quoteDataAny.lead_time,
+        notes: quoteDataAny.notes,
+        createdAt: quoteDataAny.created_at,
+        updatedAt: quoteDataAny.updated_at,
       };
 
       setQuotes((prev) => [newQuote, ...prev]);
@@ -233,6 +244,8 @@ export function useQuotes() {
           tax_rate: updates.taxRate,
           terms_and_conditions: updates.termsAndConditions,
           description: updates.description,
+          lead_time: updates.leadTime,
+          notes: updates.notes,
         })
         .eq('id', id);
 
