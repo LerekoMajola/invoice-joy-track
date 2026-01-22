@@ -24,21 +24,25 @@ import { cn } from '@/lib/utils';
 
 type FilterTab = 'all' | 'today' | 'overdue' | 'done';
 
-const priorityConfig: Record<TaskPriority, { label: string; className: string; borderClass: string }> = {
+const priorityConfig: Record<TaskPriority, { label: string; className: string; borderClass: string; meterColor: string; flash?: boolean }> = {
   high: { 
     label: 'High', 
-    className: 'bg-destructive/10 text-destructive border-destructive/20',
-    borderClass: 'border-l-destructive'
+    className: 'bg-destructive text-destructive-foreground border-destructive',
+    borderClass: 'border-l-destructive',
+    meterColor: 'bg-destructive',
+    flash: true
   },
   medium: { 
     label: 'Medium', 
-    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-    borderClass: 'border-l-amber-500'
+    className: 'bg-amber-500 text-white border-amber-500',
+    borderClass: 'border-l-amber-500',
+    meterColor: 'bg-amber-500'
   },
   low: { 
     label: 'Low', 
-    className: 'bg-muted text-muted-foreground border-border',
-    borderClass: 'border-l-muted-foreground'
+    className: 'bg-emerald-500 text-white border-emerald-500',
+    borderClass: 'border-l-emerald-500',
+    meterColor: 'bg-emerald-500'
   },
 };
 
@@ -391,19 +395,22 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
         )}
       </div>
 
-      {/* Always visible on mobile, hover on desktop */}
-      <div className="flex items-center gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        <Badge 
-          variant="outline" 
-          className={cn("text-xs capitalize hidden md:inline-flex", priority.className)}
+      {/* Urgency Meter - Always Visible */}
+      <div className="flex items-center gap-2">
+        <div
+          className={cn(
+            "px-2 py-1 rounded text-xs font-semibold capitalize",
+            priority.className,
+            priority.flash && !isDone && "animate-urgent-flash"
+          )}
         >
           {task.priority}
-        </Badge>
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onDelete}
-          className="h-9 w-9 md:h-7 md:w-7 text-muted-foreground hover:text-destructive"
+          className="h-9 w-9 md:h-7 md:w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
