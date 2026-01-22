@@ -40,9 +40,9 @@ const initialTasks: Task[] = [
 ];
 
 const priorityStyles = {
-  high: 'bg-destructive/10 text-destructive border-destructive/20',
-  medium: 'bg-warning/10 text-warning border-warning/20',
-  low: 'bg-muted text-muted-foreground border-border',
+  high: 'bg-destructive text-destructive-foreground border-destructive',
+  medium: 'bg-amber-500 text-white border-amber-500',
+  low: 'bg-emerald-500 text-white border-emerald-500',
 };
 
 const statusColors = {
@@ -262,8 +262,11 @@ function TaskCard({
               {task.dueDate}
             </span>
             <Badge 
-              variant="outline" 
-              className={cn('text-xs capitalize', priorityStyles[task.priority])}
+              className={cn(
+                'text-xs capitalize font-semibold',
+                priorityStyles[task.priority],
+                task.priority === 'high' && task.status !== 'done' && 'animate-urgent-flash'
+              )}
             >
               <Flag className="h-3 w-3 mr-1" />
               {task.priority}

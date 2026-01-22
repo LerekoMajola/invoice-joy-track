@@ -204,6 +204,19 @@
   }
 }
 
+@keyframes urgentFlash {
+  0%, 100% { 
+    opacity: 1; 
+  }
+  50% { 
+    opacity: 0.5; 
+  }
+}
+
+.animate-urgent-flash {
+  animation: urgentFlash 1s ease-in-out infinite;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
