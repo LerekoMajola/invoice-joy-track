@@ -44,7 +44,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar md:fixed">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center px-4 border-b border-sidebar-border">
+        <div className="flex h-16 items-center px-4 border-b border-sidebar-border bg-white">
           <div className="bg-white rounded-lg px-3 py-2">
             <img src={leekayLogo} alt="Leekay" className="h-7 w-auto" />
           </div>
