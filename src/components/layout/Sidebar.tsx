@@ -51,7 +51,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-red-900">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
