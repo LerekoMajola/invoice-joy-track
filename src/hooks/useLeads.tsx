@@ -229,7 +229,7 @@ export function useLeads() {
     if (!user) return null;
 
     try {
-      // Create client from lead
+      // Create client from lead with source tracking
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
@@ -238,6 +238,9 @@ export function useLeads() {
           contact_person: lead.name,
           email: lead.email,
           phone: lead.phone,
+          source: lead.source,
+          source_lead_id: lead.id,
+          status: 'active',
         })
         .select()
         .single();

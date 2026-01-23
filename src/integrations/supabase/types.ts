@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_activities: {
+        Row: {
+          activity_type: string
+          client_id: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          client_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          client_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -22,7 +57,12 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          last_activity_at: string | null
           phone: string | null
+          source: string | null
+          source_lead_id: string | null
+          status: string | null
+          total_revenue: number | null
           updated_at: string
           user_id: string
         }
@@ -33,7 +73,12 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_activity_at?: string | null
           phone?: string | null
+          source?: string | null
+          source_lead_id?: string | null
+          status?: string | null
+          total_revenue?: number | null
           updated_at?: string
           user_id: string
         }
@@ -44,11 +89,24 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_activity_at?: string | null
           phone?: string | null
+          source?: string | null
+          source_lead_id?: string | null
+          status?: string | null
+          total_revenue?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_profiles: {
         Row: {
@@ -175,6 +233,66 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      contacts: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          lead_id: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lead_id?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          lead_id?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_note_items: {
         Row: {

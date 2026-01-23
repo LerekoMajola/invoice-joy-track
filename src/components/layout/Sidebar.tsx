@@ -18,7 +18,7 @@ import leekayLogo from '@/assets/leekay-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Clients', href: '/clients', icon: Users },
+  { name: 'Clients & Leads', href: '/crm', icon: Users },
   { name: 'Quotes', href: '/quotes', icon: FileText },
   { name: 'Invoices', href: '/invoices', icon: Receipt },
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck },
