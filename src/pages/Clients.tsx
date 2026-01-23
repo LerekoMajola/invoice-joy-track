@@ -25,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useClients, Client } from '@/hooks/useClients';
 
 // Mobile Client Card Component
@@ -35,7 +37,7 @@ function ClientCard({
 }: { 
   client: Client; 
   onEdit: (client: Client) => void;
-  onDelete: (id: string) => void 
+  onDelete: (id: string, company: string) => void 
 }) {
   return (
     <div className="mobile-card animate-slide-up">
@@ -64,7 +66,7 @@ function ClientCard({
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-destructive"
-              onClick={() => onDelete(client.id)}
+              onClick={() => onDelete(client.id, client.company)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
@@ -99,6 +101,7 @@ function ClientCard({
 
 export default function Clients() {
   const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
+  const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const [isOpen, setIsOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({
@@ -156,8 +159,14 @@ export default function Clients() {
     setEditingClient(null);
   };
 
-  const handleDeleteClient = async (id: string) => {
-    await deleteClient(id);
+  const handleDeleteClient = async (id: string, company: string) => {
+    openConfirmDialog({
+      title: 'Delete Client',
+      description: `Are you sure you want to delete "${company}"? All associated data will be removed. This action cannot be undone.`,
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      action: async () => { await deleteClient(id); },
+    });
   };
 
   return (
@@ -265,7 +274,7 @@ export default function Clients() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
-                              onClick={() => handleDeleteClient(client.id)}
+                              onClick={() => handleDeleteClient(client.id, client.company)}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -411,6 +420,16 @@ export default function Clients() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog?.open ?? false}
+        onOpenChange={closeConfirmDialog}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        onConfirm={handleConfirm}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+      />
     </DashboardLayout>
   );
 }

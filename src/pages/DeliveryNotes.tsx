@@ -18,6 +18,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 import { useDeliveryNotes, DeliveryNote, DeliveryNoteItem } from '@/hooks/useDeliveryNotes';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -104,6 +106,7 @@ export default function DeliveryNotes() {
   const { invoices } = useInvoices();
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
+  const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const handleUpdateNote = async (data: {
     id: string;
@@ -169,12 +172,23 @@ export default function DeliveryNotes() {
     }
   }, []);
 
-  const handleMarkDelivered = async (id: string) => {
-    await markAsDelivered(id);
+  const handleMarkDelivered = async (id: string, noteNumber: string) => {
+    openConfirmDialog({
+      title: 'Mark as Delivered',
+      description: `Mark ${noteNumber} as delivered? This will update the delivery status.`,
+      confirmLabel: 'Mark Delivered',
+      action: async () => { await markAsDelivered(id); },
+    });
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteDeliveryNote(id);
+  const handleDelete = async (id: string, noteNumber: string) => {
+    openConfirmDialog({
+      title: 'Delete Delivery Note',
+      description: `Are you sure you want to delete ${noteNumber}? This action cannot be undone.`,
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      action: async () => { await deleteDeliveryNote(id); },
+    });
   };
 
   const formatDisplayDate = (dateStr: string) => {
@@ -245,8 +259,8 @@ export default function DeliveryNotes() {
                   key={note.id}
                   note={note}
                   onView={() => handleView(note)}
-                  onMarkDelivered={() => handleMarkDelivered(note.id)}
-                  onDelete={() => handleDelete(note.id)}
+                  onMarkDelivered={() => handleMarkDelivered(note.id, note.noteNumber)}
+                  onDelete={() => handleDelete(note.id, note.noteNumber)}
                 />
               ))}
             </div>
@@ -305,14 +319,14 @@ export default function DeliveryNotes() {
                               <Eye className="h-4 w-4 mr-2" />View
                             </DropdownMenuItem>
                             {note.status === 'pending' && (
-                              <DropdownMenuItem onClick={() => handleMarkDelivered(note.id)}>
+                              <DropdownMenuItem onClick={() => handleMarkDelivered(note.id, note.noteNumber)}>
                                 <CheckCircle className="h-4 w-4 mr-2" />Mark Delivered
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={() => handleView(note)}>
                               <Download className="h-4 w-4 mr-2" />Download PDF
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(note.id)}>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(note.id, note.noteNumber)}>
                               <Trash2 className="h-4 w-4 mr-2" />Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -348,6 +362,16 @@ export default function DeliveryNotes() {
           onUpdate={handleUpdateNote}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDialog?.open ?? false}
+        onOpenChange={closeConfirmDialog}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        onConfirm={handleConfirm}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+      />
     </DashboardLayout>
   );
 }

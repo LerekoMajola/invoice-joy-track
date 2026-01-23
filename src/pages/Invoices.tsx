@@ -24,6 +24,8 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
@@ -132,6 +134,7 @@ export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
+  const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const invoicesWithDeliveryNotes = new Set(
     deliveryNotes.filter(dn => dn.invoiceId).map(dn => dn.invoiceId)
@@ -202,8 +205,14 @@ export default function Invoices() {
     }
   };
 
-  const handleDeleteInvoice = async (id: string) => {
-    await deleteInvoice(id);
+  const handleDeleteInvoice = async (id: string, invoiceNumber: string) => {
+    openConfirmDialog({
+      title: 'Delete Invoice',
+      description: `Are you sure you want to delete ${invoiceNumber}? This action cannot be undone.`,
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      action: async () => { await deleteInvoice(id); },
+    });
   };
 
   const handleStatusChange = async (invoiceId: string, newStatus: Invoice['status']) => {
@@ -212,6 +221,28 @@ export default function Invoices() {
     if (selectedInvoice?.id === invoiceId) {
       setSelectedInvoice({ ...selectedInvoice, status: newStatus });
     }
+  };
+
+  const handleStatusChangeWithConfirm = async (invoiceId: string, newStatus: Invoice['status'], invoiceNumber: string) => {
+    if (newStatus === 'paid') {
+      openConfirmDialog({
+        title: 'Mark as Paid',
+        description: `Mark ${invoiceNumber} as paid? This will update the invoice status.`,
+        confirmLabel: 'Mark as Paid',
+        action: async () => { await handleStatusChange(invoiceId, newStatus); },
+      });
+    } else {
+      await handleStatusChange(invoiceId, newStatus);
+    }
+  };
+
+  const handleGenerateDeliveryNoteWithConfirm = (invoice: Invoice) => {
+    openConfirmDialog({
+      title: 'Generate Delivery Note',
+      description: `Create a delivery note for ${invoice.invoiceNumber}? This will track the delivery of items.`,
+      confirmLabel: 'Generate',
+      action: () => handleGenerateDeliveryNote(invoice),
+    });
   };
 
   const handleGenerateDeliveryNote = (invoice: Invoice) => {
@@ -291,9 +322,9 @@ export default function Invoices() {
                   key={invoice.id}
                   invoice={invoice}
                   onView={() => handleViewInvoice(invoice)}
-                  onStatusChange={(status) => handleStatusChange(invoice.id, status)}
-                  onGenerateDeliveryNote={() => handleGenerateDeliveryNote(invoice)}
-                  onDelete={() => handleDeleteInvoice(invoice.id)}
+                  onStatusChange={(status) => handleStatusChangeWithConfirm(invoice.id, status, invoice.invoiceNumber)}
+                  onGenerateDeliveryNote={() => handleGenerateDeliveryNoteWithConfirm(invoice)}
+                  onDelete={() => handleDeleteInvoice(invoice.id, invoice.invoiceNumber)}
                   hasDeliveryNote={invoicesWithDeliveryNotes.has(invoice.id)}
                 />
               ))}
@@ -357,18 +388,18 @@ export default function Invoices() {
                             )}
                             {invoice.status === 'sent' && (
                               <>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(invoice.id, 'paid'); }} className="text-success">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChangeWithConfirm(invoice.id, 'paid', invoice.invoiceNumber); }} className="text-success">
                                   <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
                                 </DropdownMenuItem>
                                 {!invoicesWithDeliveryNotes.has(invoice.id) && (
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNoteWithConfirm(invoice); }}>
                                     <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
                                   </DropdownMenuItem>
                                 )}
                               </>
                             )}
                             {invoice.status === 'paid' && !invoicesWithDeliveryNotes.has(invoice.id) && (
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNote(invoice); }}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNoteWithConfirm(invoice); }}>
                                 <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
                               </DropdownMenuItem>
                             )}
@@ -376,7 +407,7 @@ export default function Invoices() {
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Download className="h-4 w-4 mr-2" />Download PDF
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id); }}>
+                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteInvoice(invoice.id, invoice.invoiceNumber); }}>
                               <Trash2 className="h-4 w-4 mr-2" />Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -417,6 +448,16 @@ export default function Invoices() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog?.open ?? false}
+        onOpenChange={closeConfirmDialog}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        onConfirm={handleConfirm}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+      />
     </DashboardLayout>
   );
 }
