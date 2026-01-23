@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useDeliveryNotes, DeliveryNote } from '@/hooks/useDeliveryNotes';
+import { useDeliveryNotes, DeliveryNote, DeliveryNoteItem } from '@/hooks/useDeliveryNotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
 import { DeliveryNotePreview } from '@/components/delivery-notes/DeliveryNotePreview';
@@ -100,10 +100,52 @@ function DeliveryNoteCard({
 }
 
 export default function DeliveryNotes() {
-  const { deliveryNotes, isLoading, createDeliveryNote, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
+  const { deliveryNotes, isLoading, createDeliveryNote, updateDeliveryNote, markAsDelivered, deleteDeliveryNote } = useDeliveryNotes();
   const { invoices } = useInvoices();
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
+
+  const handleUpdateNote = async (data: {
+    id: string;
+    note_number: string;
+    client_name: string;
+    date: string;
+    delivery_address: string | null;
+    status: string | null;
+    invoice_id: string | null;
+    items?: { id: string; description: string; quantity: number | null }[];
+  }) => {
+    const success = await updateDeliveryNote(data.id, {
+      clientName: data.client_name,
+      date: data.date,
+      deliveryAddress: data.delivery_address || undefined,
+      status: data.status as 'pending' | 'delivered',
+      items: data.items?.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity || 1,
+      })) as DeliveryNoteItem[],
+    });
+    
+    if (success) {
+      // Update local selected note state with new data
+      const updatedNote = deliveryNotes.find(n => n.id === data.id);
+      if (updatedNote) {
+        setSelectedNote({
+          ...updatedNote,
+          clientName: data.client_name,
+          date: data.date,
+          deliveryAddress: data.delivery_address,
+          status: (data.status as 'pending' | 'delivered') || updatedNote.status,
+          items: data.items?.map(item => ({
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity || 1,
+          })) || updatedNote.items,
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     const newDeliveryNoteData = sessionStorage.getItem('newDeliveryNoteFromInvoice');
@@ -303,6 +345,7 @@ export default function DeliveryNotes() {
           }}
           invoiceNumber={getInvoiceNumber(selectedNote.invoiceId)}
           onClose={() => setSelectedNote(null)}
+          onUpdate={handleUpdateNote}
         />
       )}
     </DashboardLayout>

@@ -1,9 +1,14 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { X, Download, Printer, Package } from 'lucide-react';
+import { X, Download, Printer, Package, Pencil, Save, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import html2pdf from 'html2pdf.js';
+import { cn } from '@/lib/utils';
 
 interface DeliveryNoteItem {
   id: string;
@@ -11,30 +16,40 @@ interface DeliveryNoteItem {
   quantity: number | null;
 }
 
-interface DeliveryNotePreviewProps {
-  deliveryNote: {
-    id: string;
-    note_number: string;
-    client_name: string;
-    date: string;
-    delivery_address: string | null;
-    status: string | null;
-    invoice_id: string | null;
-    items?: DeliveryNoteItem[];
-  };
-  invoiceNumber?: string;
-  onClose: () => void;
+interface DeliveryNoteData {
+  id: string;
+  note_number: string;
+  client_name: string;
+  date: string;
+  delivery_address: string | null;
+  status: string | null;
+  invoice_id: string | null;
+  items?: DeliveryNoteItem[];
 }
 
-export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: DeliveryNotePreviewProps) {
+interface DeliveryNotePreviewProps {
+  deliveryNote: DeliveryNoteData;
+  invoiceNumber?: string;
+  onClose: () => void;
+  onUpdate?: (data: DeliveryNoteData) => void;
+}
+
+export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUpdate }: DeliveryNotePreviewProps) {
   const { profile, isLoading } = useCompanyProfile();
   const contentRef = useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [data, setData] = useState<DeliveryNoteData>(deliveryNote);
 
   const primaryColor = profile?.template_primary_color || 'hsl(230, 35%, 18%)';
   const secondaryColor = profile?.template_secondary_color || 'hsl(230, 25%, 95%)';
   const accentColor = profile?.template_accent_color || 'hsl(230, 35%, 25%)';
   const fontFamily = profile?.template_font_family || 'DM Sans';
   const tableStyle = profile?.template_table_style || 'striped';
+
+  // Sync with incoming prop
+  useEffect(() => {
+    setData(deliveryNote);
+  }, [deliveryNote]);
 
   // Load custom font from profile
   useEffect(() => {
@@ -72,12 +87,19 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
     return lines;
   };
 
+  const handleSave = () => {
+    if (onUpdate) {
+      onUpdate(data);
+    }
+    setIsEditing(false);
+  };
+
   const handleDownloadPDF = () => {
     if (!contentRef.current) return;
 
     const opt = {
       margin: 0,
-      filename: `${deliveryNote.note_number}.pdf`,
+      filename: `${data.note_number}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
@@ -98,6 +120,34 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
     }
   };
 
+  const updateItem = (itemId: string, field: keyof DeliveryNoteItem, value: string | number) => {
+    setData(prev => ({
+      ...prev,
+      items: prev.items?.map(item => 
+        item.id === itemId ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const addItem = () => {
+    const newItem: DeliveryNoteItem = {
+      id: `new-${Date.now()}`,
+      description: '',
+      quantity: 1
+    };
+    setData(prev => ({
+      ...prev,
+      items: [...(prev.items || []), newItem]
+    }));
+  };
+
+  const removeItem = (itemId: string) => {
+    setData(prev => ({
+      ...prev,
+      items: prev.items?.filter(item => item.id !== itemId)
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -116,11 +166,22 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             <h2 className="text-lg font-semibold">Delivery Note Preview</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
+            {isEditing ? (
+              <Button variant="default" size="sm" onClick={handleSave}>
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={handlePrint} disabled={isEditing}>
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
-            <Button variant="default" size="sm" onClick={handleDownloadPDF}>
+            <Button variant="default" size="sm" onClick={handleDownloadPDF} disabled={isEditing}>
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>
@@ -181,26 +242,68 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
             </div>
 
             {/* Client & Document Info */}
-            <div className="flex justify-between items-end mb-4">
-              <div className="leading-tight">
+            <div className="flex justify-between items-start mb-4">
+              <div className="leading-tight flex-1 max-w-sm">
                 <p className="text-sm font-semibold mb-1" style={{ color: primaryColor }}>Deliver To</p>
-                <h3 className="text-base font-bold text-gray-900">
-                  {deliveryNote.client_name}
-                </h3>
-                {deliveryNote.delivery_address && (
-                  <p className="text-sm text-gray-600 whitespace-pre-line">
-                    {deliveryNote.delivery_address}
-                  </p>
+                {isEditing ? (
+                  <Input
+                    value={data.client_name}
+                    onChange={(e) => setData({ ...data, client_name: e.target.value })}
+                    className="text-base font-bold mb-2 h-8"
+                    placeholder="Client Name"
+                  />
+                ) : (
+                  <h3 className="text-base font-bold text-gray-900">
+                    {data.client_name}
+                  </h3>
+                )}
+                {isEditing ? (
+                  <Textarea
+                    value={data.delivery_address || ''}
+                    onChange={(e) => setData({ ...data, delivery_address: e.target.value })}
+                    className="text-sm min-h-[60px]"
+                    placeholder="Delivery Address"
+                  />
+                ) : (
+                  data.delivery_address && (
+                    <p className="text-sm text-gray-600 whitespace-pre-line">
+                      {data.delivery_address}
+                    </p>
+                  )
                 )}
               </div>
               <div className="text-right space-y-1">
                 <div className="flex justify-end gap-4 items-center">
                   <span className="text-sm font-semibold" style={{ color: primaryColor }}>Delivery Note #</span>
-                  <span className="text-sm text-gray-900 w-32">{deliveryNote.note_number}</span>
+                  <span className="text-sm text-gray-900 w-32">{data.note_number}</span>
                 </div>
                 <div className="flex justify-end gap-4 items-center">
                   <span className="text-sm font-semibold" style={{ color: primaryColor }}>Date</span>
-                  <span className="text-sm text-gray-900 w-32">{formatDisplayDate(deliveryNote.date)}</span>
+                  {isEditing ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-32 justify-start text-left font-normal h-8 text-sm",
+                            !data.date && "text-muted-foreground"
+                          )}
+                        >
+                          {data.date ? format(new Date(data.date), 'dd MMM yyyy') : 'Pick date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={data.date ? new Date(data.date) : undefined}
+                          onSelect={(date) => date && setData({ ...data, date: format(date, 'yyyy-MM-dd') })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <span className="text-sm text-gray-900 w-32">{formatDisplayDate(data.date)}</span>
+                  )}
                 </div>
                 {invoiceNumber && (
                   <div className="flex justify-end gap-4 items-center">
@@ -226,13 +329,13 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
                       Quantity
                     </th>
                     <th className="text-center py-3 px-4 text-white text-xs uppercase tracking-wider font-semibold w-32">
-                      Received
+                      {isEditing ? 'Actions' : 'Received'}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {deliveryNote.items && deliveryNote.items.length > 0 ? (
-                    deliveryNote.items.map((item, index) => (
+                  {data.items && data.items.length > 0 ? (
+                    data.items.map((item, index) => (
                       <tr 
                         key={item.id}
                         style={{ 
@@ -243,12 +346,44 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
                         }}
                       >
                         <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900">{item.description}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900">
+                          {isEditing ? (
+                            <Input
+                              value={item.description}
+                              onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="Item description"
+                            />
+                          ) : (
+                            item.description
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-sm text-center text-gray-900 font-medium">
-                          {item.quantity || 1}
+                          {isEditing ? (
+                            <Input
+                              type="number"
+                              value={item.quantity || 1}
+                              onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                              className="h-8 text-sm text-center w-20 mx-auto"
+                              min={1}
+                            />
+                          ) : (
+                            item.quantity || 1
+                          )}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <div className="w-6 h-6 border-2 border-gray-400 mx-auto rounded"></div>
+                          {isEditing ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => removeItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <div className="w-6 h-6 border-2 border-gray-400 mx-auto rounded"></div>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -256,6 +391,21 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose }: De
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-gray-500 italic">
                         No items listed
+                      </td>
+                    </tr>
+                  )}
+                  {isEditing && (
+                    <tr>
+                      <td colSpan={4} className="py-2 px-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addItem}
+                          className="w-full border-dashed"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Item
+                        </Button>
                       </td>
                     </tr>
                   )}
