@@ -36,6 +36,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
@@ -82,26 +84,57 @@ export default function Quotes() {
   ]);
   const [validityDays, setValidityDays] = useState(profile?.default_validity_days ?? 90);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
+  const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
   const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
 
   const handleConvertToInvoice = (quote: Quote) => {
-    const client = clients.find(c => c.id === quote.clientId);
-    
-    const invoiceData = {
-      sourceQuoteId: quote.id,
-      clientId: quote.clientId,
-      clientName: quote.clientName,
-      clientAddress: client?.address || '',
-      description: quote.description || '',
-      lineItems: quote.lineItems,
-      taxRate: quote.taxRate,
-    };
-    
-    sessionStorage.setItem('newInvoiceFromQuote', JSON.stringify(invoiceData));
-    toast.success(`Converting ${quote.quoteNumber} to invoice`);
-    navigate('/invoices');
+    openConfirmDialog({
+      title: 'Convert to Invoice',
+      description: `Convert ${quote.quoteNumber} to an invoice? This will create a new invoice based on this quote.`,
+      confirmLabel: 'Convert',
+      action: () => {
+        const client = clients.find(c => c.id === quote.clientId);
+        
+        const invoiceData = {
+          sourceQuoteId: quote.id,
+          clientId: quote.clientId,
+          clientName: quote.clientName,
+          clientAddress: client?.address || '',
+          description: quote.description || '',
+          lineItems: quote.lineItems,
+          taxRate: quote.taxRate,
+        };
+        
+        sessionStorage.setItem('newInvoiceFromQuote', JSON.stringify(invoiceData));
+        toast.success(`Converting ${quote.quoteNumber} to invoice`);
+        navigate('/invoices');
+      },
+    });
+  };
+
+  const handleDeleteQuote = (quoteId: string, quoteNumber: string) => {
+    openConfirmDialog({
+      title: 'Delete Quote',
+      description: `Are you sure you want to delete ${quoteNumber}? This action cannot be undone.`,
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      action: async () => { await deleteQuote(quoteId); },
+    });
+  };
+
+  const handleStatusChangeWithConfirm = (quoteId: string, newStatus: Quote['status'], quoteNumber: string) => {
+    if (newStatus === 'accepted' || newStatus === 'rejected') {
+      openConfirmDialog({
+        title: `Mark as ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
+        description: `Are you sure you want to mark ${quoteNumber} as ${newStatus}? This indicates the final client decision.`,
+        confirmLabel: `Mark as ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
+        action: () => handleStatusChange(quoteId, newStatus),
+      });
+    } else {
+      handleStatusChange(quoteId, newStatus);
+    }
   };
 
   const addLineItem = () => {
@@ -458,11 +491,11 @@ export default function Quotes() {
                             <Badge variant="outline" className={cn('mr-2', statusStyles.sent)}>Sent</Badge>
                             Set as Sent
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'accepted')} disabled={quote.status === 'accepted'}>
+                          <DropdownMenuItem onClick={() => handleStatusChangeWithConfirm(quote.id, 'accepted', quote.quoteNumber)} disabled={quote.status === 'accepted'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.accepted)}>Accepted</Badge>
                             Set as Accepted
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'rejected')} disabled={quote.status === 'rejected'}>
+                          <DropdownMenuItem onClick={() => handleStatusChangeWithConfirm(quote.id, 'rejected', quote.quoteNumber)} disabled={quote.status === 'rejected'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.rejected)}>Rejected</Badge>
                             Set as Rejected
                           </DropdownMenuItem>
@@ -493,7 +526,7 @@ export default function Quotes() {
                           <DropdownMenuItem onClick={() => handleEditQuote(quote)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => deleteQuote(quote.id)}>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteQuote(quote.id, quote.quoteNumber)}>
                             <Trash2 className="h-4 w-4 mr-2" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -786,6 +819,16 @@ export default function Quotes() {
           />
         );
       })()}
+
+      <ConfirmDialog
+        open={confirmDialog?.open ?? false}
+        onOpenChange={closeConfirmDialog}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        onConfirm={handleConfirm}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+      />
     </DashboardLayout>
   );
 }

@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Calendar, Clock, Flag, Plus, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 
 interface Task {
@@ -59,7 +61,7 @@ export default function Tasks() {
     dueDate: '',
     priority: 'medium' as Task['priority'],
   });
-
+  const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const handleAddTask = () => {
     const task: Task = {
       id: Date.now().toString(),
@@ -81,8 +83,14 @@ export default function Tasks() {
     }));
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const handleDeleteTask = (taskId: string, taskTitle: string) => {
+    openConfirmDialog({
+      title: 'Delete Task',
+      description: `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`,
+      variant: 'destructive',
+      confirmLabel: 'Delete',
+      action: () => setTasks(tasks.filter(task => task.id !== taskId)),
+    });
   };
 
   const todoTasks = tasks.filter(t => t.status === 'todo');
@@ -118,7 +126,7 @@ export default function Tasks() {
                   key={task.id} 
                   task={task} 
                   onToggle={() => toggleTaskStatus(task.id)}
-                  onDelete={() => deleteTask(task.id)}
+                  onDelete={() => handleDeleteTask(task.id, task.title)}
                   delay={index * 50}
                 />
               ))}
@@ -140,7 +148,7 @@ export default function Tasks() {
                   key={task.id} 
                   task={task} 
                   onToggle={() => toggleTaskStatus(task.id)}
-                  onDelete={() => deleteTask(task.id)}
+                  onDelete={() => handleDeleteTask(task.id, task.title)}
                   delay={index * 50}
                 />
               ))}
@@ -162,7 +170,7 @@ export default function Tasks() {
                   key={task.id} 
                   task={task} 
                   onToggle={() => toggleTaskStatus(task.id)}
-                  onDelete={() => deleteTask(task.id)}
+                  onDelete={() => handleDeleteTask(task.id, task.title)}
                   delay={index * 50}
                 />
               ))}
@@ -220,6 +228,16 @@ export default function Tasks() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog?.open ?? false}
+        onOpenChange={closeConfirmDialog}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        onConfirm={handleConfirm}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+      />
     </DashboardLayout>
   );
 }
