@@ -62,8 +62,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px]',
                   isActive
-                    ? 'bg-sidebar-accent text-sidebar-primary'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                    ? 'bg-white/95 text-red-900 shadow-sm'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 )}
               >
                 <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-sidebar-primary')} />
