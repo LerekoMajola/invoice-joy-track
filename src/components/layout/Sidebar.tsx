@@ -12,7 +12,8 @@ import {
   TrendingUp,
   CreditCard,
   Building2,
-  UserPlus
+  UserPlus,
+  Calculator
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Invoices', href: '/invoices', icon: Receipt },
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck },
   { name: 'Profitability', href: '/profitability', icon: TrendingUp },
+  { name: 'Accounting', href: '/accounting', icon: Calculator },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
   { name: 'Staff', href: '/staff', icon: UserPlus },
