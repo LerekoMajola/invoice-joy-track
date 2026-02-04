@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, FileText, Receipt, Users, TrendingUp } from 'lucide-react';
-import leekayLogo from '@/assets/leekay-logo.png';
+import orionLabsLogo from '@/assets/orion-labs-logo.png';
 
 export function Hero() {
   return (
@@ -17,7 +17,7 @@ export function Hero() {
         {/* Header */}
         <header className="flex items-center justify-between py-6">
           <div className="bg-white rounded-lg px-4 py-2">
-            <img src={leekayLogo} alt="Leekay" className="h-8 w-auto" />
+            <img src={orionLabsLogo} alt="Orion Labs" className="h-8 w-auto" />
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
@@ -42,7 +42,7 @@ export function Hero() {
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10">
             Professional quotes, invoices, delivery notes, and client management — 
-            all in one powerful platform designed for businesses in Lesotho.
+            all in one powerful platform designed for your business.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">

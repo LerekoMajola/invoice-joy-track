@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import leekayLogo from '@/assets/leekay-logo.png';
+import orionLabsLogo from '@/assets/orion-labs-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -48,7 +48,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center px-4 border-b border-sidebar-border bg-white">
           <div className="bg-white rounded-lg px-3 py-2">
-            <img src={leekayLogo} alt="Leekay" className="h-7 w-auto" />
+            <img src={orionLabsLogo} alt="Orion Labs" className="h-7 w-auto" />
           </div>
         </div>
 

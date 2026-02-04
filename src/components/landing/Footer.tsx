@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import leekayLogo from '@/assets/leekay-logo.png';
+import orionLabsLogo from '@/assets/orion-labs-logo.png';
 
 export function Footer() {
   return (
@@ -9,10 +9,10 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg px-4 py-2 inline-block mb-4">
-              <img src={leekayLogo} alt="Leekay" className="h-8 w-auto" />
+              <img src={orionLabsLogo} alt="Orion Labs" className="h-8 w-auto" />
             </div>
             <p className="text-primary-foreground/70 max-w-sm">
-              The all-in-one business management platform designed for businesses in Lesotho. 
+              The all-in-one business management platform designed for your business. 
               Quotes, invoices, and more.
             </p>
           </div>
@@ -35,13 +35,13 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Sign In</Link></li>
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Sign Up</Link></li>
-              <li><a href="mailto:support@leekay.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
+              <li><a href="mailto:support@orionlabs.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-primary-foreground/10 mt-12 pt-8 text-center text-sm text-primary-foreground/50">
-          <p>&copy; {new Date().getFullYear()} Leekay. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Orion Labs. All rights reserved.</p>
         </div>
       </div>
     </footer>
