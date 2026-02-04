@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,51 +13,20 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user, isAdmin, loading } = useAuth();
 
-  // Check if user has admin role and redirect accordingly
-  const checkAdminAndRedirect = async (userId: string) => {
-    const { data: roleData, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'super_admin')
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error checking admin role:', error);
-      navigate('/dashboard');
-      return;
-    }
-
-    if (roleData) {
-      navigate('/admin');
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
+  // Redirect authenticated users based on role
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase deadlock
-          setTimeout(() => {
-            checkAdminAndRedirect(session.user.id);
-          }, 0);
-        }
+    if (!loading && user) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        checkAdminAndRedirect(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    }
+  }, [user, isAdmin, loading, navigate]);
 
   const validateForm = () => {
     if (!email || !email.includes('@')) {
@@ -75,11 +45,11 @@ export default function Auth() {
     
     if (!validateForm()) return;
 
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -91,10 +61,7 @@ export default function Auth() {
           }
         } else {
           toast.success('Welcome back!');
-          // Redirect immediately after successful login (don’t rely only on auth listeners)
-          if (data.user) {
-            await checkAdminAndRedirect(data.user.id);
-          }
+          // Navigation will be handled by the useEffect watching auth state
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -117,9 +84,18 @@ export default function Auth() {
     } catch (error: any) {
       toast.error('An unexpected error occurred');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -194,9 +170,9 @@ export default function Auth() {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={loading}
+              disabled={submitting}
             >
-              {loading ? (
+              {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {isLogin ? 'Signing in...' : 'Creating account...'}
