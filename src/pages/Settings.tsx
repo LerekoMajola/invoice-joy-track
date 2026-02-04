@@ -194,7 +194,7 @@ export default function Settings() {
                   id="header_info"
                   value={formData.header_info || ''}
                   onChange={(e) => handleChange('header_info', e.target.value)}
-                  placeholder={`LEEKAY GROUP OF COMPANIES\nIBR NO: IBR79926\nTIN NO: 200127017-8\nPHYSICAL ADDRESS: MASERU EAST,\nHA MAKOTOKO, MASERU, LESOTHO\nTEL: +266 58335233,\nEMAIL: leekaygroupofcompanies@gmail.com`}
+                  placeholder={`YOUR COMPANY NAME\nREG NO: Your registration number\nTIN NO: Your tax number\nADDRESS: Your business address\nTEL: Your phone number\nEMAIL: Your email address`}
                   className="min-h-[180px] font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
