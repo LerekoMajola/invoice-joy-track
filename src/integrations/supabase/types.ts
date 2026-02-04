@@ -14,6 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_transactions: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string | null
+          date: string
+          description: string | null
+          id: string
+          is_reconciled: boolean | null
+          reconciled_at: string | null
+          reference_id: string | null
+          reference_type: string | null
+          running_balance: number | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          created_at?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          is_reconciled?: boolean | null
+          reconciled_at?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          running_balance?: number | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          is_reconciled?: boolean | null
+          reconciled_at?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          running_balance?: number | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          account_type: string | null
+          bank_name: string | null
+          created_at: string | null
+          currency: string | null
+          current_balance: number | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          opening_balance: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          account_type?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          current_balance?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          opening_balance?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          account_type?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          current_balance?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          opening_balance?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_activities: {
         Row: {
           activity_type: string
@@ -379,6 +483,111 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          category_id: string | null
+          created_at: string | null
+          currency: string | null
+          date: string
+          description: string
+          id: string
+          is_recurring: boolean | null
+          payment_method: string | null
+          receipt_url: string | null
+          recurring_frequency: string | null
+          reference_number: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          vendor_name: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          date: string
+          description: string
+          id?: string
+          is_recurring?: boolean | null
+          payment_method?: string | null
+          receipt_url?: string | null
+          recurring_frequency?: string | null
+          reference_number?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          vendor_name?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          date?: string
+          description?: string
+          id?: string
+          is_recurring?: boolean | null
+          payment_method?: string | null
+          receipt_url?: string | null
+          recurring_frequency?: string | null
+          reference_number?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
             referencedColumns: ["id"]
           },
         ]
