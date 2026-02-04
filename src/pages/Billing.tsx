@@ -165,8 +165,8 @@ export default function Billing() {
           <CardContent>
             <p className="text-sm text-muted-foreground">
               To upgrade your plan, please contact us at{' '}
-              <a href="mailto:support@leekay.com" className="text-primary hover:underline">
-                support@leekay.com
+              <a href="mailto:support@orionlabs.com" className="text-primary hover:underline">
+                support@orionlabs.com
               </a>
               {' '}or call us to arrange payment.
             </p>

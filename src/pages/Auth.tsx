@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import leekayLogo from '@/assets/leekay-logo.png';
+import orionLabsLogo from '@/assets/orion-labs-logo.png';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -98,13 +98,13 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-sidebar items-center justify-center p-12">
         <div className="max-w-md text-center">
           <div className="flex items-center justify-center mb-8">
-            <img src={leekayLogo} alt="Leekay" className="h-16 w-auto" />
+            <img src={orionLabsLogo} alt="Orion Labs" className="h-16 w-auto" />
           </div>
           <h2 className="font-display text-2xl font-semibold text-sidebar-foreground mb-4">
             Manage Your Business Operations
           </h2>
           <p className="text-sidebar-foreground/70">
-            Quotes, invoices, delivery notes, client management, and more - all in one powerful platform designed for businesses in Lesotho.
+            Quotes, invoices, delivery notes, client management, and more - all in one powerful platform designed for your business.
           </p>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function Auth() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={leekayLogo} alt="Leekay" className="h-12 w-auto" />
+            <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto" />
           </div>
 
           <div className="text-center mb-8">
@@ -124,7 +124,7 @@ export default function Auth() {
             <p className="text-muted-foreground mt-2">
               {isLogin 
                 ? 'Enter your credentials to access your account' 
-                : 'Get started with Leekay today'}
+                : 'Get started with Orion Labs today'}
             </p>
           </div>
 
