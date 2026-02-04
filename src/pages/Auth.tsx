@@ -15,18 +15,37 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Check if user has admin role and redirect accordingly
+  const checkAdminAndRedirect = async (userId: string) => {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'super_admin')
+      .maybeSingle();
+
+    if (roleData) {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session?.user) {
-          navigate('/dashboard');
+          // Use setTimeout to avoid Supabase deadlock
+          setTimeout(() => {
+            checkAdminAndRedirect(session.user.id);
+          }, 0);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        navigate('/dashboard');
+        checkAdminAndRedirect(session.user.id);
       }
     });
 
