@@ -10,14 +10,6 @@ interface StatCardProps {
   iconColor?: string;
 }
 
-const getValueSizeClass = (value: string | number): string => {
-  const length = String(value).length;
-  if (length <= 8) return 'text-3xl';
-  if (length <= 12) return 'text-2xl';
-  if (length <= 16) return 'text-xl';
-  return 'text-lg';
-};
-
 export function StatCard({ 
   title, 
   value, 
@@ -29,21 +21,19 @@ export function StatCard({
   const valueString = String(value);
   
   return (
-    <div className="rounded-xl border border-border bg-card p-4 md:p-6 shadow-card transition-all duration-200 hover:shadow-elevated animate-slide-up">
+    <div className="group rounded-xl border border-border bg-card p-4 md:p-5 shadow-card transition-all duration-300 hover:shadow-elevated hover:-translate-y-0.5 animate-slide-up">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-xs md:text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-[11px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
           <p 
-            className={cn(
-              'mt-1 md:mt-2 font-display font-semibold text-card-foreground truncate text-xl md:text-2xl lg:text-3xl',
-            )}
+            className="mt-2 font-display font-semibold text-card-foreground truncate text-xl md:text-2xl"
             title={valueString}
           >
             {value}
           </p>
           {change && (
             <p className={cn(
-              'mt-0.5 md:mt-1 text-xs md:text-sm font-medium truncate',
+              'mt-1 text-xs font-medium truncate',
               changeType === 'positive' && 'text-success',
               changeType === 'negative' && 'text-destructive',
               changeType === 'neutral' && 'text-muted-foreground'
@@ -52,7 +42,10 @@ export function StatCard({
             </p>
           )}
         </div>
-        <div className={cn('rounded-lg p-2 md:p-3 flex-shrink-0', iconColor)}>
+        <div className={cn(
+          'rounded-lg p-2.5 flex-shrink-0 transition-colors duration-300',
+          iconColor
+        )}>
           <Icon className="h-4 w-4 md:h-5 md:w-5" />
         </div>
       </div>

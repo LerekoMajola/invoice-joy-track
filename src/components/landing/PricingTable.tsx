@@ -62,32 +62,32 @@ const plans = [
 
 export function PricingTable() {
   return (
-    <section className="py-20 lg:py-32 bg-secondary/30">
+    <section className="py-24 lg:py-32 bg-muted/30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Start with a 7-day free trial. No credit card required. 
             Choose the plan that fits your business.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {plans.map((plan) => (
             <div 
               key={plan.name}
               className={cn(
-                "relative flex flex-col rounded-2xl border bg-card p-8",
+                "relative flex flex-col rounded-xl border bg-card p-6 lg:p-8 transition-all duration-300 hover:-translate-y-1",
                 plan.popular 
-                  ? "border-primary shadow-lg scale-105 z-10" 
-                  : "border-border"
+                  ? "border-primary shadow-elevated ring-1 ring-primary/20" 
+                  : "border-border shadow-card hover:shadow-elevated"
               )}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-primary text-primary-foreground text-sm font-medium px-4 py-1 rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
                     Most Popular
                   </span>
                 </div>
@@ -111,8 +111,10 @@ export function PricingTable() {
               <ul className="space-y-3 mb-8 flex-1">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-foreground">{feature}</span>
+                    <div className="rounded-full bg-accent/10 p-0.5 mt-0.5 flex-shrink-0">
+                      <Check className="h-3.5 w-3.5 text-accent" />
+                    </div>
+                    <span className="text-sm text-foreground/80">{feature}</span>
                   </li>
                 ))}
               </ul>
