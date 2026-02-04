@@ -712,6 +712,86 @@ export type Database = {
           },
         ]
       }
+      staff_members: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          email: string
+          id: string
+          invited_at: string | null
+          job_title: string | null
+          joined_at: string | null
+          name: string
+          notes: string | null
+          owner_user_id: string
+          phone: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          email: string
+          id?: string
+          invited_at?: string | null
+          job_title?: string | null
+          joined_at?: string | null
+          name: string
+          notes?: string | null
+          owner_user_id: string
+          phone?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          email?: string
+          id?: string
+          invited_at?: string | null
+          job_title?: string | null
+          joined_at?: string | null
+          name?: string
+          notes?: string | null
+          owner_user_id?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      staff_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["staff_role"]
+          staff_member_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["staff_role"]
+          staff_member_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["staff_role"]
+          staff_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_roles_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string | null
@@ -897,9 +977,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_staff_role: {
+        Args: { p_owner_user_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["staff_role"]
+      }
     }
     Enums: {
+      staff_role: "admin" | "manager" | "staff" | "viewer"
       subscription_plan: "free_trial" | "basic" | "standard" | "pro"
       subscription_status:
         | "trialing"
@@ -1034,6 +1118,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      staff_role: ["admin", "manager", "staff", "viewer"],
       subscription_plan: ["free_trial", "basic", "standard", "pro"],
       subscription_status: [
         "trialing",

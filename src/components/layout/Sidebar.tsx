@@ -11,7 +11,8 @@ import {
   Settings,
   TrendingUp,
   CreditCard,
-  Building2
+  Building2,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Profitability', href: '/profitability', icon: TrendingUp },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
+  { name: 'Staff', href: '/staff', icon: UserPlus },
   { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Billing', href: '/billing', icon: CreditCard },
 ];

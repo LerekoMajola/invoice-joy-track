@@ -16,6 +16,7 @@ import Tenders from "./pages/Tenders";
 import Settings from "./pages/Settings";
 import Profitability from "./pages/Profitability";
 import Billing from "./pages/Billing";
+import Staff from "./pages/Staff";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +40,7 @@ const App = () => (
           <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
