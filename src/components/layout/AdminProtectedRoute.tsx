@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { forwardRef, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
@@ -7,7 +7,8 @@ interface AdminProtectedRouteProps {
   children: ReactNode;
 }
 
-export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
+export const AdminProtectedRoute = forwardRef<HTMLDivElement, AdminProtectedRouteProps>(
+  function AdminProtectedRoute({ children }, ref) {
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
@@ -26,5 +27,11 @@ export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
-}
+  // React Router may attach refs to route elements in some cases;
+  // keep a ref-safe wrapper without affecting layout.
+  return (
+    <div ref={ref} className="contents">
+      {children}
+    </div>
+  );
+});
