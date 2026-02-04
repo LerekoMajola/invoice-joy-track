@@ -17,12 +17,18 @@ export default function Auth() {
 
   // Check if user has admin role and redirect accordingly
   const checkAdminAndRedirect = async (userId: string) => {
-    const { data: roleData } = await supabase
+    const { data: roleData, error } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .eq('role', 'super_admin')
       .maybeSingle();
+
+    if (error) {
+      console.error('Error checking admin role:', error);
+      navigate('/dashboard');
+      return;
+    }
 
     if (roleData) {
       navigate('/admin');
@@ -73,7 +79,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -85,6 +91,10 @@ export default function Auth() {
           }
         } else {
           toast.success('Welcome back!');
+          // Redirect immediately after successful login (don’t rely only on auth listeners)
+          if (data.user) {
+            await checkAdminAndRedirect(data.user.id);
+          }
         }
       } else {
         const { error } = await supabase.auth.signUp({
