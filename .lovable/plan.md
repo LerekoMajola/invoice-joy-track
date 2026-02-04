@@ -1,9 +1,9 @@
 
 
-# Accounting Module
+# Platform Admin Dashboard
 
 ## Overview
-Add a comprehensive Accounting module that provides SMEs with essential bookkeeping capabilities including expense tracking, bank account management, cash flow analysis, and financial reports. This integrates with existing invoice and payroll data to give a complete financial picture.
+Create a secure Super Admin dashboard that allows platform administrators to view and manage all registered tenants, their subscription status, usage statistics, and system-wide analytics. This provides Orion Labs operators with full visibility into the platform.
 
 ---
 
@@ -11,185 +11,156 @@ Add a comprehensive Accounting module that provides SMEs with essential bookkeep
 
 | Feature | Description |
 |---------|-------------|
-| **Expense Tracking** | Record business expenses with categories, receipts, and vendor info |
-| **Bank Accounts** | Track multiple bank accounts and their balances |
-| **Cash Flow** | Real-time view of money in vs money out |
-| **Financial Reports** | Income statement, expense breakdown, profit & loss summary |
-| **Chart of Accounts** | Standard account categories for proper bookkeeping |
-| **Reconciliation** | Match transactions with bank statements |
+| **Tenant Overview** | View all registered businesses with search and filtering |
+| **Subscription Management** | View/modify subscription status and plans for any tenant |
+| **Usage Analytics** | Platform-wide usage statistics and trends |
+| **Revenue Dashboard** | Track MRR, total subscriptions, churn rate |
+| **System Health** | Monitor active users, recent signups, trial conversions |
 
 ---
 
-## Architecture
+## Security Architecture
 
-### Data Flow Integration
+### Role-Based Access Control
+
+Following Supabase security best practices, admin roles will be stored in a separate table to prevent privilege escalation:
 
 ```text
-+----------------+     +----------------+     +-------------------+
-|   Invoices     |---->|                |     |                   |
-|   (Revenue)    |     |   Accounting   |---->|  Financial        |
-+----------------+     |   Dashboard    |     |  Reports          |
-                       |                |     |                   |
-+----------------+     |   - Cash In    |     |  - P&L Summary    |
-|   Expenses     |---->|   - Cash Out   |     |  - Expense Report |
-|   (Outflows)   |     |   - Balance    |     |  - Cash Flow      |
-+----------------+     |                |     +-------------------+
-                       |                |
-+----------------+     |                |
-|   Payslips     |---->|                |
-|   (Payroll)    |     +----------------+
-+----------------+
++------------------+     +------------------+
+|   auth.users     |     |   user_roles     |
++------------------+     +------------------+
+| id (uuid)        |<--->| user_id (uuid)   |
+| email            |     | role (enum)      |
+| ...              |     | created_at       |
++------------------+     +------------------+
+```
+
+### Security Definer Function
+
+A security definer function will be used to check admin status without recursive RLS issues:
+
+```sql
+CREATE FUNCTION public.has_role(_user_id uuid, _role app_role)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+```
+
+### RLS Policies for Admin Access
+
+Admins can view all data across tenants using the has_role function:
+
+```sql
+-- Example: Admins can view all subscriptions
+CREATE POLICY "Admins can view all subscriptions"
+  ON public.subscriptions FOR SELECT
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 ```
 
 ---
 
 ## Database Schema
 
-### 1. Expense Categories Table
+### 1. App Role Enum
 
 ```sql
-CREATE TABLE public.expense_categories (
+CREATE TYPE public.app_role AS ENUM ('super_admin', 'support_agent', 'user');
+```
+
+### 2. User Roles Table
+
+```sql
+CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  name TEXT NOT NULL,
-  icon TEXT DEFAULT 'folder',
-  color TEXT DEFAULT 'gray',
-  is_system BOOLEAN DEFAULT false,  -- Cannot delete system categories
+  user_id UUID NOT NULL,  -- References auth.users(id)
+  role app_role NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, name)
+  UNIQUE(user_id, role)
 );
 
--- Seed with standard categories per user (via trigger or first-load)
--- Examples: Office Supplies, Travel, Utilities, Marketing, Professional Services, 
--- Equipment, Rent, Insurance, Maintenance, Miscellaneous
+-- Enable RLS
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Only super_admins can manage roles
+CREATE POLICY "Super admins can manage roles"
+  ON public.user_roles FOR ALL
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
+
+-- Users can view their own roles
+CREATE POLICY "Users can view own roles"
+  ON public.user_roles FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
 ```
 
-### 2. Expenses Table
+### 3. Update Existing Tables with Admin Access
+
+Add admin-read policies to key tables:
 
 ```sql
-CREATE TABLE public.expenses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  category_id UUID REFERENCES expense_categories(id) ON DELETE SET NULL,
-  bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE SET NULL,
-  
-  date DATE NOT NULL,
-  amount NUMERIC NOT NULL,
-  currency TEXT DEFAULT 'LSL',
-  
-  vendor_name TEXT,
-  description TEXT NOT NULL,
-  reference_number TEXT,  -- Invoice/receipt number
-  receipt_url TEXT,       -- Uploaded receipt image
-  
-  is_recurring BOOLEAN DEFAULT false,
-  recurring_frequency TEXT,  -- monthly, weekly, yearly
-  
-  payment_method TEXT,  -- cash, bank_transfer, card, mobile_money
-  status TEXT DEFAULT 'pending',  -- pending, paid, cancelled
-  
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
+-- Subscriptions: Admin can view all
+CREATE POLICY "Admins can view all subscriptions"
+  ON public.subscriptions FOR SELECT
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 
-### 3. Bank Accounts Table
+CREATE POLICY "Admins can update subscriptions"
+  ON public.subscriptions FOR UPDATE
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 
-```sql
-CREATE TABLE public.bank_accounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  
-  account_name TEXT NOT NULL,
-  account_number TEXT,
-  bank_name TEXT,
-  account_type TEXT DEFAULT 'checking',  -- checking, savings, mobile_money
-  currency TEXT DEFAULT 'LSL',
-  
-  opening_balance NUMERIC DEFAULT 0,
-  current_balance NUMERIC DEFAULT 0,
-  
-  is_primary BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT true,
-  
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  
-  UNIQUE(user_id, account_name)
-);
-```
+-- Company Profiles: Admin can view all
+CREATE POLICY "Admins can view all company profiles"
+  ON public.company_profiles FOR SELECT
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 
-### 4. Transactions Table (For Reconciliation)
-
-```sql
-CREATE TABLE public.accounting_transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE CASCADE,
-  
-  transaction_type TEXT NOT NULL,  -- income, expense, transfer
-  reference_type TEXT,  -- invoice, expense, payslip, manual
-  reference_id UUID,    -- Links to invoices.id, expenses.id, payslips.id
-  
-  date DATE NOT NULL,
-  amount NUMERIC NOT NULL,  -- Positive for income, negative for expense
-  running_balance NUMERIC,
-  
-  description TEXT,
-  is_reconciled BOOLEAN DEFAULT false,
-  reconciled_at TIMESTAMPTZ,
-  
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### 5. RLS Policies
-
-```sql
--- All tables use standard user_id pattern
-ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bank_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE accounting_transactions ENABLE ROW LEVEL SECURITY;
-
--- Standard policies for each
-CREATE POLICY "Users can manage own [table]"
-  ON [table] FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+-- Usage Tracking: Admin can view all
+CREATE POLICY "Admins can view all usage"
+  ON public.usage_tracking FOR SELECT
+  TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 ```
 
 ---
 
 ## UI Structure
 
-### Accounting Page with Tabs
+### Admin Page Layout
 
 ```text
-/accounting
+/admin
   ├── Overview Tab
-  │   ├── Cash Flow Summary (Money In / Money Out / Net)
-  │   ├── Quick Stats Cards
-  │   ├── Recent Transactions List
-  │   └── Expense by Category Chart
+  │   ├── Platform Stats Cards (Total Tenants, MRR, Active Trials, etc.)
+  │   ├── Signups Over Time Chart
+  │   ├── Revenue Trend Chart
+  │   └── Recent Activity Feed
   │
-  ├── Expenses Tab
-  │   ├── Add Expense button
-  │   ├── Filter by category, date range, status
-  │   ├── Expense list/table
-  │   └── Expense category breakdown chart
+  ├── Tenants Tab
+  │   ├── Search & Filter Bar
+  │   ├── Tenant List Table
+  │   │   ├── Company Name
+  │   │   ├── Owner Email
+  │   │   ├── Plan / Status
+  │   │   ├── Usage Stats
+  │   │   ├── Created Date
+  │   │   └── Actions (View Details, Manage Subscription)
+  │   └── Tenant Detail Dialog
   │
-  ├── Bank Accounts Tab
-  │   ├── Add Account button
-  │   ├── Account cards with balances
-  │   ├── Transaction list per account
-  │   └── Reconciliation status
-  │
-  └── Reports Tab
-      ├── Date range selector
-      ├── Income Statement (Revenue - Expenses = Net)
-      ├── Expense Report by Category
-      └── Cash Flow Statement
+  └── Subscriptions Tab
+      ├── Filter by Plan/Status
+      ├── Subscription Management Table
+      └── Bulk Actions (Extend Trial, Change Plan)
 ```
 
 ---
@@ -198,20 +169,20 @@ CREATE POLICY "Users can manage own [table]"
 
 | File | Purpose |
 |------|---------|
-| `src/pages/Accounting.tsx` | Main accounting page with tabs |
-| `src/hooks/useExpenses.tsx` | Expense CRUD operations |
-| `src/hooks/useBankAccounts.tsx` | Bank account management |
-| `src/hooks/useAccountingStats.tsx` | Financial calculations and aggregations |
-| `src/components/accounting/OverviewTab.tsx` | Dashboard overview |
-| `src/components/accounting/ExpensesTab.tsx` | Expense management |
-| `src/components/accounting/BankAccountsTab.tsx` | Bank accounts |
-| `src/components/accounting/ReportsTab.tsx` | Financial reports |
-| `src/components/accounting/AddExpenseDialog.tsx` | Create/edit expense |
-| `src/components/accounting/AddBankAccountDialog.tsx` | Create/edit account |
-| `src/components/accounting/ExpenseCategoryChart.tsx` | Pie/donut chart |
-| `src/components/accounting/CashFlowChart.tsx` | Line/bar chart |
-| `src/components/accounting/IncomeStatement.tsx` | P&L report component |
-| `src/components/accounting/index.ts` | Barrel exports |
+| `src/pages/Admin.tsx` | Main admin dashboard page with tabs |
+| `src/hooks/useAdminRole.tsx` | Check if current user is admin |
+| `src/hooks/useAdminTenants.tsx` | Fetch all tenants for admin view |
+| `src/hooks/useAdminStats.tsx` | Platform-wide statistics |
+| `src/components/admin/AdminOverviewTab.tsx` | Stats and charts overview |
+| `src/components/admin/TenantsTab.tsx` | Tenant list and management |
+| `src/components/admin/SubscriptionsTab.tsx` | Subscription management |
+| `src/components/admin/TenantDetailDialog.tsx` | View tenant details |
+| `src/components/admin/EditSubscriptionDialog.tsx` | Modify tenant subscription |
+| `src/components/admin/PlatformStatsCards.tsx` | Summary stat cards |
+| `src/components/admin/SignupsChart.tsx` | Signups over time |
+| `src/components/admin/RevenueChart.tsx` | MRR trends |
+| `src/components/admin/index.ts` | Barrel exports |
+| `src/components/layout/AdminProtectedRoute.tsx` | Route guard for admins |
 
 ---
 
@@ -219,156 +190,221 @@ CREATE POLICY "Users can manage own [table]"
 
 | File | Changes |
 |------|---------|
-| `src/App.tsx` | Add `/accounting` route |
-| `src/components/layout/Sidebar.tsx` | Add Accounting nav item with `Calculator` icon |
+| `src/App.tsx` | Add `/admin` route with AdminProtectedRoute |
+| `src/pages/Auth.tsx` | Redirect admins to /admin after login |
 
 ---
 
 ## Key Components
 
-### Overview Tab Stats Cards
+### Platform Stats Cards
 
 | Card | Calculation |
 |------|-------------|
-| Total Revenue | Sum of paid invoices for period |
-| Total Expenses | Sum of paid expenses for period |
-| Payroll Costs | Sum of paid payslips for period |
-| Net Cash Flow | Revenue - Expenses - Payroll |
-| Cash on Hand | Sum of all bank account balances |
-| Outstanding | Unpaid invoices total |
+| Total Tenants | Count of unique user_ids with company_profiles |
+| Monthly Recurring Revenue | Sum of active subscription plan values |
+| Active Trials | Count of subscriptions with status = 'trialing' |
+| Trial Conversion Rate | (Active subscriptions / Total past trials) x 100 |
+| Total Invoices | Platform-wide invoice count |
+| Active Users (30d) | Users with activity in last 30 days |
 
-### Expense Form Fields
+### Tenant List Table Columns
 
-| Field | Type | Required |
-|-------|------|----------|
-| Date | Date picker | Yes |
-| Amount | Number input | Yes |
-| Category | Select dropdown | Yes |
-| Vendor/Payee | Text input | No |
-| Description | Textarea | Yes |
-| Payment Method | Select | No |
-| Bank Account | Select (if tracking) | No |
-| Reference Number | Text | No |
-| Receipt | File upload | No |
-| Recurring | Toggle + frequency | No |
+| Column | Source |
+|--------|--------|
+| Company Name | company_profiles.company_name |
+| Owner Email | auth.users.email (via user_id) |
+| Plan | subscriptions.plan |
+| Status | subscriptions.status |
+| Trial Ends | subscriptions.trial_ends_at |
+| Clients | usage_tracking.clients_count |
+| Quotes | usage_tracking.quotes_count |
+| Invoices | usage_tracking.invoices_count |
+| Joined | company_profiles.created_at |
 
-### Bank Account Card
+### Tenant Detail Dialog
 
 ```text
-+----------------------------------------+
-| [Icon] Business Checking      [Primary] |
-| Standard Lesotho Bank                   |
-| ****4567                                |
-+----------------------------------------+
-| Current Balance                         |
-| M 45,230.00                             |
-+----------------------------------------+
-| Last reconciled: Feb 1, 2026           |
-| [Reconcile] [Transactions] [Edit]      |
-+----------------------------------------+
++------------------------------------------+
+| TENANT DETAILS                           |
++------------------------------------------+
+| Company: Acme Corporation                |
+| Owner: john@acme.com                     |
+| Registered: Jan 15, 2026                 |
++------------------------------------------+
+| SUBSCRIPTION                             |
+| Plan: Standard (M500/month)              |
+| Status: Active                           |
+| Current Period: Feb 1 - Mar 1, 2026      |
+| [Change Plan] [Extend Period]            |
++------------------------------------------+
+| USAGE (Current Period)                   |
+| Clients: 45 / 200                        |
+| Quotes: 87 / Unlimited                   |
+| Invoices: 23 / Unlimited                 |
++------------------------------------------+
+| QUICK ACTIONS                            |
+| [Reset Usage] [Send Notification]        |
++------------------------------------------+
 ```
 
 ---
 
-## Integration Points
+## Authentication Flow
 
-### 1. Invoice Integration (Revenue)
-- When invoice marked as "paid", automatically create an accounting transaction
-- Links back to invoice for drill-down
-
-### 2. Payroll Integration (Expense)
-- When payslip marked as "paid", create expense transaction
-- Category: "Payroll" (system category)
-- Links back to payslip
-
-### 3. Expense to Bank Account
-- When expense paid, update bank account balance
-- Create transaction record for reconciliation
-
----
-
-## Financial Calculations
-
-### Income Statement (P&L)
+### Admin Login Process
 
 ```text
-INCOME STATEMENT
-For Period: [Start Date] - [End Date]
-
-REVENUE
-  Sales Revenue (Paid Invoices)    M xxx,xxx.xx
-  Other Income                     M xxx,xxx.xx
-                                   ─────────────
-  TOTAL REVENUE                    M xxx,xxx.xx
-
-EXPENSES
-  Office Supplies                  M xx,xxx.xx
-  Travel                           M xx,xxx.xx
-  Utilities                        M xx,xxx.xx
-  Marketing                        M xx,xxx.xx
-  Professional Services            M xx,xxx.xx
-  Payroll                          M xx,xxx.xx
-  Other Expenses                   M xx,xxx.xx
-                                   ─────────────
-  TOTAL EXPENSES                   M xxx,xxx.xx
-
-NET INCOME                         M xxx,xxx.xx
+1. User logs in via /auth
+         ↓
+2. After auth success, check user_roles table
+         ↓
+3. If role = 'super_admin':
+   → Redirect to /admin
+         ↓
+4. If no admin role:
+   → Redirect to /dashboard (normal user flow)
 ```
 
-### Cash Flow Summary
+### Admin Route Protection
 
 ```typescript
-const cashFlowStats = useMemo(() => {
-  // Money In: Paid invoices in period
-  const moneyIn = paidInvoices.reduce((sum, i) => sum + i.total, 0);
+// AdminProtectedRoute.tsx
+function AdminProtectedRoute({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const { isAdmin, isLoading: roleLoading } = useAdminRole();
   
-  // Money Out: Paid expenses + Paid payslips
-  const expensesOut = paidExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const payrollOut = paidPayslips.reduce((sum, p) => sum + p.netPay, 0);
-  const moneyOut = expensesOut + payrollOut;
+  if (loading || roleLoading) {
+    return <LoadingSpinner />;
+  }
   
-  // Net Flow
-  const netFlow = moneyIn - moneyOut;
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
   
-  return { moneyIn, moneyOut, netFlow };
-}, [paidInvoices, paidExpenses, paidPayslips]);
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
+}
 ```
 
 ---
 
-## Default Expense Categories
+## Admin Hook Implementation
 
-| Category | Icon | Color |
-|----------|------|-------|
-| Office Supplies | `Package` | blue |
-| Travel | `Plane` | purple |
-| Utilities | `Zap` | yellow |
-| Marketing | `Megaphone` | pink |
-| Professional Services | `Briefcase` | indigo |
-| Equipment | `Monitor` | gray |
-| Rent | `Building` | amber |
-| Insurance | `Shield` | green |
-| Maintenance | `Wrench` | orange |
-| Payroll | `Users` | sky (system) |
-| Miscellaneous | `Folder` | slate |
+### useAdminRole Hook
+
+```typescript
+export function useAdminRole() {
+  const { user } = useAuth();
+  
+  const { data: isAdmin, isLoading } = useQuery({
+    queryKey: ['admin-role', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+      
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!user,
+  });
+  
+  return { isAdmin: isAdmin ?? false, isLoading };
+}
+```
+
+### useAdminTenants Hook
+
+```typescript
+export function useAdminTenants() {
+  const { isAdmin } = useAdminRole();
+  
+  return useQuery({
+    queryKey: ['admin-tenants'],
+    queryFn: async () => {
+      // Fetch all company profiles with subscription data
+      const { data: profiles } = await supabase
+        .from('company_profiles')
+        .select(`
+          *,
+          subscriptions!inner (plan, status, trial_ends_at),
+          usage_tracking (clients_count, quotes_count, invoices_count)
+        `);
+      
+      return profiles;
+    },
+    enabled: isAdmin,
+  });
+}
+```
 
 ---
 
-## Receipt Upload
+## Admin Statistics
 
-Use existing storage pattern with `company-assets` bucket:
-- Path: `receipts/{user_id}/{expense_id}.{ext}`
-- Accept: jpg, png, pdf
-- Show thumbnail preview in expense list
+### Platform KPIs
+
+| KPI | Calculation |
+|-----|-------------|
+| Total Revenue (All Time) | Sum of all paid invoice totals across all tenants |
+| Monthly Recurring Revenue | Sum of active plan prices (M300 + M500 + M800) |
+| Average Revenue Per User | MRR / Active Subscribers |
+| Churn Rate | Cancelled subscriptions / Total subscriptions |
+| Trial to Paid Rate | Paid conversions / Total trials started |
+| Active Users (DAU) | Unique logins in last 24 hours |
+| Active Users (MAU) | Unique logins in last 30 days |
+
+### Data Aggregation
+
+Revenue calculations based on plan pricing:
+
+```typescript
+const PLAN_PRICES = {
+  free_trial: 0,
+  basic: 300,
+  standard: 500,
+  pro: 800,
+};
+
+const calculateMRR = (subscriptions) => {
+  return subscriptions
+    .filter(s => s.status === 'active')
+    .reduce((sum, s) => sum + PLAN_PRICES[s.plan], 0);
+};
+```
+
+---
+
+## Creating the First Admin
+
+To bootstrap the first super admin, manually insert into user_roles after the user registers:
+
+```sql
+-- Run this in Cloud View → Run SQL after admin user signs up
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('admin-user-uuid-here', 'super_admin');
+```
+
+Alternatively, you could seed this during the initial migration for a known admin email.
 
 ---
 
 ## Security Considerations
 
-1. **RLS on All Tables**: Standard user_id pattern for multi-tenancy
-2. **File Access**: Receipts stored with user-scoped paths
-3. **Sensitive Data**: Bank account numbers partially masked in UI
-4. **Audit Trail**: Transaction records maintain history
+1. **Separate Role Table**: Roles stored separately from profiles to prevent privilege escalation
+2. **Security Definer Function**: Bypasses RLS safely for role checks
+3. **Server-Side Validation**: All admin checks happen in database, not client-side
+4. **Audit Trail**: Consider adding admin_actions table to log all admin operations
+5. **No Hardcoded Credentials**: Admin status determined by database role, not email matching
 
 ---
 
@@ -376,13 +412,13 @@ Use existing storage pattern with `company-assets` bucket:
 
 | Category | Count |
 |----------|-------|
-| New database tables | 4 |
-| New pages | 1 |
+| New database objects | 3 (enum, table, function) |
+| New RLS policies | 6+ (admin access to key tables) |
+| New pages | 1 (Admin.tsx) |
 | New hooks | 3 |
-| New components | 12+ |
-| Modified files | 2 (App.tsx, Sidebar.tsx) |
-| Charts | 2 (Category breakdown, Cash flow) |
-| Reports | 3 (Income Statement, Expense Report, Cash Flow) |
+| New components | 10+ |
+| Modified files | 2 (App.tsx, Auth.tsx) |
+| Charts | 2 (Signups, Revenue) |
 
-This accounting module provides SMEs with essential bookkeeping tools while integrating seamlessly with the existing invoicing and payroll systems to provide a complete financial picture of the business.
+This implementation provides a secure, role-based admin dashboard following Supabase security best practices, enabling platform operators to manage all tenants from a single interface.
 
