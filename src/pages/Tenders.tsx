@@ -32,48 +32,7 @@ interface Tender {
   notes?: string;
 }
 
-const initialTenders: Tender[] = [
-  {
-    id: '1',
-    title: 'Office Supplies Contract',
-    organization: 'City Council',
-    dueDate: 'Jan 5, 2025',
-    value: 'M45,000',
-    status: 'open',
-  },
-  {
-    id: '2',
-    title: 'IT Infrastructure Upgrade',
-    organization: 'TechCorp Inc',
-    dueDate: 'Jan 10, 2025',
-    value: 'M120,000',
-    status: 'open',
-  },
-  {
-    id: '3',
-    title: 'Marketing Services RFQ',
-    organization: 'StartUp Labs',
-    dueDate: 'Jan 15, 2025',
-    value: 'M25,000',
-    status: 'submitted',
-  },
-  {
-    id: '4',
-    title: 'Consulting Services',
-    organization: 'Global Solutions',
-    dueDate: 'Dec 20, 2024',
-    value: 'M80,000',
-    status: 'won',
-  },
-  {
-    id: '5',
-    title: 'Equipment Supply',
-    organization: 'Manufacturing Co',
-    dueDate: 'Dec 15, 2024',
-    value: 'M35,000',
-    status: 'lost',
-  },
-];
+const initialTenders: Tender[] = [];
 
 const statusStyles = {
   open: 'bg-success/10 text-success border-success/20',
