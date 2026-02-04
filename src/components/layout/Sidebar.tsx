@@ -43,17 +43,17 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar-background">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar md:fixed">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center px-5 border-b border-sidebar-border">
-          <div className="bg-white rounded-lg px-3 py-1.5">
+        <div className="flex h-16 items-center px-4 border-b border-sidebar-border bg-white">
+          <div className="bg-white rounded-lg px-3 py-2">
             <img src={leekayLogo} alt="Leekay" className="h-7 w-auto" />
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-5 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-red-900">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -64,11 +64,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px]',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                    ? 'bg-white/95 text-red-900 shadow-sm'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 )}
               >
-                <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+                <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-sidebar-primary')} />
                 {item.name}
               </Link>
             );
@@ -76,11 +76,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </nav>
 
         {/* User & Logout */}
-        <div className="border-t border-sidebar-border p-4 space-y-3 pb-safe">
+        <div className="border-t border-sidebar-border p-3 space-y-2 pb-safe">
           {user && (
-            <div className="px-2">
-              <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/40 font-medium">Logged in as</p>
-              <p className="text-sm text-sidebar-foreground/90 truncate mt-0.5">{user.email}</p>
+            <div className="px-3 py-2">
+              <p className="text-xs text-sidebar-foreground/50">Logged in as</p>
+              <p className="text-sm text-sidebar-foreground truncate">{user.email}</p>
             </div>
           )}
           <Button
@@ -89,9 +89,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               signOut();
               onNavigate?.();
             }}
-            className="w-full justify-start gap-3 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground min-h-[44px] px-2"
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground min-h-[44px]"
           >
-            <LogOut className="h-[18px] w-[18px]" />
+            <LogOut className="h-5 w-5" />
             Sign out
           </Button>
         </div>
