@@ -1,272 +1,174 @@
 
-
-# SaaS Multi-Business Platform Implementation Plan
+# Rebrand SaaS Platform to Orion Labs
 
 ## Overview
-Transform the current single-business application into a full SaaS platform where multiple businesses can sign up, manage their operations independently, and subscribe to different pricing tiers.
+Replace all "Leekay" SaaS branding with "Orion Labs" throughout the application. The individual business data (like "Leekay Group of Companies" stored in the database) will remain untouched as it's managed per-user in the `company_profiles` table.
 
 ---
 
-## Current State Analysis
+## Brand Changes
 
-The application already has a solid foundation for multi-tenancy:
-- All tables use `user_id` to isolate data between users
-- Row Level Security (RLS) policies enforce data isolation
-- Each user has their own `company_profiles` record for settings
-- Authentication is already implemented with Supabase Auth
-
-**What's missing for a full SaaS:**
-- Public landing page with pricing information
-- Subscription/billing system
-- Usage limits enforcement (clients, quotes, invoices per tier)
-- Onboarding flow for new businesses
-- Admin dashboard (optional, for you to manage customers)
+Based on the uploaded logo:
+- **New Name**: Orion Labs
+- **Primary Color**: Navy blue (#1a2a4a)
+- **Logo Style**: "Orion" with stars in the "O", "LABS" underneath
 
 ---
 
-## Implementation Plan
+## Files to Update
 
-### Phase 1: Landing Page & Marketing Site
+### 1. Logo Asset
+- Save uploaded logo as `src/assets/orion-labs-logo.png`
 
-Create a public-facing landing page that showcases the platform to potential customers.
+### 2. Landing Page Components
 
-**New Files:**
-- `src/pages/Landing.tsx` - Marketing landing page with:
-  - Hero section explaining the value proposition
-  - Features grid (Quotes, Invoices, Delivery Notes, CRM, Profitability tracking)
-  - Pricing table with 3 tiers (based on your SaaS strategy):
-    - **Basic (M300/month)**: 50 clients, 100 quotes/month
-    - **Standard (M500/month)**: 200 clients, unlimited quotes
-    - **Pro (M800/month)**: Unlimited everything + priority support
-  - 7-day free trial call-to-action
-  - Testimonials section (placeholder for now)
-  - Footer with contact info
+| File | Changes |
+|------|---------|
+| `src/components/landing/Hero.tsx` | Import new logo, update alt text |
+| `src/components/landing/Footer.tsx` | Import new logo, update text to "Orion Labs", email to `support@orionlabs.com` |
 
-**Changes:**
-- Update `src/App.tsx` to show Landing page for unauthenticated users at `/`
-- Move Dashboard to protected route `/dashboard`
-- Update navigation structure
+### 3. Auth & Layout
+
+| File | Changes |
+|------|---------|
+| `src/pages/Auth.tsx` | Import new logo, change "Get started with Leekay today" to "Get started with Orion Labs today" |
+| `src/components/layout/Sidebar.tsx` | Import new logo, update alt text |
+
+### 4. Billing Page
+
+| File | Changes |
+|------|---------|
+| `src/pages/Billing.tsx` | Change `support@leekay.com` to `support@orionlabs.com` |
+
+### 5. HTML & PWA Config
+
+| File | Changes |
+|------|---------|
+| `index.html` | Update title, meta tags, theme-color to navy blue |
+| `vite.config.ts` | Update PWA manifest name, short_name, theme_color |
+
+### 6. CSS Theme
+
+| File | Changes |
+|------|---------|
+| `src/index.css` | Update `--primary` color to navy blue (~230 35% 18%) |
 
 ---
 
-### Phase 2: Subscription & Billing System
+## Detailed Changes
 
-**Database Tables:**
+### src/components/landing/Hero.tsx
+```
+- import leekayLogo from '@/assets/leekay-logo.png'
++ import orionLabsLogo from '@/assets/orion-labs-logo.png'
 
-```text
-subscriptions
-├── id (uuid)
-├── user_id (uuid) - references the business owner
-├── plan (enum: 'free_trial', 'basic', 'standard', 'pro')
-├── status (enum: 'trialing', 'active', 'past_due', 'cancelled')
-├── trial_ends_at (timestamp)
-├── current_period_start (timestamp)
-├── current_period_end (timestamp)
-├── created_at (timestamp)
-├── updated_at (timestamp)
-
-usage_tracking
-├── id (uuid)
-├── user_id (uuid)
-├── period_start (date)
-├── period_end (date)
-├── clients_count (integer)
-├── quotes_count (integer)
-├── invoices_count (integer)
-├── updated_at (timestamp)
+- src={leekayLogo} alt="Leekay"
++ src={orionLabsLogo} alt="Orion Labs"
 ```
 
-**Plan Limits:**
+### src/components/landing/Footer.tsx
+```
+- import leekayLogo from '@/assets/leekay-logo.png'
++ import orionLabsLogo from '@/assets/orion-labs-logo.png'
 
-| Feature | Free Trial | Basic | Standard | Pro |
-|---------|------------|-------|----------|-----|
-| Duration | 7 days | Unlimited | Unlimited | Unlimited |
-| Clients | 10 | 50 | 200 | Unlimited |
-| Quotes/month | 20 | 100 | Unlimited | Unlimited |
-| Invoices/month | 10 | 50 | Unlimited | Unlimited |
+- src={leekayLogo} alt="Leekay"
++ src={orionLabsLogo} alt="Orion Labs"
 
----
+- "designed for businesses in Lesotho"
++ "designed for your business"
 
-### Phase 3: Usage Limits & Enforcement
+- mailto:support@leekay.com
++ mailto:support@orionlabs.com
 
-**New Hook:**
-- `src/hooks/useSubscription.tsx` - Manages subscription state and checks:
-  - Current plan details
-  - Usage counts for current period
-  - Methods to check if action is allowed
+- "Leekay. All rights reserved"
++ "Orion Labs. All rights reserved"
+```
 
-**Enforcement Points:**
-- Before creating a new client - check `clients_count`
-- Before creating a new quote - check `quotes_count`
-- Before creating a new invoice - check `invoices_count`
-- Show upgrade prompts when limits are reached
+### src/components/layout/Sidebar.tsx
+```
+- import leekayLogo from '@/assets/leekay-logo.png'
++ import orionLabsLogo from '@/assets/orion-labs-logo.png'
 
-**UI Components:**
-- `src/components/subscription/UsageMeter.tsx` - Shows current usage
-- `src/components/subscription/UpgradePrompt.tsx` - Modal when limit reached
-- Add usage display to Dashboard and Settings
+- src={leekayLogo} alt="Leekay"
++ src={orionLabsLogo} alt="Orion Labs"
+```
 
----
+### src/pages/Auth.tsx
+```
+- import leekayLogo from '@/assets/leekay-logo.png'
++ import orionLabsLogo from '@/assets/orion-labs-logo.png'
 
-### Phase 4: Onboarding Flow
+- src={leekayLogo} alt="Leekay" (line 101)
++ src={orionLabsLogo} alt="Orion Labs"
 
-When a new user signs up:
+- src={leekayLogo} alt="Leekay" (line 117)
++ src={orionLabsLogo} alt="Orion Labs"
 
-1. **Welcome Screen** - Brief intro to the platform
-2. **Company Setup** - Collect essential info:
-   - Company name
-   - Business type/industry
-   - Phone number
-   - Logo upload (optional)
-3. **Subscription Selection** - Choose plan or start free trial
-4. **Redirect to Dashboard**
+- "Get started with Leekay today"
++ "Get started with Orion Labs today"
 
-**New Files:**
-- `src/pages/Onboarding.tsx` - Multi-step onboarding wizard
-- Update `ProtectedRoute` to redirect new users to onboarding
+- "designed for businesses in Lesotho"
++ "designed for your business"
+```
 
----
+### src/pages/Billing.tsx
+```
+- support@leekay.com
++ support@orionlabs.com
+```
 
-### Phase 5: Payment Integration
+### index.html
+```html
+<title>Orion Labs</title>
+<meta name="description" content="Orion Labs - Professional Business Management Platform">
+<meta name="author" content="Orion Labs" />
+<meta name="theme-color" content="#1a2a4a" />
+<meta name="apple-mobile-web-app-title" content="Orion Labs" />
+<meta name="twitter:site" content="@OrionLabsHQ" />
+<meta property="og:title" content="Orion Labs">
+<meta name="twitter:title" content="Orion Labs">
+<meta property="og:description" content="Orion Labs - Professional Business Management Platform">
+<meta name="twitter:description" content="Orion Labs - Professional Business Management Platform">
+```
 
-For Lesotho-specific payments (M-Pesa, bank transfers):
+### vite.config.ts
+```typescript
+manifest: {
+  name: "Orion Labs",
+  short_name: "Orion Labs", 
+  description: "Orion Labs Business Management",
+  theme_color: "#1a2a4a",
+  ...
+}
+```
 
-**Option A: Manual Payment Verification (Recommended for MVP)**
-- User selects plan and submits payment proof
-- Admin reviews and activates subscription manually
-- Simple and works with local payment methods
-
-**Option B: Stripe Integration (For card payments)**
-- Integrate Stripe for international card payments
-- Use Stripe Checkout for subscription management
-- Webhook to update subscription status
-
-**Files:**
-- `src/pages/Billing.tsx` - Manage subscription, view invoices
-- `supabase/functions/verify-payment/index.ts` - Process payment verification
-- Add billing link to Settings page
-
----
-
-### Phase 6: Updated Auth Flow
-
-**Changes to `src/pages/Auth.tsx`:**
-- Add business name field during signup
-- Create company_profiles record automatically
-- Create subscription record (7-day trial)
-- Initialize usage_tracking record
-
-**Post-Signup Flow:**
-```text
-Sign Up → Create User → Create Company Profile → 
-Create Trial Subscription → Redirect to Onboarding
+### src/index.css
+```css
+:root {
+  --primary: 220 40% 20%;  /* Navy blue to match Orion Labs logo */
+  ...
+}
 ```
 
 ---
 
-## Technical Details
+## What Stays Unchanged
 
-### Database Migration SQL
-
-```sql
--- Create plan enum
-CREATE TYPE subscription_plan AS ENUM ('free_trial', 'basic', 'standard', 'pro');
-CREATE TYPE subscription_status AS ENUM ('trialing', 'active', 'past_due', 'cancelled', 'expired');
-
--- Subscriptions table
-CREATE TABLE public.subscriptions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  plan subscription_plan NOT NULL DEFAULT 'free_trial',
-  status subscription_status NOT NULL DEFAULT 'trialing',
-  trial_ends_at timestamptz,
-  current_period_start timestamptz DEFAULT now(),
-  current_period_end timestamptz,
-  payment_method text,
-  payment_reference text,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id)
-);
-
--- Usage tracking table
-CREATE TABLE public.usage_tracking (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  period_start date NOT NULL,
-  period_end date NOT NULL,
-  clients_count integer DEFAULT 0,
-  quotes_count integer DEFAULT 0,
-  invoices_count integer DEFAULT 0,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, period_start)
-);
-
--- RLS Policies
-ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own subscription"
-  ON public.subscriptions FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can view own usage"
-  ON public.usage_tracking FOR SELECT
-  USING (auth.uid() = user_id);
-```
-
-### Updated Routing Structure
-
-```text
-/ ........................ Landing (public)
-/auth .................... Login/Signup (public)
-/onboarding .............. New user setup (protected)
-/dashboard ............... Main dashboard (protected)
-/crm ..................... Clients & Leads (protected)
-/quotes .................. Quotes management (protected)
-/invoices ................ Invoices management (protected)
-/delivery-notes .......... Delivery notes (protected)
-/profitability ........... Profitability tracking (protected)
-/tasks ................... Task management (protected)
-/tenders ................. Tenders & RFQs (protected)
-/settings ................ Company settings (protected)
-/billing ................. Subscription & billing (protected)
-```
+- **Database data**: All `company_profiles` records (including "Leekay Group of Companies") remain in the database
+- **User business data**: Quotes, invoices, clients tied to specific users stay as-is
+- **Business-specific settings**: Each user's company name, logo, address in Settings remain their own
 
 ---
 
-## Implementation Priority
+## Summary
 
-1. **Phase 1**: Landing page (lets you start marketing)
-2. **Phase 2**: Database tables for subscriptions
-3. **Phase 3**: Basic usage tracking
-4. **Phase 4**: Onboarding flow
-5. **Phase 5**: Manual payment verification (MVP)
-6. **Phase 6**: Stripe integration (future enhancement)
+| Category | Count |
+|----------|-------|
+| New logo asset | 1 file |
+| Component updates | 4 files |
+| Page updates | 2 files |
+| Config files | 2 files |
+| CSS updates | 1 file |
+| **Total** | **10 files** |
 
----
-
-## Files to Create/Modify
-
-**New Files:**
-- `src/pages/Landing.tsx`
-- `src/pages/Onboarding.tsx`
-- `src/pages/Billing.tsx`
-- `src/hooks/useSubscription.tsx`
-- `src/components/subscription/UsageMeter.tsx`
-- `src/components/subscription/UpgradePrompt.tsx`
-- `src/components/subscription/PricingCard.tsx`
-- `src/components/landing/Hero.tsx`
-- `src/components/landing/Features.tsx`
-- `src/components/landing/PricingTable.tsx`
-
-**Modified Files:**
-- `src/App.tsx` - Updated routing
-- `src/pages/Auth.tsx` - Add company name field, auto-create records
-- `src/components/layout/ProtectedRoute.tsx` - Check onboarding status
-- `src/components/layout/Sidebar.tsx` - Add Billing link
-- `src/hooks/useClients.tsx` - Add usage limit check
-- `src/hooks/useQuotes.tsx` - Add usage limit check
-- `src/hooks/useInvoices.tsx` - Add usage limit check
-
+The SaaS platform will be fully rebranded to "Orion Labs" with a navy blue theme, while individual business data stored in the database remains untouched.
