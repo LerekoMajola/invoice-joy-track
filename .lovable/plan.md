@@ -1,9 +1,9 @@
 
 
-# Staff Tools Expansion: Profiles, Payslips & HR Features
+# Accounting Module
 
 ## Overview
-Expand the Staff module with comprehensive HR tools including detailed staff profiles, payslip management, leave tracking, and document management. This transforms the basic staff list into a full HR management system for SMEs.
+Add a comprehensive Accounting module that provides SMEs with essential bookkeeping capabilities including expense tracking, bank account management, cash flow analysis, and financial reports. This integrates with existing invoice and payroll data to give a complete financial picture.
 
 ---
 
@@ -11,211 +11,186 @@ Expand the Staff module with comprehensive HR tools including detailed staff pro
 
 | Feature | Description |
 |---------|-------------|
-| **Staff Profiles** | Extended profile with personal details, emergency contacts, employment info, photo |
-| **Payslips** | Generate and manage monthly payslips with salary, deductions, allowances |
-| **Leave Management** | Track leave balances, requests, and history |
-| **Staff Documents** | Store contracts, IDs, certificates per staff member |
-| **Employment History** | Track job title changes, salary adjustments, promotions |
+| **Expense Tracking** | Record business expenses with categories, receipts, and vendor info |
+| **Bank Accounts** | Track multiple bank accounts and their balances |
+| **Cash Flow** | Real-time view of money in vs money out |
+| **Financial Reports** | Income statement, expense breakdown, profit & loss summary |
+| **Chart of Accounts** | Standard account categories for proper bookkeeping |
+| **Reconciliation** | Match transactions with bank statements |
+
+---
+
+## Architecture
+
+### Data Flow Integration
+
+```text
++----------------+     +----------------+     +-------------------+
+|   Invoices     |---->|                |     |                   |
+|   (Revenue)    |     |   Accounting   |---->|  Financial        |
++----------------+     |   Dashboard    |     |  Reports          |
+                       |                |     |                   |
++----------------+     |   - Cash In    |     |  - P&L Summary    |
+|   Expenses     |---->|   - Cash Out   |     |  - Expense Report |
+|   (Outflows)   |     |   - Balance    |     |  - Cash Flow      |
++----------------+     |                |     +-------------------+
+                       |                |
++----------------+     |                |
+|   Payslips     |---->|                |
+|   (Payroll)    |     +----------------+
++----------------+
+```
 
 ---
 
 ## Database Schema
 
-### 1. Extend `staff_members` Table
-Add new columns for extended profile information:
+### 1. Expense Categories Table
 
 ```sql
-ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS
-  -- Personal Details
-  date_of_birth DATE,
-  gender TEXT,
-  national_id TEXT,
-  address TEXT,
-  city TEXT,
-  postal_code TEXT,
-  country TEXT DEFAULT 'Lesotho',
-  
-  -- Emergency Contact
-  emergency_contact_name TEXT,
-  emergency_contact_phone TEXT,
-  emergency_contact_relationship TEXT,
-  
-  -- Employment Details
-  hire_date DATE,
-  contract_type TEXT DEFAULT 'permanent', -- permanent, contract, part-time
-  work_schedule TEXT DEFAULT 'full-time', -- full-time, part-time, flexible
-  probation_end_date DATE,
-  
-  -- Compensation
-  salary_amount NUMERIC DEFAULT 0,
-  salary_currency TEXT DEFAULT 'LSL',
-  salary_frequency TEXT DEFAULT 'monthly', -- monthly, bi-weekly, weekly
-  bank_name TEXT,
-  bank_account_number TEXT,
-  bank_branch_code TEXT,
-  
-  -- Profile
-  avatar_url TEXT,
-  bio TEXT;
-```
-
-### 2. New `payslips` Table
-
-```sql
-CREATE TABLE public.payslips (
+CREATE TABLE public.expense_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_user_id UUID NOT NULL,
-  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
-  
-  -- Period
-  pay_period_start DATE NOT NULL,
-  pay_period_end DATE NOT NULL,
-  payment_date DATE NOT NULL,
-  
-  -- Earnings
-  basic_salary NUMERIC NOT NULL DEFAULT 0,
-  overtime_hours NUMERIC DEFAULT 0,
-  overtime_rate NUMERIC DEFAULT 0,
-  overtime_amount NUMERIC DEFAULT 0,
-  
-  -- Allowances (JSONB for flexibility)
-  allowances JSONB DEFAULT '[]', -- [{name: "Transport", amount: 500}, ...]
-  total_allowances NUMERIC DEFAULT 0,
-  
-  -- Deductions (JSONB for flexibility)
-  deductions JSONB DEFAULT '[]', -- [{name: "Tax", amount: 200}, ...]
-  total_deductions NUMERIC DEFAULT 0,
-  
-  -- Totals
-  gross_pay NUMERIC NOT NULL DEFAULT 0,
-  net_pay NUMERIC NOT NULL DEFAULT 0,
-  
-  -- Status
-  status TEXT NOT NULL DEFAULT 'draft', -- draft, approved, paid
-  notes TEXT,
-  
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS Policy
-ALTER TABLE payslips ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Owners can manage payslips"
-  ON payslips FOR ALL
-  USING (auth.uid() = owner_user_id)
-  WITH CHECK (auth.uid() = owner_user_id);
-
-CREATE POLICY "Staff can view own payslips"
-  ON payslips FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM staff_members sm
-      WHERE sm.id = payslips.staff_member_id
-        AND sm.user_id = auth.uid()
-    )
-  );
-```
-
-### 3. New `staff_leave` Table
-
-```sql
-CREATE TABLE public.staff_leave (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_user_id UUID NOT NULL,
-  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
-  
-  leave_type TEXT NOT NULL, -- annual, sick, family, unpaid, other
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
-  days_count NUMERIC NOT NULL,
-  
-  reason TEXT,
-  status TEXT NOT NULL DEFAULT 'pending', -- pending, approved, rejected, cancelled
-  approved_by UUID,
-  approved_at TIMESTAMPTZ,
-  
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS similar to payslips
-```
-
-### 4. New `staff_documents` Table
-
-```sql
-CREATE TABLE public.staff_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_user_id UUID NOT NULL,
-  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
-  
-  document_type TEXT NOT NULL, -- contract, id_copy, certificate, other
+  user_id UUID NOT NULL,
   name TEXT NOT NULL,
-  file_url TEXT NOT NULL,
-  expiry_date DATE,
-  notes TEXT,
+  icon TEXT DEFAULT 'folder',
+  color TEXT DEFAULT 'gray',
+  is_system BOOLEAN DEFAULT false,  -- Cannot delete system categories
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, name)
+);
+
+-- Seed with standard categories per user (via trigger or first-load)
+-- Examples: Office Supplies, Travel, Utilities, Marketing, Professional Services, 
+-- Equipment, Rent, Insurance, Maintenance, Miscellaneous
+```
+
+### 2. Expenses Table
+
+```sql
+CREATE TABLE public.expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  category_id UUID REFERENCES expense_categories(id) ON DELETE SET NULL,
+  bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE SET NULL,
+  
+  date DATE NOT NULL,
+  amount NUMERIC NOT NULL,
+  currency TEXT DEFAULT 'LSL',
+  
+  vendor_name TEXT,
+  description TEXT NOT NULL,
+  reference_number TEXT,  -- Invoice/receipt number
+  receipt_url TEXT,       -- Uploaded receipt image
+  
+  is_recurring BOOLEAN DEFAULT false,
+  recurring_frequency TEXT,  -- monthly, weekly, yearly
+  
+  payment_method TEXT,  -- cash, bank_transfer, card, mobile_money
+  status TEXT DEFAULT 'pending',  -- pending, paid, cancelled
+  
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### 3. Bank Accounts Table
+
+```sql
+CREATE TABLE public.bank_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  
+  account_name TEXT NOT NULL,
+  account_number TEXT,
+  bank_name TEXT,
+  account_type TEXT DEFAULT 'checking',  -- checking, savings, mobile_money
+  currency TEXT DEFAULT 'LSL',
+  
+  opening_balance NUMERIC DEFAULT 0,
+  current_balance NUMERIC DEFAULT 0,
+  
+  is_primary BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  
+  UNIQUE(user_id, account_name)
+);
+```
+
+### 4. Transactions Table (For Reconciliation)
+
+```sql
+CREATE TABLE public.accounting_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  bank_account_id UUID REFERENCES bank_accounts(id) ON DELETE CASCADE,
+  
+  transaction_type TEXT NOT NULL,  -- income, expense, transfer
+  reference_type TEXT,  -- invoice, expense, payslip, manual
+  reference_id UUID,    -- Links to invoices.id, expenses.id, payslips.id
+  
+  date DATE NOT NULL,
+  amount NUMERIC NOT NULL,  -- Positive for income, negative for expense
+  running_balance NUMERIC,
+  
+  description TEXT,
+  is_reconciled BOOLEAN DEFAULT false,
+  reconciled_at TIMESTAMPTZ,
   
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
----
+### 5. RLS Policies
 
-## New Storage Bucket
+```sql
+-- All tables use standard user_id pattern
+ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE accounting_transactions ENABLE ROW LEVEL SECURITY;
 
-Create a `staff-assets` bucket for:
-- Staff photos/avatars
-- Payslip PDFs
-- Staff documents (contracts, IDs, certificates)
-
----
-
-## UI Components
-
-### 1. Enhanced Staff Page with Tabs
-
-Transform Staff.tsx to use tabs:
-
-```text
-/staff
-  ├── Overview Tab (existing list)
-  ├── Payroll Tab
-  │   ├── Generate Payslips button
-  │   ├── Payslip list with filters (month, status)
-  │   └── Bulk actions (approve, mark paid)
-  └── Leave Tab (future enhancement)
+-- Standard policies for each
+CREATE POLICY "Users can manage own [table]"
+  ON [table] FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 ```
 
-### 2. Staff Profile Page/Dialog
+---
 
-Enhanced StaffDetailDialog with sections:
-- **Personal Info**: Photo, DOB, gender, national ID, address
-- **Employment**: Hire date, contract type, work schedule, probation
-- **Compensation**: Salary, bank details
-- **Emergency Contact**: Name, phone, relationship
-- **Documents**: Upload/view contracts, IDs, certificates
-- **Payslips**: View payslip history
-- **Leave**: View leave balance and history
+## UI Structure
 
-### 3. Payslip Components
+### Accounting Page with Tabs
 
-| Component | Purpose |
-|-----------|---------|
-| `PayrollTab.tsx` | Main payroll management tab |
-| `GeneratePayslipDialog.tsx` | Form to create payslips for period |
-| `PayslipPreview.tsx` | PDF-ready payslip view |
-| `PayslipList.tsx` | List/table of payslips |
-| `BulkPayslipGenerator.tsx` | Generate payslips for all active staff |
-
-### 4. Leave Components (Phase 2)
-
-| Component | Purpose |
-|-----------|---------|
-| `LeaveTab.tsx` | Leave management overview |
-| `LeaveRequestDialog.tsx` | Submit leave request |
-| `LeaveApprovalDialog.tsx` | Approve/reject requests |
-| `LeaveBalanceCard.tsx` | Show remaining leave days |
+```text
+/accounting
+  ├── Overview Tab
+  │   ├── Cash Flow Summary (Money In / Money Out / Net)
+  │   ├── Quick Stats Cards
+  │   ├── Recent Transactions List
+  │   └── Expense by Category Chart
+  │
+  ├── Expenses Tab
+  │   ├── Add Expense button
+  │   ├── Filter by category, date range, status
+  │   ├── Expense list/table
+  │   └── Expense category breakdown chart
+  │
+  ├── Bank Accounts Tab
+  │   ├── Add Account button
+  │   ├── Account cards with balances
+  │   ├── Transaction list per account
+  │   └── Reconciliation status
+  │
+  └── Reports Tab
+      ├── Date range selector
+      ├── Income Statement (Revenue - Expenses = Net)
+      ├── Expense Report by Category
+      └── Cash Flow Statement
+```
 
 ---
 
@@ -223,17 +198,20 @@ Enhanced StaffDetailDialog with sections:
 
 | File | Purpose |
 |------|---------|
-| `src/hooks/useStaffProfile.tsx` | Extended profile CRUD |
-| `src/hooks/usePayslips.tsx` | Payslip management |
-| `src/hooks/useStaffLeave.tsx` | Leave tracking |
-| `src/hooks/useStaffDocuments.tsx` | Document management |
-| `src/components/staff/StaffProfileTab.tsx` | Full profile view/edit |
-| `src/components/staff/PayrollTab.tsx` | Payroll management |
-| `src/components/staff/GeneratePayslipDialog.tsx` | Create payslip form |
-| `src/components/staff/PayslipPreview.tsx` | Payslip document view |
-| `src/components/staff/StaffDocuments.tsx` | Document upload/list |
-| `src/components/staff/EmergencyContactCard.tsx` | Emergency info card |
-| `src/components/staff/CompensationCard.tsx` | Salary/bank info card |
+| `src/pages/Accounting.tsx` | Main accounting page with tabs |
+| `src/hooks/useExpenses.tsx` | Expense CRUD operations |
+| `src/hooks/useBankAccounts.tsx` | Bank account management |
+| `src/hooks/useAccountingStats.tsx` | Financial calculations and aggregations |
+| `src/components/accounting/OverviewTab.tsx` | Dashboard overview |
+| `src/components/accounting/ExpensesTab.tsx` | Expense management |
+| `src/components/accounting/BankAccountsTab.tsx` | Bank accounts |
+| `src/components/accounting/ReportsTab.tsx` | Financial reports |
+| `src/components/accounting/AddExpenseDialog.tsx` | Create/edit expense |
+| `src/components/accounting/AddBankAccountDialog.tsx` | Create/edit account |
+| `src/components/accounting/ExpenseCategoryChart.tsx` | Pie/donut chart |
+| `src/components/accounting/CashFlowChart.tsx` | Line/bar chart |
+| `src/components/accounting/IncomeStatement.tsx` | P&L report component |
+| `src/components/accounting/index.ts` | Barrel exports |
 
 ---
 
@@ -241,116 +219,156 @@ Enhanced StaffDetailDialog with sections:
 
 | File | Changes |
 |------|---------|
-| `src/pages/Staff.tsx` | Add tabs structure (Overview, Payroll) |
-| `src/components/staff/StaffDetailDialog.tsx` | Expand with tabs for profile sections |
-| `src/hooks/useStaff.tsx` | Add extended profile fields |
-| `src/components/staff/index.ts` | Export new components |
+| `src/App.tsx` | Add `/accounting` route |
+| `src/components/layout/Sidebar.tsx` | Add Accounting nav item with `Calculator` icon |
 
 ---
 
-## Payslip Generation Flow
+## Key Components
+
+### Overview Tab Stats Cards
+
+| Card | Calculation |
+|------|-------------|
+| Total Revenue | Sum of paid invoices for period |
+| Total Expenses | Sum of paid expenses for period |
+| Payroll Costs | Sum of paid payslips for period |
+| Net Cash Flow | Revenue - Expenses - Payroll |
+| Cash on Hand | Sum of all bank account balances |
+| Outstanding | Unpaid invoices total |
+
+### Expense Form Fields
+
+| Field | Type | Required |
+|-------|------|----------|
+| Date | Date picker | Yes |
+| Amount | Number input | Yes |
+| Category | Select dropdown | Yes |
+| Vendor/Payee | Text input | No |
+| Description | Textarea | Yes |
+| Payment Method | Select | No |
+| Bank Account | Select (if tracking) | No |
+| Reference Number | Text | No |
+| Receipt | File upload | No |
+| Recurring | Toggle + frequency | No |
+
+### Bank Account Card
 
 ```text
-1. Select Pay Period (month/custom dates)
-         ↓
-2. Select Staff (all active or specific)
-         ↓
-3. Auto-populate:
-   - Basic salary from staff profile
-   - Standard allowances
-   - Standard deductions
-         ↓
-4. Review & Adjust each payslip
-         ↓
-5. Save as Draft
-         ↓
-6. Approve → Generate PDF
-         ↓
-7. Mark as Paid (with payment date)
++----------------------------------------+
+| [Icon] Business Checking      [Primary] |
+| Standard Lesotho Bank                   |
+| ****4567                                |
++----------------------------------------+
+| Current Balance                         |
+| M 45,230.00                             |
++----------------------------------------+
+| Last reconciled: Feb 1, 2026           |
+| [Reconcile] [Transactions] [Edit]      |
++----------------------------------------+
 ```
 
 ---
 
-## Payslip Template
+## Integration Points
 
-Standard payslip layout with company branding:
+### 1. Invoice Integration (Revenue)
+- When invoice marked as "paid", automatically create an accounting transaction
+- Links back to invoice for drill-down
+
+### 2. Payroll Integration (Expense)
+- When payslip marked as "paid", create expense transaction
+- Category: "Payroll" (system category)
+- Links back to payslip
+
+### 3. Expense to Bank Account
+- When expense paid, update bank account balance
+- Create transaction record for reconciliation
+
+---
+
+## Financial Calculations
+
+### Income Statement (P&L)
 
 ```text
-+------------------------------------------+
-| [Company Logo]   PAYSLIP                 |
-| Company Name                             |
-| Period: 01 Feb - 28 Feb 2026             |
-+------------------------------------------+
-| Employee: John Doe                       |
-| ID: EMP-001                              |
-| Department: Operations                   |
-+------------------------------------------+
-| EARNINGS                                 |
-| Basic Salary         M 8,000.00          |
-| Overtime (10 hrs)    M   500.00          |
-| Transport Allowance  M   600.00          |
-| Housing Allowance    M 1,000.00          |
-|                    ----------------       |
-| Gross Pay            M 10,100.00         |
-+------------------------------------------+
-| DEDUCTIONS                               |
-| PAYE Tax            M 1,200.00           |
-| Pension (5%)        M   400.00           |
-| Medical Aid         M   300.00           |
-|                    ----------------       |
-| Total Deductions    M 1,900.00           |
-+------------------------------------------+
-| NET PAY             M 8,200.00           |
-+------------------------------------------+
-| Payment Method: Bank Transfer            |
-| Bank: Standard Lesotho Bank              |
-| Account: ****4567                        |
-+------------------------------------------+
+INCOME STATEMENT
+For Period: [Start Date] - [End Date]
+
+REVENUE
+  Sales Revenue (Paid Invoices)    M xxx,xxx.xx
+  Other Income                     M xxx,xxx.xx
+                                   ─────────────
+  TOTAL REVENUE                    M xxx,xxx.xx
+
+EXPENSES
+  Office Supplies                  M xx,xxx.xx
+  Travel                           M xx,xxx.xx
+  Utilities                        M xx,xxx.xx
+  Marketing                        M xx,xxx.xx
+  Professional Services            M xx,xxx.xx
+  Payroll                          M xx,xxx.xx
+  Other Expenses                   M xx,xxx.xx
+                                   ─────────────
+  TOTAL EXPENSES                   M xxx,xxx.xx
+
+NET INCOME                         M xxx,xxx.xx
+```
+
+### Cash Flow Summary
+
+```typescript
+const cashFlowStats = useMemo(() => {
+  // Money In: Paid invoices in period
+  const moneyIn = paidInvoices.reduce((sum, i) => sum + i.total, 0);
+  
+  // Money Out: Paid expenses + Paid payslips
+  const expensesOut = paidExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const payrollOut = paidPayslips.reduce((sum, p) => sum + p.netPay, 0);
+  const moneyOut = expensesOut + payrollOut;
+  
+  // Net Flow
+  const netFlow = moneyIn - moneyOut;
+  
+  return { moneyIn, moneyOut, netFlow };
+}, [paidInvoices, paidExpenses, paidPayslips]);
 ```
 
 ---
 
-## Technical Details
+## Default Expense Categories
 
-### Profile Photo Upload
-Use existing `company-assets` bucket pattern:
-- Accept image files (jpg, png)
-- Resize to max 400x400
-- Store in `staff-avatars/{staff_id}/photo.jpg`
+| Category | Icon | Color |
+|----------|------|-------|
+| Office Supplies | `Package` | blue |
+| Travel | `Plane` | purple |
+| Utilities | `Zap` | yellow |
+| Marketing | `Megaphone` | pink |
+| Professional Services | `Briefcase` | indigo |
+| Equipment | `Monitor` | gray |
+| Rent | `Building` | amber |
+| Insurance | `Shield` | green |
+| Maintenance | `Wrench` | orange |
+| Payroll | `Users` | sky (system) |
+| Miscellaneous | `Folder` | slate |
 
-### Payslip PDF Generation
-Use existing html2pdf.js pattern (same as invoices):
-- Generate HTML template
-- Convert to PDF for download
+---
 
-### Currency Handling
-Use existing `formatMaluti()` from `src/lib/currency.ts` for displaying amounts.
+## Receipt Upload
+
+Use existing storage pattern with `company-assets` bucket:
+- Path: `receipts/{user_id}/{expense_id}.{ext}`
+- Accept: jpg, png, pdf
+- Show thumbnail preview in expense list
 
 ---
 
 ## Security Considerations
 
-1. **RLS on All New Tables**: Owners manage, staff can only view their own records
-2. **Sensitive Data**: Bank details and salary information protected by RLS
-3. **Document Access**: Staff documents stored in private bucket paths
-4. **Audit Trail**: Track who approved payslips and leave requests
-
----
-
-## Implementation Phases
-
-### Phase 1 (This Plan)
-- Extended staff profile fields
-- Staff photo upload
-- Compensation and bank details
-- Emergency contacts
-- Basic payslip generation and management
-
-### Phase 2 (Future)
-- Leave management
-- Staff documents storage
-- Employment history tracking
-- Performance reviews
+1. **RLS on All Tables**: Standard user_id pattern for multi-tenancy
+2. **File Access**: Receipts stored with user-scoped paths
+3. **Sensitive Data**: Bank account numbers partially masked in UI
+4. **Audit Trail**: Transaction records maintain history
 
 ---
 
@@ -358,12 +376,13 @@ Use existing `formatMaluti()` from `src/lib/currency.ts` for displaying amounts.
 
 | Category | Count |
 |----------|-------|
-| New database tables | 3 (payslips, staff_leave, staff_documents) |
-| Schema alterations | 1 (staff_members extended) |
-| New hooks | 4 |
-| New components | 10+ |
-| Modified files | 4 |
-| Storage bucket | 1 (staff-assets) |
+| New database tables | 4 |
+| New pages | 1 |
+| New hooks | 3 |
+| New components | 12+ |
+| Modified files | 2 (App.tsx, Sidebar.tsx) |
+| Charts | 2 (Category breakdown, Cash flow) |
+| Reports | 3 (Income Statement, Expense Report, Cash Flow) |
 
-This implementation transforms the Staff module into a comprehensive HR management tool, following existing patterns in the codebase for consistency and maintainability.
+This accounting module provides SMEs with essential bookkeeping tools while integrating seamlessly with the existing invoicing and payroll systems to provide a complete financial picture of the business.
 
