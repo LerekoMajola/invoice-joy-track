@@ -712,6 +712,48 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          payment_method: string | null
+          payment_reference: string | null
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           created_at: string
@@ -814,6 +856,42 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_tracking: {
+        Row: {
+          clients_count: number | null
+          created_at: string | null
+          id: string
+          invoices_count: number | null
+          period_end: string
+          period_start: string
+          quotes_count: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          clients_count?: number | null
+          created_at?: string | null
+          id?: string
+          invoices_count?: number | null
+          period_end: string
+          period_start: string
+          quotes_count?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          clients_count?: number | null
+          created_at?: string | null
+          id?: string
+          invoices_count?: number | null
+          period_end?: string
+          period_start?: string
+          quotes_count?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -822,7 +900,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_plan: "free_trial" | "basic" | "standard" | "pro"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "cancelled"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -949,6 +1033,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_plan: ["free_trial", "basic", "standard", "pro"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "cancelled",
+        "expired",
+      ],
+    },
   },
 } as const

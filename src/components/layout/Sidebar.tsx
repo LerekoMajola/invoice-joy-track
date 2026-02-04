@@ -9,7 +9,8 @@ import {
   Briefcase,
   LogOut,
   Settings,
-  TrendingUp
+  TrendingUp,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import leekayLogo from '@/assets/leekay-logo.png';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clients & Leads', href: '/crm', icon: Users },
   { name: 'Quotes', href: '/quotes', icon: FileText },
   { name: 'Invoices', href: '/invoices', icon: Receipt },
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
 ];
 
 interface SidebarProps {
