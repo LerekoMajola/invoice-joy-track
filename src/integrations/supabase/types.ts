@@ -579,6 +579,83 @@ export type Database = {
         }
         Relationships: []
       }
+      payslips: {
+        Row: {
+          allowances: Json | null
+          basic_salary: number
+          created_at: string | null
+          deductions: Json | null
+          gross_pay: number
+          id: string
+          net_pay: number
+          notes: string | null
+          overtime_amount: number | null
+          overtime_hours: number | null
+          overtime_rate: number | null
+          owner_user_id: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_date: string
+          staff_member_id: string
+          status: string
+          total_allowances: number | null
+          total_deductions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowances?: Json | null
+          basic_salary?: number
+          created_at?: string | null
+          deductions?: Json | null
+          gross_pay?: number
+          id?: string
+          net_pay?: number
+          notes?: string | null
+          overtime_amount?: number | null
+          overtime_hours?: number | null
+          overtime_rate?: number | null
+          owner_user_id: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_date: string
+          staff_member_id: string
+          status?: string
+          total_allowances?: number | null
+          total_deductions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowances?: Json | null
+          basic_salary?: number
+          created_at?: string | null
+          deductions?: Json | null
+          gross_pay?: number
+          id?: string
+          net_pay?: number
+          notes?: string | null
+          overtime_amount?: number | null
+          overtime_hours?: number | null
+          overtime_rate?: number | null
+          owner_user_id?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_date?: string
+          staff_member_id?: string
+          status?: string
+          total_allowances?: number | null
+          total_deductions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -714,52 +791,118 @@ export type Database = {
       }
       staff_members: {
         Row: {
+          address: string | null
+          avatar_url: string | null
+          bank_account_number: string | null
+          bank_branch_code: string | null
+          bank_name: string | null
+          bio: string | null
+          city: string | null
+          contract_type: string | null
+          country: string | null
           created_at: string | null
+          date_of_birth: string | null
           department: string | null
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          gender: string | null
+          hire_date: string | null
           id: string
           invited_at: string | null
           job_title: string | null
           joined_at: string | null
           name: string
+          national_id: string | null
           notes: string | null
           owner_user_id: string
           phone: string | null
+          postal_code: string | null
+          probation_end_date: string | null
+          salary_amount: number | null
+          salary_currency: string | null
+          salary_frequency: string | null
           status: string
           updated_at: string | null
           user_id: string | null
+          work_schedule: string | null
         }
         Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          city?: string | null
+          contract_type?: string | null
+          country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           department?: string | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          gender?: string | null
+          hire_date?: string | null
           id?: string
           invited_at?: string | null
           job_title?: string | null
           joined_at?: string | null
           name: string
+          national_id?: string | null
           notes?: string | null
           owner_user_id: string
           phone?: string | null
+          postal_code?: string | null
+          probation_end_date?: string | null
+          salary_amount?: number | null
+          salary_currency?: string | null
+          salary_frequency?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string | null
+          work_schedule?: string | null
         }
         Update: {
+          address?: string | null
+          avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          city?: string | null
+          contract_type?: string | null
+          country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           department?: string | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          gender?: string | null
+          hire_date?: string | null
           id?: string
           invited_at?: string | null
           job_title?: string | null
           joined_at?: string | null
           name?: string
+          national_id?: string | null
           notes?: string | null
           owner_user_id?: string
           phone?: string | null
+          postal_code?: string | null
+          probation_end_date?: string | null
+          salary_amount?: number | null
+          salary_currency?: string | null
+          salary_frequency?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string | null
+          work_schedule?: string | null
         }
         Relationships: []
       }
