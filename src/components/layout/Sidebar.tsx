@@ -10,12 +10,14 @@ import {
   LogOut,
   Settings,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -37,6 +39,7 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { profile, isLoading } = useCompanyProfile();
 
   const handleClick = () => {
     onNavigate?.();
@@ -45,10 +48,25 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar md:fixed">
       <div className="flex h-full flex-col">
-        {/* Logo */}
+        {/* Tenant Logo */}
         <div className="flex h-16 items-center px-4 border-b border-sidebar-border bg-white">
-          <div className="bg-white rounded-lg px-3 py-2">
-            <img src={orionLabsLogo} alt="Orion Labs" className="h-7 w-auto" />
+          <div className="bg-white rounded-lg px-3 py-2 max-w-full">
+            {isLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : profile?.logo_url ? (
+              <img 
+                src={profile.logo_url} 
+                alt={profile.company_name || 'Company'} 
+                className="h-8 w-auto max-w-[160px] object-contain" 
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-sm truncate text-foreground">
+                  {profile?.company_name || 'My Business'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
