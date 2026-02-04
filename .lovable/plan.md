@@ -1,119 +1,221 @@
 
-# Staff Management Feature
+
+# Staff Tools Expansion: Profiles, Payslips & HR Features
 
 ## Overview
-Add a Staff page where tenants can manage their team members. This includes inviting staff, assigning roles, viewing status, and managing permissions. The implementation follows security best practices with roles stored in a separate table to prevent privilege escalation.
+Expand the Staff module with comprehensive HR tools including detailed staff profiles, payslip management, leave tracking, and document management. This transforms the basic staff list into a full HR management system for SMEs.
 
 ---
 
-## Architecture
+## Feature Summary
 
-### Multi-Tenant Staff Model
-Staff members belong to a **tenant** (the business owner), not individual users. Each tenant (identified by `owner_user_id`) can have multiple staff members who can access the tenant's data based on their role.
-
-```text
-+------------------+          +------------------+          +------------------+
-|  auth.users      |          |  staff_members   |          |  staff_roles     |
-+------------------+          +------------------+          +------------------+
-| id (uuid)        |<---------| user_id (fk)     |          | id (uuid)        |
-| email            |          | owner_user_id    |--------->| staff_member_id  |
-|                  |          | name             |          | role (enum)      |
-+------------------+          | email            |          +------------------+
-                              | phone            |
-                              | job_title        |
-                              | status           |
-                              | invited_at       |
-                              | joined_at        |
-                              +------------------+
-```
+| Feature | Description |
+|---------|-------------|
+| **Staff Profiles** | Extended profile with personal details, emergency contacts, employment info, photo |
+| **Payslips** | Generate and manage monthly payslips with salary, deductions, allowances |
+| **Leave Management** | Track leave balances, requests, and history |
+| **Staff Documents** | Store contracts, IDs, certificates per staff member |
+| **Employment History** | Track job title changes, salary adjustments, promotions |
 
 ---
 
-## Database Design
+## Database Schema
 
-### 1. Create Role Enum
+### 1. Extend `staff_members` Table
+Add new columns for extended profile information:
+
 ```sql
-CREATE TYPE public.staff_role AS ENUM ('admin', 'manager', 'staff', 'viewer');
+ALTER TABLE staff_members ADD COLUMN IF NOT EXISTS
+  -- Personal Details
+  date_of_birth DATE,
+  gender TEXT,
+  national_id TEXT,
+  address TEXT,
+  city TEXT,
+  postal_code TEXT,
+  country TEXT DEFAULT 'Lesotho',
+  
+  -- Emergency Contact
+  emergency_contact_name TEXT,
+  emergency_contact_phone TEXT,
+  emergency_contact_relationship TEXT,
+  
+  -- Employment Details
+  hire_date DATE,
+  contract_type TEXT DEFAULT 'permanent', -- permanent, contract, part-time
+  work_schedule TEXT DEFAULT 'full-time', -- full-time, part-time, flexible
+  probation_end_date DATE,
+  
+  -- Compensation
+  salary_amount NUMERIC DEFAULT 0,
+  salary_currency TEXT DEFAULT 'LSL',
+  salary_frequency TEXT DEFAULT 'monthly', -- monthly, bi-weekly, weekly
+  bank_name TEXT,
+  bank_account_number TEXT,
+  bank_branch_code TEXT,
+  
+  -- Profile
+  avatar_url TEXT,
+  bio TEXT;
 ```
 
-### 2. Staff Members Table
+### 2. New `payslips` Table
+
 ```sql
-CREATE TABLE public.staff_members (
+CREATE TABLE public.payslips (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_user_id UUID NOT NULL,  -- The tenant who owns this staff
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- Linked when they accept invite
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  phone TEXT,
-  job_title TEXT,
-  department TEXT,
-  status TEXT NOT NULL DEFAULT 'invited',  -- invited, active, inactive
+  owner_user_id UUID NOT NULL,
+  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+  
+  -- Period
+  pay_period_start DATE NOT NULL,
+  pay_period_end DATE NOT NULL,
+  payment_date DATE NOT NULL,
+  
+  -- Earnings
+  basic_salary NUMERIC NOT NULL DEFAULT 0,
+  overtime_hours NUMERIC DEFAULT 0,
+  overtime_rate NUMERIC DEFAULT 0,
+  overtime_amount NUMERIC DEFAULT 0,
+  
+  -- Allowances (JSONB for flexibility)
+  allowances JSONB DEFAULT '[]', -- [{name: "Transport", amount: 500}, ...]
+  total_allowances NUMERIC DEFAULT 0,
+  
+  -- Deductions (JSONB for flexibility)
+  deductions JSONB DEFAULT '[]', -- [{name: "Tax", amount: 200}, ...]
+  total_deductions NUMERIC DEFAULT 0,
+  
+  -- Totals
+  gross_pay NUMERIC NOT NULL DEFAULT 0,
+  net_pay NUMERIC NOT NULL DEFAULT 0,
+  
+  -- Status
+  status TEXT NOT NULL DEFAULT 'draft', -- draft, approved, paid
   notes TEXT,
-  invited_at TIMESTAMPTZ DEFAULT now(),
-  joined_at TIMESTAMPTZ,
+  
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(owner_user_id, email)  -- Prevent duplicate staff per tenant
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
-```
 
-### 3. Staff Roles Table (Security Best Practice)
-```sql
-CREATE TABLE public.staff_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  staff_member_id UUID NOT NULL REFERENCES public.staff_members(id) ON DELETE CASCADE,
-  role staff_role NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(staff_member_id, role)  -- One role per staff member (or allow multiple)
-);
-```
+-- RLS Policy
+ALTER TABLE payslips ENABLE ROW LEVEL SECURITY;
 
-### 4. Security Definer Function (Prevent RLS Recursion)
-```sql
-CREATE OR REPLACE FUNCTION public.get_staff_role(p_user_id UUID, p_owner_user_id UUID)
-RETURNS staff_role
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT sr.role
-  FROM staff_roles sr
-  JOIN staff_members sm ON sr.staff_member_id = sm.id
-  WHERE sm.user_id = p_user_id
-    AND sm.owner_user_id = p_owner_user_id
-  LIMIT 1
-$$;
-```
-
-### 5. RLS Policies
-```sql
--- Enable RLS
-ALTER TABLE public.staff_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.staff_roles ENABLE ROW LEVEL SECURITY;
-
--- Staff members: Owner can manage their staff
-CREATE POLICY "Owners can manage their staff"
-  ON public.staff_members FOR ALL
+CREATE POLICY "Owners can manage payslips"
+  ON payslips FOR ALL
   USING (auth.uid() = owner_user_id)
   WITH CHECK (auth.uid() = owner_user_id);
 
--- Staff members: Staff can view their own record
-CREATE POLICY "Staff can view their own record"
-  ON public.staff_members FOR SELECT
-  USING (auth.uid() = user_id);
-
--- Staff roles: Owner can manage roles
-CREATE POLICY "Owners can manage staff roles"
-  ON public.staff_roles FOR ALL
+CREATE POLICY "Staff can view own payslips"
+  ON payslips FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM staff_members sm
-      WHERE sm.id = staff_roles.staff_member_id
-        AND sm.owner_user_id = auth.uid()
+      WHERE sm.id = payslips.staff_member_id
+        AND sm.user_id = auth.uid()
     )
   );
 ```
+
+### 3. New `staff_leave` Table
+
+```sql
+CREATE TABLE public.staff_leave (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_user_id UUID NOT NULL,
+  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+  
+  leave_type TEXT NOT NULL, -- annual, sick, family, unpaid, other
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  days_count NUMERIC NOT NULL,
+  
+  reason TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending, approved, rejected, cancelled
+  approved_by UUID,
+  approved_at TIMESTAMPTZ,
+  
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS similar to payslips
+```
+
+### 4. New `staff_documents` Table
+
+```sql
+CREATE TABLE public.staff_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_user_id UUID NOT NULL,
+  staff_member_id UUID NOT NULL REFERENCES staff_members(id) ON DELETE CASCADE,
+  
+  document_type TEXT NOT NULL, -- contract, id_copy, certificate, other
+  name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  expiry_date DATE,
+  notes TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
+## New Storage Bucket
+
+Create a `staff-assets` bucket for:
+- Staff photos/avatars
+- Payslip PDFs
+- Staff documents (contracts, IDs, certificates)
+
+---
+
+## UI Components
+
+### 1. Enhanced Staff Page with Tabs
+
+Transform Staff.tsx to use tabs:
+
+```text
+/staff
+  ├── Overview Tab (existing list)
+  ├── Payroll Tab
+  │   ├── Generate Payslips button
+  │   ├── Payslip list with filters (month, status)
+  │   └── Bulk actions (approve, mark paid)
+  └── Leave Tab (future enhancement)
+```
+
+### 2. Staff Profile Page/Dialog
+
+Enhanced StaffDetailDialog with sections:
+- **Personal Info**: Photo, DOB, gender, national ID, address
+- **Employment**: Hire date, contract type, work schedule, probation
+- **Compensation**: Salary, bank details
+- **Emergency Contact**: Name, phone, relationship
+- **Documents**: Upload/view contracts, IDs, certificates
+- **Payslips**: View payslip history
+- **Leave**: View leave balance and history
+
+### 3. Payslip Components
+
+| Component | Purpose |
+|-----------|---------|
+| `PayrollTab.tsx` | Main payroll management tab |
+| `GeneratePayslipDialog.tsx` | Form to create payslips for period |
+| `PayslipPreview.tsx` | PDF-ready payslip view |
+| `PayslipList.tsx` | List/table of payslips |
+| `BulkPayslipGenerator.tsx` | Generate payslips for all active staff |
+
+### 4. Leave Components (Phase 2)
+
+| Component | Purpose |
+|-----------|---------|
+| `LeaveTab.tsx` | Leave management overview |
+| `LeaveRequestDialog.tsx` | Submit leave request |
+| `LeaveApprovalDialog.tsx` | Approve/reject requests |
+| `LeaveBalanceCard.tsx` | Show remaining leave days |
 
 ---
 
@@ -121,12 +223,17 @@ CREATE POLICY "Owners can manage staff roles"
 
 | File | Purpose |
 |------|---------|
-| `src/pages/Staff.tsx` | Main Staff page with list and management |
-| `src/components/staff/StaffTab.tsx` | Staff list component with table/cards |
-| `src/components/staff/AddStaffDialog.tsx` | Dialog to add new staff member |
-| `src/components/staff/StaffDetailDialog.tsx` | View/edit staff details |
-| `src/components/staff/index.ts` | Export barrel file |
-| `src/hooks/useStaff.tsx` | Hook for CRUD operations |
+| `src/hooks/useStaffProfile.tsx` | Extended profile CRUD |
+| `src/hooks/usePayslips.tsx` | Payslip management |
+| `src/hooks/useStaffLeave.tsx` | Leave tracking |
+| `src/hooks/useStaffDocuments.tsx` | Document management |
+| `src/components/staff/StaffProfileTab.tsx` | Full profile view/edit |
+| `src/components/staff/PayrollTab.tsx` | Payroll management |
+| `src/components/staff/GeneratePayslipDialog.tsx` | Create payslip form |
+| `src/components/staff/PayslipPreview.tsx` | Payslip document view |
+| `src/components/staff/StaffDocuments.tsx` | Document upload/list |
+| `src/components/staff/EmergencyContactCard.tsx` | Emergency info card |
+| `src/components/staff/CompensationCard.tsx` | Salary/bank info card |
 
 ---
 
@@ -134,127 +241,116 @@ CREATE POLICY "Owners can manage staff roles"
 
 | File | Changes |
 |------|---------|
-| `src/App.tsx` | Add `/staff` route |
-| `src/components/layout/Sidebar.tsx` | Add Staff nav item with `UserPlus` icon |
+| `src/pages/Staff.tsx` | Add tabs structure (Overview, Payroll) |
+| `src/components/staff/StaffDetailDialog.tsx` | Expand with tabs for profile sections |
+| `src/hooks/useStaff.tsx` | Add extended profile fields |
+| `src/components/staff/index.ts` | Export new components |
 
 ---
 
-## Component Structure
-
-### Staff Page (`src/pages/Staff.tsx`)
-- Uses `DashboardLayout` wrapper
-- Header with title and "Add Staff" button
-- Search and filter controls
-- Stats cards (Total, Active, Invited, By Role)
-- Responsive table (desktop) / cards (mobile)
-
-### AddStaffDialog
-Form fields:
-- Name (required)
-- Email (required, validated)
-- Phone
-- Job Title
-- Department (select: Operations, Sales, Finance, Admin, Other)
-- Role (select: Admin, Manager, Staff, Viewer)
-- Notes
-
-### StaffDetailDialog
-- View mode by default
-- Edit mode toggle
-- Activity history (future enhancement)
-- Status management (Activate/Deactivate)
-
----
-
-## Staff Hook API (`useStaff.tsx`)
-
-```typescript
-interface StaffMember {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  jobTitle: string | null;
-  department: string | null;
-  status: 'invited' | 'active' | 'inactive';
-  role: 'admin' | 'manager' | 'staff' | 'viewer';
-  notes: string | null;
-  invitedAt: string;
-  joinedAt: string | null;
-}
-
-// Hook returns
-{
-  staff: StaffMember[];
-  isLoading: boolean;
-  createStaff: (data) => Promise<StaffMember | null>;
-  updateStaff: (id, data) => Promise<boolean>;
-  deleteStaff: (id) => Promise<boolean>;
-  refetch: () => void;
-}
-```
-
----
-
-## Status Flow
+## Payslip Generation Flow
 
 ```text
-[Add Staff] --> [Invited] --> (Accepts Invite) --> [Active]
-                                    |
-                              [Deactivate] --> [Inactive] --> [Reactivate] --> [Active]
+1. Select Pay Period (month/custom dates)
+         ↓
+2. Select Staff (all active or specific)
+         ↓
+3. Auto-populate:
+   - Basic salary from staff profile
+   - Standard allowances
+   - Standard deductions
+         ↓
+4. Review & Adjust each payslip
+         ↓
+5. Save as Draft
+         ↓
+6. Approve → Generate PDF
+         ↓
+7. Mark as Paid (with payment date)
 ```
 
 ---
 
-## UI Components
+## Payslip Template
 
-### Desktop Table Columns
-| Column | Description |
-|--------|-------------|
-| Staff Member | Avatar + Name + Email |
-| Job Title | Position in company |
-| Department | Team/department |
-| Role | Badge with color |
-| Status | Badge (invited/active/inactive) |
-| Actions | Dropdown menu |
+Standard payslip layout with company branding:
 
-### Status Badges
-- **Invited**: Yellow/amber
-- **Active**: Green
-- **Inactive**: Gray
-
-### Role Badges
-- **Admin**: Red (full access)
-- **Manager**: Blue (can manage team data)
-- **Staff**: Green (can create/edit)
-- **Viewer**: Gray (read-only)
+```text
++------------------------------------------+
+| [Company Logo]   PAYSLIP                 |
+| Company Name                             |
+| Period: 01 Feb - 28 Feb 2026             |
++------------------------------------------+
+| Employee: John Doe                       |
+| ID: EMP-001                              |
+| Department: Operations                   |
++------------------------------------------+
+| EARNINGS                                 |
+| Basic Salary         M 8,000.00          |
+| Overtime (10 hrs)    M   500.00          |
+| Transport Allowance  M   600.00          |
+| Housing Allowance    M 1,000.00          |
+|                    ----------------       |
+| Gross Pay            M 10,100.00         |
++------------------------------------------+
+| DEDUCTIONS                               |
+| PAYE Tax            M 1,200.00           |
+| Pension (5%)        M   400.00           |
+| Medical Aid         M   300.00           |
+|                    ----------------       |
+| Total Deductions    M 1,900.00           |
++------------------------------------------+
+| NET PAY             M 8,200.00           |
++------------------------------------------+
+| Payment Method: Bank Transfer            |
+| Bank: Standard Lesotho Bank              |
+| Account: ****4567                        |
++------------------------------------------+
+```
 
 ---
 
-## Validation (Zod Schema)
+## Technical Details
 
-```typescript
-const staffSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
-  email: z.string().trim().email("Invalid email address").max(255),
-  phone: z.string().max(20).optional(),
-  jobTitle: z.string().max(100).optional(),
-  department: z.string().optional(),
-  role: z.enum(['admin', 'manager', 'staff', 'viewer']),
-  notes: z.string().max(500).optional(),
-});
-```
+### Profile Photo Upload
+Use existing `company-assets` bucket pattern:
+- Accept image files (jpg, png)
+- Resize to max 400x400
+- Store in `staff-avatars/{staff_id}/photo.jpg`
+
+### Payslip PDF Generation
+Use existing html2pdf.js pattern (same as invoices):
+- Generate HTML template
+- Convert to PDF for download
+
+### Currency Handling
+Use existing `formatMaluti()` from `src/lib/currency.ts` for displaying amounts.
 
 ---
 
 ## Security Considerations
 
-1. **Roles in Separate Table**: Prevents privilege escalation by keeping roles isolated
-2. **Security Definer Function**: Avoids RLS recursion when checking permissions
-3. **Server-Side Validation**: All mutations validated via RLS policies
-4. **Email Uniqueness per Tenant**: Prevents duplicate staff entries
-5. **Soft Delete via Status**: Staff can be deactivated rather than deleted
-6. **Input Validation**: Zod schemas for client-side validation
+1. **RLS on All New Tables**: Owners manage, staff can only view their own records
+2. **Sensitive Data**: Bank details and salary information protected by RLS
+3. **Document Access**: Staff documents stored in private bucket paths
+4. **Audit Trail**: Track who approved payslips and leave requests
+
+---
+
+## Implementation Phases
+
+### Phase 1 (This Plan)
+- Extended staff profile fields
+- Staff photo upload
+- Compensation and bank details
+- Emergency contacts
+- Basic payslip generation and management
+
+### Phase 2 (Future)
+- Leave management
+- Staff documents storage
+- Employment history tracking
+- Performance reviews
 
 ---
 
@@ -262,13 +358,12 @@ const staffSchema = z.object({
 
 | Category | Count |
 |----------|-------|
-| New database tables | 2 (staff_members, staff_roles) |
-| New enum type | 1 (staff_role) |
-| New pages | 1 (Staff.tsx) |
-| New components | 4 |
-| New hooks | 1 |
-| Modified files | 2 (App.tsx, Sidebar.tsx) |
-| RLS policies | 3 |
-| Database function | 1 |
+| New database tables | 3 (payslips, staff_leave, staff_documents) |
+| Schema alterations | 1 (staff_members extended) |
+| New hooks | 4 |
+| New components | 10+ |
+| Modified files | 4 |
+| Storage bucket | 1 (staff-assets) |
 
-This implementation provides a complete staff management system following the existing patterns in the codebase while adhering to security best practices for role management.
+This implementation transforms the Staff module into a comprehensive HR management tool, following existing patterns in the codebase for consistency and maintainability.
+
