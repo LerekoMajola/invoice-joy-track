@@ -1,86 +1,118 @@
-import { useState } from 'react';
+ import { useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+ import { useTasks, Task, TaskPriority, TaskStatus } from '@/hooks/useTasks';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Calendar, Clock, Flag, Plus, Trash2 } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+ import { Label } from '@/components/ui/label';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { Calendar } from '@/components/ui/calendar';
+ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+ import { Skeleton } from '@/components/ui/skeleton';
+ import { Badge } from '@/components/ui/badge';
+ import { 
+   Calendar as CalendarIcon, 
+   Search, 
+   ListTodo, 
+   Clock, 
+   AlertCircle, 
+   CheckCircle2, 
+   Grid3X3,
+   Filter,
+   X
+ } from 'lucide-react';
+ import { TaskListItem, TaskDetailPanel, TaskCalendarView } from '@/components/tasks';
+ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+ import { format, parseISO, isToday, startOfDay, isPast } from 'date-fns';
+ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-interface Task {
-  id: string;
-  title: string;
-  dueDate: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'in-progress' | 'done';
-}
-
-const initialTasks: Task[] = [
-  { id: '1', title: 'Submit tender for City Council project', dueDate: 'Today', priority: 'high', status: 'todo' },
-  { id: '2', title: 'Follow up on Quote #QT-0087', dueDate: 'Tomorrow', priority: 'medium', status: 'todo' },
-  { id: '3', title: 'Prepare invoice for completed project', dueDate: 'Dec 31', priority: 'low', status: 'in-progress' },
-  { id: '4', title: 'Review RFQ from Manufacturing Co', dueDate: 'Jan 2', priority: 'high', status: 'todo' },
-  { id: '5', title: 'Update client contact information', dueDate: 'Jan 3', priority: 'low', status: 'done' },
-  { id: '6', title: 'Send project proposal to TechCorp', dueDate: 'Jan 5', priority: 'medium', status: 'todo' },
-];
-
-const priorityStyles = {
-  high: 'bg-destructive text-destructive-foreground border-destructive',
-  medium: 'bg-amber-500 text-white border-amber-500',
-  low: 'bg-emerald-500 text-white border-emerald-500',
-};
-
-const statusColors = {
-  todo: 'border-l-muted-foreground',
-  'in-progress': 'border-l-info',
-  done: 'border-l-success',
-};
+ type FilterTab = 'all' | 'today' | 'overdue' | 'done';
+ type ViewMode = 'list' | 'calendar';
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+   const { tasks, isLoading, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const [isOpen, setIsOpen] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
-    dueDate: '',
-    priority: 'medium' as Task['priority'],
+     description: '',
+     dueDate: undefined as Date | undefined,
+     priority: 'medium' as TaskPriority,
   });
+   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+   const [viewMode, setViewMode] = useState<ViewMode>('list');
+   const [searchQuery, setSearchQuery] = useState('');
+   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+   const [detailOpen, setDetailOpen] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
-  const handleAddTask = () => {
-    const task: Task = {
-      id: Date.now().toString(),
-      ...newTask,
-      status: 'todo',
-    };
-    setTasks([task, ...tasks]);
-    setNewTask({ title: '', dueDate: '', priority: 'medium' });
+ 
+   const { filteredTasks, counts } = useMemo(() => {
+     const today = startOfDay(new Date());
+     const active = tasks.filter(t => t.status !== 'done');
+     const completed = tasks.filter(t => t.status === 'done');
+     const todayTasks = active.filter(t => t.due_date && isToday(parseISO(t.due_date)));
+     const overdueTasks = active.filter(t => {
+       if (!t.due_date) return false;
+       return startOfDay(parseISO(t.due_date)) < today;
+     });
+ 
+     let filtered: Task[];
+     switch (activeFilter) {
+       case 'today':
+         filtered = todayTasks;
+         break;
+       case 'overdue':
+         filtered = overdueTasks;
+         break;
+       case 'done':
+         filtered = completed;
+         break;
+       default:
+         filtered = active;
+     }
+ 
+     // Apply search filter
+     if (searchQuery.trim()) {
+       const query = searchQuery.toLowerCase();
+       filtered = filtered.filter(t => 
+         t.title.toLowerCase().includes(query) ||
+         t.description?.toLowerCase().includes(query)
+       );
+     }
+ 
+     // Apply priority filter
+     if (priorityFilter !== 'all') {
+       filtered = filtered.filter(t => t.priority === priorityFilter);
+     }
+ 
+     return {
+       filteredTasks: filtered,
+       counts: {
+         all: active.length,
+         today: todayTasks.length,
+         overdue: overdueTasks.length,
+         done: completed.length,
+       },
+     };
+   }, [tasks, activeFilter, searchQuery, priorityFilter]);
+ 
+   const handleAddTask = async () => {
+     if (!newTask.title.trim()) return;
+     
+     await createTask.mutateAsync({
+       title: newTask.title.trim(),
+       description: newTask.description.trim() || undefined,
+       due_date: newTask.dueDate ? format(newTask.dueDate, 'yyyy-MM-dd') : undefined,
+       priority: newTask.priority,
+     });
+ 
+     setNewTask({ title: '', description: '', dueDate: undefined, priority: 'medium' });
     setIsOpen(false);
-  };
-
-  const toggleTaskStatus = (taskId: string) => {
-    setTasks(tasks.map(task => {
-      if (task.id === taskId) {
-        const newStatus = task.status === 'done' ? 'todo' : 'done';
-        return { ...task, status: newStatus };
-      }
-      return task;
-    }));
   };
 
   const handleDeleteTask = (taskId: string, taskTitle: string) => {
@@ -89,96 +121,174 @@ export default function Tasks() {
       description: `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`,
       variant: 'destructive',
       confirmLabel: 'Delete',
-      action: () => setTasks(tasks.filter(task => task.id !== taskId)),
+       action: () => {
+         deleteTask.mutate(taskId);
+         if (selectedTask?.id === taskId) {
+           setDetailOpen(false);
+           setSelectedTask(null);
+         }
+       },
     });
   };
 
-  const todoTasks = tasks.filter(t => t.status === 'todo');
-  const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-  const doneTasks = tasks.filter(t => t.status === 'done');
+   const handleTaskClick = (task: Task) => {
+     setSelectedTask(task);
+     setDetailOpen(true);
+   };
+ 
+   const handleTaskUpdate = (updates: Partial<Task>) => {
+     if (selectedTask) {
+       updateTask.mutate({ id: selectedTask.id, ...updates });
+       setSelectedTask({ ...selectedTask, ...updates } as Task);
+     }
+   };
+ 
+   const filterTabs: { key: FilterTab; label: string; icon: React.ReactNode; count: number }[] = [
+     { key: 'all', label: 'All', icon: <ListTodo className="h-4 w-4" />, count: counts.all },
+     { key: 'today', label: 'Today', icon: <Clock className="h-4 w-4" />, count: counts.today },
+     { key: 'overdue', label: 'Overdue', icon: <AlertCircle className="h-4 w-4" />, count: counts.overdue },
+     { key: 'done', label: 'Done', icon: <CheckCircle2 className="h-4 w-4" />, count: counts.done },
+   ];
 
   return (
     <DashboardLayout>
       <Header 
         title="Tasks" 
-        subtitle="Manage your to-do list and track progress"
+         subtitle={`${counts.all} active tasks`}
         action={{
           label: 'Add Task',
           onClick: () => setIsOpen(true),
         }}
       />
       
-      <div className="p-6">
-        {/* Task Columns */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* To Do */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                To Do
-                <Badge variant="secondary" className="ml-1">{todoTasks.length}</Badge>
-              </h3>
+       <div className="p-4 md:p-6 space-y-4">
+         {/* Search and Filters Bar */}
+         <div className="flex flex-col sm:flex-row gap-3">
+           {/* Search */}
+           <div className="relative flex-1">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+             <Input
+               placeholder="Search tasks..."
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="pl-9 h-10 rounded-xl"
+             />
+             {searchQuery && (
+               <Button
+                 variant="ghost"
+                 size="icon"
+                 className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                 onClick={() => setSearchQuery('')}
+               >
+                 <X className="h-4 w-4" />
+               </Button>
+             )}
+           </div>
+ 
+           {/* Priority Filter */}
+           <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as TaskPriority | 'all')}>
+             <SelectTrigger className="w-full sm:w-[140px] rounded-xl">
+               <Filter className="h-4 w-4 mr-2" />
+               <SelectValue placeholder="Priority" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">All Priorities</SelectItem>
+               <SelectItem value="high">High</SelectItem>
+               <SelectItem value="medium">Medium</SelectItem>
+               <SelectItem value="low">Low</SelectItem>
+             </SelectContent>
+           </Select>
+ 
+           {/* View Toggle */}
+           <div className="flex border rounded-xl overflow-hidden">
+             <Button
+               variant={viewMode === 'list' ? 'default' : 'ghost'}
+               size="sm"
+               className="rounded-none gap-1.5"
+               onClick={() => setViewMode('list')}
+             >
+               <ListTodo className="h-4 w-4" />
+               <span className="hidden sm:inline">List</span>
+             </Button>
+             <Button
+               variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+               size="sm"
+               className="rounded-none gap-1.5"
+               onClick={() => setViewMode('calendar')}
+             >
+               <CalendarIcon className="h-4 w-4" />
+               <span className="hidden sm:inline">Calendar</span>
+             </Button>
+           </div>
+         </div>
+ 
+         {/* Filter Tabs */}
+         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+           {filterTabs.map((tab) => (
+             <Button
+               key={tab.key}
+               variant={activeFilter === tab.key ? 'default' : 'outline'}
+               size="sm"
+               onClick={() => setActiveFilter(tab.key)}
+               className={cn(
+                 'gap-1.5 shrink-0 rounded-xl transition-all',
+                 activeFilter === tab.key && 'shadow-glow-sm'
+               )}
+             >
+               {tab.icon}
+               {tab.label}
+               {tab.count > 0 && (
+                 <Badge variant={activeFilter === tab.key ? 'secondary' : 'outline'} className="ml-1 text-xs">
+                   {tab.count}
+                 </Badge>
+               )}
+             </Button>
+           ))}
+         </div>
+ 
+         {/* Content */}
+         {isLoading ? (
+           <div className="space-y-3">
+             {[1, 2, 3, 4, 5].map((i) => (
+               <Skeleton key={i} className="h-16 w-full rounded-xl" />
+             ))}
             </div>
-            <div className="space-y-3">
-              {todoTasks.map((task, index) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onToggle={() => toggleTaskStatus(task.id)}
+         ) : viewMode === 'calendar' ? (
+           <TaskCalendarView tasks={tasks} onTaskClick={handleTaskClick} />
+         ) : filteredTasks.length === 0 ? (
+           <div className="py-16 text-center">
+             <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/10 to-violet/10 flex items-center justify-center mb-4">
+               <ListTodo className="h-10 w-10 text-primary/50" />
+             </div>
+             <p className="text-muted-foreground">
+               {searchQuery || priorityFilter !== 'all'
+                 ? 'No tasks match your filters'
+                 : activeFilter === 'today'
+                 ? 'No tasks due today 🎉'
+                 : activeFilter === 'overdue'
+                 ? 'No overdue tasks 👍'
+                 : activeFilter === 'done'
+                 ? 'No completed tasks yet'
+                 : 'No tasks yet. Add one to get started!'}
+             </p>
+           </div>
+         ) : (
+           <div className="space-y-2">
+             {filteredTasks.map((task, index) => (
+               <TaskListItem
+                 key={task.id}
+                 task={task}
+                 onToggle={() => toggleTaskStatus.mutate({ id: task.id, currentStatus: task.status })}
                   onDelete={() => handleDeleteTask(task.id, task.title)}
-                  delay={index * 50}
+                 onClick={() => handleTaskClick(task)}
+                 index={index}
                 />
-              ))}
-            </div>
+             ))}
           </div>
-
-          {/* In Progress */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-info" />
-                In Progress
-                <Badge variant="secondary" className="ml-1">{inProgressTasks.length}</Badge>
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {inProgressTasks.map((task, index) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onToggle={() => toggleTaskStatus(task.id)}
-                  onDelete={() => handleDeleteTask(task.id, task.title)}
-                  delay={index * 50}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Done */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-success" />
-                Done
-                <Badge variant="secondary" className="ml-1">{doneTasks.length}</Badge>
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {doneTasks.map((task, index) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onToggle={() => toggleTaskStatus(task.id)}
-                  onDelete={() => handleDeleteTask(task.id, task.title)}
-                  delay={index * 50}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+         )}
       </div>
 
+       {/* Add Task Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -195,19 +305,38 @@ export default function Tasks() {
               />
             </div>
             <div className="grid gap-2">
+               <Label htmlFor="description">Description (optional)</Label>
+               <Input
+                 id="description"
+                 value={newTask.description}
+                 onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                 placeholder="Add details..."
+               />
+             </div>
+             <div className="grid gap-2">
               <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                value={newTask.dueDate}
-                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                placeholder="e.g., Tomorrow, Jan 5"
-              />
+               <Popover>
+                 <PopoverTrigger asChild>
+                   <Button variant="outline" className={cn('justify-start text-left font-normal', !newTask.dueDate && 'text-muted-foreground')}>
+                     <CalendarIcon className="mr-2 h-4 w-4" />
+                     {newTask.dueDate ? format(newTask.dueDate, 'PPP') : 'Pick a date'}
+                   </Button>
+                 </PopoverTrigger>
+                 <PopoverContent className="w-auto p-0" align="start">
+                   <Calendar
+                     mode="single"
+                     selected={newTask.dueDate}
+                     onSelect={(date) => setNewTask({ ...newTask, dueDate: date })}
+                     initialFocus
+                   />
+                 </PopoverContent>
+               </Popover>
             </div>
             <div className="grid gap-2">
               <Label>Priority</Label>
               <Select
                 value={newTask.priority}
-                onValueChange={(value: Task['priority']) => setNewTask({ ...newTask, priority: value })}
+                 onValueChange={(value: TaskPriority) => setNewTask({ ...newTask, priority: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -224,11 +353,22 @@ export default function Tasks() {
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddTask}>Add Task</Button>
+             <Button onClick={handleAddTask} disabled={!newTask.title.trim() || createTask.isPending}>
+               Add Task
+             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
+       {/* Task Detail Panel */}
+       <TaskDetailPanel
+         task={selectedTask}
+         open={detailOpen}
+         onOpenChange={setDetailOpen}
+         onUpdate={handleTaskUpdate}
+         onDelete={() => selectedTask && handleDeleteTask(selectedTask.id, selectedTask.title)}
+       />
+ 
       <ConfirmDialog
         open={confirmDialog?.open ?? false}
         onOpenChange={closeConfirmDialog}
@@ -239,67 +379,5 @@ export default function Tasks() {
         confirmLabel={confirmDialog?.confirmLabel}
       />
     </DashboardLayout>
-  );
-}
-
-function TaskCard({ 
-  task, 
-  onToggle, 
-  onDelete,
-  delay = 0 
-}: { 
-  task: Task; 
-  onToggle: () => void; 
-  onDelete: () => void;
-  delay?: number;
-}) {
-  return (
-    <div 
-      className={cn(
-        'rounded-lg border border-border bg-card p-4 shadow-card border-l-4 transition-all hover:shadow-elevated animate-slide-up',
-        statusColors[task.status]
-      )}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-start gap-3">
-        <Checkbox 
-          checked={task.status === 'done'}
-          onCheckedChange={onToggle}
-          className="mt-0.5"
-        />
-        <div className="flex-1 min-w-0">
-          <p className={cn(
-            'font-medium text-card-foreground',
-            task.status === 'done' && 'line-through text-muted-foreground'
-          )}>
-            {task.title}
-          </p>
-          <div className="flex items-center gap-3 mt-2">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {task.dueDate}
-            </span>
-            <Badge 
-              className={cn(
-                'text-xs capitalize font-semibold',
-                priorityStyles[task.priority],
-                task.priority === 'high' && task.status !== 'done' && 'animate-urgent-flash'
-              )}
-            >
-              <Flag className="h-3 w-3 mr-1" />
-              {task.priority}
-            </Badge>
-          </div>
-        </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
   );
 }
