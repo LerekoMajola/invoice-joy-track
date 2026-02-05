@@ -82,13 +82,7 @@ export default function Dashboard() {
       />
       
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-safe">
-        {/* To-Do List - Top Priority */}
-        <DashboardTodoList />
-
-        {/* Tender Source Links */}
-        <TenderSourceLinks />
-
-        {/* Stats Grid */}
+        {/* 1. Stats Grid - Business health at a glance */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <StatCard
             title="Total Revenue"
@@ -124,14 +118,20 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Leads Pipeline */}
+        {/* 2. To-Do List - Immediate actions */}
+        <DashboardTodoList />
+
+        {/* 3. Active Tenders - Time-sensitive opportunities */}
+        <TendersList />
+
+        {/* 4. Leads Pipeline - Sales progress */}
         <LeadsPipeline />
 
-        {/* Company Documents */}
+        {/* 5. Company Documents - Reference */}
         <CompanyDocuments />
 
-        {/* Tenders Section */}
-        <TendersList />
+        {/* 6. Tender Source Links - External resources */}
+        <TenderSourceLinks />
       </div>
 
       {/* Onboarding Dialog for new users */}
