@@ -6,19 +6,45 @@ import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
 import { LeadsPipeline } from '@/components/dashboard/LeadsPipeline';
 import { CompanyDocuments } from '@/components/dashboard/CompanyDocuments';
 import { DashboardTodoList } from '@/components/dashboard/DashboardTodoList';
+import { CompanyOnboardingDialog } from '@/components/onboarding/CompanyOnboardingDialog';
 import { FileText, Receipt, Users, TrendingUp } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useClients } from '@/hooks/useClients';
-import { useMemo } from 'react';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { useMemo, useState, useEffect } from 'react';
 
 export default function Dashboard() {
   const { quotes, isLoading: quotesLoading } = useQuotes();
   const { invoices, isLoading: invoicesLoading } = useInvoices();
   const { clients, isLoading: clientsLoading } = useClients();
+  const { hasProfile, isLoading: profileLoading } = useCompanyProfile();
+  const { isAdmin } = useAuth();
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const isLoading = quotesLoading || invoicesLoading || clientsLoading;
+
+  // Show onboarding dialog for non-admin users without a company profile
+  useEffect(() => {
+    if (!profileLoading && !hasProfile && !isAdmin) {
+      // Check if user dismissed in this session
+      const dismissed = sessionStorage.getItem('onboarding-dismissed');
+      if (!dismissed) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [profileLoading, hasProfile, isAdmin]);
+
+  const handleOnboardingClose = (open: boolean) => {
+    if (!open) {
+      // Mark as dismissed for this session
+      sessionStorage.setItem('onboarding-dismissed', 'true');
+    }
+    setShowOnboarding(open);
+  };
 
   const stats = useMemo(() => {
     // Total Revenue (paid invoices)
@@ -107,6 +133,12 @@ export default function Dashboard() {
         {/* Tenders Section */}
         <TendersList />
       </div>
+
+      {/* Onboarding Dialog for new users */}
+      <CompanyOnboardingDialog
+        open={showOnboarding}
+        onOpenChange={handleOnboardingClose}
+      />
     </DashboardLayout>
   );
 }
