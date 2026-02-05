@@ -11,15 +11,12 @@ import {
   Settings,
   TrendingUp,
   CreditCard,
-  Building2,
   UserPlus,
   Calculator
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -43,7 +40,6 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { profile, isLoading } = useCompanyProfile();
 
   const handleClick = () => {
     onNavigate?.();
@@ -59,30 +55,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
       
       <div className="flex h-full flex-col">
-        {/* Tenant Logo */}
-        <div className="relative flex h-16 items-center px-4 border-b border-white/10 bg-white/5 backdrop-blur-sm">
-          <div className="bg-white rounded-xl px-3 py-2 max-w-full shadow-lg">
-            {isLoading ? (
-              <Skeleton className="h-8 w-32" />
-            ) : profile?.logo_url ? (
-              <img 
-                src={profile.logo_url} 
-                alt={profile.company_name || 'Company'} 
-                className="h-8 w-auto max-w-[160px] object-contain" 
-              />
-            ) : (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-sm truncate text-foreground">
-                  {profile?.company_name || 'My Business'}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Navigation */}
-        <nav className="relative flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-hide">
+        <nav className="relative flex-1 space-y-1 px-3 py-6 overflow-y-auto scrollbar-hide">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (

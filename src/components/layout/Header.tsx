@@ -1,10 +1,12 @@
-import { Bell, Search, Plus, Settings, Menu } from 'lucide-react';
+import { Bell, Search, Plus, Settings, Menu, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSidebarControl } from './DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface HeaderProps {
   title: string;
@@ -19,6 +21,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const navigate = useNavigate();
   const { openSidebar } = useSidebarControl();
   const isMobile = useIsMobile();
+  const { profile, isLoading } = useCompanyProfile();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80">
@@ -77,6 +80,28 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           </TooltipTrigger>
           <TooltipContent>Company Settings</TooltipContent>
         </Tooltip>
+
+        {/* Company Logo */}
+        <div className="hidden sm:flex items-center">
+          <div className="bg-card border border-border rounded-xl px-3 py-1.5 shadow-card">
+            {isLoading ? (
+              <Skeleton className="h-7 w-24" />
+            ) : profile?.logo_url ? (
+              <img 
+                src={profile.logo_url} 
+                alt={profile.company_name || 'Company'} 
+                className="h-7 w-auto max-w-[120px] object-contain" 
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-xs truncate text-foreground max-w-[80px]">
+                  {profile?.company_name || 'My Business'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Action Button */}
         {action && (
