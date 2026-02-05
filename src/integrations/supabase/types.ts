@@ -398,6 +398,104 @@ export type Database = {
           },
         ]
       }
+      deal_stakeholders: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          deal_id: string
+          engagement_level: string | null
+          id: string
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          deal_id: string
+          engagement_level?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          deal_id?: string
+          engagement_level?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_stakeholders_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_stakeholders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          deal_id: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean | null
+          priority: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          deal_id: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          priority?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          deal_id?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          priority?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_note_items: {
         Row: {
           created_at: string
@@ -743,48 +841,63 @@ export type Database = {
           created_at: string | null
           email: string | null
           estimated_value: number | null
+          expected_close_date: string | null
           id: string
+          last_contacted_at: string | null
+          loss_reason: string | null
           name: string
           next_follow_up: string | null
           notes: string | null
           phone: string | null
           priority: string | null
           source: string | null
+          stage_entered_at: string | null
           status: string
           updated_at: string | null
           user_id: string
+          win_probability: number | null
         }
         Insert: {
           company?: string | null
           created_at?: string | null
           email?: string | null
           estimated_value?: number | null
+          expected_close_date?: string | null
           id?: string
+          last_contacted_at?: string | null
+          loss_reason?: string | null
           name: string
           next_follow_up?: string | null
           notes?: string | null
           phone?: string | null
           priority?: string | null
           source?: string | null
+          stage_entered_at?: string | null
           status?: string
           updated_at?: string | null
           user_id: string
+          win_probability?: number | null
         }
         Update: {
           company?: string | null
           created_at?: string | null
           email?: string | null
           estimated_value?: number | null
+          expected_close_date?: string | null
           id?: string
+          last_contacted_at?: string | null
+          loss_reason?: string | null
           name?: string
           next_follow_up?: string | null
           notes?: string | null
           phone?: string | null
           priority?: string | null
           source?: string | null
+          stage_entered_at?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string
+          win_probability?: number | null
         }
         Relationships: []
       }
