@@ -70,7 +70,7 @@
  
      // Send email via Resend
      const emailResponse = await resend.emails.send({
-       from: "Orion Labs <noreply@orionlabs.co.bw>",
+       from: "Orion Labs <noreply@orionlabslesotho.co.ls>",
        to: [email],
        subject: "Reset your password - Orion Labs",
        html: `
