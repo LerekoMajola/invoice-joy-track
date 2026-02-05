@@ -1,77 +1,100 @@
 
-# Platform Admin Dashboard - Fix Admin Role Detection and Navigation
+# Company Onboarding Prompt for New Subscribers
 
-## Problem Summary
-You're logged in as `admin@orionlabs.com` with `super_admin` role, but you're seeing the regular tenant dashboard instead of the Admin Console. The database confirms your role is set correctly, but there's a race condition in the authentication flow that causes incorrect redirects.
-
-## Root Cause Analysis
-1. **Race Condition**: When you log in, multiple functions compete to redirect you - both the login handler and the auth state listener try to check your role and navigate
-2. **Async Role Loading**: The admin role check happens in a separate query that loads after authentication, creating a timing gap
-3. **Premature Navigation**: The app may redirect to `/dashboard` before the role query completes
+## Overview
+When a new user signs up and lands on the dashboard for the first time, they should be prompted to complete their company profile setup. This ensures every subscriber becomes a proper "tenant" with their business information recorded.
 
 ## Solution Approach
 
-### Phase 1: Consolidate Auth and Role Loading
-Update the `useAuth` hook to include admin role detection as part of the initial authentication flow, ensuring the role is loaded before navigation decisions are made.
+We'll create an onboarding flow that:
+1. Detects when a user has no company profile
+2. Shows a friendly onboarding dialog prompting them to set up their business
+3. Collects essential company information (name, logo, basic contact details)
+4. Creates their company profile record, making them a proper tenant
 
-**Changes to `src/hooks/useAuth.tsx`:**
-- Add `isAdmin` state to the hook
-- Fetch admin role during initial session check
-- Only set `loading = false` after both auth AND role are loaded
-- Export `isAdmin` alongside user and session
+## Implementation Details
 
-### Phase 2: Simplify Auth Page Navigation
-Update `src/pages/Auth.tsx` to remove the duplicate role-checking logic and rely on a single source of truth.
+### 1. Create Onboarding Dialog Component
+**New file: `src/components/onboarding/CompanyOnboardingDialog.tsx`**
 
-**Changes:**
-- Remove the `onAuthStateChange` redirect listener (it conflicts with manual login flow)
-- Keep only the post-login redirect using the consolidated auth state
-- Prevent race conditions by awaiting role check completion
+A modal dialog that appears for users without a company profile, featuring:
+- Welcome message explaining the platform
+- Essential fields only (to reduce friction):
+  - Company name (required)
+  - Logo upload (optional)
+  - Email (optional)
+  - Phone (optional)
+- "Complete Setup" button that saves the profile
+- Option to skip (but reminder persists until completed)
 
-### Phase 3: Update Protected Route Guards
-Update `src/components/layout/AdminProtectedRoute.tsx` to use the consolidated `isAdmin` from `useAuth`.
+### 2. Update ProtectedRoute to Check for Company Profile
+**File: `src/components/layout/ProtectedRoute.tsx`**
 
-**Changes:**
-- Remove separate `useAdminRole` hook call
-- Use `isAdmin` directly from `useAuth`
-- Simplify loading state handling
+Extend the existing subscription check to also:
+- Query if the user has a `company_profiles` record
+- Pass this status to the dashboard via context or state
+- No blocking - users can still access the app, but will see the prompt
 
-### Phase 4: Clean Up Legacy Hook
-The `useAdminRole` hook can still be kept for use in other components (like enabling/disabling admin features in the UI), but the protected route will no longer depend on it for critical navigation decisions.
+### 3. Add Onboarding State to Dashboard
+**File: `src/pages/Dashboard.tsx`**
 
-## Technical Details
+- Use the `useCompanyProfile` hook to check if profile exists
+- If no profile exists, show the `CompanyOnboardingDialog`
+- Dialog can be dismissed but will reappear on next visit until completed
 
-### Updated useAuth Hook Structure
+### 4. Create Onboarding Context (Optional Enhancement)
+**New file: `src/contexts/OnboardingContext.tsx`**
+
+Track onboarding completion across the app:
+- `hasCompletedOnboarding` boolean
+- `showOnboardingPrompt` function
+- Persists dismissal state in localStorage for current session
+
+## User Flow
+
 ```text
-useAuth() returns:
-  - user: User | null
-  - session: Session | null
-  - isAdmin: boolean
-  - loading: boolean (true until BOTH auth AND role are loaded)
-  - signOut: () => Promise<void>
+User signs up
+     |
+     v
+Lands on Dashboard
+     |
+     v
+Check: Has company_profiles record?
+     |
+     +---> YES --> Normal dashboard experience
+     |
+     +---> NO --> Show onboarding dialog
+                       |
+                       v
+                  User fills in company name + optional details
+                       |
+                       v
+                  Save to company_profiles table
+                       |
+                       v
+                  Dialog closes, user is now a proper "tenant"
 ```
 
-### Authentication Flow After Fix
-```text
-1. User enters credentials
-2. supabase.auth.signInWithPassword() called
-3. On success, wait for useAuth to update
-4. useAuth internally fetches role before setting loading=false
-5. Auth.tsx checks isAdmin from useAuth
-6. Navigate to /admin or /dashboard based on isAdmin
-```
+## Files to Create/Modify
 
-### Files to Modify
-1. `src/hooks/useAuth.tsx` - Add admin role detection to the auth flow
-2. `src/pages/Auth.tsx` - Simplify navigation logic, remove race conditions
-3. `src/components/layout/AdminProtectedRoute.tsx` - Use consolidated auth state
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/components/onboarding/CompanyOnboardingDialog.tsx` | Create | Onboarding modal with company form |
+| `src/pages/Dashboard.tsx` | Modify | Add onboarding check and dialog |
+| `src/hooks/useCompanyProfile.tsx` | Modify | Add `hasProfile` convenience boolean |
 
-## Testing Checklist
-After implementation:
-- [ ] Log out completely
-- [ ] Log in with `admin@orionlabs.com`
-- [ ] Verify you land on `/admin` dashboard
-- [ ] Verify Tenants tab shows all business accounts
-- [ ] Verify Subscriptions tab shows subscription management
-- [ ] Log out and log in with a regular tenant account
-- [ ] Verify regular users land on `/dashboard` and cannot access `/admin`
+## Onboarding Dialog Design
+
+The dialog will include:
+- A welcoming header with the Orion Labs branding
+- Brief explanation: "Let's set up your business profile"
+- Minimal required fields to reduce signup friction
+- Progress indicator showing this is step 1 of getting started
+- Clear call-to-action button
+
+## Technical Considerations
+
+- **No blocking**: Users can dismiss the dialog and still use the app
+- **Persistence**: Dialog reappears until profile is completed
+- **Mobile-friendly**: Dialog works well on all screen sizes
+- **Admin exclusion**: Super admins won't see the onboarding prompt (they manage the platform, not a business)
