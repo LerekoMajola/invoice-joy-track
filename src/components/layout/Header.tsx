@@ -1,8 +1,9 @@
-import { Bell, Search, Plus, Settings, Menu, Building2 } from 'lucide-react';
+ import { Search, Plus, Settings, Menu, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+ import { NotificationPanel } from '@/components/notifications';
 import { useSidebarControl } from './DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -55,16 +56,8 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           />
         </div>
 
-        {/* Notifications */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 md:h-10 md:w-10 hover:bg-primary/10 rounded-xl">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-coral animate-pulse shadow-glow-coral" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Notifications</TooltipContent>
-        </Tooltip>
+         {/* Notifications */}
+         <NotificationPanel />
 
         {/* Settings - Desktop only */}
         <Tooltip>
