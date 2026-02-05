@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useCallback } from 'react';
 
 export interface CompanyProfile {
   id: string;
@@ -71,7 +72,7 @@ export function useCompanyProfile() {
   });
 
   const saveProfile = useMutation({
-    mutationFn: async (profileData: Partial<CompanyProfileInput>) => {
+    mutationFn: async (profileData: Partial<CompanyProfileInput>): Promise<CompanyProfile> => {
       if (!user?.id) throw new Error('User not authenticated');
 
       const existingProfile = profile;
@@ -85,7 +86,7 @@ export function useCompanyProfile() {
           .single();
         
         if (error) throw error;
-        return data;
+        return data as CompanyProfile;
       } else {
         const { data, error } = await supabase
           .from('company_profiles')
@@ -98,7 +99,7 @@ export function useCompanyProfile() {
           .single();
         
         if (error) throw error;
-        return data;
+        return data as CompanyProfile;
       }
     },
     onSuccess: () => {
@@ -145,11 +146,23 @@ export function useCompanyProfile() {
     return urlData.publicUrl;
   };
 
+  // Convenience boolean for checking if profile exists
+  const hasProfile = !!profile;
+
+  // Wrapper to expose mutate with options
+  const saveProfileWithOptions = useCallback(
+    (data: Partial<CompanyProfileInput>, options?: { onSuccess?: () => void }) => {
+      saveProfile.mutate(data, options);
+    },
+    [saveProfile]
+  );
+
   return {
     profile,
     isLoading,
     error,
-    saveProfile: saveProfile.mutate,
+    hasProfile,
+    saveProfile: saveProfileWithOptions,
     isSaving: saveProfile.isPending,
     uploadAsset,
   };
