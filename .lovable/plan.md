@@ -1,337 +1,243 @@
 
-# Bold & Vibrant Design Refresh
+# Notification Bell Implementation Plan
 
-A comprehensive visual overhaul transforming the Orion Labs platform into a modern, energetic, and highly polished business management application.
+A comprehensive in-app notification system that integrates with existing business events (tasks, invoices, quotes, leads) and follows best practices for real-time notifications.
 
 ---
 
 ## Overview
 
-This refresh will update the visual language across the entire application with:
-- **Vibrant color palette** with stronger gradients and accent colors
-- **Enhanced animations** for smooth micro-interactions and page transitions
-- **Improved data visualization** with animated charts and progress indicators
-- **Mobile-first polish** with better touch interactions and optimized layouts
+The notification bell in the header will display in-app notifications for important business events. This complements the existing push notification system by providing an always-accessible notification center within the app.
 
 ---
 
-## Phase 1: Design System Foundation
-
-### 1.1 Enhanced Color Palette (src/index.css)
-
-Update CSS variables with bolder, more vibrant colors:
+## Architecture
 
 ```text
-Current                    New
------------------------------------------
-Primary: Navy (#1a2a4a)    Primary: Electric Indigo (#4F46E5)
-Accent: Green              Accent: Vivid Emerald (#10B981)
-                           Secondary Accent: Coral (#F97316)
-                           Gradient Overlays: Purple-Blue-Teal
++------------------+     +-------------------+     +------------------+
+|  Business Events |---->|  notifications    |---->|  Notification    |
+|  (triggers)      |     |  table            |     |  Bell UI         |
++------------------+     +-------------------+     +------------------+
+                               ^                         |
+                               |                         v
+                         +-----+--------+        +-------+--------+
+                         | Realtime     |        | NotificationPanel
+                         | Subscription |        | (Sheet/Popover)
+                         +--------------+        +----------------+
 ```
-
-Add new gradient variables:
-- Hero gradient: Purple to Indigo to Cyan
-- Success gradient: Emerald to Teal
-- Warning gradient: Amber to Orange
-- Card hover gradients with subtle color shifts
-
-### 1.2 Animation System (src/index.css + tailwind.config.ts)
-
-Add new keyframe animations:
-- `float` - Subtle floating effect for icons
-- `shimmer` - Loading skeleton enhancement
-- `pulse-glow` - Glowing effect for active states
-- `slide-up-fade` - Staggered entrance for cards
-- `number-tick` - Counter animation for stats
-- `progress-fill` - Animated progress bars
-- `bounce-in` - Playful entrance for buttons
-- `ripple` - Touch feedback effect
-
-### 1.3 Typography Enhancement
-
-- Increase heading weight contrast (semibold to bold)
-- Add gradient text utility for hero elements
-- Improve line-height for better readability
 
 ---
 
-## Phase 2: Core Components Refresh
+## Database Design
 
-### 2.1 Stat Cards (src/components/dashboard/StatCard.tsx)
+### New Table: `notifications`
 
-Transform stat cards with:
-- Gradient icon backgrounds instead of flat colors
-- Animated counter that "ticks up" on load
-- Subtle hover lift with glow effect
-- Mini sparkline/trend indicator
-- Responsive sizing with better mobile density
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Owner of the notification |
+| type | text | Category: 'task', 'invoice', 'quote', 'lead', 'system' |
+| title | text | Short notification title |
+| message | text | Detailed message |
+| link | text | Optional navigation path (e.g., /tasks, /invoices/123) |
+| reference_id | uuid | Optional ID of related entity |
+| reference_type | text | Type of related entity |
+| is_read | boolean | Read status (default: false) |
+| created_at | timestamp | When the notification was created |
+
+### RLS Policies
+- Users can only SELECT their own notifications
+- Users can UPDATE (mark as read) their own notifications
+- Users can DELETE their own notifications
+- INSERT via database triggers or service role only
+
+---
+
+## Notification Triggers (Database Functions)
+
+### 1. Task Reminders
+- Trigger: Task due date approaching (today or overdue)
+- Title: "Task due today" or "Overdue task"
+- Creates notification when task due_date is today and status is not 'done'
+
+### 2. Invoice Events
+- Trigger: Invoice becomes overdue (status changes to 'overdue')
+- Title: "Invoice overdue"
+- Trigger: Invoice paid (status changes to 'paid')
+- Title: "Payment received"
+
+### 3. Quote Events
+- Trigger: Quote accepted (status changes to 'accepted')
+- Title: "Quote accepted"
+- Trigger: Quote expires (valid_until passes)
+- Title: "Quote expired"
+
+### 4. Lead Events
+- Trigger: Follow-up due (next_follow_up is today or past)
+- Title: "Lead follow-up due"
+- Trigger: Lead status change to 'won'
+- Title: "Deal won!"
+
+---
+
+## Frontend Components
+
+### 1. useNotifications Hook
 
 ```text
-Before:                          After:
-+------------------+            +----------------------+
-| Title    [icon]  |            | Title        [icon]  |
-| M 12,500         |            | M 12,500  ↗ +12%    |
-| +12% from last   |            | [mini chart]         |
-+------------------+            +----------------------+
+src/hooks/useNotifications.tsx
+
+Features:
+- Fetch notifications with pagination
+- Real-time subscription for new notifications
+- Mark as read (single or all)
+- Delete notification
+- Unread count for badge
 ```
 
-### 2.2 Cards & Containers (src/components/ui/card.tsx)
-
-- Add glass-morphism variant for feature cards
-- Gradient border on hover
-- Improved shadow depth with colored tints
-- Staggered animation on card grids
-
-### 2.3 Buttons (src/components/ui/button.tsx)
-
-- Add gradient variants (primary-gradient, success-gradient)
-- Ripple effect on click
-- Scale transform on hover
-- Loading state with animated spinner
-
-### 2.4 Badges & Status Indicators
-
-- Gradient backgrounds for status badges
-- Pulsing dot for "live" indicators
-- Animated urgency flash (already exists, enhance)
-- Color-coded progress rings
-
----
-
-## Phase 3: Navigation & Layout
-
-### 3.1 Sidebar Redesign (src/components/layout/Sidebar.tsx)
-
-Transform the sidebar with:
-- Gradient background (navy to deep purple)
-- Glowing active state indicator (left bar + glow)
-- Icon animations on hover
-- Smooth collapse/expand animation
-- User avatar with status indicator
-- Quick action floating button
+### 2. NotificationPanel Component
 
 ```text
-+--------------------+
-|  [Logo]            |
-+--------------------+
-|  ● Dashboard       |  <- Glowing active indicator
-|    Clients         |
-|    Quotes          |
-|    Invoices        |
-|  ...               |
-+--------------------+
-|  [User] John Doe   |
-|  [Sign Out]        |
-+--------------------+
+src/components/notifications/NotificationPanel.tsx
+
+Features:
+- Popover or Sheet containing notification list
+- Grouped by date (Today, Yesterday, Earlier)
+- Click to navigate to related item
+- Mark all as read button
+- Empty state when no notifications
 ```
 
-### 3.2 Header Enhancement (src/components/layout/Header.tsx)
+### 3. NotificationItem Component
 
-- Subtle gradient border at bottom
-- Animated search with expanding focus state
-- Notification badge with bounce animation
-- Breadcrumb navigation option
-- Action button with gradient style
+```text
+src/components/notifications/NotificationItem.tsx
 
-### 3.3 Mobile Navigation Improvements
+Features:
+- Icon based on notification type
+- Title and message preview
+- Relative timestamp
+- Unread indicator dot
+- Click to mark as read and navigate
+- Swipe to delete on mobile
+```
 
-- Sheet drawer with smoother animation
-- Backdrop blur effect
-- Haptic-style visual feedback
-- Bottom navigation option for quick access
-- Safe area support for notched devices
+### 4. Updated Header Component
 
----
+```text
+src/components/layout/Header.tsx
 
-## Phase 4: Dashboard Transformation
-
-### 4.1 Stats Grid Enhancement
-
-- 3D card depth effect
-- Animated number counters
-- Color-coded performance indicators
-- Micro-charts inside stat cards
-- Hover state with more detailed tooltip
-
-### 4.2 Leads Pipeline (src/components/dashboard/LeadsPipeline.tsx)
-
-- Kanban-style column headers with gradients
-- Animated card transitions
-- Progress bar showing pipeline health
-- Visual funnel representation
-- Drag handle animations
-
-### 4.3 Todo List (src/components/dashboard/DashboardTodoList.tsx)
-
-- Enhanced priority indicators with glow
-- Checkbox with celebration animation on complete
-- Swipe-to-complete on mobile
-- Progress ring showing completion rate
-- Animated task entrance/exit
-
-### 4.4 Tender Source Links (src/components/dashboard/TenderSourceLinks.tsx)
-
-- Enhanced status indicators with animation
-- Card flip effect on hover
-- Visit streak indicator
-- Urgency pulse animation
-- Better grid layout with masonry feel
+Updates:
+- Bell icon triggers NotificationPanel
+- Badge shows unread count (max 99+)
+- Animate badge when new notification arrives
+- Remove static badge, use real count
+```
 
 ---
 
-## Phase 5: Data Pages Enhancement
+## Implementation Phases
 
-### 5.1 Table Improvements
+### Phase 1: Database Setup
+1. Create `notifications` table with proper schema
+2. Enable RLS with appropriate policies
+3. Enable realtime for the table
+4. Create indexes for performance (user_id, is_read, created_at)
 
-- Alternating row gradients
-- Hover row highlight with left accent
-- Animated sort indicators
-- Sticky header with blur effect
-- Better column width handling
+### Phase 2: Database Triggers
+1. Create trigger function for task due reminders
+2. Create trigger function for invoice status changes
+3. Create trigger function for quote status changes  
+4. Create trigger function for lead follow-up reminders
 
-### 5.2 Mobile Card Views
+### Phase 3: Frontend Hook
+1. Create `useNotifications` hook with:
+   - Query for fetching notifications
+   - Real-time subscription
+   - Mutations for mark as read, delete
+   - Computed unread count
 
-- Improved card density
-- Swipe actions (edit, delete)
-- Pull-to-refresh indicator
-- Skeleton loading with shimmer
-- Empty state illustrations
+### Phase 4: UI Components
+1. Create NotificationItem component
+2. Create NotificationPanel component
+3. Update Header to use NotificationPanel
+4. Add animations and mobile optimizations
 
-### 5.3 Quote/Invoice Pages
-
-- Summary cards with gradients
-- Status flow visualization
-- Animated status changes
-- Better action button grouping
-- Preview modal with slide animation
-
----
-
-## Phase 6: Data Visualization
-
-### 6.1 Charts (src/components/accounting/CashFlowChart.tsx)
-
-- Gradient fills under line charts
-- Animated data point entrance
-- Interactive tooltip with animations
-- Legend with colored indicators
-- Responsive sizing
-
-### 6.2 Progress Indicators
-
-- Circular progress with gradient stroke
-- Animated fill on scroll-into-view
-- Percentage counter animation
-- Multi-segment progress bars
-- Milestone markers
-
-### 6.3 Expense Category Chart (src/components/accounting/ExpenseCategoryChart.tsx)
-
-- 3D donut effect
-- Animated segment entrance
-- Interactive segment highlighting
-- Legend with animated bars
-- Center stat counter
+### Phase 5: Integration with Existing Systems
+1. Modify existing edge function `check-task-reminders` to also create in-app notifications
+2. Add notification creation to invoice/quote status change handlers
+3. Connect lead follow-up checks to notification creation
 
 ---
 
-## Phase 7: Landing Page Polish
+## Technical Details
 
-### 7.1 Hero Section (src/components/landing/Hero.tsx)
-
-- Animated gradient background
-- Floating feature icons
-- Typing animation for headlines
-- Parallax background pattern
-- CTA button with glow effect
-
-### 7.2 Features Grid (src/components/landing/Features.tsx)
-
-- Icon animations on scroll
-- Staggered card entrance
-- Gradient hover effects
-- Interactive demos on hover
-- Better mobile grid
-
-### 7.3 Pricing Table (src/components/landing/PricingTable.tsx)
-
-- Popular plan highlight with glow
-- Animated check marks
-- Price counter animation
-- Comparison toggle animation
-- CTA hover effects
-
----
-
-## Phase 8: Authentication Pages
-
-### 8.1 Auth Page (src/pages/Auth.tsx)
-
-- Animated gradient background
-- Logo animation on load
-- Form field focus animations
-- Submit button with loading state
-- Error shake animation
-- Success redirect with transition
-
----
-
-## Technical Implementation Details
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/hooks/useNotifications.tsx` | Hook for notification state and actions |
+| `src/components/notifications/NotificationPanel.tsx` | Main notification dropdown/sheet |
+| `src/components/notifications/NotificationItem.tsx` | Individual notification row |
+| `src/components/notifications/index.ts` | Barrel export |
 
 ### Files to Modify
-
 | File | Changes |
 |------|---------|
-| `src/index.css` | New color variables, keyframes, utility classes |
-| `tailwind.config.ts` | Extended animation config, new color palette |
-| `src/components/ui/button.tsx` | Gradient variants, ripple effect |
-| `src/components/ui/card.tsx` | Glass variant, hover effects |
-| `src/components/layout/Sidebar.tsx` | Gradient bg, active indicators |
-| `src/components/layout/Header.tsx` | Gradient border, animations |
-| `src/components/dashboard/StatCard.tsx` | Counter animation, micro-charts |
-| `src/components/dashboard/LeadsPipeline.tsx` | Enhanced visuals |
-| `src/components/dashboard/DashboardTodoList.tsx` | Celebration animations |
-| `src/components/dashboard/TenderSourceLinks.tsx` | Improved cards |
-| `src/components/accounting/OverviewTab.tsx` | Stat card gradients |
-| `src/components/landing/Hero.tsx` | Animated background |
-| `src/components/landing/Features.tsx` | Scroll animations |
-| `src/pages/Auth.tsx` | Form animations |
+| `src/components/layout/Header.tsx` | Integrate NotificationPanel, dynamic badge |
+| `supabase/functions/check-task-reminders/index.ts` | Also create in-app notifications |
 
-### New Utility Classes
+### SQL Migrations
+1. Create notifications table
+2. Create RLS policies
+3. Enable realtime
+4. Create trigger functions for automated notifications
+5. Create cron job for daily notification checks (optional)
 
-```text
-.gradient-primary    - Primary gradient background
-.gradient-success    - Success gradient background  
-.gradient-text       - Gradient text effect
-.animate-float       - Subtle floating motion
-.animate-shimmer     - Loading shimmer effect
-.animate-number-tick - Counter animation
-.animate-ripple      - Click ripple effect
-.glass               - Glassmorphism effect
-.glow-primary        - Primary color glow
-.glow-success        - Success color glow
+---
+
+## Notification Types and Icons
+
+| Type | Icon | Color | Example |
+|------|------|-------|---------|
+| task | CheckSquare | Primary | "Task 'Call client' is due today" |
+| invoice | Receipt | Warning/Success | "Invoice #INV-001 is overdue" |
+| quote | FileText | Info | "Quote #QUO-001 was accepted" |
+| lead | Target | Violet | "Follow up with ABC Corp is due" |
+| system | Bell | Muted | "Welcome to the platform!" |
+
+---
+
+## Real-time Updates
+
+Enable realtime on the notifications table:
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ```
 
-### Mobile Optimizations
+Subscribe to changes in the hook to instantly show new notifications without page refresh.
 
-- 44px minimum touch targets maintained
-- Swipe gesture support for cards
-- Bottom sheet dialogs
-- Pull-to-refresh patterns
-- Safe area insets for notched devices
-- Reduced motion support for accessibility
+---
+
+## Best Practices Implemented
+
+1. **Performance**: Pagination, indexes, efficient queries
+2. **Real-time**: Instant updates via Supabase Realtime
+3. **Mobile-first**: Touch-friendly, swipe actions, proper sizing
+4. **Accessibility**: ARIA labels, keyboard navigation
+5. **UX**: Grouped by date, clear read/unread states, smooth animations
+6. **Security**: RLS policies ensure users only see their notifications
+7. **Scalability**: Database triggers vs application-level creation
+8. **Integration**: Works alongside existing push notification system
 
 ---
 
 ## Expected Outcome
 
-After implementation, the application will have:
-1. A bold, modern, and energetic visual identity
-2. Smooth, delightful micro-interactions throughout
-3. Enhanced data visualization that tells a story
-4. A polished mobile experience with intuitive gestures
-5. Consistent design language across all pages
-6. Improved visual hierarchy and information density
-
-The refresh maintains the professional feel while adding energy and personality that makes the app enjoyable to use.
+After implementation:
+1. Bell icon shows accurate unread count
+2. Clicking bell opens notification panel
+3. Notifications appear in real-time for business events
+4. Users can mark notifications as read or delete them
+5. Clicking a notification navigates to the relevant page
+6. Mobile users have a smooth, touch-friendly experience
+7. System integrates with existing push notification infrastructure
