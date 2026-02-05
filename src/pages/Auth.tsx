@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+ import { useState, useEffect } from 'react';
+ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -133,55 +133,65 @@ export default function Auth() {
             </p>
           </div>
 
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isLogin ? 'Signing in...' : 'Creating account...'}
-                </>
-              ) : (
-                isLogin ? 'Sign in' : 'Create account'
-              )}
-            </Button>
-          </form>
+           <form onSubmit={handleAuth} className="space-y-4">
+             <div className="space-y-2">
+               <Label htmlFor="email">Email</Label>
+               <div className="relative">
+                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                   id="email"
+                   type="email"
+                   placeholder="you@company.com"
+                   value={email}
+                   onChange={(e) => setEmail(e.target.value)}
+                   className="pl-10"
+                   required
+                 />
+               </div>
+             </div>
+ 
+             <div className="space-y-2">
+               <div className="flex items-center justify-between">
+                 <Label htmlFor="password">Password</Label>
+                 {isLogin && (
+                   <Link
+                     to="/reset-password"
+                     className="text-sm text-primary hover:underline"
+                   >
+                     Forgot password?
+                   </Link>
+                 )}
+               </div>
+               <div className="relative">
+                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                   id="password"
+                   type="password"
+                   placeholder="••••••••"
+                   value={password}
+                   onChange={(e) => setPassword(e.target.value)}
+                   className="pl-10"
+                   required
+                   minLength={6}
+                 />
+               </div>
+             </div>
+ 
+             <Button 
+               type="submit" 
+               className="w-full" 
+               disabled={submitting}
+             >
+               {submitting ? (
+                 <>
+                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                   {isLogin ? 'Signing in...' : 'Creating account...'}
+                 </>
+               ) : (
+                 isLogin ? 'Sign in' : 'Create account'
+               )}
+             </Button>
+           </form>
 
           <div className="mt-6 text-center">
             <button
