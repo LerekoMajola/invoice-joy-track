@@ -17,32 +17,33 @@ import {
   ListTodo,
   Clock,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast, parseISO, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 type FilterTab = 'all' | 'today' | 'overdue' | 'done';
 
-const priorityConfig: Record<TaskPriority, { label: string; className: string; borderClass: string; meterColor: string; flash?: boolean }> = {
+const priorityConfig: Record<TaskPriority, { label: string; className: string; borderClass: string; gradient: string; flash?: boolean }> = {
   high: { 
     label: 'High', 
-    className: 'bg-destructive text-destructive-foreground border-destructive',
+    className: 'bg-gradient-to-r from-destructive to-coral text-white border-0',
     borderClass: 'border-l-destructive',
-    meterColor: 'bg-destructive',
+    gradient: 'from-destructive to-coral',
     flash: true
   },
   medium: { 
     label: 'Medium', 
-    className: 'bg-amber-500 text-white border-amber-500',
+    className: 'bg-gradient-to-r from-amber-500 to-warning text-white border-0',
     borderClass: 'border-l-amber-500',
-    meterColor: 'bg-amber-500'
+    gradient: 'from-amber-500 to-warning',
   },
   low: { 
     label: 'Low', 
-    className: 'bg-emerald-500 text-white border-emerald-500',
+    className: 'bg-gradient-to-r from-success to-accent text-white border-0',
     borderClass: 'border-l-emerald-500',
-    meterColor: 'bg-emerald-500'
+    gradient: 'from-success to-accent',
   },
 };
 
@@ -152,7 +153,7 @@ export function DashboardTodoList() {
         </CardHeader>
         <CardContent className="space-y-3">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-14 w-full" />
+            <Skeleton key={i} className="h-14 w-full rounded-xl" />
           ))}
         </CardContent>
       </Card>
@@ -164,10 +165,12 @@ export function DashboardTodoList() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <ListTodo className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-violet text-white">
+              <ListTodo className="h-4 w-4" />
+            </div>
             My Tasks
             {counts.all > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
+              <Badge variant="secondary" className="ml-1 text-xs rounded-full">
                 {counts.all}
               </Badge>
             )}
@@ -177,7 +180,7 @@ export function DashboardTodoList() {
               variant="outline" 
               size="sm" 
               onClick={() => setIsAdding(true)}
-              className="gap-1.5"
+              className="gap-1.5 rounded-xl"
             >
               <Plus className="h-4 w-4" />
               Add Task
@@ -194,9 +197,9 @@ export function DashboardTodoList() {
               size="sm"
               onClick={() => setActiveFilter(tab.key)}
               className={cn(
-                "gap-1.5 h-9 md:h-8 text-xs min-touch shrink-0",
+                "gap-1.5 h-9 md:h-8 text-xs min-touch shrink-0 rounded-xl transition-all duration-200",
                 activeFilter === tab.key 
-                  ? '' 
+                  ? 'shadow-glow-sm' 
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -220,14 +223,14 @@ export function DashboardTodoList() {
       <CardContent className="space-y-2">
         {/* Quick Add Form */}
         {isAdding && (
-          <div className="p-3 md:p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3 animate-fade-in">
+          <div className="p-3 md:p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-violet/5 space-y-3 animate-scale-in">
             <Input
               placeholder="What needs to be done?"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="border-0 bg-background focus-visible:ring-1 h-11 md:h-10"
+              className="border-0 bg-background focus-visible:ring-2 focus-visible:ring-primary/30 h-11 md:h-10 rounded-xl"
             />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
@@ -240,8 +243,8 @@ export function DashboardTodoList() {
                       size="sm"
                       onClick={() => setNewTaskPriority(p)}
                       className={cn(
-                        "h-9 md:h-7 text-xs capitalize min-w-[60px]",
-                        newTaskPriority !== p && priorityConfig[p].className
+                        "h-9 md:h-7 text-xs capitalize min-w-[60px] rounded-lg transition-all duration-200",
+                        newTaskPriority === p && priorityConfig[p].className
                       )}
                     >
                       {p}
@@ -252,7 +255,7 @@ export function DashboardTodoList() {
                 {/* Due Date Picker */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 md:h-7 gap-1.5">
+                    <Button variant="outline" size="sm" className="h-9 md:h-7 gap-1.5 rounded-lg">
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {newTaskDueDate ? format(newTaskDueDate, 'MMM d') : 'Due date'}
                     </Button>
@@ -272,7 +275,7 @@ export function DashboardTodoList() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 md:flex-none h-10 md:h-8"
+                  className="flex-1 md:flex-none h-10 md:h-8 rounded-lg"
                   onClick={() => {
                     setIsAdding(false);
                     setNewTaskTitle('');
@@ -282,7 +285,8 @@ export function DashboardTodoList() {
                 </Button>
                 <Button
                   size="sm"
-                  className="flex-1 md:flex-none h-10 md:h-8"
+                  variant="gradient"
+                  className="flex-1 md:flex-none h-10 md:h-8 rounded-lg"
                   onClick={handleAddTask}
                   disabled={!newTaskTitle.trim() || createTask.isPending}
                 >
@@ -298,23 +302,36 @@ export function DashboardTodoList() {
           <div className="py-8 text-center text-muted-foreground">
             {activeFilter === 'all' && !isAdding && (
               <div className="space-y-2">
-                <ListTodo className="h-10 w-10 mx-auto opacity-40" />
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/10 to-violet/10 flex items-center justify-center">
+                  <ListTodo className="h-8 w-8 text-primary/50" />
+                </div>
                 <p>No tasks yet. Add one to get started!</p>
               </div>
             )}
-            {activeFilter === 'today' && <p>No tasks due today 🎉</p>}
-            {activeFilter === 'overdue' && <p>No overdue tasks 👍</p>}
+            {activeFilter === 'today' && (
+              <div className="flex flex-col items-center gap-2">
+                <Sparkles className="h-8 w-8 text-success animate-pulse" />
+                <p>No tasks due today 🎉</p>
+              </div>
+            )}
+            {activeFilter === 'overdue' && (
+              <div className="flex flex-col items-center gap-2">
+                <CheckCircle2 className="h-8 w-8 text-success" />
+                <p>No overdue tasks 👍</p>
+              </div>
+            )}
             {activeFilter === 'done' && <p>No completed tasks yet</p>}
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredTasks.map((task) => (
+            {filteredTasks.map((task, index) => (
               <TaskCard
                 key={task.id}
                 task={task}
                 onToggle={() => toggleTaskStatus.mutate({ id: task.id, currentStatus: task.status })}
                 onDelete={() => deleteTask.mutate(task.id)}
                 onUpdate={(updates) => updateTask.mutate({ id: task.id, ...updates })}
+                index={index}
               />
             ))}
           </div>
@@ -334,13 +351,14 @@ export function DashboardTodoList() {
             </Button>
             {showCompleted && (
               <div className="mt-2 space-y-2 animate-fade-in">
-                {completedTasks.map((task) => (
+                {completedTasks.map((task, index) => (
                   <TaskCard
                     key={task.id}
                     task={task}
                     onToggle={() => toggleTaskStatus.mutate({ id: task.id, currentStatus: task.status })}
                     onDelete={() => deleteTask.mutate(task.id)}
                     onUpdate={(updates) => updateTask.mutate({ id: task.id, ...updates })}
+                    index={index}
                   />
                 ))}
               </div>
@@ -357,24 +375,44 @@ interface TaskCardProps {
   onToggle: () => void;
   onDelete: () => void;
   onUpdate: (updates: Partial<Task>) => void;
+  index?: number;
 }
 
-function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
+function TaskCard({ task, onToggle, onDelete, index = 0 }: TaskCardProps) {
   const isDone = task.status === 'done';
   const priority = priorityConfig[task.priority];
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleToggle = () => {
+    if (!isDone) {
+      setIsCompleting(true);
+      setTimeout(() => {
+        setIsCompleting(false);
+        onToggle();
+      }, 300);
+    } else {
+      onToggle();
+    }
+  };
 
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 p-3 md:p-3 rounded-lg border-l-4 bg-card hover:bg-accent/50 transition-all duration-200",
+        "group flex items-center gap-3 p-3 md:p-3 rounded-xl border-l-4 bg-card hover:bg-accent/30 transition-all duration-300 hover:shadow-card animate-slide-up",
         priority.borderClass,
-        isDone && "opacity-60"
+        isDone && "opacity-60",
+        isCompleting && "scale-95 opacity-50"
       )}
+      style={{ animationDelay: `${index * 50}ms` }}
     >
       <Checkbox
         checked={isDone}
-        onCheckedChange={onToggle}
-        className="h-6 w-6 md:h-5 md:w-5 rounded-full shrink-0"
+        onCheckedChange={handleToggle}
+        className={cn(
+          "h-6 w-6 md:h-5 md:w-5 rounded-full shrink-0 transition-all duration-200",
+          !isDone && "border-2 hover:border-primary hover:scale-110",
+          isCompleting && "bg-success border-success animate-bounce-in"
+        )}
       />
       
       <div className="flex-1 min-w-0">
@@ -399,7 +437,7 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
       <div className="flex items-center gap-2">
         <div
           className={cn(
-            "px-2 py-1 rounded text-xs font-semibold capitalize",
+            "px-2.5 py-1 rounded-full text-xs font-semibold capitalize shadow-sm",
             priority.className,
             priority.flash && !isDone && "animate-urgent-flash"
           )}
@@ -410,7 +448,7 @@ function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
           variant="ghost"
           size="icon"
           onClick={onDelete}
-          className="h-9 w-9 md:h-7 md:w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-9 w-9 md:h-7 md:w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-lg"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

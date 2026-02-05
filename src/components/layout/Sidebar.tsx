@@ -50,11 +50,18 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar md:fixed">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gradient-sidebar md:fixed overflow-hidden">
+      {/* Animated background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+      
       <div className="flex h-full flex-col">
         {/* Tenant Logo */}
-        <div className="flex h-16 items-center px-4 border-b border-sidebar-border bg-white">
-          <div className="bg-white rounded-lg px-3 py-2 max-w-full">
+        <div className="relative flex h-16 items-center px-4 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+          <div className="bg-white rounded-xl px-3 py-2 max-w-full shadow-lg">
             {isLoading ? (
               <Skeleton className="h-8 w-32" />
             ) : profile?.logo_url ? (
@@ -75,7 +82,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto bg-red-900">
+        <nav className="relative flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-hide">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -84,13 +91,20 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 to={item.href}
                 onClick={handleClick}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px]',
+                  'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 min-h-[44px]',
                   isActive
-                    ? 'bg-white/95 text-red-900 shadow-sm'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-primary shadow-lg'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white hover:translate-x-1'
                 )}
               >
-                <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-sidebar-primary')} />
+                {/* Active indicator glow */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full shadow-glow-primary" />
+                )}
+                <item.icon className={cn(
+                  'h-5 w-5 flex-shrink-0 transition-transform duration-200',
+                  isActive ? 'text-primary' : 'group-hover:scale-110'
+                )} />
                 {item.name}
               </Link>
             );
@@ -98,11 +112,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </nav>
 
         {/* User & Logout */}
-        <div className="border-t border-sidebar-border p-3 space-y-2 pb-safe">
+        <div className="relative border-t border-white/10 p-3 space-y-2 pb-safe bg-white/5 backdrop-blur-sm">
           {user && (
-            <div className="px-3 py-2">
-              <p className="text-xs text-sidebar-foreground/50">Logged in as</p>
-              <p className="text-sm text-sidebar-foreground truncate">{user.email}</p>
+            <div className="px-3 py-2 rounded-lg bg-white/5">
+              <p className="text-xs text-white/50">Logged in as</p>
+              <p className="text-sm text-white truncate font-medium">{user.email}</p>
             </div>
           )}
           <Button
@@ -111,7 +125,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               signOut();
               onNavigate?.();
             }}
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground min-h-[44px]"
+            className="w-full justify-start gap-3 text-white/70 hover:bg-white/10 hover:text-white min-h-[44px] rounded-xl"
           >
             <LogOut className="h-5 w-5" />
             Sign out
