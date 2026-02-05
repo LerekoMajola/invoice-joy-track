@@ -1,100 +1,133 @@
 
-# Company Onboarding Prompt for New Subscribers
 
-## Overview
-When a new user signs up and lands on the dashboard for the first time, they should be prompted to complete their company profile setup. This ensures every subscriber becomes a proper "tenant" with their business information recorded.
+# Implement Real Email Authentication with Password Reset
 
-## Solution Approach
+## Current State Analysis
 
-We'll create an onboarding flow that:
-1. Detects when a user has no company profile
-2. Shows a friendly onboarding dialog prompting them to set up their business
-3. Collects essential company information (name, logo, basic contact details)
-4. Creates their company profile record, making them a proper tenant
+Based on my exploration, here's the current setup:
+- **Email confirmation is auto-enabled** - users are immediately confirmed without verifying their email
+- **No password reset flow** - the "Forgot password" link doesn't exist
+- **One subscription per user** - there's already a unique constraint on `subscriptions.user_id`, so one email = one subscription (properly enforced)
+- **No email service configured** - RESEND_API_KEY is not in your secrets
 
-## Implementation Details
+## What You Need
 
-### 1. Create Onboarding Dialog Component
-**New file: `src/components/onboarding/CompanyOnboardingDialog.tsx`**
+### 1. Email Service Provider (Resend)
+To send real emails (verification, password reset), you need an email service. I recommend **Resend** as it integrates well with the backend:
 
-A modal dialog that appears for users without a company profile, featuring:
-- Welcome message explaining the platform
-- Essential fields only (to reduce friction):
-  - Company name (required)
-  - Logo upload (optional)
-  - Email (optional)
-  - Phone (optional)
-- "Complete Setup" button that saves the profile
-- Option to skip (but reminder persists until completed)
+**Setup steps:**
+1. Go to [resend.com](https://resend.com) and create an account
+2. Verify your email domain at [resend.com/domains](https://resend.com/domains) - this is required to send emails from your domain (e.g., `noreply@yourdomain.com`)
+3. Create an API key at [resend.com/api-keys](https://resend.com/api-keys)
 
-### 2. Update ProtectedRoute to Check for Company Profile
-**File: `src/components/layout/ProtectedRoute.tsx`**
+### 2. Configure Authentication Settings
+Disable auto-confirm so users must verify their email before accessing the app.
 
-Extend the existing subscription check to also:
-- Query if the user has a `company_profiles` record
-- Pass this status to the dashboard via context or state
-- No blocking - users can still access the app, but will see the prompt
+### 3. Implementation Components
 
-### 3. Add Onboarding State to Dashboard
-**File: `src/pages/Dashboard.tsx`**
+| Component | Purpose |
+|-----------|---------|
+| Password Reset Edge Function | Sends reset emails using Resend |
+| Reset Password Page | New route `/reset-password` for entering new password |
+| Auth Page Updates | Add "Forgot password?" link |
+| Email Verification Handling | Show appropriate messages for unverified users |
 
-- Use the `useCompanyProfile` hook to check if profile exists
-- If no profile exists, show the `CompanyOnboardingDialog`
-- Dialog can be dismissed but will reappear on next visit until completed
+## Implementation Plan
 
-### 4. Create Onboarding Context (Optional Enhancement)
-**New file: `src/contexts/OnboardingContext.tsx`**
+### Phase 1: Configure Email Service
+- Add `RESEND_API_KEY` secret to the project
+- Configure Resend with your verified domain
 
-Track onboarding completion across the app:
-- `hasCompletedOnboarding` boolean
-- `showOnboardingPrompt` function
-- Persists dismissal state in localStorage for current session
+### Phase 2: Create Password Reset Edge Function
+**New file: `supabase/functions/send-password-reset/index.ts`**
 
-## User Flow
+This function will:
+- Accept an email address
+- Generate a password reset token using Supabase Auth
+- Send a branded email via Resend with the reset link
 
+### Phase 3: Create Reset Password Page
+**New file: `src/pages/ResetPassword.tsx`**
+
+A page where users:
+- Request password reset (enter email)
+- OR complete the reset (if they clicked the link in email)
+
+### Phase 4: Update Auth Page
+**Modify: `src/pages/Auth.tsx`**
+
+- Add "Forgot password?" link below the password field
+- Handle email verification messages gracefully
+- Show "Check your email" message after signup instead of auto-redirecting
+
+### Phase 5: Handle Unverified Users
+**Modify: `src/pages/Auth.tsx`**
+
+When a user signs up:
+- Show "Please check your email to verify your account"
+- Don't auto-redirect until email is verified
+
+When a user tries to log in with unverified email:
+- Show helpful error message with option to resend verification
+
+### Phase 6: Update App Routes
+**Modify: `src/App.tsx`**
+
+- Add route for `/reset-password`
+
+## User Flows
+
+### Password Reset Flow
 ```text
-User signs up
-     |
-     v
-Lands on Dashboard
-     |
-     v
-Check: Has company_profiles record?
-     |
-     +---> YES --> Normal dashboard experience
-     |
-     +---> NO --> Show onboarding dialog
-                       |
-                       v
-                  User fills in company name + optional details
-                       |
-                       v
-                  Save to company_profiles table
-                       |
-                       v
-                  Dialog closes, user is now a proper "tenant"
+User clicks "Forgot password?"
+         |
+         v
+Enter email address
+         |
+         v
+Edge function generates reset link
+         |
+         v
+Email sent via Resend
+         |
+         v
+User clicks link in email
+         |
+         v
+Redirect to /reset-password?token=xxx
+         |
+         v
+User enters new password
+         |
+         v
+Password updated, redirect to login
 ```
 
-## Files to Create/Modify
+### Signup Flow (with email verification)
+```text
+User signs up
+         |
+         v
+Show "Check your email to verify"
+         |
+         v
+User clicks verification link
+         |
+         v
+Email confirmed
+         |
+         v
+User can now log in
+```
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/components/onboarding/CompanyOnboardingDialog.tsx` | Create | Onboarding modal with company form |
-| `src/pages/Dashboard.tsx` | Modify | Add onboarding check and dialog |
-| `src/hooks/useCompanyProfile.tsx` | Modify | Add `hasProfile` convenience boolean |
+## Before We Start
 
-## Onboarding Dialog Design
+I need you to:
+1. **Create a Resend account** at [resend.com](https://resend.com)
+2. **Verify your email domain** at [resend.com/domains](https://resend.com/domains)
+3. **Get your API key** from [resend.com/api-keys](https://resend.com/api-keys)
 
-The dialog will include:
-- A welcoming header with the Orion Labs branding
-- Brief explanation: "Let's set up your business profile"
-- Minimal required fields to reduce signup friction
-- Progress indicator showing this is step 1 of getting started
-- Clear call-to-action button
+Once you have the Resend API key ready, I'll prompt you to enter it securely and then implement the full password reset and email verification system.
 
-## Technical Considerations
+Would you like to proceed with getting the Resend account set up?
 
-- **No blocking**: Users can dismiss the dialog and still use the app
-- **Persistence**: Dialog reappears until profile is completed
-- **Mobile-friendly**: Dialog works well on all screen sizes
-- **Admin exclusion**: Super admins won't see the onboarding prompt (they manage the platform, not a business)
