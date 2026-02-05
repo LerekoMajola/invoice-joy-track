@@ -1,243 +1,255 @@
 
-# Notification Bell Implementation Plan
 
-A comprehensive in-app notification system that integrates with existing business events (tasks, invoices, quotes, leads) and follows best practices for real-time notifications.
+# Modern CRM System Redesign
 
----
-
-## Overview
-
-The notification bell in the header will display in-app notifications for important business events. This complements the existing push notification system by providing an always-accessible notification center within the app.
+Transform the current leads pipeline into a comprehensive, innovative CRM system following 2025 best practices with AI-ready architecture, real-time collaboration features, and an intuitive user experience.
 
 ---
 
-## Architecture
+## Current State Analysis
+
+The existing implementation includes:
+- Basic leads table with status tracking
+- Simple Kanban pipeline (drag-and-drop)
+- Separate leads and clients tabs
+- Activity tracking per lead
+- Basic analytics with charts
+- Contacts table (underutilized)
+
+**Pain Points Identified:**
+- Dashboard shows only a snippet of leads (max 8)
+- No unified view of the entire sales process
+- Limited deal insights and forecasting
+- No quick actions or keyboard shortcuts
+- Analytics separated from actionable data
+- No deal rotting/stale deal indicators
+- Missing expected close date tracking
+- No win probability scoring
+
+---
+
+## Proposed Architecture
 
 ```text
-+------------------+     +-------------------+     +------------------+
-|  Business Events |---->|  notifications    |---->|  Notification    |
-|  (triggers)      |     |  table            |     |  Bell UI         |
-+------------------+     +-------------------+     +------------------+
-                               ^                         |
-                               |                         v
-                         +-----+--------+        +-------+--------+
-                         | Realtime     |        | NotificationPanel
-                         | Subscription |        | (Sheet/Popover)
-                         +--------------+        +----------------+
++------------------+     +------------------+     +------------------+
+|   UNIFIED CRM    |     |    DEAL BOARD    |     |   SMART INBOX    |
+|   DASHBOARD      |---->|    (Kanban++)    |---->|   (Activities)   |
++------------------+     +------------------+     +------------------+
+         |                       |                        |
+         v                       v                        v
++------------------+     +------------------+     +------------------+
+|  DEAL DETAIL     |     |   FORECASTING    |     |   AI INSIGHTS    |
+|  (360 View)      |     |   & ANALYTICS    |     |   (Suggestions)  |
++------------------+     +------------------+     +------------------+
 ```
 
 ---
 
-## Database Design
+## Phase 1: Enhanced Dashboard Widget
 
-### New Table: `notifications`
+**Replace LeadsPipeline with CRM Quick View**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner of the notification |
-| type | text | Category: 'task', 'invoice', 'quote', 'lead', 'system' |
-| title | text | Short notification title |
-| message | text | Detailed message |
-| link | text | Optional navigation path (e.g., /tasks, /invoices/123) |
-| reference_id | uuid | Optional ID of related entity |
-| reference_type | text | Type of related entity |
-| is_read | boolean | Read status (default: false) |
-| created_at | timestamp | When the notification was created |
-
-### RLS Policies
-- Users can only SELECT their own notifications
-- Users can UPDATE (mark as read) their own notifications
-- Users can DELETE their own notifications
-- INSERT via database triggers or service role only
+New features:
+- Compact pipeline funnel visualization
+- "Deals needing attention" section (overdue, stale, high-value)
+- Quick-add deal button with minimal fields
+- Today's follow-ups at a glance
+- Click to expand full CRM
 
 ---
 
-## Notification Triggers (Database Functions)
+## Phase 2: Redesigned CRM Page
 
-### 1. Task Reminders
-- Trigger: Task due date approaching (today or overdue)
-- Title: "Task due today" or "Overdue task"
-- Creates notification when task due_date is today and status is not 'done'
+### 2.1 Unified Navigation
+Replace 4 tabs with smart views:
+| View | Purpose |
+|------|---------|
+| Pipeline | Visual Kanban with enhanced cards |
+| Deals | Filterable list/table view |
+| Clients | Converted customers with history |
+| Forecast | Revenue projections and analytics |
 
-### 2. Invoice Events
-- Trigger: Invoice becomes overdue (status changes to 'overdue')
-- Title: "Invoice overdue"
-- Trigger: Invoice paid (status changes to 'paid')
-- Title: "Payment received"
+### 2.2 Enhanced Pipeline Board
 
-### 3. Quote Events
-- Trigger: Quote accepted (status changes to 'accepted')
-- Title: "Quote accepted"
-- Trigger: Quote expires (valid_until passes)
-- Title: "Quote expired"
+**Deal Cards Include:**
+- Company/contact with avatar
+- Deal value with currency
+- Win probability indicator (color-coded ring)
+- Expected close date with countdown
+- "Rotting" indicator (days in stage vs average)
+- Last activity timestamp
+- Quick action buttons (call, email, note)
 
-### 4. Lead Events
-- Trigger: Follow-up due (next_follow_up is today or past)
-- Title: "Lead follow-up due"
-- Trigger: Lead status change to 'won'
-- Title: "Deal won!"
+**Column Enhancements:**
+- Weighted value per stage (value x probability)
+- Visual capacity indicators
+- Collapse/expand stages
+- Stage-specific default probabilities
 
----
+### 2.3 Deal Detail Slide-out Panel
 
-## Frontend Components
+Full-width panel (not dialog) with sections:
 
-### 1. useNotifications Hook
-
-```text
-src/hooks/useNotifications.tsx
-
-Features:
-- Fetch notifications with pagination
-- Real-time subscription for new notifications
-- Mark as read (single or all)
-- Delete notification
-- Unread count for badge
-```
-
-### 2. NotificationPanel Component
-
-```text
-src/components/notifications/NotificationPanel.tsx
-
-Features:
-- Popover or Sheet containing notification list
-- Grouped by date (Today, Yesterday, Earlier)
-- Click to navigate to related item
-- Mark all as read button
-- Empty state when no notifications
-```
-
-### 3. NotificationItem Component
-
-```text
-src/components/notifications/NotificationItem.tsx
-
-Features:
-- Icon based on notification type
-- Title and message preview
-- Relative timestamp
-- Unread indicator dot
-- Click to mark as read and navigate
-- Swipe to delete on mobile
-```
-
-### 4. Updated Header Component
-
-```text
-src/components/layout/Header.tsx
-
-Updates:
-- Bell icon triggers NotificationPanel
-- Badge shows unread count (max 99+)
-- Animate badge when new notification arrives
-- Remove static badge, use real count
-```
+| Section | Content |
+|---------|---------|
+| Header | Company, value, stage selector, probability slider |
+| Timeline | Unified activity feed (calls, emails, notes, stage changes) |
+| Contacts | Multiple stakeholders with roles (Decision Maker, Influencer, etc.) |
+| Tasks | Deal-specific to-dos with due dates |
+| Documents | Attached quotes, proposals, contracts |
+| History | Auto-logged stage changes and edits |
 
 ---
 
-## Implementation Phases
+## Phase 3: Database Enhancements
 
-### Phase 1: Database Setup
-1. Create `notifications` table with proper schema
-2. Enable RLS with appropriate policies
-3. Enable realtime for the table
-4. Create indexes for performance (user_id, is_read, created_at)
+### 3.1 New Columns for Leads Table
+| Column | Type | Purpose |
+|--------|------|---------|
+| expected_close_date | date | When deal should close |
+| win_probability | integer | 0-100% likelihood |
+| deal_rotting_days | integer | Days since last activity |
+| stage_entered_at | timestamp | When moved to current stage |
+| last_contacted_at | timestamp | Most recent outreach |
+| loss_reason | text | Why deal was lost |
 
-### Phase 2: Database Triggers
-1. Create trigger function for task due reminders
-2. Create trigger function for invoice status changes
-3. Create trigger function for quote status changes  
-4. Create trigger function for lead follow-up reminders
+### 3.2 New Table: deal_stakeholders
+Link multiple contacts to a single deal with roles:
+| Column | Purpose |
+|--------|---------|
+| deal_id | FK to leads |
+| contact_id | FK to contacts |
+| role | Decision Maker, Technical, Finance, etc. |
+| engagement_level | Hot, Warm, Cold |
 
-### Phase 3: Frontend Hook
-1. Create `useNotifications` hook with:
-   - Query for fetching notifications
-   - Real-time subscription
-   - Mutations for mark as read, delete
-   - Computed unread count
-
-### Phase 4: UI Components
-1. Create NotificationItem component
-2. Create NotificationPanel component
-3. Update Header to use NotificationPanel
-4. Add animations and mobile optimizations
-
-### Phase 5: Integration with Existing Systems
-1. Modify existing edge function `check-task-reminders` to also create in-app notifications
-2. Add notification creation to invoice/quote status change handlers
-3. Connect lead follow-up checks to notification creation
+### 3.3 New Table: deal_tasks
+Deal-specific tasks:
+| Column | Purpose |
+|--------|---------|
+| deal_id | FK to leads |
+| title | Task description |
+| due_date | When to complete |
+| is_completed | Status |
+| assigned_to | Optional: for team use |
 
 ---
 
-## Technical Details
+## Phase 4: Smart Features
+
+### 4.1 Deal Scoring Algorithm
+Auto-calculate health score based on:
+- Days since last activity (negative)
+- Win probability (positive)
+- Deal value vs average (weighted)
+- Time in stage vs average (warning)
+- Number of stakeholders engaged (positive)
+
+### 4.2 Smart Suggestions
+Display contextual prompts:
+- "No activity in 14 days - schedule follow-up?"
+- "Deal value above average - add more stakeholders?"
+- "Expected close date passed - update or mark lost?"
+- "High probability but no proposal sent - create quote?"
+
+### 4.3 Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| N | New deal |
+| / | Focus search |
+| 1-7 | Change stage |
+| E | Edit selected deal |
+| A | Add activity |
+
+---
+
+## Phase 5: Enhanced Analytics (Forecast Tab)
+
+### 5.1 Revenue Forecasting
+- Weighted pipeline: sum of (value x probability)
+- Monthly/quarterly projections
+- Comparison to targets
+- Best case vs committed vs worst case
+
+### 5.2 Sales Velocity Metrics
+- Average deal size
+- Win rate by stage
+- Average sales cycle length
+- Stage conversion rates
+
+### 5.3 Deal Insights
+- Deals at risk (rotting, overdue)
+- Top deals by value
+- Deals closing this week/month
+- Loss reason analysis
+
+---
+
+## Implementation Files
 
 ### Files to Create
 | File | Purpose |
 |------|---------|
-| `src/hooks/useNotifications.tsx` | Hook for notification state and actions |
-| `src/components/notifications/NotificationPanel.tsx` | Main notification dropdown/sheet |
-| `src/components/notifications/NotificationItem.tsx` | Individual notification row |
-| `src/components/notifications/index.ts` | Barrel export |
+| `src/components/crm/CRMDashboardWidget.tsx` | Compact dashboard view |
+| `src/components/crm/PipelineBoard.tsx` | Enhanced Kanban |
+| `src/components/crm/DealCard.tsx` | Rich deal card component |
+| `src/components/crm/DealDetailPanel.tsx` | Full slide-out panel |
+| `src/components/crm/DealTimeline.tsx` | Activity timeline |
+| `src/components/crm/DealStakeholders.tsx` | Contacts management |
+| `src/components/crm/DealTasks.tsx` | Deal-specific tasks |
+| `src/components/crm/ForecastTab.tsx` | Revenue forecasting |
+| `src/components/crm/DealsListView.tsx` | Table/list view |
+| `src/hooks/useDeals.tsx` | Enhanced deals hook with scoring |
+| `src/hooks/useDealStakeholders.tsx` | Stakeholders management |
+| `src/hooks/useDealTasks.tsx` | Deal tasks management |
 
 ### Files to Modify
 | File | Changes |
 |------|---------|
-| `src/components/layout/Header.tsx` | Integrate NotificationPanel, dynamic badge |
-| `supabase/functions/check-task-reminders/index.ts` | Also create in-app notifications |
+| `src/pages/CRM.tsx` | New layout with views |
+| `src/pages/Dashboard.tsx` | Replace LeadsPipeline with widget |
+| `src/hooks/useLeads.tsx` | Add new fields support |
 
-### SQL Migrations
-1. Create notifications table
-2. Create RLS policies
-3. Enable realtime
-4. Create trigger functions for automated notifications
-5. Create cron job for daily notification checks (optional)
-
----
-
-## Notification Types and Icons
-
-| Type | Icon | Color | Example |
-|------|------|-------|---------|
-| task | CheckSquare | Primary | "Task 'Call client' is due today" |
-| invoice | Receipt | Warning/Success | "Invoice #INV-001 is overdue" |
-| quote | FileText | Info | "Quote #QUO-001 was accepted" |
-| lead | Target | Violet | "Follow up with ABC Corp is due" |
-| system | Bell | Muted | "Welcome to the platform!" |
+### Database Migrations
+1. Add new columns to `leads` table
+2. Create `deal_stakeholders` table
+3. Create `deal_tasks` table
+4. Add triggers for auto-updating timestamps
 
 ---
 
-## Real-time Updates
+## UI/UX Innovations
 
-Enable realtime on the notifications table:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-```
+### Visual Design
+- Glass-morphism cards with subtle shadows
+- Color-coded probability rings (red < 30%, yellow 30-70%, green > 70%)
+- Animated stage transitions
+- Skeleton loaders for async data
+- Subtle confetti animation when deal won
 
-Subscribe to changes in the hook to instantly show new notifications without page refresh.
+### Mobile-First Features
+- Swipe gestures for stage changes
+- Pull-to-refresh pipeline
+- Bottom sheet for deal details
+- Floating action button for quick add
+- Touch-friendly quick actions
+
+### Accessibility
+- Full keyboard navigation
+- ARIA labels on all interactive elements
+- High contrast mode support
+- Screen reader announcements for stage changes
 
 ---
 
-## Best Practices Implemented
-
-1. **Performance**: Pagination, indexes, efficient queries
-2. **Real-time**: Instant updates via Supabase Realtime
-3. **Mobile-first**: Touch-friendly, swipe actions, proper sizing
-4. **Accessibility**: ARIA labels, keyboard navigation
-5. **UX**: Grouped by date, clear read/unread states, smooth animations
-6. **Security**: RLS policies ensure users only see their notifications
-7. **Scalability**: Database triggers vs application-level creation
-8. **Integration**: Works alongside existing push notification system
-
----
-
-## Expected Outcome
+## Expected Outcomes
 
 After implementation:
-1. Bell icon shows accurate unread count
-2. Clicking bell opens notification panel
-3. Notifications appear in real-time for business events
-4. Users can mark notifications as read or delete them
-5. Clicking a notification navigates to the relevant page
-6. Mobile users have a smooth, touch-friendly experience
-7. System integrates with existing push notification infrastructure
+1. Single source of truth for all deals
+2. Clear visibility into pipeline health
+3. Proactive deal management with smart alerts
+4. Accurate revenue forecasting
+5. Faster deal progression with quick actions
+6. Better stakeholder management
+7. Mobile-friendly deal tracking
+8. Data-driven sales decisions
+
