@@ -21,17 +21,20 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const isMobile = useIsMobile();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80">
+      {/* Subtle gradient border effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      
       <div className="flex items-center gap-3 min-w-0">
         {/* Mobile Menu Button */}
         {isMobile && (
-          <Button variant="ghost" size="icon" onClick={openSidebar} className="flex-shrink-0">
+          <Button variant="ghost" size="icon" onClick={openSidebar} className="flex-shrink-0 hover:bg-primary/10">
             <Menu className="h-5 w-5" />
           </Button>
         )}
         
         <div className="min-w-0">
-          <h1 className="font-display text-lg md:text-xl font-semibold text-foreground truncate">{title}</h1>
+          <h1 className="font-display text-lg md:text-xl font-bold text-foreground truncate">{title}</h1>
           {subtitle && (
             <p className="text-xs md:text-sm text-muted-foreground truncate hidden sm:block">{subtitle}</p>
           )}
@@ -45,16 +48,16 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           <Input
             type="search"
             placeholder="Search..."
-            className="w-64 pl-9 bg-secondary/50 border-0 focus-visible:ring-1"
+            className="w-64 pl-9 bg-secondary/50 border-0 focus-visible:ring-2 focus-visible:ring-primary/30 rounded-xl transition-all duration-300 focus:w-80"
           />
         </div>
 
         {/* Notifications */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 md:h-10 md:w-10">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 md:h-10 md:w-10 hover:bg-primary/10 rounded-xl">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
+              <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-coral animate-pulse shadow-glow-coral" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Notifications</TooltipContent>
@@ -67,7 +70,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
               variant="ghost" 
               size="icon"
               onClick={() => navigate('/settings')}
-              className="hidden md:inline-flex h-9 w-9 md:h-10 md:w-10"
+              className="hidden md:inline-flex h-9 w-9 md:h-10 md:w-10 hover:bg-primary/10 rounded-xl"
             >
               <Settings className="h-5 w-5 text-muted-foreground" />
             </Button>
@@ -77,7 +80,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
 
         {/* Action Button */}
         {action && (
-          <Button onClick={action.onClick} size={isMobile ? "sm" : "default"} className="gap-1 md:gap-2">
+          <Button onClick={action.onClick} size={isMobile ? "sm" : "default"} variant="gradient" className="gap-1 md:gap-2 rounded-xl">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">{action.label}</span>
             <span className="sm:hidden">Add</span>

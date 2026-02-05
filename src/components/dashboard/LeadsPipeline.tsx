@@ -11,6 +11,7 @@ import { LeadDetailDialog } from '@/components/leads/LeadDetailDialog';
 import { formatMaluti } from '@/lib/currency';
 import { Plus, Target, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 import { isPast, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function LeadsPipeline() {
   const { leads, isLoading } = useLeads();
@@ -44,9 +45,33 @@ export function LeadsPipeline() {
     setAddActivityLead(lead);
   };
 
+  const statCards = [
+    {
+      icon: Users,
+      value: activeLeads,
+      label: 'Active Leads',
+      gradient: 'from-primary to-violet',
+      iconBg: 'bg-gradient-to-br from-primary to-violet',
+    },
+    {
+      icon: TrendingUp,
+      value: formatMaluti(totalPipelineValue),
+      label: 'Pipeline Value',
+      gradient: 'from-info to-cyan',
+      iconBg: 'bg-gradient-to-br from-info to-cyan',
+    },
+    {
+      icon: Target,
+      value: wonLeads.length,
+      label: `Won (${formatMaluti(wonValue)})`,
+      gradient: 'from-success to-accent',
+      iconBg: 'bg-gradient-to-br from-success to-accent',
+    },
+  ];
+
   if (isLoading) {
     return (
-      <Card>
+      <Card className="animate-pulse">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
@@ -62,14 +87,16 @@ export function LeadsPipeline() {
 
   return (
     <>
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-violet text-white">
+                <Target className="h-4 w-4" />
+              </div>
               Leads Pipeline
             </CardTitle>
-            <Button size="sm" onClick={() => setAddLeadOpen(true)}>
+            <Button size="sm" variant="gradient" onClick={() => setAddLeadOpen(true)} className="rounded-xl">
               <Plus className="h-4 w-4 mr-1" />
               Add Lead
             </Button>
@@ -78,36 +105,27 @@ export function LeadsPipeline() {
         <CardContent className="space-y-4 md:space-y-6">
           {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
-              <div className="p-1.5 md:p-2 rounded-full bg-primary/10 shrink-0">
-                <Users className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+            {statCards.map((stat, index) => (
+              <div 
+                key={stat.label} 
+                className={cn(
+                  "group flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-xl bg-card border border-border shadow-card transition-all duration-300 hover:shadow-elevated hover:-translate-y-0.5 animate-slide-up",
+                  `stagger-${index + 1}`
+                )}
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className={cn("p-1.5 md:p-2 rounded-xl shrink-0 text-white shadow-lg transition-transform duration-300 group-hover:scale-110", stat.iconBg)}>
+                  <stat.icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold">{stat.value}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground truncate">{stat.label}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-lg md:text-2xl font-bold">{activeLeads}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Active Leads</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
-              <div className="p-1.5 md:p-2 rounded-full bg-blue-500/10 shrink-0">
-                <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-lg md:text-2xl font-bold truncate">{formatMaluti(totalPipelineValue)}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Pipeline Value</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-muted/50">
-              <div className="p-1.5 md:p-2 rounded-full bg-green-500/10 shrink-0">
-                <Target className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-lg md:text-2xl font-bold">{wonLeads.length}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground truncate">Won ({formatMaluti(wonValue)})</p>
-              </div>
-            </div>
+            ))}
             {overdueFollowups > 0 && (
-              <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-destructive/10">
-                <div className="p-1.5 md:p-2 rounded-full bg-destructive/20 shrink-0">
+              <div className="group flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-xl bg-destructive/5 border border-destructive/20 transition-all duration-300 hover:bg-destructive/10 animate-slide-up">
+                <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-destructive to-coral shrink-0 text-white shadow-lg animate-pulse">
                   <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4 text-destructive" />
                 </div>
                 <div className="min-w-0">
@@ -126,7 +144,7 @@ export function LeadsPipeline() {
                 <Badge
                   key={status.value}
                   variant="outline"
-                  className="flex items-center gap-1.5 shrink-0 text-xs"
+                  className="flex items-center gap-1.5 shrink-0 text-xs rounded-full px-3 py-1 transition-all duration-200 hover:scale-105"
                 >
                   <div className={`w-2 h-2 rounded-full ${status.color}`} />
                   {status.label}: {count}
@@ -138,10 +156,12 @@ export function LeadsPipeline() {
           {/* Leads Grid */}
           {totalLeads === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/10 to-violet/10 flex items-center justify-center">
+                <Target className="h-10 w-10 text-primary/50" />
+              </div>
               <p className="text-lg font-medium">No leads yet</p>
               <p className="text-sm">Add your first lead to start tracking potential deals.</p>
-              <Button className="mt-4" onClick={() => setAddLeadOpen(true)}>
+              <Button variant="gradient" className="mt-4 rounded-xl" onClick={() => setAddLeadOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Add Your First Lead
               </Button>
@@ -167,7 +187,7 @@ export function LeadsPipeline() {
 
           {activeLeads > 8 && (
             <div className="text-center">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="rounded-xl">
                 View All {activeLeads} Leads
               </Button>
             </div>

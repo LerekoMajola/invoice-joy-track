@@ -91,8 +91,11 @@ export default function Auth() {
   // Show loading while checking auth state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-hero">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-white" />
+          <p className="text-white/80 text-sm">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -100,17 +103,37 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-sidebar items-center justify-center p-12">
-        <div className="max-w-md text-center">
-          <div className="flex items-center justify-center mb-8">
-            <img src={orionLabsLogo} alt="Orion Labs" className="h-16 w-auto" />
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-hero items-center justify-center p-12 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-violet/30 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-cyan/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl" />
+        
+        <div className="relative max-w-md text-center animate-slide-up">
+          <div className="flex items-center justify-center mb-8 animate-bounce-in">
+            <div className="bg-white rounded-2xl px-6 py-3 shadow-2xl">
+              <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto" />
+            </div>
           </div>
-          <h2 className="font-display text-2xl font-semibold text-sidebar-foreground mb-4">
+          <h2 className="font-display text-3xl font-bold text-white mb-4">
             Manage Your Business Operations
           </h2>
-          <p className="text-sidebar-foreground/70">
+          <p className="text-white/70 text-lg">
             Quotes, invoices, delivery notes, client management, and more - all in one powerful platform designed for your business.
           </p>
+          
+          {/* Feature pills */}
+          <div className="flex flex-wrap justify-center gap-2 mt-8">
+            {['Quotes', 'Invoices', 'CRM', 'Tasks'].map((feature, index) => (
+              <span 
+                key={feature}
+                className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/80 text-sm font-medium animate-slide-up"
+                style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+              >
+                {feature}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -118,12 +141,16 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto" />
+          <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
+            <div className="bg-gradient-to-r from-primary to-violet p-1 rounded-2xl shadow-glow-md">
+              <div className="bg-white rounded-xl px-4 py-2">
+                <img src={orionLabsLogo} alt="Orion Labs" className="h-10 w-auto" />
+              </div>
+            </div>
           </div>
 
-          <div className="text-center mb-8">
-            <h1 className="font-display text-2xl font-bold text-foreground">
+          <div className="text-center mb-8 animate-slide-up">
+            <h1 className="font-display text-3xl font-bold text-foreground">
               {isLogin ? 'Welcome back' : 'Create your account'}
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -133,44 +160,44 @@ export default function Auth() {
             </p>
           </div>
 
-           <form onSubmit={handleAuth} className="space-y-4">
-             <div className="space-y-2">
+           <form onSubmit={handleAuth} className="space-y-5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+             <div className="space-y-2 group">
                <Label htmlFor="email">Email</Label>
                <div className="relative">
-                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                  <Input
                    id="email"
                    type="email"
                    placeholder="you@company.com"
                    value={email}
                    onChange={(e) => setEmail(e.target.value)}
-                   className="pl-10"
+                   className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
                    required
                  />
                </div>
              </div>
  
-             <div className="space-y-2">
+             <div className="space-y-2 group">
                <div className="flex items-center justify-between">
                  <Label htmlFor="password">Password</Label>
                  {isLogin && (
                    <Link
                      to="/reset-password"
-                     className="text-sm text-primary hover:underline"
+                     className="text-sm text-primary hover:underline font-medium"
                    >
                      Forgot password?
                    </Link>
                  )}
                </div>
                <div className="relative">
-                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                  <Input
                    id="password"
                    type="password"
                    placeholder="••••••••"
                    value={password}
                    onChange={(e) => setPassword(e.target.value)}
-                   className="pl-10"
+                   className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
                    required
                    minLength={6}
                  />
@@ -179,7 +206,8 @@ export default function Auth() {
  
              <Button 
                type="submit" 
-               className="w-full" 
+               variant="gradient"
+               className="w-full h-12 rounded-xl text-base font-semibold" 
                disabled={submitting}
              >
                {submitting ? (
@@ -197,7 +225,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline font-medium"
             >
               {isLogin 
                 ? "Don't have an account? Sign up" 
