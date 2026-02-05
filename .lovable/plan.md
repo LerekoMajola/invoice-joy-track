@@ -1,255 +1,363 @@
 
+# Mobile App Optimization Plan
 
-# Modern CRM System Redesign
-
-Transform the current leads pipeline into a comprehensive, innovative CRM system following 2025 best practices with AI-ready architecture, real-time collaboration features, and an intuitive user experience.
+Transform the entire system into a native-feeling mobile application with enhanced touch interactions, optimized navigation patterns, and app-like behaviors.
 
 ---
 
 ## Current State Analysis
 
-The existing implementation includes:
-- Basic leads table with status tracking
-- Simple Kanban pipeline (drag-and-drop)
-- Separate leads and clients tabs
-- Activity tracking per lead
-- Basic analytics with charts
-- Contacts table (underutilized)
+### What's Already Implemented
+- PWA manifest with standalone display mode
+- Service worker for push notifications
+- Mobile sidebar (Sheet drawer)
+- Responsive card layouts for Invoices, Quotes, Clients
+- Touch-friendly utilities: `.pb-safe`, `.min-touch`, `.scrollbar-hide`
+- Input zoom prevention (16px font)
+- `useIsMobile()` hook for responsive logic
 
-**Pain Points Identified:**
-- Dashboard shows only a snippet of leads (max 8)
-- No unified view of the entire sales process
-- Limited deal insights and forecasting
-- No quick actions or keyboard shortcuts
-- Analytics separated from actionable data
-- No deal rotting/stale deal indicators
-- Missing expected close date tracking
-- No win probability scoring
+### Gaps Identified
+1. **No bottom navigation** - Users must open hamburger menu for every navigation
+2. **No swipe gestures** - No swipe-to-go-back or swipe actions on list items
+3. **No pull-to-refresh** - Standard app behavior missing
+4. **Dialogs not optimized** - Many dialogs don't use mobile bottom sheets
+5. **No haptic feedback** - Touch feels less responsive
+6. **No offline indicator** - Users unaware of connection status
+7. **No app-like transitions** - Page changes feel web-like, not app-like
+8. **Header takes space** - Could collapse on scroll for more content
+9. **CRM Pipeline** - Horizontal scroll works but touch gestures could improve
+10. **No install prompt** - PWA install not proactively prompted
 
 ---
 
-## Proposed Architecture
+## Implementation Architecture
 
 ```text
-+------------------+     +------------------+     +------------------+
-|   UNIFIED CRM    |     |    DEAL BOARD    |     |   SMART INBOX    |
-|   DASHBOARD      |---->|    (Kanban++)    |---->|   (Activities)   |
-+------------------+     +------------------+     +------------------+
-         |                       |                        |
-         v                       v                        v
-+------------------+     +------------------+     +------------------+
-|  DEAL DETAIL     |     |   FORECASTING    |     |   AI INSIGHTS    |
-|  (360 View)      |     |   & ANALYTICS    |     |   (Suggestions)  |
-+------------------+     +------------------+     +------------------+
++-------------------+     +-------------------+     +-------------------+
+|   Bottom Navbar   |     |  Swipe Gestures   |     |  Pull to Refresh  |
+|   (Primary Nav)   |     |  (Touch Actions)  |     |  (Data Sync)      |
++-------------------+     +-------------------+     +-------------------+
+         |                        |                        |
+         v                        v                        v
++-------------------+     +-------------------+     +-------------------+
+|  Bottom Sheet     |     |  Page Transitions |     |  Offline Mode     |
+|  (Mobile Dialogs) |     |  (Animations)     |     |  (PWA Enhanced)   |
++-------------------+     +-------------------+     +-------------------+
 ```
 
 ---
 
-## Phase 1: Enhanced Dashboard Widget
+## Phase 1: Bottom Navigation Bar
 
-**Replace LeadsPipeline with CRM Quick View**
+### Create Mobile Bottom Navigation
+Replace hamburger menu with persistent bottom tabs for instant navigation.
 
-New features:
-- Compact pipeline funnel visualization
-- "Deals needing attention" section (overdue, stale, high-value)
-- Quick-add deal button with minimal fields
-- Today's follow-ups at a glance
-- Click to expand full CRM
+**Primary tabs (5 max for thumb reach):**
+| Icon | Label | Route |
+|------|-------|-------|
+| Home | Dashboard | /dashboard |
+| Users | CRM | /crm |
+| FileText | Quotes | /quotes |
+| Receipt | Invoices | /invoices |
+| MoreHorizontal | More | Opens bottom sheet menu |
 
----
+**"More" sheet includes:**
+- Delivery Notes, Tasks, Tenders, Profitability, Accounting, Staff, Settings, Billing
 
-## Phase 2: Redesigned CRM Page
-
-### 2.1 Unified Navigation
-Replace 4 tabs with smart views:
-| View | Purpose |
-|------|---------|
-| Pipeline | Visual Kanban with enhanced cards |
-| Deals | Filterable list/table view |
-| Clients | Converted customers with history |
-| Forecast | Revenue projections and analytics |
-
-### 2.2 Enhanced Pipeline Board
-
-**Deal Cards Include:**
-- Company/contact with avatar
-- Deal value with currency
-- Win probability indicator (color-coded ring)
-- Expected close date with countdown
-- "Rotting" indicator (days in stage vs average)
-- Last activity timestamp
-- Quick action buttons (call, email, note)
-
-**Column Enhancements:**
-- Weighted value per stage (value x probability)
-- Visual capacity indicators
-- Collapse/expand stages
-- Stage-specific default probabilities
-
-### 2.3 Deal Detail Slide-out Panel
-
-Full-width panel (not dialog) with sections:
-
-| Section | Content |
-|---------|---------|
-| Header | Company, value, stage selector, probability slider |
-| Timeline | Unified activity feed (calls, emails, notes, stage changes) |
-| Contacts | Multiple stakeholders with roles (Decision Maker, Influencer, etc.) |
-| Tasks | Deal-specific to-dos with due dates |
-| Documents | Attached quotes, proposals, contracts |
-| History | Auto-logged stage changes and edits |
+### Files to Create/Modify
+- Create: `src/components/layout/BottomNav.tsx`
+- Create: `src/components/layout/MoreMenuSheet.tsx`
+- Modify: `src/components/layout/DashboardLayout.tsx` - Add bottom nav, hide sidebar trigger
 
 ---
 
-## Phase 3: Database Enhancements
+## Phase 2: Bottom Sheet Dialogs
 
-### 3.1 New Columns for Leads Table
-| Column | Type | Purpose |
-|--------|------|---------|
-| expected_close_date | date | When deal should close |
-| win_probability | integer | 0-100% likelihood |
-| deal_rotting_days | integer | Days since last activity |
-| stage_entered_at | timestamp | When moved to current stage |
-| last_contacted_at | timestamp | Most recent outreach |
-| loss_reason | text | Why deal was lost |
+### Convert Dialogs to Drawer for Mobile
+Use the existing `vaul` (Drawer) component on mobile for all dialogs.
 
-### 3.2 New Table: deal_stakeholders
-Link multiple contacts to a single deal with roles:
-| Column | Purpose |
-|--------|---------|
-| deal_id | FK to leads |
-| contact_id | FK to contacts |
-| role | Decision Maker, Technical, Finance, etc. |
-| engagement_level | Hot, Warm, Cold |
+**Create responsive dialog wrapper:**
+```text
+src/components/ui/responsive-dialog.tsx
 
-### 3.3 New Table: deal_tasks
-Deal-specific tasks:
-| Column | Purpose |
-|--------|---------|
-| deal_id | FK to leads |
-| title | Task description |
-| due_date | When to complete |
-| is_completed | Status |
-| assigned_to | Optional: for team use |
+- On desktop: Renders as Dialog (centered modal)
+- On mobile: Renders as Drawer (bottom sheet)
+- Automatic based on useIsMobile()
+```
+
+### Apply to existing dialogs:
+- Add/Edit Client Dialog
+- Add Lead/Deal Dialog
+- Task Detail Panel
+- Deal Detail Panel
+- Quote/Invoice Preview
+- Notification Panel (already Popover, consider Drawer on mobile)
 
 ---
 
-## Phase 4: Smart Features
+## Phase 3: Swipe Gestures & Touch Actions
 
-### 4.1 Deal Scoring Algorithm
-Auto-calculate health score based on:
-- Days since last activity (negative)
-- Win probability (positive)
-- Deal value vs average (weighted)
-- Time in stage vs average (warning)
-- Number of stakeholders engaged (positive)
+### Swipe-to-Action on List Items
+Add swipe gestures for common actions on cards.
 
-### 4.2 Smart Suggestions
-Display contextual prompts:
-- "No activity in 14 days - schedule follow-up?"
-- "Deal value above average - add more stakeholders?"
-- "Expected close date passed - update or mark lost?"
-- "High probability but no proposal sent - create quote?"
+**Invoice/Quote/Client cards:**
+- Swipe left: Delete (with confirmation)
+- Swipe right: Quick action (Mark Paid, Send, etc.)
 
-### 4.3 Keyboard Shortcuts
-| Key | Action |
-|-----|--------|
-| N | New deal |
-| / | Focus search |
-| 1-7 | Change stage |
-| E | Edit selected deal |
-| A | Add activity |
+### Implementation
+- Create: `src/components/ui/swipeable-card.tsx`
+- Use CSS transforms with touch event handlers
+- Haptic feedback on action trigger
+
+### Swipe Navigation
+- Swipe from left edge: Navigate back (optional, may conflict with browser)
 
 ---
 
-## Phase 5: Enhanced Analytics (Forecast Tab)
+## Phase 4: Pull-to-Refresh
 
-### 5.1 Revenue Forecasting
-- Weighted pipeline: sum of (value x probability)
-- Monthly/quarterly projections
-- Comparison to targets
-- Best case vs committed vs worst case
+### Add Pull-to-Refresh to Data Pages
+Implement native-feeling pull-to-refresh.
 
-### 5.2 Sales Velocity Metrics
-- Average deal size
-- Win rate by stage
-- Average sales cycle length
-- Stage conversion rates
+**Create hook:**
+```text
+src/hooks/usePullToRefresh.tsx
 
-### 5.3 Deal Insights
-- Deals at risk (rotting, overdue)
-- Top deals by value
-- Deals closing this week/month
-- Loss reason analysis
+- Attaches to scroll container
+- Shows pull indicator
+- Triggers refetch on release
+- Haptic feedback on trigger
+```
+
+**Apply to pages:**
+- Dashboard (refresh all stats)
+- CRM (refresh deals)
+- Tasks (refresh task list)
+- Invoices/Quotes (refresh lists)
 
 ---
 
-## Implementation Files
+## Phase 5: Page Transitions
 
-### Files to Create
+### Add App-like Transitions
+Implement smooth transitions between pages.
+
+**Options:**
+1. **CSS-only** (simpler): Fade/slide using CSS animations
+2. **Framer Motion** (richer): Would require adding dependency
+
+**Recommended: CSS-based transitions**
+- Add transition wrapper component
+- Pages fade in/slide up on mount
+- Respect `prefers-reduced-motion`
+
+**Create:**
+- `src/components/layout/PageTransition.tsx`
+- Apply to all protected routes
+
+---
+
+## Phase 6: Collapsible Header
+
+### Hide Header on Scroll Down
+Save screen real estate by collapsing header.
+
+**Behavior:**
+- Scroll down: Header slides up and hides
+- Scroll up (any amount): Header slides back
+- Always show on page load
+
+**Implementation:**
+- Create: `src/hooks/useScrollDirection.tsx`
+- Modify: `src/components/layout/Header.tsx` - Add conditional transform
+
+---
+
+## Phase 7: Enhanced PWA Features
+
+### Offline Mode Indicator
+Show banner when offline.
+
+**Create:**
+- `src/components/layout/OfflineIndicator.tsx`
+- Fixed position, shows when `navigator.onLine` is false
+- Animate in/out smoothly
+
+### PWA Install Prompt
+Proactively prompt users to install.
+
+**Create:**
+- `src/components/pwa/InstallPrompt.tsx`
+- Capture `beforeinstallprompt` event
+- Show install button in Settings or as dismissible banner
+- Track if user dismissed
+
+### Splash Screen Enhancement
+Already configured in manifest, ensure proper icons and colors.
+
+---
+
+## Phase 8: Touch Optimizations
+
+### Haptic Feedback
+Add vibration on key interactions.
+
+**Create utility:**
+```text
+src/lib/haptics.ts
+
+export const haptics = {
+  light: () => navigator.vibrate?.(10),
+  medium: () => navigator.vibrate?.(20),
+  heavy: () => navigator.vibrate?.(30),
+  success: () => navigator.vibrate?.([10, 50, 30]),
+  error: () => navigator.vibrate?.([30, 50, 30, 50, 30]),
+};
+```
+
+**Apply to:**
+- Button presses
+- Swipe action triggers
+- Pull-to-refresh release
+- Navigation tab changes
+- Toast notifications
+
+### Touch Feedback CSS
+Add active states with transform/opacity.
+
+```css
+.touch-active:active {
+  transform: scale(0.97);
+  opacity: 0.8;
+  transition: transform 0.1s, opacity 0.1s;
+}
+```
+
+---
+
+## Phase 9: Notification Panel Mobile Optimization
+
+### Convert to Full-Height Drawer on Mobile
+Currently a Popover - on mobile, should be a full bottom drawer.
+
+**Modify:**
+- `src/components/notifications/NotificationPanel.tsx`
+- Use Drawer instead of Popover on mobile
+- Full height with swipe-to-dismiss
+- Add swipe-to-delete on items
+
+---
+
+## Phase 10: CRM Pipeline Mobile Gestures
+
+### Enhanced Touch for Kanban
+Improve deal card interactions.
+
+**Add:**
+- Long-press to pick up card (vs drag)
+- Visual feedback when hovering over drop zones
+- Snap-to-stage on release
+- Haptic feedback on drop
+
+**Consider:**
+- Vertical scrolling within columns
+- Horizontal swipe between stages (alternative to scroll)
+
+---
+
+## Files Summary
+
+### New Files to Create
 | File | Purpose |
 |------|---------|
-| `src/components/crm/CRMDashboardWidget.tsx` | Compact dashboard view |
-| `src/components/crm/PipelineBoard.tsx` | Enhanced Kanban |
-| `src/components/crm/DealCard.tsx` | Rich deal card component |
-| `src/components/crm/DealDetailPanel.tsx` | Full slide-out panel |
-| `src/components/crm/DealTimeline.tsx` | Activity timeline |
-| `src/components/crm/DealStakeholders.tsx` | Contacts management |
-| `src/components/crm/DealTasks.tsx` | Deal-specific tasks |
-| `src/components/crm/ForecastTab.tsx` | Revenue forecasting |
-| `src/components/crm/DealsListView.tsx` | Table/list view |
-| `src/hooks/useDeals.tsx` | Enhanced deals hook with scoring |
-| `src/hooks/useDealStakeholders.tsx` | Stakeholders management |
-| `src/hooks/useDealTasks.tsx` | Deal tasks management |
+| `src/components/layout/BottomNav.tsx` | Bottom navigation bar |
+| `src/components/layout/MoreMenuSheet.tsx` | "More" items bottom sheet |
+| `src/components/layout/PageTransition.tsx` | Page transition wrapper |
+| `src/components/layout/OfflineIndicator.tsx` | Offline status banner |
+| `src/components/ui/responsive-dialog.tsx` | Dialog/Drawer responsive wrapper |
+| `src/components/ui/swipeable-card.tsx` | Swipe gesture card wrapper |
+| `src/components/pwa/InstallPrompt.tsx` | PWA install prompt UI |
+| `src/hooks/usePullToRefresh.tsx` | Pull-to-refresh hook |
+| `src/hooks/useScrollDirection.tsx` | Scroll direction detection |
+| `src/lib/haptics.ts` | Haptic feedback utilities |
 
 ### Files to Modify
 | File | Changes |
 |------|---------|
-| `src/pages/CRM.tsx` | New layout with views |
-| `src/pages/Dashboard.tsx` | Replace LeadsPipeline with widget |
-| `src/hooks/useLeads.tsx` | Add new fields support |
-
-### Database Migrations
-1. Add new columns to `leads` table
-2. Create `deal_stakeholders` table
-3. Create `deal_tasks` table
-4. Add triggers for auto-updating timestamps
-
----
-
-## UI/UX Innovations
-
-### Visual Design
-- Glass-morphism cards with subtle shadows
-- Color-coded probability rings (red < 30%, yellow 30-70%, green > 70%)
-- Animated stage transitions
-- Skeleton loaders for async data
-- Subtle confetti animation when deal won
-
-### Mobile-First Features
-- Swipe gestures for stage changes
-- Pull-to-refresh pipeline
-- Bottom sheet for deal details
-- Floating action button for quick add
-- Touch-friendly quick actions
-
-### Accessibility
-- Full keyboard navigation
-- ARIA labels on all interactive elements
-- High contrast mode support
-- Screen reader announcements for stage changes
+| `src/components/layout/DashboardLayout.tsx` | Add BottomNav, OfflineIndicator, modify mobile layout |
+| `src/components/layout/Header.tsx` | Add scroll-hide behavior |
+| `src/components/notifications/NotificationPanel.tsx` | Use Drawer on mobile |
+| `src/pages/Dashboard.tsx` | Add pull-to-refresh |
+| `src/pages/Tasks.tsx` | Add pull-to-refresh |
+| `src/pages/CRM.tsx` | Add pull-to-refresh, enhanced touch |
+| `src/pages/Invoices.tsx` | Add swipeable cards |
+| `src/pages/Quotes.tsx` | Add swipeable cards |
+| `src/index.css` | Add touch-active styles, transitions |
+| `index.html` | Ensure all mobile meta tags present |
 
 ---
 
-## Expected Outcomes
+## CSS Updates
 
-After implementation:
-1. Single source of truth for all deals
-2. Clear visibility into pipeline health
-3. Proactive deal management with smart alerts
-4. Accurate revenue forecasting
-5. Faster deal progression with quick actions
-6. Better stakeholder management
-7. Mobile-friendly deal tracking
-8. Data-driven sales decisions
+### Add to index.css
+```css
+/* Touch feedback */
+.touch-active:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
 
+/* Bottom nav safe area */
+.pb-nav-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+}
+
+/* Page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+/* Header hide animation */
+.header-hidden {
+  transform: translateY(-100%);
+  transition: transform 0.3s ease-out;
+}
+.header-visible {
+  transform: translateY(0);
+  transition: transform 0.2s ease-out;
+}
+```
+
+---
+
+## Expected Mobile UX After Implementation
+
+1. **Instant navigation** via bottom tabs (no more hamburger hunting)
+2. **Native-feeling sheets** slide up for dialogs
+3. **Swipe actions** on cards for quick operations
+4. **Pull down** to refresh data anywhere
+5. **Smooth transitions** between pages
+6. **Auto-hiding header** for more content space
+7. **Haptic feedback** on interactions
+8. **Offline awareness** with clear indicator
+9. **Install prompt** for home screen access
+10. **Gesture-rich pipeline** for CRM deal management
+
+---
+
+## Implementation Priority
+
+1. **High Impact**: Bottom Navigation (Phase 1) - biggest UX improvement
+2. **High Impact**: Responsive Dialogs (Phase 2) - many dialogs need this
+3. **Medium Impact**: Pull-to-Refresh (Phase 4) - expected mobile behavior
+4. **Medium Impact**: Collapsible Header (Phase 6) - more content space
+5. **Polish**: Swipe Gestures (Phase 3) - nice to have
+6. **Polish**: Page Transitions (Phase 5) - refined feel
+7. **Utility**: PWA Enhancements (Phase 7) - install & offline
+8. **Utility**: Haptics (Phase 8) - subtle improvement
