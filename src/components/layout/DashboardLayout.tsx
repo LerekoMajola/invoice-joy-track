@@ -2,6 +2,10 @@ import { ReactNode, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+ import { BottomNav } from './BottomNav';
+ import { OfflineIndicator } from './OfflineIndicator';
+ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+ import { PageTransition } from './PageTransition';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -33,6 +37,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarContext.Provider value={{ openSidebar }}>
       <div className="min-h-screen bg-background">
+         {/* Offline Indicator */}
+         <OfflineIndicator />
+ 
         {/* Desktop Sidebar */}
         {!isMobile && <Sidebar />}
         
@@ -45,9 +52,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Sheet>
         )}
         
-        <main className={isMobile ? '' : 'pl-64'}>
-          {children}
+         <main className={isMobile ? 'pb-20' : 'pl-64'}>
+           <PageTransition>
+             {children}
+           </PageTransition>
         </main>
+ 
+         {/* Mobile Bottom Navigation */}
+         {isMobile && (
+           <>
+             <BottomNav />
+             <InstallPrompt />
+           </>
+         )}
       </div>
     </SidebarContext.Provider>
   );

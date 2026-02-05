@@ -309,6 +309,21 @@
   .stagger-5 { animation-delay: 0.5s; }
 }
 
+ /* Touch feedback */
+ .touch-active {
+   transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+ }
+ 
+ .touch-active:active {
+   transform: scale(0.97);
+   opacity: 0.9;
+ }
+ 
+ /* Bottom nav safe area padding */
+ .pb-nav-safe {
+   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+ }
+ 
 @keyframes fadeIn {
   from {
     opacity: 0;

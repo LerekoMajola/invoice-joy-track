@@ -8,6 +8,8 @@ import { useSidebarControl } from './DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Skeleton } from '@/components/ui/skeleton';
+ import { useScrollDirection } from '@/hooks/useScrollDirection';
+ import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   title: string;
@@ -23,16 +25,25 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const { openSidebar } = useSidebarControl();
   const isMobile = useIsMobile();
   const { profile, isLoading } = useCompanyProfile();
+   const { scrollDirection, isAtTop } = useScrollDirection();
+ 
+   // Hide header on scroll down (mobile only)
+   const isHidden = isMobile && scrollDirection === 'down' && !isAtTop;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80">
+     <header 
+       className={cn(
+         "sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-border bg-background/95 px-4 md:px-6 backdrop-blur-lg supports-[backdrop-filter]:bg-background/80 transition-transform duration-300",
+         isHidden && "-translate-y-full"
+       )}
+     >
       {/* Subtle gradient border effect */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
       
       <div className="flex items-center gap-3 min-w-0">
         {/* Mobile Menu Button */}
         {isMobile && (
-          <Button variant="ghost" size="icon" onClick={openSidebar} className="flex-shrink-0 hover:bg-primary/10">
+           <Button variant="ghost" size="icon" onClick={openSidebar} className="flex-shrink-0 hover:bg-primary/10 touch-active">
             <Menu className="h-5 w-5" />
           </Button>
         )}
