@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Shield, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminOverviewTab, TenantsTab, SubscriptionsTab } from '@/components/admin';
+import orionLabsLogo from '@/assets/orion-labs-logo.png';
 
 export default function Admin() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const [logoError, setLogoError] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -20,9 +23,18 @@ export default function Admin() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
+            {logoError ? (
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+            ) : (
+              <img
+                src={orionLabsLogo}
+                alt="Orion Labs"
+                className="h-8 w-auto"
+                onError={() => setLogoError(true)}
+              />
+            )}
             <div>
               <h1 className="text-xl font-bold">Platform Admin</h1>
               <p className="text-sm text-muted-foreground">Orion Labs Management Console</p>
