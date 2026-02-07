@@ -23,6 +23,7 @@ import Billing from "./pages/Billing";
 import Staff from "./pages/Staff";
 import Accounting from "./pages/Accounting";
 import Fleet from "./pages/Fleet";
+import Workshop from "./pages/Workshop";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
             <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
+            <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -141,14 +141,21 @@ export default function Invoices() {
   );
 
   useEffect(() => {
+    // Handle invoice from quote
     const newInvoiceData = sessionStorage.getItem('newInvoiceFromQuote');
-    if (newInvoiceData && !isCreatingFromQuote) {
+    // Handle invoice from job card
+    const newInvoiceFromJobCard = sessionStorage.getItem('newInvoiceFromJobCard');
+    
+    const invoiceSource = newInvoiceData || newInvoiceFromJobCard;
+    
+    if (invoiceSource && !isCreatingFromQuote) {
       setIsCreatingFromQuote(true);
-      const data = JSON.parse(newInvoiceData);
+      const data = JSON.parse(invoiceSource);
       sessionStorage.removeItem('newInvoiceFromQuote');
+      sessionStorage.removeItem('newInvoiceFromJobCard');
       
       createInvoice({
-        sourceQuoteId: data.sourceQuoteId,
+        sourceQuoteId: data.sourceQuoteId || undefined,
         clientId: data.clientId,
         clientName: data.clientName,
         clientAddress: data.clientAddress || '',

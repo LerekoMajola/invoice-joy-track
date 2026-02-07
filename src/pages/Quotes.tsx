@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -88,6 +88,23 @@ export default function Quotes() {
 
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
   const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
+
+  // Handle incoming job card → quote flow
+  useEffect(() => {
+    const jobCardData = sessionStorage.getItem('newQuoteFromJobCard');
+    if (jobCardData) {
+      const data = JSON.parse(jobCardData);
+      sessionStorage.removeItem('newQuoteFromJobCard');
+      
+      // Pre-fill the form and open it
+      const matchingClient = clients.find(c => c.id === data.clientId);
+      if (matchingClient) {
+        setSelectedClientId(matchingClient.id);
+      }
+      setQuoteDescription(data.description || '');
+      setIsOpen(true);
+    }
+  }, [clients]);
 
   const handleConvertToInvoice = (quote: Quote) => {
     openConfirmDialog({
