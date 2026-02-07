@@ -9,9 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Loader2, Package, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMaluti } from '@/lib/currency';
+import { cn } from '@/lib/utils';
 
 interface PlatformModule {
   id: string;
@@ -37,6 +38,101 @@ const emptyForm = {
 
 function nameToKey(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+// Module keys grouped by system
+const BUSINESS_KEYS = ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'tenders', 'accounting', 'staff', 'fleet'];
+const WORKSHOP_KEYS = ['workshop'];
+const SCHOOL_KEYS = ['school_admin', 'students', 'school_fees'];
+
+interface SystemGroup {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  gradient: string;
+  borderColor: string;
+  keys: string[];
+}
+
+const systemGroups: SystemGroup[] = [
+  {
+    id: 'business',
+    label: 'Business Management',
+    icon: Briefcase,
+    gradient: 'from-primary to-violet',
+    borderColor: 'border-primary/30',
+    keys: BUSINESS_KEYS,
+  },
+  {
+    id: 'workshop',
+    label: 'Workshop Management',
+    icon: Wrench,
+    gradient: 'from-coral to-warning',
+    borderColor: 'border-coral/30',
+    keys: WORKSHOP_KEYS,
+  },
+  {
+    id: 'school',
+    label: 'School Management',
+    icon: GraduationCap,
+    gradient: 'from-info to-cyan',
+    borderColor: 'border-info/30',
+    keys: SCHOOL_KEYS,
+  },
+];
+
+function ModuleRow({
+  mod,
+  onEdit,
+  onDelete,
+  onToggle,
+}: {
+  mod: PlatformModule;
+  onEdit: (mod: PlatformModule) => void;
+  onDelete: (mod: PlatformModule) => void;
+  onToggle: (id: string, is_active: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm">{mod.name}</p>
+            {mod.is_core && (
+              <Badge variant="secondary" className="text-[10px]">Core</Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {mod.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 ml-2">
+        <span className="text-sm font-semibold whitespace-nowrap">
+          {formatMaluti(mod.monthly_price)}
+        </span>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(mod)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        {!mod.is_core && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(mod)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        <Switch
+          checked={mod.is_active}
+          onCheckedChange={(checked) => onToggle(mod.id, checked)}
+          disabled={mod.is_core}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function ModuleManagement() {
@@ -130,7 +226,6 @@ export function ModuleManagement() {
 
   const deleteModule = useMutation({
     mutationFn: async (id: string) => {
-      // Check if any users have this module
       const { count, error: countErr } = await supabase
         .from('user_modules')
         .select('id', { count: 'exact', head: true })
@@ -205,6 +300,16 @@ export function ModuleManagement() {
     });
   };
 
+  // Group modules by system
+  const getGroupedModules = () => {
+    const allKnownKeys = [...BUSINESS_KEYS, ...WORKSHOP_KEYS, ...SCHOOL_KEYS];
+    const ungrouped = modules.filter(m => !allKnownKeys.includes(m.key));
+
+    return { ungrouped };
+  };
+
+  const { ungrouped } = getGroupedModules();
+
   if (isLoading) {
     return (
       <Card>
@@ -236,51 +341,67 @@ export function ModuleManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {modules.map((mod) => (
-              <div
-                key={mod.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{mod.name}</p>
-                      {mod.is_core && (
-                        <Badge variant="secondary" className="text-[10px]">Core</Badge>
-                      )}
+          <div className="space-y-6">
+            {systemGroups.map((group) => {
+              const GroupIcon = group.icon;
+              const groupModules = modules.filter(m => group.keys.includes(m.key));
+              if (groupModules.length === 0) return null;
+
+              return (
+                <div key={group.id} className={cn('rounded-xl border-2 p-4', group.borderColor)}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={cn('w-9 h-9 rounded-lg bg-gradient-to-br flex items-center justify-center text-white', group.gradient)}>
+                      <GroupIcon className="h-4.5 w-4.5" />
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {mod.description}
-                    </p>
+                    <h3 className={cn('font-display text-lg font-bold bg-gradient-to-r bg-clip-text text-transparent', group.gradient)}>
+                      {group.label}
+                    </h3>
+                    <Badge variant="secondary" className="text-[10px] ml-auto">
+                      {groupModules.length} module{groupModules.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {groupModules.map((mod) => (
+                      <ModuleRow
+                        key={mod.id}
+                        mod={mod}
+                        onEdit={openEdit}
+                        onDelete={setDeleteTarget}
+                        onToggle={(id, is_active) => toggleActive.mutate({ id, is_active })}
+                      />
+                    ))}
                   </div>
                 </div>
+              );
+            })}
 
-                <div className="flex items-center gap-2 ml-2">
-                  <span className="text-sm font-semibold whitespace-nowrap">
-                    {formatMaluti(mod.monthly_price)}
-                  </span>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(mod)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  {!mod.is_core && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(mod)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  <Switch
-                    checked={mod.is_active}
-                    onCheckedChange={(checked) => toggleActive.mutate({ id: mod.id, is_active: checked })}
-                    disabled={mod.is_core}
-                  />
+            {/* Ungrouped / Other modules */}
+            {ungrouped.length > 0 && (
+              <div className="rounded-xl border-2 border-border p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                    <Package className="h-4.5 w-4.5 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-foreground">
+                    Other Modules
+                  </h3>
+                  <Badge variant="secondary" className="text-[10px] ml-auto">
+                    {ungrouped.length} module{ungrouped.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {ungrouped.map((mod) => (
+                    <ModuleRow
+                      key={mod.id}
+                      mod={mod}
+                      onEdit={openEdit}
+                      onDelete={setDeleteTarget}
+                      onToggle={(id, is_active) => toggleActive.mutate({ id, is_active })}
+                    />
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
