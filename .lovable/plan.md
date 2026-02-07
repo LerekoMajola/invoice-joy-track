@@ -1,78 +1,94 @@
 
 
-# Fix: Email Confirmation, Signup Emails, and Admin Dashboard
+# Fix: System-Specific Dashboard and Signup Confirmation
 
-## Three Issues Found
+## What's Wrong
 
-### Issue 1: Users log in without email confirmation
-The authentication system has **auto-confirm enabled**, which means any email address is instantly verified. Every user in the database was confirmed within milliseconds of signing up -- no email verification ever happened.
+Three bugs are causing every user to see the full Business dashboard regardless of what they selected during signup:
 
-**Fix:** Disable auto-confirm so users must click a verification link in their email before they can sign in. The signup flow will show a "Check your email" message instead of logging them straight in.
+### 1. Module key mismatch (the main bug)
+The signup package tiers use module keys `crm` and `clients`, but the actual database keys are `core_crm`. There is no `clients` key in platform_modules at all. When the ProtectedRoute tries to match these keys against the database, nothing matches, so it falls through to the legacy path and assigns ALL 14 modules to every user.
 
-### Issue 2: No signup/confirmation email sent
-Because auto-confirm is on, the system never attempts to send a verification email. Once auto-confirm is disabled, the built-in email service will automatically send confirmation emails to new signups.
+Database keys: `core_crm, quotes, invoices, delivery_notes, profitability, tasks, tenders, accounting, staff, fleet, workshop, school_admin, students, school_fees`
 
-**Fix:** This is resolved by disabling auto-confirm (Issue 1). Additionally, the signup code currently calls `saveSignupData(data.user.id)` immediately after `signUp()` returns a user -- but with email verification required, the user object still comes back (unverified). The code needs to handle this properly: show a "check your email" message and NOT try to save modules/subscription until the user actually confirms. The `ProtectedRoute` already handles creating a subscription on first authenticated visit, so module assignment can be deferred there too.
+Tier configs currently use: `crm, clients, workshop, quotes...` -- `crm` and `clients` do not exist.
 
-### Issue 3: Admin dashboard sidebar shows all modules
-When you (the admin) look at the app via "Go to App" button, the sidebar shows every module (Workshop, School, Students, etc.) because the admin user has no `user_modules` rows. The sidebar code defaults to showing everything when no modules are found (line 61 of Sidebar.tsx: `if (userModules.length === 0) return true`).
+### 2. User metadata was never saved
+All 5 users in the database have empty metadata (no `system_type`, no `selected_module_keys`). The users were created before the metadata-saving code was added or with auto-confirm on. The ProtectedRoute then defaults to `system_type: 'business'` and assigns all modules.
 
-For the admin specifically, this might be intentional (so you can see everything). But if you want the admin dashboard's **Tenants tab** to show which system each tenant is on, that is currently missing from the table.
+### 3. No confirmation step
+Users go straight from package selection to credentials. There is no review screen showing "You selected Workshop / Starter -- here are your modules."
 
-**Fix (Tenants tab):** Add a "System" column to the Tenants table that shows Business/Workshop/School with an icon badge. Pull `system_type` from the subscription data and display it. Also add a system type filter dropdown.
+---
+
+## What Gets Fixed
+
+### Fix 1: Correct module keys in PackageTierSelector
+Replace `crm` and `clients` with `core_crm` in every tier configuration. This ensures that when the signup saves `selected_module_keys` to user metadata, the keys actually exist in the `platform_modules` table and can be matched during module assignment.
+
+### Fix 2: Add a confirmation/review step to signup
+Insert a new step between package selection and credentials entry. This step shows:
+- The system type they selected (Business/Workshop/School) with its icon
+- The package tier name and price
+- A checklist of all included modules
+- An "Edit" button to go back and change
+- A "Continue to create account" button to proceed
+
+The signup flow becomes: System Selection -> Package Tier -> **Review Selection** -> Account Credentials
+
+### Fix 3: Clean up existing user data
+Since the current users have wrong data (all modules assigned, all system_type = business), the existing `sales@orionlabslesotho.com` user that signed up for Workshop needs to be fixed. This will be done by updating the subscription's `system_type` to match what was actually selected and removing incorrect module assignments.
 
 ---
 
 ## Files to Modify
 
 | File | Change |
-|------|--------|
-| Auth configuration | Disable email auto-confirm |
-| `src/pages/Auth.tsx` | Handle unverified signup: show "Check your email" message instead of saving data and redirecting. Defer module assignment. |
-| `src/hooks/useAdminTenants.tsx` | Include `system_type` in the Tenant interface and data mapping |
-| `src/components/admin/TenantsTab.tsx` | Add "System" column with icon badges and a system type filter |
-| `src/components/admin/TenantDetailDialog.tsx` | Show system type in tenant details |
+|------|---------|
+| `src/components/auth/PackageTierSelector.tsx` | Replace `crm` and `clients` with `core_crm` in all tier moduleKeys arrays |
+| `src/pages/Auth.tsx` | Add new `review` step between package and credentials; show summary of selections |
+| `src/components/layout/Sidebar.tsx` | Change fallback behavior: when user has no modules, show nothing (not everything) |
+| `src/components/layout/BottomNav.tsx` | Same fallback fix as Sidebar |
 
-## No Changes Needed
+## Database Fix (one-time cleanup)
 
-- ProtectedRoute (already handles subscription creation on first visit)
-- AuthContext (already handles session state correctly)
-- AdminOverviewTab (already shows system breakdown cards)
-- Dashboard routing (already routes based on system_type)
+Update the `sales@orionlabslesotho.com` subscription to `system_type = 'workshop'` and reassign only the workshop-relevant modules.
 
 ---
 
 ## Technical Details
 
-### Disabling Auto-Confirm
-Use the auth configuration tool to set `enable_signup = true` with `double_confirm_changes = true` and `enable_confirmations = true` (disable auto-confirm). This means:
-- New signups get a confirmation email
-- Users cannot sign in until they click the link
-- The `email_confirmed_at` field stays null until they verify
+### PackageTierSelector Key Fix
 
-### Signup Flow Changes (Auth.tsx)
+Every occurrence of `'crm'` and `'clients'` in moduleKeys arrays gets replaced with `'core_crm'`. Example for Workshop Starter:
 
-After `supabase.auth.signUp()` returns, check if the user's `email_confirmed_at` is null (or if `data.session` is null -- Supabase returns no session when email confirmation is required). If so:
-- Show a success message: "Check your email to verify your account"
-- Do NOT call `saveSignupData()` -- the user hasn't verified yet
-- Switch back to the login form
+Before: `['crm', 'clients', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes']`
+After: `['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes']`
 
-Module and subscription assignment will happen automatically when the user first logs in, handled by the existing `ProtectedRoute` logic (which already creates subscriptions and assigns modules for users who don't have them).
+This applies to all 9 tier definitions (3 systems x 3 tiers each).
 
-The `saveSignupData` function currently saves `system_type` to the subscription. Since the subscription doesn't exist yet at signup time (it gets created by ProtectedRoute on first login), we need to store the selected `system_type` temporarily. Options:
-- Store it in `user_metadata` during signup (passed via `signUp` options)
-- Then read it from `user_metadata` in ProtectedRoute when creating the subscription
+### Review Step (Auth.tsx)
 
-This ensures the system type selection survives the email verification step.
+Add a new `SignupStep` value: `'review'`. After the user selects a package tier, instead of going to `'credentials'`, go to `'review'` first. The review screen renders:
 
-### Tenants Tab Enhancement
+- System icon and label (e.g., Wrench icon + "Workshop Management")
+- Tier badge (e.g., "Starter -- M450/mo")
+- A list of included modules with checkmarks
+- Two buttons: "Change Package" (goes back to package step) and "Continue" (goes to credentials step)
 
-Add a "System" column between "Company" and "Email" that displays:
-- A colored badge with an icon: Briefcase for Business, Wrench for Workshop, GraduationCap for School
-- Add a system type filter dropdown alongside the existing status and plan filters
-- Pull `system_type` from `subscription.system_type` (already available in the subscriptions query)
+This gives the user a clear confirmation of exactly what they are signing up for.
 
-### Tenant Detail Dialog
+### Sidebar and BottomNav Fallback Fix
 
-Add a "System Type" row in the subscription section showing Business/Workshop/School with the matching icon.
+Currently both components show ALL navigation items when `userModules.length === 0`. This was meant as a legacy fallback, but it means any user without properly assigned modules sees everything.
 
+Change: When `userModules.length === 0`, only show items with `moduleKey: null` (Dashboard, Settings, Billing). This ensures that if module assignment fails for any reason, users see only the base navigation -- not the entire platform.
+
+### Data Cleanup
+
+Run a migration to fix the existing workshop user:
+1. Update their subscription `system_type` from `'business'` to `'workshop'`
+2. Delete their current `user_modules` rows
+3. Re-insert only the correct workshop modules (`core_crm, workshop, quotes, invoices, tasks, delivery_notes`)
+
+This is a one-time fix for users created before the bug was fixed.
