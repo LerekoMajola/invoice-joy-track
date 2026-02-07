@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +19,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -27,7 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useStaff, CreateStaffData, StaffRole } from '@/hooks/useStaff';
-import { Loader2 } from 'lucide-react';
+import { useModules } from '@/hooks/useModules';
+import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
+import { Loader2, Shield } from 'lucide-react';
 
 const staffSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
@@ -63,7 +67,17 @@ const roles = [
 
 export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
   const { createStaff } = useStaff();
+  const { userModules } = useModules();
+  const { saveModuleAccess } = useStaffModuleAccess();
+
+  // Pre-select all of the tenant's active modules
+  useEffect(() => {
+    if (open && userModules.length > 0) {
+      setSelectedModuleIds(userModules.map((um) => um.module_id));
+    }
+  }, [open, userModules]);
 
   const form = useForm<StaffFormData>({
     resolver: zodResolver(staffSchema),
@@ -77,6 +91,14 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
       notes: '',
     },
   });
+
+  const toggleModule = (moduleId: string) => {
+    setSelectedModuleIds((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    );
+  };
 
   const onSubmit = async (data: StaffFormData) => {
     setIsSubmitting(true);
@@ -93,7 +115,10 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
 
       const result = await createStaff(staffData);
       if (result) {
+        // Save module access for the new staff member
+        await saveModuleAccess(result.id, selectedModuleIds);
         form.reset();
+        setSelectedModuleIds([]);
         onOpenChange(false);
       }
     } finally {
@@ -218,6 +243,36 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
                 </FormItem>
               )}
             />
+
+            {/* Module Access Section */}
+            {userModules.length > 0 && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Module Access</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select which modules this staff member can access.
+                </p>
+                <div className="space-y-2">
+                  {userModules.map((um) => (
+                    <div key={um.module_id} className="flex items-center gap-3">
+                      <Checkbox
+                        id={`module-${um.module_id}`}
+                        checked={selectedModuleIds.includes(um.module_id)}
+                        onCheckedChange={() => toggleModule(um.module_id)}
+                      />
+                      <Label
+                        htmlFor={`module-${um.module_id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {um.module?.name || 'Unknown Module'}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <FormField
               control={form.control}
