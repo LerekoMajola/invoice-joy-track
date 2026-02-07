@@ -126,9 +126,9 @@ export default function ResetPassword() {
        {/* Left Side - Branding */}
        <div className="hidden lg:flex lg:w-1/2 bg-gradient-sidebar items-center justify-center p-12">
          <div className="max-w-md text-center">
-            <div className="flex items-center justify-center mb-8">
-              <PlatformLogo className="h-16 w-auto" />
-            </div>
+             <div className="flex items-center justify-center mb-8">
+               <PlatformLogo className="h-16 w-auto rounded-xl" />
+             </div>
            <h2 className="font-display text-2xl font-semibold text-sidebar-foreground mb-4">
              Reset Your Password
            </h2>
