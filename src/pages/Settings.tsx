@@ -12,6 +12,7 @@ import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
 import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle';
 import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell } from 'lucide-react';
+import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
@@ -174,6 +175,9 @@ export default function Settings() {
       />
       
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-4xl pb-safe">
+        {/* Account Security */}
+        <ChangePasswordCard />
+
         {/* Document Header */}
         <Card>
           <CardHeader>
