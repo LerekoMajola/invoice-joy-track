@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Receipt, Users, TrendingUp } from 'lucide-react';
+import { ArrowRight, Briefcase, Wrench, GraduationCap } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
+
+const systems = [
+  { icon: Briefcase, label: 'Business Management', gradient: 'from-primary to-violet' },
+  { icon: Wrench, label: 'Workshop Management', gradient: 'from-coral to-warning' },
+  { icon: GraduationCap, label: 'School Management', gradient: 'from-info to-cyan' },
+];
 
 export function Hero() {
   return (
@@ -39,13 +45,13 @@ export function Hero() {
         {/* Hero Content */}
         <div className="py-20 lg:py-32 text-center">
           <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            Run Your Business
+            One Platform for
             <br />
-            <span className="bg-gradient-to-r from-cyan via-accent to-success bg-clip-text text-transparent">Effortlessly</span>
+            <span className="bg-gradient-to-r from-cyan via-accent to-success bg-clip-text text-transparent">Every Industry</span>
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Professional quotes, invoices, delivery notes, and client management — 
-            all in one powerful platform designed for your business.
+            Business operations, workshop management, and school administration — 
+            all in one modular platform. Pick the tools you need.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.2s' }}>
@@ -55,28 +61,33 @@ export function Hero() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <p className="text-white/60 text-sm">No credit card required</p>
+            <a href="#solutions">
+              <Button size="lg" variant="ghost" className="text-white hover:bg-white/20 px-8 py-6 text-lg rounded-2xl">
+                Explore Solutions
+              </Button>
+            </a>
           </div>
 
-          {/* Feature Icons */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
-            {[
-              { icon: FileText, label: 'Quotes' },
-              { icon: Receipt, label: 'Invoices' },
-              { icon: Users, label: 'CRM' },
-              { icon: TrendingUp, label: 'Profitability' },
-            ].map(({ icon: Icon, label }, index) => (
-              <div 
-                key={label} 
-                className="group flex flex-col items-center gap-2 text-white/80 transition-all duration-300 hover:text-white"
+          {/* System Pills */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            {systems.map(({ icon: Icon, label, gradient }, index) => (
+              <a
+                key={label}
+                href="#solutions"
+                className="group flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 hover:-translate-y-1 animate-float"
+                style={{ animationDelay: `${index * 0.2}s` }}
               >
-                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group-hover:bg-white/20 group-hover:scale-110 group-hover:shadow-lg animate-float" style={{ animationDelay: `${index * 0.2}s` }}>
-                  <Icon className="h-8 w-8" />
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-md transition-transform duration-300 group-hover:scale-110`}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-medium">{label}</span>
-              </div>
+                <span className="text-white font-medium text-sm">{label}</span>
+              </a>
             ))}
           </div>
+
+          <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            No credit card required · 7-day free trial · Cancel anytime
+          </p>
         </div>
       </div>
 
