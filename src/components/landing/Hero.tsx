@@ -21,9 +21,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="flex items-center justify-between py-6">
-          <div className="bg-white rounded-xl px-4 py-2 shadow-lg">
-            <PlatformLogo className="h-8 w-auto" />
-          </div>
+          <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
           <div className="flex items-center gap-4">
             <Link to="/auth">
               <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl">
