@@ -92,7 +92,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Starter',
         price: 450,
         target: 'Small repair shops',
-        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes'],
+        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Workshop (Job Cards)', included: true },
@@ -100,7 +100,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
           { name: 'Invoices', included: true },
           { name: 'Task Management', included: true },
           { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: false },
+          { name: 'Staff & HR', included: true },
           { name: 'Profitability Tracking', included: false },
           { name: 'Accounting', included: false },
           { name: 'Fleet Management', included: false },
