@@ -1,153 +1,130 @@
 
 
-# Remove Non-School Modules -- School-Only Platform
+# Add School Timetable Feature
 
 ## Overview
 
-Transform the platform from a multi-industry SaaS (Business, Workshop, School) into a dedicated **School Management System**. All client/lead, quoting, delivery note, tender, profitability, workshop, and fleet features will be removed. The remaining modules are those relevant to running a school.
+Add a timetable management system that lets schools define subjects, create time periods (period slots), and assign subjects to specific class/day/period combinations. The timetable will be viewable as a weekly grid per class.
 
-## What Stays
+## New Database Tables
 
-| Module | Purpose |
-|--------|---------|
-| School Admin | Classes, terms, announcements |
-| Student Management | Student records, guardian info |
-| School Fees | Fee tracking and payments |
-| Invoices | Fee invoicing for parents |
-| Task Management | Internal tasks for staff |
-| Staff & HR | Teacher/staff management |
-| Accounting | Financial overview |
-| Settings | School profile configuration |
-| Billing | Subscription management |
+### 1. `school_subjects`
+Stores the subjects offered by the school (e.g., Mathematics, English, Science).
 
-## What Gets Removed
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| user_id | uuid | Tenant owner |
+| name | text | e.g. "Mathematics" |
+| short_code | text | e.g. "MATH" (optional, for compact grid display) |
+| color | text | Hex color for visual differentiation on the grid |
+| is_active | boolean | Default true |
+| created_at | timestamptz | Default now() |
 
-| Module/Feature | Reason |
-|----------------|--------|
-| CRM (Clients & Leads) | Not needed for schools |
-| Quotes | Schools don't quote |
-| Delivery Notes | Not applicable |
-| Tenders | Business-only feature |
-| Profitability | Business analytics |
-| Fleet Management | Not school-relevant |
-| Workshop (Job Cards) | Auto workshop feature |
+### 2. `school_periods`
+Defines the daily time slots (e.g., Period 1: 08:00-08:45, Break: 10:30-11:00).
 
-## Changes by Area
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| user_id | uuid | Tenant owner |
+| name | text | e.g. "Period 1", "Break" |
+| start_time | time | e.g. 08:00 |
+| end_time | time | e.g. 08:45 |
+| is_break | boolean | Default false (marks break/lunch slots) |
+| sort_order | integer | For display ordering |
+| created_at | timestamptz | Default now() |
 
-### 1. Landing Page (school-only branding)
+### 3. `timetable_entries`
+The actual timetable slots -- links a class + day + period to a subject and optionally a teacher.
 
-**Hero.tsx** -- Remove the 3-system pills (Business, Workshop, School). Update headline from "One Platform for Every Industry" to school-focused messaging. Remove multi-system references.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| user_id | uuid | Tenant owner |
+| class_id | uuid | FK to school_classes |
+| subject_id | uuid | FK to school_subjects |
+| period_id | uuid | FK to school_periods |
+| teacher_id | uuid | FK to staff_members (optional) |
+| day_of_week | integer | 1=Monday ... 5=Friday |
+| room | text | Optional room/venue |
+| created_at | timestamptz | Default now() |
+| Unique constraint | | (class_id, period_id, day_of_week) -- one subject per slot |
 
-**Solutions.tsx** -- Remove Business and Workshop solution cards. Show only the School Management solution, or replace with a features showcase focused on school capabilities.
+All three tables will have standard RLS policies: users can only CRUD their own records (`auth.uid() = user_id`).
 
-**PricingTable.tsx** -- Remove Business and Workshop tabs. Show only School pricing tiers directly (no tab switcher needed).
+## New Files
 
-### 2. Signup Flow
+### Hook: `src/hooks/useTimetable.tsx`
+- CRUD for subjects, periods, and timetable entries
+- Fetches all three tables in parallel
+- Provides helper functions: `createSubject`, `updateSubject`, `deleteSubject`, `createPeriod`, `updatePeriod`, `deletePeriod`, `createEntry`, `updateEntry`, `deleteEntry`
 
-**SystemSelector.tsx** -- Skip this step entirely since there's only one system now. Auto-select 'school'.
+### Page: `src/pages/Timetable.tsx`
+Main timetable page with three tabs:
 
-**PackageTierSelector.tsx** -- Remove Business and Workshop tier configs. Only keep School tiers. Remove "Core CRM & Clients" from the feature lists, replace with school-relevant naming.
+**Tab 1 -- Timetable View (default)**
+- Class selector dropdown at the top
+- Weekly grid: days as columns (Mon-Fri), periods as rows
+- Each cell shows subject name (color-coded), teacher name, and room
+- Empty cells show a "+" button to quickly add an entry
+- Click an entry to edit or delete it
 
-**Auth.tsx** -- Skip the system selection step, auto-set `selectedSystem = 'school'`. Go directly to package tier selection.
+**Tab 2 -- Subjects**
+- List of all subjects with name, short code, and color swatch
+- Add/Edit/Delete subjects via a dialog
+- Shows how many timetable slots use each subject
 
-**ModuleSelector.tsx** -- Filter to only show school and shared modules (already partially works via systemType prop).
+**Tab 3 -- Periods**
+- List of all time periods in order
+- Add/Edit/Delete periods via a dialog
+- Mark slots as "Break" (these render differently on the grid -- greyed out, spanning all columns)
 
-### 3. Navigation
+### Components
 
-**Sidebar.tsx** -- Remove: CRM, Quotes, Delivery Notes, Profitability, Tenders, Fleet, Workshop entries. Keep: Dashboard, Students, School Admin, School Fees, Invoices, Tasks, Staff, Accounting, Settings, Billing.
+| File | Purpose |
+|------|---------|
+| `src/components/timetable/TimetableGrid.tsx` | The weekly grid view component |
+| `src/components/timetable/SubjectManagement.tsx` | Subject CRUD list + dialog |
+| `src/components/timetable/PeriodManagement.tsx` | Period CRUD list + dialog |
+| `src/components/timetable/TimetableEntryDialog.tsx` | Dialog to add/edit a timetable entry (select subject, teacher, room) |
 
-**BottomNav.tsx** -- Replace CRM and Quotes with school-relevant items (Students, School Fees). Keep Home and More.
+## Navigation Integration
 
-**MoreMenuSheet.tsx** -- Remove: Delivery Notes, Tenders, Profitability, Fleet, Workshop entries. Keep: Tasks, Accounting, Staff, School Admin, Students, School Fees, Settings, Billing.
+- Add a "Timetable" entry to the Sidebar with a `Clock` icon and module key `'school_admin'` (reusing the school_admin module so no new module is needed)
+- Add it to the MoreMenuSheet for mobile
+- Add `/timetable` route to App.tsx
+- Add the route to the `moreRoutes` array in BottomNav.tsx
 
-### 4. Dashboard
-
-**Dashboard.tsx** -- Remove BusinessDashboard and WorkshopDashboard. Always render SchoolDashboard. Remove imports for LeadsPipeline, TendersList, TenderSourceLinks.
-
-### 5. Routes
-
-**App.tsx** -- Remove routes: `/crm`, `/quotes`, `/delivery-notes`, `/tenders`, `/profitability`, `/fleet`, `/workshop`. Remove corresponding page imports.
-
-### 6. Database
-
-- Deactivate non-school modules in `platform_modules` (`is_active = false`) for: `core_crm`, `quotes`, `delivery_notes`, `tenders`, `profitability`, `fleet`, `workshop`
-- Clean up `user_modules` by deactivating entries referencing these modules
-- Keep `invoices`, `tasks`, `accounting`, `staff` as shared modules that schools use
-
-### 7. File Cleanup (not deleting, just disconnecting)
-
-The following page files will have their route entries removed from App.tsx so they become unreachable:
-- `src/pages/CRM.tsx`
-- `src/pages/Quotes.tsx`
-- `src/pages/DeliveryNotes.tsx`
-- `src/pages/Tenders.tsx`
-- `src/pages/Profitability.tsx`
-- `src/pages/Fleet.tsx`
-- `src/pages/Workshop.tsx`
-- `src/pages/WorkshopDashboard.tsx`
-
-## Technical Details
-
-### Database Migration
-
-```text
--- Deactivate non-school modules
-UPDATE platform_modules SET is_active = false 
-WHERE key IN ('core_crm', 'quotes', 'delivery_notes', 'tenders', 'profitability', 'fleet', 'workshop');
-
--- Deactivate user_modules entries for these modules
-UPDATE user_modules SET is_active = false 
-WHERE module_id IN (
-  SELECT id FROM platform_modules 
-  WHERE key IN ('core_crm', 'quotes', 'delivery_notes', 'tenders', 'profitability', 'fleet', 'workshop')
-);
-```
-
-### Auth.tsx Signup Flow Changes
-
-Skip the system selection step. When user enters signup:
-- Auto-set `selectedSystem = 'school'`
-- Go straight to the package tier step (`signupStep = 'tier'`)
-- The tier selector only shows school tiers
-- Custom build only shows school + shared modules
-
-### Navigation Restructure
-
-Sidebar navigation reduced to:
-
-```text
-Dashboard (always visible)
-Students (module: students)
-School Admin (module: school_admin)
-School Fees (module: school_fees)
-Invoices (module: invoices)
-Tasks (module: tasks)
-Staff (module: staff)
-Accounting (module: accounting)
-Settings (always visible)
-Billing (always visible)
-```
-
-Bottom nav items:
-
-```text
-Home | Students | School Fees | Invoices | More
-```
-
-### Files Modified
+## Modified Files
 
 | File | Change |
 |------|--------|
-| Database migration | Deactivate non-school modules |
-| `src/App.tsx` | Remove 7 route entries and imports |
-| `src/components/landing/Hero.tsx` | School-only branding |
-| `src/components/landing/Solutions.tsx` | School-only solution |
-| `src/components/landing/PricingTable.tsx` | School-only pricing |
-| `src/components/auth/SystemSelector.tsx` | No longer used (skipped) |
-| `src/components/auth/PackageTierSelector.tsx` | School tiers only |
-| `src/pages/Auth.tsx` | Skip system selection, auto-set school |
-| `src/components/layout/Sidebar.tsx` | Remove non-school nav items |
-| `src/components/layout/BottomNav.tsx` | School-focused bottom nav |
-| `src/components/layout/MoreMenuSheet.tsx` | Remove non-school items |
-| `src/pages/Dashboard.tsx` | Always render SchoolDashboard |
+| `src/App.tsx` | Add `/timetable` route |
+| `src/components/layout/Sidebar.tsx` | Add Timetable nav item |
+| `src/components/layout/BottomNav.tsx` | Add `/timetable` to moreRoutes |
+| `src/components/layout/MoreMenuSheet.tsx` | Add Timetable menu item |
+
+## UI Design
+
+The timetable grid will follow the existing card-based design system:
+
+```text
++----------+----------+----------+----------+----------+
+|          |  Monday  | Tuesday  |Wednesday | Thursday |  Friday  |
++----------+----------+----------+----------+----------+
+| 08:00    | Math     | English  | Science  | Math     | Art      |
+| 08:45    | Mr. K    | Ms. T    | Mr. L    | Mr. K    | Ms. R    |
++----------+----------+----------+----------+----------+
+| 08:50    | English  | Math     | History  | Science  | Math     |
+| 09:35    | Ms. T    | Mr. K    | Ms. P    | Mr. L    | Mr. K    |
++----------+----------+----------+----------+----------+
+| BREAK    |          10:30 - 11:00                     |
++----------+----------+----------+----------+----------+
+```
+
+- Subject cells are color-coded using the subject's assigned color
+- Break periods span the full row width with a muted background
+- On mobile, the grid scrolls horizontally with the period column fixed
+- Empty slots show a dashed border with a "+" icon for quick entry creation
 
