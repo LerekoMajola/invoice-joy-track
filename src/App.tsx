@@ -20,6 +20,7 @@ import Accounting from "./pages/Accounting";
 import Students from "./pages/Students";
 import SchoolAdmin from "./pages/SchoolAdmin";
 import SchoolFees from "./pages/SchoolFees";
+import Timetable from "./pages/Timetable";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentRequired from "./pages/PaymentRequired";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
             <Route path="/school-admin" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/school-fees" element={<ProtectedRoute><SchoolFees /></ProtectedRoute>} />
+            <Route path="/timetable" element={<ProtectedRoute><Timetable /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

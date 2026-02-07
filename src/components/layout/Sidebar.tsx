@@ -10,7 +10,8 @@ import {
   Calculator,
   GraduationCap,
   School,
-  Wallet
+  Wallet,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students' },
   { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin' },
   { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees' },
+  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin' },
   { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices' },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks' },
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff' },
