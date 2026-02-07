@@ -1,45 +1,55 @@
- import { useState } from 'react';
- import { useForm } from 'react-hook-form';
- import { zodResolver } from '@hookform/resolvers/zod';
- import { z } from 'zod';
- import { Building2, Upload, X } from 'lucide-react';
- import {
-   Dialog,
-   DialogContent,
-   DialogDescription,
-   DialogHeader,
-   DialogTitle,
- } from '@/components/ui/dialog';
- import {
-   Form,
-   FormControl,
-   FormField,
-   FormItem,
-   FormLabel,
-   FormMessage,
- } from '@/components/ui/form';
- import { Input } from '@/components/ui/input';
- import { Button } from '@/components/ui/button';
- import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Building2, Upload, X, Wrench, GraduationCap } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useSubscription, type SystemType } from '@/hooks/useSubscription';
+
+const onboardingSchema = z.object({
+  company_name: z.string().min(1, 'Company name is required').max(100),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().max(20).optional().or(z.literal('')),
+});
+
+type OnboardingFormData = z.infer<typeof onboardingSchema>;
+
+const SYSTEM_CONFIG: Record<SystemType, { icon: React.ElementType; title: string; entityLabel: string }> = {
+  business: { icon: Building2, title: "Let's set up your business", entityLabel: 'Company' },
+  workshop: { icon: Wrench, title: "Let's set up your workshop", entityLabel: 'Workshop' },
+  school: { icon: GraduationCap, title: "Let's set up your school", entityLabel: 'School' },
+};
+
+interface CompanyOnboardingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
  
- const onboardingSchema = z.object({
-   company_name: z.string().min(1, 'Company name is required').max(100),
-   email: z.string().email('Invalid email').optional().or(z.literal('')),
-   phone: z.string().max(20).optional().or(z.literal('')),
- });
- 
- type OnboardingFormData = z.infer<typeof onboardingSchema>;
- 
- interface CompanyOnboardingDialogProps {
-   open: boolean;
-   onOpenChange: (open: boolean) => void;
- }
- 
- export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardingDialogProps) {
-   const { saveProfile, isSaving, uploadAsset } = useCompanyProfile();
-   const [logoFile, setLogoFile] = useState<File | null>(null);
-   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-   const [isUploading, setIsUploading] = useState(false);
+export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardingDialogProps) {
+  const { saveProfile, isSaving, uploadAsset } = useCompanyProfile();
+  const { systemType } = useSubscription();
+  const config = SYSTEM_CONFIG[systemType];
+  const Icon = config.icon;
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
  
    const form = useForm<OnboardingFormData>({
      resolver: zodResolver(onboardingSchema),
@@ -96,15 +106,15 @@
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>
        <DialogContent className="sm:max-w-md">
-         <DialogHeader>
-           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-             <Building2 className="h-6 w-6 text-primary" />
-           </div>
-           <DialogTitle className="text-center text-xl">Welcome! Let's set up your business</DialogTitle>
-           <DialogDescription className="text-center">
-             Tell us a bit about your company to get started. You can always update these details later in Settings.
-           </DialogDescription>
-         </DialogHeader>
+        <DialogHeader>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Icon className="h-6 w-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">Welcome! {config.title}</DialogTitle>
+            <DialogDescription className="text-center">
+              Tell us a bit about your {config.entityLabel.toLowerCase()} to get started. You can always update these details later in Settings.
+            </DialogDescription>
+          </DialogHeader>
  
          <Form {...form}>
            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
@@ -143,19 +153,19 @@
              </div>
  
              {/* Company Name */}
-             <FormField
-               control={form.control}
-               name="company_name"
-               render={({ field }) => (
-                 <FormItem>
-                   <FormLabel>Company Name *</FormLabel>
-                   <FormControl>
-                     <Input placeholder="Your Company Name" {...field} />
-                   </FormControl>
-                   <FormMessage />
-                 </FormItem>
-               )}
-             />
+              <FormField
+                control={form.control}
+                name="company_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{config.entityLabel} Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder={`Your ${config.entityLabel} Name`} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
  
              {/* Email */}
              <FormField
