@@ -34,7 +34,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/delivery-notes', '/tasks', '/tenders', '/profitability', '/accounting', '/staff', '/billing', '/fleet'];
+  const moreRoutes = ['/delivery-notes', '/tasks', '/tenders', '/profitability', '/accounting', '/staff', '/billing', '/fleet', '/workshop'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (

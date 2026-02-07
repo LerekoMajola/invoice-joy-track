@@ -800,6 +800,169 @@ export type Database = {
           },
         ]
       }
+      job_card_line_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          item_type: string
+          job_card_id: string
+          part_number: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          item_type?: string
+          job_card_id: string
+          part_number?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          item_type?: string
+          job_card_id?: string
+          part_number?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_card_line_items_job_card_id_fkey"
+            columns: ["job_card_id"]
+            isOneToOne: false
+            referencedRelation: "job_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_cards: {
+        Row: {
+          assigned_technician_id: string | null
+          assigned_technician_name: string | null
+          client_id: string | null
+          client_name: string
+          completed_at: string | null
+          created_at: string
+          diagnosis: string | null
+          estimated_completion: string | null
+          id: string
+          invoice_id: string | null
+          job_card_number: string
+          notes: string | null
+          priority: string
+          recommended_work: string | null
+          reported_issue: string | null
+          source_quote_id: string | null
+          status: string
+          tax_rate: number
+          total: number
+          updated_at: string
+          user_id: string
+          vehicle_color: string | null
+          vehicle_make: string | null
+          vehicle_mileage: string | null
+          vehicle_model: string | null
+          vehicle_reg: string | null
+          vehicle_vin: string | null
+          vehicle_year: string | null
+        }
+        Insert: {
+          assigned_technician_id?: string | null
+          assigned_technician_name?: string | null
+          client_id?: string | null
+          client_name: string
+          completed_at?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          estimated_completion?: string | null
+          id?: string
+          invoice_id?: string | null
+          job_card_number: string
+          notes?: string | null
+          priority?: string
+          recommended_work?: string | null
+          reported_issue?: string | null
+          source_quote_id?: string | null
+          status?: string
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_mileage?: string | null
+          vehicle_model?: string | null
+          vehicle_reg?: string | null
+          vehicle_vin?: string | null
+          vehicle_year?: string | null
+        }
+        Update: {
+          assigned_technician_id?: string | null
+          assigned_technician_name?: string | null
+          client_id?: string | null
+          client_name?: string
+          completed_at?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          estimated_completion?: string | null
+          id?: string
+          invoice_id?: string | null
+          job_card_number?: string
+          notes?: string | null
+          priority?: string
+          recommended_work?: string | null
+          reported_issue?: string | null
+          source_quote_id?: string | null
+          status?: string
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_mileage?: string | null
+          vehicle_model?: string | null
+          vehicle_reg?: string | null
+          vehicle_vin?: string | null
+          vehicle_year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_cards_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_cards_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_cards_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_cards_source_quote_id_fkey"
+            columns: ["source_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_activities: {
         Row: {
           activity_type: string
@@ -1162,6 +1325,7 @@ export type Database = {
           lead_time: string | null
           notes: string | null
           quote_number: string
+          source_job_card_id: string | null
           status: string | null
           tax_rate: number | null
           terms_and_conditions: string | null
@@ -1180,6 +1344,7 @@ export type Database = {
           lead_time?: string | null
           notes?: string | null
           quote_number: string
+          source_job_card_id?: string | null
           status?: string | null
           tax_rate?: number | null
           terms_and_conditions?: string | null
@@ -1198,6 +1363,7 @@ export type Database = {
           lead_time?: string | null
           notes?: string | null
           quote_number?: string
+          source_job_card_id?: string | null
           status?: string | null
           tax_rate?: number | null
           terms_and_conditions?: string | null
@@ -1212,6 +1378,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_source_job_card_id_fkey"
+            columns: ["source_job_card_id"]
+            isOneToOne: false
+            referencedRelation: "job_cards"
             referencedColumns: ["id"]
           },
         ]
