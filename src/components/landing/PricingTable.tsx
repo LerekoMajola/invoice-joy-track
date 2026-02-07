@@ -18,13 +18,17 @@ interface PackageTier {
 interface SystemPackages {
   system: string;
   label: string;
+  subtitle: string;
+  gradient: string;
   tiers: PackageTier[];
 }
 
 const packages: SystemPackages[] = [
   {
     system: 'business',
-    label: 'Business',
+    label: 'Business Management',
+    subtitle: 'For service companies, contractors & SMEs',
+    gradient: 'from-primary to-violet',
     tiers: [
       {
         name: 'Starter',
@@ -82,7 +86,9 @@ const packages: SystemPackages[] = [
   },
   {
     system: 'workshop',
-    label: 'Workshop',
+    label: 'Workshop Management',
+    subtitle: 'For auto workshops & repair centres',
+    gradient: 'from-coral to-warning',
     tiers: [
       {
         name: 'Starter',
@@ -140,7 +146,9 @@ const packages: SystemPackages[] = [
   },
   {
     system: 'school',
-    label: 'School',
+    label: 'School Management',
+    subtitle: 'For private schools & academies',
+    gradient: 'from-info to-cyan',
     tiers: [
       {
         name: 'Starter',
@@ -292,20 +300,28 @@ export function PricingTable() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mx-auto mb-12 flex w-fit gap-1 bg-muted/60 p-1 rounded-xl">
-            <TabsTrigger value="business" className="rounded-lg px-6 py-2.5 text-sm font-medium">
-              Business
-            </TabsTrigger>
-            <TabsTrigger value="workshop" className="rounded-lg px-6 py-2.5 text-sm font-medium">
-              Workshop
-            </TabsTrigger>
-            <TabsTrigger value="school" className="rounded-lg px-6 py-2.5 text-sm font-medium">
-              School
-            </TabsTrigger>
+          <TabsList className="mx-auto mb-10 flex w-fit gap-2 bg-muted/60 p-1.5 rounded-2xl">
+            {packages.map((pkg) => (
+              <TabsTrigger
+                key={pkg.system}
+                value={pkg.system}
+                className="rounded-xl px-6 sm:px-8 py-3 text-sm sm:text-base font-semibold data-[state=active]:shadow-lg transition-all"
+              >
+                {pkg.system === 'business' ? 'Business' : pkg.system === 'workshop' ? 'Workshop' : 'School'}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {packages.map((systemPkg) => (
             <TabsContent key={systemPkg.system} value={systemPkg.system}>
+              {/* System heading with gradient */}
+              <div className="text-center mb-10">
+                <h3 className={`font-display text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${systemPkg.gradient} bg-clip-text text-transparent mb-2`}>
+                  {systemPkg.label}
+                </h3>
+                <p className="text-muted-foreground">{systemPkg.subtitle}</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
                 {systemPkg.tiers.map((tier) => (
                   <PricingCard key={tier.name} tier={tier} />
