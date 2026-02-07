@@ -1,139 +1,123 @@
 
 
-# System-Aware Signup Flow with Package Selection
+# Simple Mobile Money Payment Flow
 
-## Current State
+## The Approach
 
-Right now, the signup process works like this:
-1. User enters email + password
-2. After account creation, they see a flat grid of **all** individual modules and manually pick which ones they want
-3. Everyone lands on the **same** dashboard (business-focused with quotes, invoices, tenders, leads)
+No Stripe, no external integrations. Just clear M-Pesa/bank transfer instructions and a paywall that blocks access when the trial expires. You manually activate subscriptions from your admin panel after confirming payment.
 
-There is no concept of a "system type" -- the platform does not know whether a user signed up for Business, Workshop, or School. The sidebar and bottom nav simply filter items based on which individual modules are active, but the dashboard itself is always the same business-centric layout.
+## What Gets Built
 
-## What Needs to Change
+### 1. Paywall Page
 
-### 1. Add a "system_type" column to track the user's chosen system
+A new `/payment-required` page that users see when their 7-day trial expires. It shows:
 
-**Database migration:** Add a `system_type` text column to the `subscriptions` table with allowed values: `business`, `workshop`, `school`.
+- "Your trial has ended" message
+- Their selected package name and monthly price
+- Clear M-Pesa payment instructions (paybill number, account reference)
+- Bank transfer details as a fallback
+- A "I've Made Payment" button that notifies you (the admin)
+- A unique payment reference based on their user ID so you can match payments
 
-This ties the system choice to the subscription record so the platform knows which system the user is on.
+### 2. Trial Enforcement
 
-### 2. Redesign the signup flow into 3 steps
+Update the `ProtectedRoute` to check if the trial has expired. If it has and the subscription is not `active`, redirect to the paywall page instead of letting them into the app.
 
-Replace the current 2-step flow (credentials then module picker) with a 3-step flow:
+### 3. Payment Notification to Admin
 
-**Step 1 -- Choose Your System** (new step)
-- Three large, visually distinct cards: Business, Workshop, School
-- Each card shows the system icon, name, short description, and "Starting from M350/mo" pricing
-- Uses the same gradient colours from the landing page (purple for Business, coral for Workshop, blue for School)
-- User clicks one to proceed
+When a user clicks "I've Made Payment," a notification is inserted into the `notifications` table for the admin. This way you see it in your admin panel and can verify the payment, then flip the subscription to "active."
 
-**Step 2 -- Choose Your Package Tier**
-- Shows the 3 tiers (Starter / Professional / Enterprise) for the selected system only
-- Same layout as the landing page pricing cards but adapted for the signup context
-- Each card lists included modules, price, and a "Select" button
-- Also includes an "Or customise your own" link at the bottom that opens the existing module picker
+### 4. Updated Billing Page
 
-**Step 3 -- Enter Credentials**
-- Standard email + password form (the existing form, moved to step 3)
-- After account creation, the selected modules are saved to `user_modules` and the system_type + plan tier are saved to `subscriptions`
-
-### 3. System-aware dashboard
-
-Create a routing layer that shows the correct dashboard based on the user's `system_type`:
-
-- **Business users** -- see the current dashboard (quotes, invoices, tenders, leads pipeline, etc.)
-- **Workshop users** -- see a workshop-focused dashboard with Job Card stats, active repairs, workshop queue, and quick-create job card button
-- **School users** -- see a school-focused dashboard with student count, fee collection stats, upcoming terms, and announcements
-
-### 4. System-aware onboarding dialog
-
-Update the `CompanyOnboardingDialog` to adapt its wording based on system type:
-- Business: "Let's set up your business"
-- Workshop: "Let's set up your workshop"
-- School: "Let's set up your school"
+Replace the vague "contact us" section with proper payment instructions:
+- M-Pesa paybill number and how to pay
+- Bank transfer details (bank name, account number, branch)
+- The user's unique payment reference
+- Current subscription status (trialing / active / expired)
 
 ---
 
-## Files to Create / Modify
-
-### Database
-- **Migration**: Add `system_type text DEFAULT 'business'` column to `subscriptions` table
-
-### New Files
-- `src/components/auth/SystemSelector.tsx` -- Step 1: Three system cards
-- `src/components/auth/PackageTierSelector.tsx` -- Step 2: Three tier cards for the chosen system
-- `src/pages/WorkshopDashboard.tsx` -- Workshop-specific dashboard layout
-- `src/pages/SchoolDashboard.tsx` -- School-specific dashboard layout
-
-### Modified Files
-- `src/pages/Auth.tsx` -- Rewrite signup flow to use 3 steps (system choice, package tier, credentials)
-- `src/pages/Dashboard.tsx` -- Add system_type detection and render the correct dashboard variant
-- `src/hooks/useSubscription.tsx` -- Expose `systemType` from the subscription record
-- `src/components/onboarding/CompanyOnboardingDialog.tsx` -- Adapt welcome text by system type
-- `src/integrations/supabase/types.ts` -- Will auto-update after migration
-
-### Unchanged
-- `src/components/auth/ModuleSelector.tsx` -- Kept as the "custom build" fallback
-- `src/components/landing/PricingTable.tsx` -- No changes (landing page stays the same)
-- `src/components/layout/Sidebar.tsx` -- Already module-gated, will naturally show correct items
-- `src/components/layout/BottomNav.tsx` -- Already module-gated
-
----
-
-## Detailed Flow
+## User Flow
 
 ```text
-Landing Page
+Trial expires (day 7)
     |
     v
-[Start Free Trial] button
+User tries to access any page
     |
     v
-/auth (signup mode)
+ProtectedRoute detects expired trial
     |
     v
-Step 1: "What are you managing?"
-  +------------------+  +------------------+  +------------------+
-  |   Business       |  |   Workshop       |  |   School         |
-  |   Briefcase icon |  |   Wrench icon    |  |   GraduationCap  |
-  |   From M350/mo   |  |   From M450/mo   |  |   From M720/mo   |
-  +------------------+  +------------------+  +------------------+
+Redirect to /payment-required
     |
-    v  (user picks one)
-Step 2: "Choose your package"
-  Shows 3 tiers for that system (Starter / Professional / Enterprise)
-  + "Or build your own" link at bottom
+    +-- Shows M-Pesa instructions
+    |   "Send M350 to Paybill 123456"
+    |   "Account: REF-abc123"
     |
-    v  (user picks a tier)
-Step 3: "Create your account"
-  Email + Password form
+    +-- [I've Made Payment] button
+    |       |
+    |       v
+    |   Notification sent to admin
+    |   "User X says they've paid (REF-abc123)"
     |
-    v  (on submit)
-  - Create auth account
-  - Insert user_modules rows for the selected tier's modules
-  - Insert/update subscription with system_type + plan tier
-  - Redirect to /dashboard
-    |
-    v
-Dashboard detects system_type and renders:
-  - Business dashboard (current)
-  - Workshop dashboard (job card focused)
-  - School dashboard (student/fee focused)
+    +-- Admin checks M-Pesa statement
+    |       |
+    |       v
+    |   Admin opens admin panel > Edit Subscription > Set to "Active"
+    |       |
+    |       v
+    |   User refreshes and gets full access
 ```
 
 ---
 
-## Workshop Dashboard Content
-- **Stats**: Active Job Cards, Completed This Month, Revenue This Month, Pending Quotes
-- **Active Repairs Queue**: List of in-progress job cards with vehicle info and status
-- **Quick Actions**: Create Job Card, Create Quote, Create Invoice
-- **Recent Activity**: Latest job card updates
+## Files to Create
 
-## School Dashboard Content
-- **Stats**: Total Students, Fee Collection Rate, Active Terms, Pending Payments
-- **Fee Collection Overview**: Progress bar showing collected vs outstanding
-- **Upcoming Events**: Term dates, announcements
-- **Quick Actions**: Record Payment, Add Student, Create Invoice
+| File | Purpose |
+|------|---------|
+| `src/pages/PaymentRequired.tsx` | Paywall page with M-Pesa instructions and "I've paid" button |
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/layout/ProtectedRoute.tsx` | Add trial-expiry check; redirect to `/payment-required` when expired |
+| `src/pages/Billing.tsx` | Replace "contact us" with proper M-Pesa and bank transfer instructions |
+| `src/App.tsx` | Add `/payment-required` route |
+| `src/hooks/useSubscription.tsx` | Add `needsPayment` helper that combines trial-expired + not-active checks |
+
+## No Changes Needed
+
+- No database migrations (existing `subscriptions` table has everything we need)
+- No edge functions
+- No external API keys or integrations
+- Admin panel already supports editing subscription status
+
+---
+
+## Technical Details
+
+### ProtectedRoute Update
+
+The route guard will fetch the subscription and check:
+- If `status === 'trialing'` AND `trial_ends_at < now()` AND `status !== 'active'` then redirect to `/payment-required`
+- Active users pass through normally
+- Users still in their trial pass through normally
+
+### Payment Reference
+
+Generated from the user's ID: `REF-{first 8 chars of user_id}`. This gives each user a unique reference to quote when paying via M-Pesa so you can match payments easily.
+
+### "I've Made Payment" Button
+
+Inserts a row into the existing `notifications` table targeting the admin user. The notification includes the user's company name, payment reference, and amount. You will see this notification in the admin panel.
+
+### Billing Page Payment Section
+
+Two clear sections:
+1. **M-Pesa**: Step-by-step instructions -- dial `*111#`, select Pay Bill, enter number, enter reference, enter amount, confirm
+2. **Bank Transfer**: Bank name, account number, branch code, and reference to include
+
+You will need to provide your actual M-Pesa paybill number and bank details -- placeholder values will be used initially that you can update later in Settings.
 
