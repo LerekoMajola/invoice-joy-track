@@ -57,8 +57,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const filteredNavigation = navigation.filter((item) => {
     // Always show items without a module key
     if (!item.moduleKey) return true;
-    // If user has no modules yet (legacy/loading), show everything
-    if (userModules.length === 0) return true;
+    // If user has no modules yet, only show base nav (not everything)
+    if (userModules.length === 0) return false;
     // Gate by subscribed module
     return hasModule(item.moduleKey);
   });

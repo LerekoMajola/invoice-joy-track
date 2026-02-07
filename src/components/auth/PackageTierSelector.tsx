@@ -31,7 +31,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Starter',
         price: 350,
         target: 'Growing service companies',
-        moduleKeys: ['crm', 'clients', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability'],
+        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Quotes', included: true },
@@ -50,7 +50,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         price: 520,
         target: 'Established contractors',
         popular: true,
-        moduleKeys: ['crm', 'clients', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff'],
+        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Quotes', included: true },
@@ -68,7 +68,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Enterprise',
         price: 680,
         target: 'Large operations & teams',
-        moduleKeys: ['crm', 'clients', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff', 'fleet'],
+        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff', 'fleet'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Quotes', included: true },
@@ -92,7 +92,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Starter',
         price: 450,
         target: 'Small repair shops',
-        moduleKeys: ['crm', 'clients', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes'],
+        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Workshop (Job Cards)', included: true },
@@ -111,7 +111,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         price: 650,
         target: 'Busy workshops',
         popular: true,
-        moduleKeys: ['crm', 'clients', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting'],
+        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Workshop (Job Cards)', included: true },
@@ -129,7 +129,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Enterprise',
         price: 850,
         target: 'Multi-bay service centres',
-        moduleKeys: ['crm', 'clients', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting', 'fleet'],
+        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting', 'fleet'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'Workshop (Job Cards)', included: true },
@@ -153,7 +153,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Starter',
         price: 720,
         target: 'Small private schools',
-        moduleKeys: ['crm', 'clients', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff'],
+        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'School Admin', included: true },
@@ -172,7 +172,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         price: 950,
         target: 'Mid-size academies',
         popular: true,
-        moduleKeys: ['crm', 'clients', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability'],
+        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'School Admin', included: true },
@@ -190,7 +190,7 @@ const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
         name: 'Enterprise',
         price: 1200,
         target: 'Large schools & campuses',
-        moduleKeys: ['crm', 'clients', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability', 'fleet'],
+        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability', 'fleet'],
         features: [
           { name: 'Core CRM & Clients', included: true },
           { name: 'School Admin', included: true },

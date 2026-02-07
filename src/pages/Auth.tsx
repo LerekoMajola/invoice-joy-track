@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { TrustBadges } from '@/components/auth/TrustBadges';
 import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
@@ -14,7 +16,7 @@ import { ModuleSelector } from '@/components/auth/ModuleSelector';
 import { SystemSelector, type SystemType } from '@/components/auth/SystemSelector';
 import { PackageTierSelector } from '@/components/auth/PackageTierSelector';
 
-type SignupStep = 'system' | 'package' | 'credentials' | 'custom-modules';
+type SignupStep = 'system' | 'package' | 'review' | 'credentials' | 'custom-modules';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -60,7 +62,7 @@ export default function Auth() {
   const handleTierSelect = async (tierName: string, moduleKeys: string[]) => {
     setSelectedTier(tierName);
     setSelectedModuleKeys(moduleKeys);
-    setSignupStep('credentials');
+    setSignupStep('review');
   };
 
   const handleCustomBuild = () => {
@@ -246,6 +248,126 @@ export default function Auth() {
             onBack={() => setSignupStep('system')}
             onCustomBuild={handleCustomBuild}
           />
+        </div>
+      );
+    }
+
+    if (signupStep === 'review' && selectedSystem && selectedTier) {
+      const systemLabels: Record<SystemType, string> = {
+        business: 'Business Management',
+        workshop: 'Workshop Management',
+        school: 'School Management',
+      };
+      const systemIcons: Record<SystemType, React.ReactNode> = {
+        business: <Briefcase className="h-6 w-6" />,
+        workshop: <Wrench className="h-6 w-6" />,
+        school: <GraduationCap className="h-6 w-6" />,
+      };
+      const systemGradients: Record<SystemType, string> = {
+        business: 'from-primary to-violet',
+        workshop: 'from-coral to-warning',
+        school: 'from-info to-cyan',
+      };
+
+      // Map module keys to readable names
+      const moduleNameMap: Record<string, string> = {
+        core_crm: 'Core CRM & Clients',
+        quotes: 'Quotes',
+        invoices: 'Invoices',
+        tasks: 'Task Management',
+        delivery_notes: 'Delivery Notes',
+        profitability: 'Profitability Tracking',
+        tenders: 'Tender Tracking',
+        accounting: 'Accounting',
+        staff: 'Staff & HR',
+        fleet: 'Fleet Management',
+        workshop: 'Workshop (Job Cards)',
+        school_admin: 'School Admin',
+        students: 'Student Management',
+        school_fees: 'School Fees',
+      };
+
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-md animate-slide-up">
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-4">
+                <PlatformLogo className="h-12 w-auto" />
+              </div>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+                Review your selection
+              </h1>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Confirm your package before creating your account
+              </p>
+            </div>
+
+            <div className="rounded-2xl border-2 border-border bg-card p-6 space-y-6">
+              {/* System Type */}
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-white',
+                  systemGradients[selectedSystem]
+                )}>
+                  {systemIcons[selectedSystem]}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-foreground">{systemLabels[selectedSystem]}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedTier}
+                    </Badge>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSignupStep('package')}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Included Modules */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-3">Included modules</p>
+                <ul className="space-y-2">
+                  {selectedModuleKeys.map((key) => (
+                    <li key={key} className="flex items-center gap-2.5 text-sm">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-foreground">{moduleNameMap[key] || key}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-2 border-t border-border text-center">
+                <p className="text-xs text-muted-foreground">
+                  7-day free trial · No credit card required
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <Button
+                variant="gradient"
+                className="w-full h-12 rounded-xl text-base font-semibold"
+                onClick={() => setSignupStep('credentials')}
+              >
+                Continue to create account
+              </Button>
+              <button
+                type="button"
+                onClick={() => setSignupStep('package')}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Change package
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
