@@ -1,4 +1,7 @@
 project_id = "upjtsekkpjgikrrlfoxv"
  
- [functions.check-tender-links]
- verify_jwt = false
+[functions.check-tender-links]
+verify_jwt = false
+
+[functions.export-data-backup]
+verify_jwt = false

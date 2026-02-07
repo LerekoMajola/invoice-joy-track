@@ -11,11 +11,28 @@ import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/us
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
 import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell } from 'lucide-react';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
+  const [isBackingUp, setIsBackingUp] = useState(false);
+
+  const handleSendBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-data-backup');
+      if (error) throw error;
+      toast.success('Backup sent! Check your email for the CSV attachments.');
+    } catch (err: any) {
+      console.error('Backup error:', err);
+      toast.error(err.message || 'Failed to send backup. Please try again.');
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
   
   const [formData, setFormData] = useState<Partial<CompanyProfileInput>>({
     company_name: '',
@@ -280,6 +297,46 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <PushNotificationToggle />
+          </CardContent>
+        </Card>
+
+        {/* Data Backup */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Data Backup
+            </CardTitle>
+            <CardDescription>
+              Your data is automatically backed up and emailed to you every Sunday. You can also trigger a manual backup at any time.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium">Send Backup Now</p>
+                <p className="text-xs text-muted-foreground">
+                  Export all your data as CSV files and send to your email
+                </p>
+              </div>
+              <Button
+                onClick={handleSendBackup}
+                disabled={isBackingUp}
+                variant="outline"
+              >
+                {isBackingUp ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    Send Backup
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
