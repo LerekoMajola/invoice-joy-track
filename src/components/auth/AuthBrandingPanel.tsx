@@ -42,7 +42,7 @@ export function AuthBrandingPanel() {
         {/* Trusted by badge */}
         <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <p className="text-white/60 text-sm">
-            Trusted by <span className="text-white font-semibold">50+</span> businesses
+            Trusted by <span className="text-white font-semibold">5000+</span> businesses
           </p>
         </div>
 
