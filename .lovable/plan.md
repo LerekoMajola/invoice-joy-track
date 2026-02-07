@@ -1,130 +1,160 @@
 
 
-# Add School Timetable Feature
+# Automated Weekly Data Backup via Email (All Systems)
 
 ## Overview
 
-Add a timetable management system that lets schools define subjects, create time periods (period slots), and assign subjects to specific class/day/period combinations. The timetable will be viewable as a weekly grid per class.
+Create a universal data backup system that works across all three system types (Business, Workshop, School). Each user receives a weekly email with CSV attachments of all their relevant data tables -- tailored to their system type. Users can also trigger a manual backup from Settings at any time.
 
-## New Database Tables
+## System-Aware Table Selection
 
-### 1. `school_subjects`
-Stores the subjects offered by the school (e.g., Mathematics, English, Science).
+The backup function will determine which tables to export based on the user's `system_type` from their subscription record.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | Primary key |
-| user_id | uuid | Tenant owner |
-| name | text | e.g. "Mathematics" |
-| short_code | text | e.g. "MATH" (optional, for compact grid display) |
-| color | text | Hex color for visual differentiation on the grid |
-| is_active | boolean | Default true |
-| created_at | timestamptz | Default now() |
+### Shared Tables (all systems)
 
-### 2. `school_periods`
-Defines the daily time slots (e.g., Period 1: 08:00-08:45, Break: 10:30-11:00).
+| Table | Description |
+|-------|-------------|
+| company_profiles | Company/school profile |
+| invoices + invoice_line_items | All invoices |
+| staff_members | Staff/teacher records |
+| expenses | Expense records |
+| tasks | Task records |
+| bank_accounts | Banking info |
+| contacts | Contact records |
+| tax_clearance_documents | Compliance docs |
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | Primary key |
-| user_id | uuid | Tenant owner |
-| name | text | e.g. "Period 1", "Break" |
-| start_time | time | e.g. 08:00 |
-| end_time | time | e.g. 08:45 |
-| is_break | boolean | Default false (marks break/lunch slots) |
-| sort_order | integer | For display ordering |
-| created_at | timestamptz | Default now() |
+### School-Only Tables
 
-### 3. `timetable_entries`
-The actual timetable slots -- links a class + day + period to a subject and optionally a teacher.
+| Table | Description |
+|-------|-------------|
+| students | Student records |
+| school_classes | Class definitions |
+| school_subjects | Subject catalog |
+| school_periods | Period/time slot definitions |
+| timetable_entries | Timetable assignments |
+| academic_terms | Term definitions |
+| school_announcements | Announcements |
+| fee_schedules | Fee structure |
+| student_fee_payments | Payment records |
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | Primary key |
-| user_id | uuid | Tenant owner |
-| class_id | uuid | FK to school_classes |
-| subject_id | uuid | FK to school_subjects |
-| period_id | uuid | FK to school_periods |
-| teacher_id | uuid | FK to staff_members (optional) |
-| day_of_week | integer | 1=Monday ... 5=Friday |
-| room | text | Optional room/venue |
-| created_at | timestamptz | Default now() |
-| Unique constraint | | (class_id, period_id, day_of_week) -- one subject per slot |
+### Business-Only Tables
 
-All three tables will have standard RLS policies: users can only CRUD their own records (`auth.uid() = user_id`).
+| Table | Description |
+|-------|-------------|
+| clients | Client records |
+| leads | Lead/prospect records |
+| lead_activities | Lead activity timeline |
+| quotes + quote_line_items | Quotation data |
+| delivery_note_items | Delivery note details |
+| deal_stakeholders | Deal contacts |
+| deal_tasks | Deal-specific tasks |
+| tender_source_links | Tender tracking |
 
-## New Files
+### Workshop-Only Tables
 
-### Hook: `src/hooks/useTimetable.tsx`
-- CRUD for subjects, periods, and timetable entries
-- Fetches all three tables in parallel
-- Provides helper functions: `createSubject`, `updateSubject`, `deleteSubject`, `createPeriod`, `updatePeriod`, `deletePeriod`, `createEntry`, `updateEntry`, `deleteEntry`
+| Table | Description |
+|-------|-------------|
+| clients | Client records |
+| leads | Lead/prospect records |
+| job_cards | Job card records |
+| quotes + quote_line_items | Quotation data |
 
-### Page: `src/pages/Timetable.tsx`
-Main timetable page with three tabs:
+## New Backend Function
 
-**Tab 1 -- Timetable View (default)**
-- Class selector dropdown at the top
-- Weekly grid: days as columns (Mon-Fri), periods as rows
-- Each cell shows subject name (color-coded), teacher name, and room
-- Empty cells show a "+" button to quickly add an entry
-- Click an entry to edit or delete it
+### `supabase/functions/export-data-backup/index.ts`
 
-**Tab 2 -- Subjects**
-- List of all subjects with name, short code, and color swatch
-- Add/Edit/Delete subjects via a dialog
-- Shows how many timetable slots use each subject
+A dual-purpose function handling both manual and automated triggers:
 
-**Tab 3 -- Periods**
-- List of all time periods in order
-- Add/Edit/Delete periods via a dialog
-- Mark slots as "Break" (these render differently on the grid -- greyed out, spanning all columns)
+**Manual mode** (user clicks button):
+1. Validate JWT from Authorization header
+2. Look up user's `system_type` from subscriptions table
+3. Query all relevant tables for that user
+4. Convert to CSV, send via Resend to their email
 
-### Components
+**Cron mode** (weekly schedule, no JWT):
+1. Fetch all users via `auth.admin.listUsers()`
+2. For each user, look up their `system_type`
+3. Query relevant tables, generate CSVs, send email
+4. Log results for each user
 
-| File | Purpose |
-|------|---------|
-| `src/components/timetable/TimetableGrid.tsx` | The weekly grid view component |
-| `src/components/timetable/SubjectManagement.tsx` | Subject CRUD list + dialog |
-| `src/components/timetable/PeriodManagement.tsx` | Period CRUD list + dialog |
-| `src/components/timetable/TimetableEntryDialog.tsx` | Dialog to add/edit a timetable entry (select subject, teacher, room) |
+### CSV Generation Logic
 
-## Navigation Integration
+- Header row with human-readable column names
+- Proper escaping (commas, quotes, newlines)
+- UTF-8 encoding
+- Dates preserved as ISO strings
+- Only non-empty tables included as attachments
 
-- Add a "Timetable" entry to the Sidebar with a `Clock` icon and module key `'school_admin'` (reusing the school_admin module so no new module is needed)
-- Add it to the MoreMenuSheet for mobile
-- Add `/timetable` route to App.tsx
-- Add the route to the `moreRoutes` array in BottomNav.tsx
+### Email Format
 
-## Modified Files
+- **From**: Configured Resend sender address
+- **Subject**: "Your [School/Business/Workshop] Data Backup - [date]"
+- **Body**: Summary with table names and row counts
+- **Attachments**: One CSV per non-empty table
 
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Add `/timetable` route |
-| `src/components/layout/Sidebar.tsx` | Add Timetable nav item |
-| `src/components/layout/BottomNav.tsx` | Add `/timetable` to moreRoutes |
-| `src/components/layout/MoreMenuSheet.tsx` | Add Timetable menu item |
+## Cron Schedule
 
-## UI Design
-
-The timetable grid will follow the existing card-based design system:
+A `pg_cron` job will call the function every Sunday at midnight UTC:
 
 ```text
-+----------+----------+----------+----------+----------+
-|          |  Monday  | Tuesday  |Wednesday | Thursday |  Friday  |
-+----------+----------+----------+----------+----------+
-| 08:00    | Math     | English  | Science  | Math     | Art      |
-| 08:45    | Mr. K    | Ms. T    | Mr. L    | Mr. K    | Ms. R    |
-+----------+----------+----------+----------+----------+
-| 08:50    | English  | Math     | History  | Science  | Math     |
-| 09:35    | Ms. T    | Mr. K    | Ms. P    | Mr. L    | Mr. K    |
-+----------+----------+----------+----------+----------+
-| BREAK    |          10:30 - 11:00                     |
-+----------+----------+----------+----------+----------+
+Schedule: 0 0 * * 0
+Target: export-data-backup function
 ```
 
-- Subject cells are color-coded using the subject's assigned color
-- Break periods span the full row width with a muted background
-- On mobile, the grid scrolls horizontally with the period column fixed
-- Empty slots show a dashed border with a "+" icon for quick entry creation
+This requires enabling `pg_cron` and `pg_net` extensions.
+
+## Settings Page Update
+
+Add a "Data Backup" card to `src/pages/Settings.tsx` with:
+- An icon and title ("Data Backup")
+- Description explaining the automatic weekly schedule
+- A "Send Backup Now" button for on-demand backup
+- Loading state while generating
+- Success/error toast notifications
+
+The card will be placed after the Notifications card.
+
+## Files
+
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/functions/export-data-backup/index.ts` | Create | Backend function with system-aware CSV export and Resend email |
+| `supabase/config.toml` | Update | Register the new function with `verify_jwt = false` |
+| `src/pages/Settings.tsx` | Update | Add Data Backup card with manual trigger button |
+| Database migration | Execute | Enable pg_cron + pg_net extensions, schedule weekly job |
+
+## Technical Details
+
+### Edge Function Authentication
+
+- Manual triggers: extract and validate JWT via `supabase.auth.getUser()`, export only that user's data
+- Cron triggers: no JWT present, uses service role key to iterate all users
+
+### System Type Resolution
+
+```text
+1. Query subscriptions table for user's system_type
+2. Default to 'business' if no subscription found
+3. Build table list: shared_tables + system_specific_tables
+4. Query each table with user_id filter
+```
+
+### Security
+
+- Each user only receives their own data (filtered by user_id)
+- Service role key used server-side to bypass RLS for efficient multi-table querying
+- No sensitive auth data (passwords, tokens) included in exports
+- Cron job uses the anon key for the HTTP call; the function uses service role internally
+
+### Dependencies
+
+- **RESEND_API_KEY**: Already configured as a secret
+- **pg_cron + pg_net**: Need to be enabled via migration
+- No new secrets required
+
+### Error Handling
+
+- If Resend fails for one user during cron, log the error and continue to the next user
+- If a specific table query fails, skip it and note it in the email body
+- Return detailed summary of successes and failures
 
