@@ -22,7 +22,7 @@ export function BottomNav() {
 
   const navItems = allNavItems.filter((item) => {
     if (!item.moduleKey) return true;
-    if (userModules.length === 0) return true;
+    if (userModules.length === 0) return false;
     return hasModule(item.moduleKey);
   });
 
