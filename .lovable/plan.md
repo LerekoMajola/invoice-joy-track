@@ -1,43 +1,33 @@
 
 
-# Fix Password Reset: Switch to Built-In Email System
+# Fix Logo Placement on Reset Password Page
 
-Replace the failing Resend-based password reset with the built-in authentication email system.
+Make the logo sit inside a solid white rounded container with generous padding, so it appears centered and comfortable.
 
----
+## Change
 
-## What Changes
+In `src/pages/ResetPassword.tsx` (line 130), update the `PlatformLogo` className:
 
-### 1. Update ResetPassword.tsx
-
-In `handleRequestReset`, replace the edge function call with:
-
+**From:**
 ```
-supabase.auth.resetPasswordForEmail(email, {
-  redirectTo: `${window.location.origin}/reset-password`,
-})
+h-16 w-auto rounded-xl p-3 bg-white/10
 ```
 
-This removes the dependency on the custom edge function and Resend entirely.
+**To:**
+```
+h-12 w-auto rounded-2xl p-5 bg-white shadow-sm
+```
 
-### 2. Delete the edge function
+This gives the logo:
+- A solid white background (not semi-transparent)
+- Larger padding (`p-5`) so the logo has breathing room
+- Slightly smaller logo (`h-12`) inside the larger white box for better proportion
+- Rounded corners (`rounded-2xl`) for a polished look
+- A subtle shadow for depth
 
-Remove `supabase/functions/send-password-reset/index.ts` since it is no longer needed.
-
----
-
-## Files Changed
+## File Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/ResetPassword.tsx` | Replace `supabase.functions.invoke('send-password-reset', ...)` with `supabase.auth.resetPasswordForEmail()` |
-| `supabase/functions/send-password-reset/index.ts` | Delete |
-
----
-
-## What Stays the Same
-
-- The entire reset password page UI (request form, update password form, success screen)
-- The recovery token detection logic in the useEffect hook
-- The password update flow using `supabase.auth.updateUser({ password })`
+| `src/pages/ResetPassword.tsx` | Update PlatformLogo className on line 130 |
 
