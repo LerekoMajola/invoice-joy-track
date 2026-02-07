@@ -1,60 +1,153 @@
 
 
-# Enable Auto-Confirm and Prevent Duplicate Email Signups
+# Remove Non-School Modules -- School-Only Platform
 
 ## Overview
 
-Two changes: enable auto-confirm so users can sign in immediately after signup (no email verification), and properly detect duplicate email addresses during signup.
+Transform the platform from a multi-industry SaaS (Business, Workshop, School) into a dedicated **School Management System**. All client/lead, quoting, delivery note, tender, profitability, workshop, and fleet features will be removed. The remaining modules are those relevant to running a school.
 
-## What Changes
+## What Stays
 
-### 1. Enable Auto-Confirm
+| Module | Purpose |
+|--------|---------|
+| School Admin | Classes, terms, announcements |
+| Student Management | Student records, guardian info |
+| School Fees | Fee tracking and payments |
+| Invoices | Fee invoicing for parents |
+| Task Management | Internal tasks for staff |
+| Staff & HR | Teacher/staff management |
+| Accounting | Financial overview |
+| Settings | School profile configuration |
+| Billing | Subscription management |
 
-Use the auth configuration tool to turn on auto-confirm for email signups. This means new users get a session immediately upon signup -- no confirmation email needed.
+## What Gets Removed
 
-### 2. Handle Duplicate Email Detection
+| Module/Feature | Reason |
+|----------------|--------|
+| CRM (Clients & Leads) | Not needed for schools |
+| Quotes | Schools don't quote |
+| Delivery Notes | Not applicable |
+| Tenders | Business-only feature |
+| Profitability | Business analytics |
+| Fleet Management | Not school-relevant |
+| Workshop (Job Cards) | Auto workshop feature |
 
-With auto-confirm enabled, the backend does NOT return an error when someone signs up with an existing email (this is by design to prevent email enumeration attacks). Instead, it returns a user object with an **empty `identities` array**. The code needs to detect this and show a friendly error.
+## Changes by Area
 
-### 3. Update Signup Success Flow
+### 1. Landing Page (school-only branding)
 
-Currently the code has two branches:
-- `data.user && !data.session` -- assumes email confirmation is required (shows "check your email" toast)
-- `data.user && data.session` -- treats as auto-confirm fallback
+**Hero.tsx** -- Remove the 3-system pills (Business, Workshop, School). Update headline from "One Platform for Every Industry" to school-focused messaging. Remove multi-system references.
 
-With auto-confirm always on, the primary path becomes `data.user && data.session`. The "check your email" branch becomes irrelevant and should be removed. On successful signup with a session, the code should immediately save the user's module selections and redirect to the dashboard.
+**Solutions.tsx** -- Remove Business and Workshop solution cards. Show only the School Management solution, or replace with a features showcase focused on school capabilities.
 
-## File to Change
+**PricingTable.tsx** -- Remove Business and Workshop tabs. Show only School pricing tiers directly (no tab switcher needed).
 
-| File | Change |
-|------|--------|
-| Auth configuration | Enable auto-confirm for email signups |
-| `src/pages/Auth.tsx` | Fix duplicate email detection and simplify signup success handling |
+### 2. Signup Flow
+
+**SystemSelector.tsx** -- Skip this step entirely since there's only one system now. Auto-select 'school'.
+
+**PackageTierSelector.tsx** -- Remove Business and Workshop tier configs. Only keep School tiers. Remove "Core CRM & Clients" from the feature lists, replace with school-relevant naming.
+
+**Auth.tsx** -- Skip the system selection step, auto-set `selectedSystem = 'school'`. Go directly to package tier selection.
+
+**ModuleSelector.tsx** -- Filter to only show school and shared modules (already partially works via systemType prop).
+
+### 3. Navigation
+
+**Sidebar.tsx** -- Remove: CRM, Quotes, Delivery Notes, Profitability, Tenders, Fleet, Workshop entries. Keep: Dashboard, Students, School Admin, School Fees, Invoices, Tasks, Staff, Accounting, Settings, Billing.
+
+**BottomNav.tsx** -- Replace CRM and Quotes with school-relevant items (Students, School Fees). Keep Home and More.
+
+**MoreMenuSheet.tsx** -- Remove: Delivery Notes, Tenders, Profitability, Fleet, Workshop entries. Keep: Tasks, Accounting, Staff, School Admin, Students, School Fees, Settings, Billing.
+
+### 4. Dashboard
+
+**Dashboard.tsx** -- Remove BusinessDashboard and WorkshopDashboard. Always render SchoolDashboard. Remove imports for LeadsPipeline, TendersList, TenderSourceLinks.
+
+### 5. Routes
+
+**App.tsx** -- Remove routes: `/crm`, `/quotes`, `/delivery-notes`, `/tenders`, `/profitability`, `/fleet`, `/workshop`. Remove corresponding page imports.
+
+### 6. Database
+
+- Deactivate non-school modules in `platform_modules` (`is_active = false`) for: `core_crm`, `quotes`, `delivery_notes`, `tenders`, `profitability`, `fleet`, `workshop`
+- Clean up `user_modules` by deactivating entries referencing these modules
+- Keep `invoices`, `tasks`, `accounting`, `staff` as shared modules that schools use
+
+### 7. File Cleanup (not deleting, just disconnecting)
+
+The following page files will have their route entries removed from App.tsx so they become unreachable:
+- `src/pages/CRM.tsx`
+- `src/pages/Quotes.tsx`
+- `src/pages/DeliveryNotes.tsx`
+- `src/pages/Tenders.tsx`
+- `src/pages/Profitability.tsx`
+- `src/pages/Fleet.tsx`
+- `src/pages/Workshop.tsx`
+- `src/pages/WorkshopDashboard.tsx`
 
 ## Technical Details
 
-### Duplicate Email Detection
+### Database Migration
 
 ```text
-// After supabase.auth.signUp returns:
-if (data.user && data.user.identities?.length === 0) {
-  // Email already exists - no new identity was created
-  toast.error('This email is already registered. Please login instead.');
-  return;
-}
+-- Deactivate non-school modules
+UPDATE platform_modules SET is_active = false 
+WHERE key IN ('core_crm', 'quotes', 'delivery_notes', 'tenders', 'profitability', 'fleet', 'workshop');
+
+-- Deactivate user_modules entries for these modules
+UPDATE user_modules SET is_active = false 
+WHERE module_id IN (
+  SELECT id FROM platform_modules 
+  WHERE key IN ('core_crm', 'quotes', 'delivery_notes', 'tenders', 'profitability', 'fleet', 'workshop')
+);
 ```
 
-### Simplified Signup Success
+### Auth.tsx Signup Flow Changes
+
+Skip the system selection step. When user enters signup:
+- Auto-set `selectedSystem = 'school'`
+- Go straight to the package tier step (`signupStep = 'tier'`)
+- The tier selector only shows school tiers
+- Custom build only shows school + shared modules
+
+### Navigation Restructure
+
+Sidebar navigation reduced to:
 
 ```text
-// With auto-confirm, successful signup always returns a session
-if (data.user && data.session) {
-  await saveSignupData(data.user.id);
-  toast.success('Account created! Welcome aboard.');
-}
+Dashboard (always visible)
+Students (module: students)
+School Admin (module: school_admin)
+School Fees (module: school_fees)
+Invoices (module: invoices)
+Tasks (module: tasks)
+Staff (module: staff)
+Accounting (module: accounting)
+Settings (always visible)
+Billing (always visible)
 ```
 
-### Remove Dead Code
+Bottom nav items:
 
-The `data.user && !data.session` branch (email confirmation flow) will be removed since auto-confirm is now always on. The "check your email" toast message and the related state resets are no longer needed.
+```text
+Home | Students | School Fees | Invoices | More
+```
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| Database migration | Deactivate non-school modules |
+| `src/App.tsx` | Remove 7 route entries and imports |
+| `src/components/landing/Hero.tsx` | School-only branding |
+| `src/components/landing/Solutions.tsx` | School-only solution |
+| `src/components/landing/PricingTable.tsx` | School-only pricing |
+| `src/components/auth/SystemSelector.tsx` | No longer used (skipped) |
+| `src/components/auth/PackageTierSelector.tsx` | School tiers only |
+| `src/pages/Auth.tsx` | Skip system selection, auto-set school |
+| `src/components/layout/Sidebar.tsx` | Remove non-school nav items |
+| `src/components/layout/BottomNav.tsx` | School-focused bottom nav |
+| `src/components/layout/MoreMenuSheet.tsx` | Remove non-school items |
+| `src/pages/Dashboard.tsx` | Always render SchoolDashboard |
 
