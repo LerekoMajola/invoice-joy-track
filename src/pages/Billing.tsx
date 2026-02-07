@@ -30,8 +30,11 @@ function getIcon(iconName: string) {
 
 export default function Billing() {
   const { user } = useAuth();
-  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, subscription } = useSubscription();
-  const { platformModules, userModules, isLoading, getMonthlyTotal, toggleModule } = useModules();
+  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, subscription, systemType } = useSubscription();
+  const { platformModules, userModules, isLoading, getMonthlyTotal, toggleModule, getModulesForSystem } = useModules();
+  
+  // Only show modules relevant to user's system type
+  const filteredModules = getModulesForSystem(systemType);
   const { profile: companyProfile } = useCompanyProfile();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -284,7 +287,7 @@ export default function Billing() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {platformModules.map((mod) => {
+              {filteredModules.map((mod) => {
                 const isActive = activeModuleIds.has(mod.id);
                 const IconComponent = getIcon(mod.icon);
 

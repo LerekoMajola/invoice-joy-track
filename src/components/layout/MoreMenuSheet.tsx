@@ -35,7 +35,7 @@ export function MoreMenuSheet({ open, onOpenChange }: MoreMenuSheetProps) {
 
   const menuItems = allMenuItems.filter((item) => {
     if (!item.moduleKey) return true;
-    if (userModules.length === 0) return true;
+    if (userModules.length === 0) return false;
     return hasModule(item.moduleKey);
   });
 

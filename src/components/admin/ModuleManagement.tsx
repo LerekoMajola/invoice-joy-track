@@ -24,6 +24,7 @@ interface PlatformModule {
   is_core: boolean;
   is_active: boolean;
   sort_order: number;
+  system_type?: string;
 }
 
 const emptyForm = {
@@ -40,18 +41,13 @@ function nameToKey(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 }
 
-// Module keys grouped by system
-const BUSINESS_KEYS = ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'tenders', 'accounting', 'staff', 'fleet'];
-const WORKSHOP_KEYS = ['workshop'];
-const SCHOOL_KEYS = ['school_admin', 'students', 'school_fees'];
-
+// System groups use the database system_type column now
 interface SystemGroup {
   id: string;
   label: string;
   icon: React.ElementType;
   gradient: string;
   borderColor: string;
-  keys: string[];
 }
 
 const systemGroups: SystemGroup[] = [
@@ -61,7 +57,6 @@ const systemGroups: SystemGroup[] = [
     icon: Briefcase,
     gradient: 'from-primary to-violet',
     borderColor: 'border-primary/30',
-    keys: BUSINESS_KEYS,
   },
   {
     id: 'workshop',
@@ -69,7 +64,6 @@ const systemGroups: SystemGroup[] = [
     icon: Wrench,
     gradient: 'from-coral to-warning',
     borderColor: 'border-coral/30',
-    keys: WORKSHOP_KEYS,
   },
   {
     id: 'school',
@@ -77,7 +71,6 @@ const systemGroups: SystemGroup[] = [
     icon: GraduationCap,
     gradient: 'from-info to-cyan',
     borderColor: 'border-info/30',
-    keys: SCHOOL_KEYS,
   },
 ];
 
@@ -100,6 +93,9 @@ function ModuleRow({
             <p className="font-medium text-sm">{mod.name}</p>
             {mod.is_core && (
               <Badge variant="secondary" className="text-[10px]">Core</Badge>
+            )}
+            {mod.system_type && mod.system_type !== 'shared' && (
+              <Badge variant="outline" className="text-[10px] capitalize">{mod.system_type}</Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate">
@@ -300,11 +296,9 @@ export function ModuleManagement() {
     });
   };
 
-  // Group modules by system
+  // Group modules by system_type from database
   const getGroupedModules = () => {
-    const allKnownKeys = [...BUSINESS_KEYS, ...WORKSHOP_KEYS, ...SCHOOL_KEYS];
-    const ungrouped = modules.filter(m => !allKnownKeys.includes(m.key));
-
+    const ungrouped = modules.filter(m => !m.system_type || m.system_type === 'shared');
     return { ungrouped };
   };
 
@@ -344,7 +338,7 @@ export function ModuleManagement() {
           <div className="space-y-6">
             {systemGroups.map((group) => {
               const GroupIcon = group.icon;
-              const groupModules = modules.filter(m => group.keys.includes(m.key));
+              const groupModules = modules.filter(m => m.system_type === group.id);
               if (groupModules.length === 0) return null;
 
               return (
