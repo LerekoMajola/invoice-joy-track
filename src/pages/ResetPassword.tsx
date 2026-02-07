@@ -8,48 +8,51 @@
 import { toast } from 'sonner';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
  
- type ResetStep = 'request' | 'update' | 'success';
- 
- export default function ResetPassword() {
-   const [searchParams] = useSearchParams();
-   const navigate = useNavigate();
-   
-   const [step, setStep] = useState<ResetStep>('request');
-   const [email, setEmail] = useState('');
-   const [password, setPassword] = useState('');
-   const [confirmPassword, setConfirmPassword] = useState('');
-   const [submitting, setSubmitting] = useState(false);
-   const [emailSent, setEmailSent] = useState(false);
- 
-   // Check if we're in password update mode (user clicked link in email)
-   useEffect(() => {
-     const handleAuthEvent = async () => {
-       const { data: { session } } = await supabase.auth.getSession();
-       
-       // Check URL hash for recovery token (Supabase redirects with hash params)
-       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-       const accessToken = hashParams.get('access_token');
-       const type = hashParams.get('type');
-       
-       if (type === 'recovery' && accessToken) {
-         // User clicked the reset link - they can now set a new password
-         setStep('update');
-       } else if (session?.user && searchParams.get('type') === 'recovery') {
-         setStep('update');
-       }
-     };
- 
-     handleAuthEvent();
- 
-     // Listen for auth state changes
-     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-       if (event === 'PASSWORD_RECOVERY') {
-         setStep('update');
-       }
-     });
- 
-     return () => subscription.unsubscribe();
-   }, [searchParams]);
+type ResetStep = 'request' | 'update' | 'success';
+
+// Parse hash params synchronously BEFORE React renders, so Supabase can't consume them first
+function detectRecoveryFromHash(): boolean {
+  try {
+    const hash = window.location.hash.substring(1);
+    if (!hash) return false;
+    const params = new URLSearchParams(hash);
+    return params.get('type') === 'recovery' && !!params.get('access_token');
+  } catch {
+    return false;
+  }
+}
+
+export default function ResetPassword() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Detect recovery mode immediately via hash (synchronous, before effects)
+  const [step, setStep] = useState<ResetStep>(() =>
+    detectRecoveryFromHash() ? 'update' : 'request'
+  );
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Fallback detection via auth events and session check
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setStep('update');
+      }
+    });
+
+    // Also check if user already has a recovery session (e.g. hash was consumed before mount)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && searchParams.get('type') === 'recovery') {
+        setStep('update');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [searchParams]);
  
    const handleRequestReset = async (e: React.FormEvent) => {
      e.preventDefault();
