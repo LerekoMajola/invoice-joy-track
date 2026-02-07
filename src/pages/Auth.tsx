@@ -113,16 +113,13 @@ export default function Auth() {
           } else {
             toast.error(error.message);
           }
-        } else if (data.user && !data.session) {
-          // Email confirmation required — no session means unverified
-          toast.success('Check your email to verify your account before signing in.', { duration: 8000 });
-          setEmail('');
-          setPassword('');
-          setSignupStep('system');
-          setIsLogin(true);
+        } else if (data.user && data.user.identities?.length === 0) {
+          // Duplicate email — auto-confirm returns user with empty identities
+          toast.error('This email is already registered. Please login instead.');
         } else if (data.user && data.session) {
-          // Fallback: if auto-confirm is somehow on, save data immediately
+          // Auto-confirm is on — save selections and proceed
           await saveSignupData(data.user.id);
+          toast.success('Account created! Welcome aboard.');
         }
       }
     } catch (error: any) {
