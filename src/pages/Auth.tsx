@@ -87,7 +87,14 @@ export default function Auth() {
           toast.success('Welcome back!');
         }
       } else {
-        // Signup flow
+        // Signup flow — validate selections first
+        if (!selectedSystem || selectedModuleKeys.length === 0) {
+          toast.error('Please complete your package selection first');
+          setSignupStep('system');
+          setSubmitting(false);
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -393,7 +400,7 @@ export default function Auth() {
     }
 
     // Credentials step (step 3)
-    if (signupStep === 'credentials') {
+    if (signupStep === 'credentials' && selectedSystem && selectedModuleKeys.length > 0) {
       return (
         <div className="min-h-screen bg-background flex">
           <AuthBrandingPanel />
@@ -496,6 +503,24 @@ export default function Auth() {
         </div>
       );
     }
+
+    // Fallback: if signup but no step matched, reset to system selection
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full">
+          <SystemSelector onSelect={handleSystemSelect} />
+          <div className="text-center mt-8">
+            <button
+              type="button"
+              onClick={() => setIsLogin(true)}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Already have an account? Sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Login form
