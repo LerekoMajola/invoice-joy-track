@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3 } from 'lucide-react';
+import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -79,6 +79,17 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
             </div>
             {tenant.subscription ? (
               <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">System:</span>
+                  <span className="font-medium flex items-center gap-1.5">
+                    {(() => {
+                      const sys = tenant.subscription.system_type || 'business';
+                      const Icon = sys === 'workshop' ? Wrench : sys === 'school' ? GraduationCap : Briefcase;
+                      const label = sys === 'workshop' ? 'Workshop' : sys === 'school' ? 'School' : 'Business';
+                      return (<><Icon className="h-4 w-4" />{label}</>);
+                    })()}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Plan:</span>
                   <span className="font-medium">

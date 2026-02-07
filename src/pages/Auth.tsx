@@ -89,7 +89,14 @@ export default function Auth() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              system_type: selectedSystem,
+              selected_tier: selectedTier,
+              selected_module_keys: selectedModuleKeys,
+            },
+          },
         });
         if (error) {
           if (error.message.includes('already registered')) {
@@ -97,8 +104,15 @@ export default function Auth() {
           } else {
             toast.error(error.message);
           }
-        } else if (data.user) {
-          // Save modules and subscription
+        } else if (data.user && !data.session) {
+          // Email confirmation required — no session means unverified
+          toast.success('Check your email to verify your account before signing in.', { duration: 8000 });
+          setEmail('');
+          setPassword('');
+          setSignupStep('system');
+          setIsLogin(true);
+        } else if (data.user && data.session) {
+          // Fallback: if auto-confirm is somehow on, save data immediately
           await saveSignupData(data.user.id);
         }
       }
