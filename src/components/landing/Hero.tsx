@@ -1,13 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { ArrowRight, GraduationCap } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-
-const systems = [
-  { icon: Briefcase, label: 'Business Management', gradient: 'from-primary to-violet', pricingHash: '#pricing-business' },
-  { icon: Wrench, label: 'Workshop Management', gradient: 'from-coral to-warning', pricingHash: '#pricing-workshop' },
-  { icon: GraduationCap, label: 'School Management', gradient: 'from-info to-cyan', pricingHash: '#pricing-school' },
-];
 
 export function Hero() {
   return (
@@ -20,7 +14,7 @@ export function Hero() {
       </div>
 
       {/* Animated gradient orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-violet/30 rounded-full blur-3xl animate-float" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-info/30 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-3xl" />
 
@@ -29,9 +23,6 @@ export function Hero() {
         <header className="flex items-center justify-between py-6">
           <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#solutions" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
-              Solutions
-            </a>
             <a href="#features" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
               Features
             </a>
@@ -55,14 +46,19 @@ export function Hero() {
 
         {/* Hero Content */}
         <div className="py-20 lg:py-32 text-center">
+          <div className="flex justify-center mb-6 animate-slide-up">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-info to-cyan flex items-center justify-center text-white shadow-lg">
+              <GraduationCap className="h-8 w-8" />
+            </div>
+          </div>
           <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            One Platform for
+            Smart School
             <br />
-            <span className="bg-gradient-to-r from-cyan via-accent to-success bg-clip-text text-transparent">Every Industry</span>
+            <span className="bg-gradient-to-r from-cyan via-accent to-success bg-clip-text text-transparent">Management</span>
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Business operations, workshop management, and school administration — 
-            all in one modular platform. Pick the tools you need.
+            Student records, fee tracking, class management, and staff administration — 
+            everything your school needs in one powerful platform.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.2s' }}>
@@ -79,30 +75,11 @@ export function Hero() {
             </a>
           </div>
 
-          {/* System Pills */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
-            {systems.map(({ icon: Icon, label, gradient, pricingHash }, index) => (
-              <a
-                key={label}
-                href={pricingHash}
-                className="group flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 hover:-translate-y-1 animate-float"
-                style={{ animationDelay: `${index * 0.2}s` }}
-              >
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-md transition-transform duration-300 group-hover:scale-110`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className="text-white font-medium text-sm">{label}</span>
-              </a>
-            ))}
-          </div>
-
-          <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+          <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
             No credit card required · 7-day free trial · Cancel anytime
           </p>
         </div>
       </div>
-
-
     </section>
   );
 }

@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-import type { SystemType } from './SystemSelector';
 
 interface PackageTier {
   name: string;
@@ -15,209 +14,63 @@ interface PackageTier {
   features: { name: string; included: boolean }[];
 }
 
-interface SystemConfig {
-  label: string;
-  gradient: string;
-  tiers: PackageTier[];
-}
-
-// Module keys mapped to each tier for saving to user_modules
-const SYSTEM_TIERS: Record<SystemType, SystemConfig> = {
-  business: {
-    label: 'Business Management',
-    gradient: 'from-primary to-violet',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 350,
-        target: 'Growing service companies',
-        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: false },
-          { name: 'Accounting', included: false },
-          { name: 'Staff & HR', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 520,
-        target: 'Established contractors',
-        popular: true,
-        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 680,
-        target: 'Large operations & teams',
-        moduleKeys: ['core_crm', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'profitability', 'tenders', 'accounting', 'staff', 'fleet'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+const schoolTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 720,
+    target: 'Small private schools',
+    moduleKeys: ['school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: false },
     ],
   },
-  workshop: {
-    label: 'Workshop Management',
-    gradient: 'from-coral to-warning',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 450,
-        target: 'Small repair shops',
-        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Profitability Tracking', included: false },
-          { name: 'Accounting', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 650,
-        target: 'Busy workshops',
-        popular: true,
-        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 850,
-        target: 'Multi-bay service centres',
-        moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff', 'profitability', 'accounting', 'fleet'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+  {
+    name: 'Professional',
+    price: 950,
+    target: 'Mid-size academies',
+    popular: true,
+    moduleKeys: ['school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
     ],
   },
-  school: {
-    label: 'School Management',
-    gradient: 'from-info to-cyan',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 720,
-        target: 'Small private schools',
-        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: false },
-          { name: 'Profitability Tracking', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 950,
-        target: 'Mid-size academies',
-        popular: true,
-        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 1200,
-        target: 'Large schools & campuses',
-        moduleKeys: ['core_crm', 'school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting', 'profitability', 'fleet'],
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+  {
+    name: 'Enterprise',
+    price: 1200,
+    target: 'Large schools & campuses',
+    moduleKeys: ['school_admin', 'students', 'school_fees', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
     ],
   },
-};
+];
 
 interface PackageTierSelectorProps {
-  systemType: SystemType;
+  systemType: string;
   onSelect: (tierName: string, moduleKeys: string[]) => void;
   onBack: () => void;
   onCustomBuild: () => void;
 }
 
 export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuild }: PackageTierSelectorProps) {
-  const config = SYSTEM_TIERS[systemType];
-
   return (
     <div className="w-full max-w-5xl mx-auto animate-slide-up">
       <div className="text-center mb-10">
@@ -226,9 +79,9 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
         </div>
         <h1 className={cn(
           'font-display text-2xl sm:text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent mb-2',
-          config.gradient
+          'from-info to-cyan'
         )}>
-          {config.label}
+          School Management
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base">
           Choose a package to start your 7-day free trial
@@ -236,7 +89,7 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-8">
-        {config.tiers.map((tier) => (
+        {schoolTiers.map((tier) => (
           <div
             key={tier.name}
             className={cn(
@@ -305,14 +158,6 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
           className="text-sm text-primary hover:underline underline-offset-4 font-medium"
         >
           Or build your own custom package →
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to system selection
         </button>
       </div>
     </div>
