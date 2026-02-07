@@ -1,25 +1,25 @@
 
 
-# Security Hardening: Auth Flow Protection
+# Fix: Email Confirmation, Signup Emails, and Admin Dashboard
 
-## What This Fixes
+## Three Issues Found
 
-Three security gaps in the current auth enforcement:
+### Issue 1: Users log in without email confirmation
+The authentication system has **auto-confirm enabled**, which means any email address is instantly verified. Every user in the database was confirmed within milliseconds of signing up -- no email verification ever happened.
 
-### 1. PaymentRequired page is unprotected at the route level
-The `/payment-required` route is NOT wrapped in `ProtectedRoute`. While it does check auth internally, an unauthenticated visitor can momentarily see the loading spinner and page structure before any redirect happens. Every non-public page must be gated at the router level.
+**Fix:** Disable auto-confirm so users must click a verification link in their email before they can sign in. The signup flow will show a "Check your email" message instead of logging them straight in.
 
-**Fix:** Wrap `/payment-required` in `ProtectedRoute` in `App.tsx`, and remove the redundant internal auth check from the page itself.
+### Issue 2: No signup/confirmation email sent
+Because auto-confirm is on, the system never attempts to send a verification email. Once auto-confirm is disabled, the built-in email service will automatically send confirmation emails to new signups.
 
-### 2. Landing page does not redirect authenticated users
-If a logged-in user visits `/` (the landing page), they see the marketing site with "Sign In" and "Start Free Trial" buttons. This is confusing and could lead someone to think they are not authenticated. Authenticated users should be sent straight to their dashboard.
+**Fix:** This is resolved by disabling auto-confirm (Issue 1). Additionally, the signup code currently calls `saveSignupData(data.user.id)` immediately after `signUp()` returns a user -- but with email verification required, the user object still comes back (unverified). The code needs to handle this properly: show a "check your email" message and NOT try to save modules/subscription until the user actually confirms. The `ProtectedRoute` already handles creating a subscription on first authenticated visit, so module assignment can be deferred there too.
 
-**Fix:** Add an auth-aware redirect on the Landing page -- if `user` exists, redirect to `/dashboard` (or `/admin` for admins). This means a signed-in user can never land on the marketing page and think they need to sign in again.
+### Issue 3: Admin dashboard sidebar shows all modules
+When you (the admin) look at the app via "Go to App" button, the sidebar shows every module (Workshop, School, Students, etc.) because the admin user has no `user_modules` rows. The sidebar code defaults to showing everything when no modules are found (line 61 of Sidebar.tsx: `if (userModules.length === 0) return true`).
 
-### 3. ProtectedRoute fails open on errors
-Line 98 of `ProtectedRoute.tsx` has `setHasSubscription(true)` in the catch block, meaning if the subscription check throws an error (network issue, database problem), the user is allowed through anyway. Security should fail closed -- block access and show an error state rather than granting access.
+For the admin specifically, this might be intentional (so you can see everything). But if you want the admin dashboard's **Tenants tab** to show which system each tenant is on, that is currently missing from the table.
 
-**Fix:** Change the error handler to block access and show a retry option instead of silently granting entry.
+**Fix (Tenants tab):** Add a "System" column to the Tenants table that shows Business/Workshop/School with an icon badge. Pull `system_type` from the subscription data and display it. Also add a system type filter dropdown.
 
 ---
 
@@ -27,43 +27,52 @@ Line 98 of `ProtectedRoute.tsx` has `setHasSubscription(true)` in the catch bloc
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Wrap `/payment-required` route in `ProtectedRoute` |
-| `src/pages/PaymentRequired.tsx` | Remove internal auth redirect logic (now handled by route guard) |
-| `src/pages/Landing.tsx` | Add auth check: redirect signed-in users to `/dashboard` or `/admin` |
-| `src/components/layout/ProtectedRoute.tsx` | Change error handling from fail-open to fail-closed with a retry UI |
+| Auth configuration | Disable email auto-confirm |
+| `src/pages/Auth.tsx` | Handle unverified signup: show "Check your email" message instead of saving data and redirecting. Defer module assignment. |
+| `src/hooks/useAdminTenants.tsx` | Include `system_type` in the Tenant interface and data mapping |
+| `src/components/admin/TenantsTab.tsx` | Add "System" column with icon badges and a system type filter |
+| `src/components/admin/TenantDetailDialog.tsx` | Show system type in tenant details |
 
 ## No Changes Needed
 
-- Auth form (`/auth`) -- already works correctly
-- `AdminProtectedRoute` -- already properly guarded
-- Sidebar / BottomNav -- already behind protected routes
-- AuthContext -- already handles session state correctly
+- ProtectedRoute (already handles subscription creation on first visit)
+- AuthContext (already handles session state correctly)
+- AdminOverviewTab (already shows system breakdown cards)
+- Dashboard routing (already routes based on system_type)
 
 ---
 
 ## Technical Details
 
-### App.tsx Route Change
-```text
-Before:  <Route path="/payment-required" element={<PaymentRequired />} />
-After:   <Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
-```
+### Disabling Auto-Confirm
+Use the auth configuration tool to set `enable_signup = true` with `double_confirm_changes = true` and `enable_confirmations = true` (disable auto-confirm). This means:
+- New signups get a confirmation email
+- Users cannot sign in until they click the link
+- The `email_confirmed_at` field stays null until they verify
 
-### Landing Page Auth Redirect
-Add a simple check at the top of the Landing component:
-- Import `useAuth` and `Navigate` from react-router
-- If `loading` is true, show nothing (or a spinner)
-- If `user` exists and `isAdmin`, redirect to `/admin`
-- If `user` exists, redirect to `/dashboard`
-- Otherwise render the landing page normally
+### Signup Flow Changes (Auth.tsx)
 
-This ensures that no authenticated user ever sees a "Sign In" button when they are already signed in.
+After `supabase.auth.signUp()` returns, check if the user's `email_confirmed_at` is null (or if `data.session` is null -- Supabase returns no session when email confirmation is required). If so:
+- Show a success message: "Check your email to verify your account"
+- Do NOT call `saveSignupData()` -- the user hasn't verified yet
+- Switch back to the login form
 
-### ProtectedRoute Error Handling
-Replace the catch block's `setHasSubscription(true)` (fail-open) with:
-- Set a new `error` state to `true`
-- In the render, if `error` is true, show a simple error card with a "Try Again" button that re-runs the subscription check
-- The user is never granted access when the system cannot verify their subscription status
+Module and subscription assignment will happen automatically when the user first logs in, handled by the existing `ProtectedRoute` logic (which already creates subscriptions and assigns modules for users who don't have them).
 
-### PaymentRequired Cleanup
-Since the route is now wrapped in `ProtectedRoute`, the page no longer needs to handle the case where `user` is null. The `ProtectedRoute` guarantees a valid user before the page ever renders. Remove any redundant unauthenticated redirect logic from the component.
+The `saveSignupData` function currently saves `system_type` to the subscription. Since the subscription doesn't exist yet at signup time (it gets created by ProtectedRoute on first login), we need to store the selected `system_type` temporarily. Options:
+- Store it in `user_metadata` during signup (passed via `signUp` options)
+- Then read it from `user_metadata` in ProtectedRoute when creating the subscription
+
+This ensures the system type selection survives the email verification step.
+
+### Tenants Tab Enhancement
+
+Add a "System" column between "Company" and "Email" that displays:
+- A colored badge with an icon: Briefcase for Business, Wrench for Workshop, GraduationCap for School
+- Add a system type filter dropdown alongside the existing status and plan filters
+- Pull `system_type` from `subscription.system_type` (already available in the subscriptions query)
+
+### Tenant Detail Dialog
+
+Add a "System Type" row in the subscription section showing Business/Workshop/School with the matching icon.
+
