@@ -1,50 +1,120 @@
 
 
-# Add Module Creation to Admin Panel
+# Staff Module Access Control
 
-Currently the Module Management section only allows editing and toggling existing modules. This plan adds the ability to create brand-new modules directly from the Admin Settings panel.
+Allow tenants to add staff members AND control which modules each staff member can access. For example, one staff member might only get "Invoices + Quotes" while another gets "CRM + Accounting + Staff."
 
 ---
 
-## What Changes
+## Current State
 
-### 1. "Add Module" Button and Dialog
+- Tenants **can already add staff** from the Staff page -- with names, emails, roles (Admin/Manager/Staff/Viewer), and departments
+- Staff have roles like Admin, Manager, Staff, Viewer -- but these are generic access levels
+- There is **no way** to restrict which modules a specific staff member can see or interact with
+- The module system (`platform_modules` + `user_modules`) currently only applies to the tenant (owner), not to individual staff
 
-Add an "Add New Module" button to the Module Management card header. Clicking it opens a dialog with fields for:
+---
 
-- **Name** -- Display name (e.g., "Inventory Management")
-- **Key** -- System key, auto-generated from name (e.g., "inventory_management"), editable
-- **Description** -- Short description shown during signup
-- **Monthly Price** -- Cost in Maluti
-- **Icon** -- Dropdown/input to pick a Lucide icon name (e.g., "Package", "Warehouse")
-- **Is Core** -- Toggle for whether this module is required for all users
-- **Sort Order** -- Number to control display order
+## What This Plan Adds
 
-### 2. Delete Module Option
+When a tenant adds or edits a staff member, they will see the list of **their own active modules** and can toggle which ones that staff member has access to. This means:
 
-Add a delete button (with confirmation) on each module row, allowing removal of non-core modules that haven't been subscribed to by any users.
+- A tenant with Invoices, CRM, and Accounting can give Staff Member A access to just Invoices
+- Staff Member B could get CRM + Accounting
+- Core modules can be optionally included for each staff member (they're only mandatory for the tenant/owner)
+
+---
+
+## Changes
+
+### 1. New Database Table: `staff_module_access`
+
+A junction table linking staff members to specific platform modules:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid (PK) | Auto-generated |
+| staff_member_id | uuid (FK) | Links to staff_members |
+| module_id | uuid (FK) | Links to platform_modules |
+| is_active | boolean | Whether access is currently enabled |
+| created_at | timestamptz | When access was granted |
+
+**RLS Policies:**
+- Owners can manage access for their own staff (validated through the `staff_members` table's `owner_user_id`)
+- Staff can view their own module access (via `staff_members.user_id`)
+
+### 2. Update Add Staff Dialog (`src/components/staff/AddStaffDialog.tsx`)
+
+Add a **Module Access** section below the existing form fields:
+- Show a checklist of the tenant's active modules (fetched via `useModules`)
+- Each module shown as a toggle/checkbox with its icon and name
+- By default, all of the tenant's active modules are pre-selected
+- Tenant can deselect modules to restrict staff access
+- On submit, save the selected modules to `staff_module_access`
+
+### 3. Update Staff Detail Dialog (`src/components/staff/StaffDetailDialog.tsx`)
+
+Add a **Module Access** section to the detail view:
+- Show which modules this staff member currently has access to (with badges)
+- In edit mode, show toggleable switches for each module
+- Allow the tenant to update module access for existing staff
+
+### 4. Update `useStaff` Hook (`src/hooks/useStaff.tsx`)
+
+- Add `moduleAccess` field to the `StaffMember` interface (array of module IDs)
+- Fetch module access when loading staff members
+- Add `updateStaffModuleAccess(staffId, moduleIds)` function
+- Update `createStaff` to also save module access
+
+### 5. Create `useStaffModuleAccess` Helper (optional, can be inline)
+
+Simple queries:
+- `getStaffModuleAccess(staffId)` -- fetch which modules a staff member has
+- `setStaffModuleAccess(staffId, moduleIds)` -- bulk update module access
+
+---
+
+## How It Looks in the UI
+
+**When adding a new staff member:**
+The existing form fields (name, email, phone, job title, department, role, notes) remain the same. Below the Role selector, a new "Module Access" section appears showing toggle switches for each of the tenant's active modules.
+
+**When viewing staff details:**
+Below the existing details and role selector, a "Module Access" section shows which modules the staff member can access as a list of badges/chips. In edit mode, these become toggleable switches.
 
 ---
 
 ## Technical Details
 
-### File: `src/components/admin/ModuleManagement.tsx`
+### Database Migration
 
-- Add state for "add mode" dialog (reuse the edit dialog pattern)
-- Add an `insertModule` mutation that calls `supabase.from('platform_modules').insert(...)`
-- Add a `deleteModule` mutation with a confirmation step
-- Add the "Add Module" button in the card header
-- The key field auto-generates from the name (lowercased, spaces replaced with underscores) but remains editable
-- Icon field is a text input where the admin types the Lucide icon name
+```text
+-- New table for staff module access
+staff_module_access (
+  id uuid PK,
+  staff_member_id uuid FK -> staff_members,
+  module_id uuid FK -> platform_modules,
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+)
 
-### Important Notes
+-- RLS: Owners manage via staff_members ownership
+-- RLS: Staff can read their own access
+```
 
-- New modules will automatically appear in the signup Module Selector, Billing page, and Landing page pricing -- no code changes needed for those
-- However, a new module won't have an actual feature page or nav entry until those are built separately -- it will just be a "subscribed" flag
-- Navigation entries (Sidebar, BottomNav, MoreMenuSheet) and the actual page/route still need to be added manually per module by asking me to build them
-- The admin can pre-create modules, set pricing, and toggle them on/off; the feature pages can be built incrementally
+### Files to Create
+| File | Purpose |
+|------|---------|
+| (migration) | Create `staff_module_access` table with RLS |
 
-### No Database Changes Required
+### Files to Modify
+| File | Change |
+|------|--------|
+| `src/components/staff/AddStaffDialog.tsx` | Add module access toggles section |
+| `src/components/staff/StaffDetailDialog.tsx` | Show and edit module access |
+| `src/hooks/useStaff.tsx` | Add module access to staff CRUD operations |
 
-The `platform_modules` table and its RLS policies already support INSERT and DELETE for super admins, so no migration is needed.
+### No changes needed to
+- Navigation gating (Sidebar/BottomNav) -- this currently gates by tenant modules, which is correct. Staff-level gating would be a future enhancement when staff members can log in as their own users
+- The `useModules` hook -- it stays focused on tenant-level modules
 
