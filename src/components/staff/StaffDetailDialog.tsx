@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -38,7 +40,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useStaff, StaffMember, StaffRole, StaffStatus } from '@/hooks/useStaff';
-import { Loader2, Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
+import { useModules } from '@/hooks/useModules';
+import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
+import { Loader2, Pencil, Trash2, UserCheck, UserX, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 
 const editSchema = z.object({
@@ -105,7 +109,17 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [editModuleIds, setEditModuleIds] = useState<string[]>([]);
   const { updateStaff, updateStaffRole, deleteStaff } = useStaff();
+  const { userModules } = useModules();
+  const { moduleIds, saveModuleAccess, isLoading: moduleAccessLoading } = useStaffModuleAccess(staff?.id);
+
+  // Sync edit module selection when entering edit mode or when moduleIds load
+  useEffect(() => {
+    if (isEditing) {
+      setEditModuleIds(moduleIds);
+    }
+  }, [isEditing, moduleIds]);
 
   const form = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
@@ -131,9 +145,17 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
     });
   }
 
+  const toggleEditModule = (moduleId: string) => {
+    setEditModuleIds((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    );
+  };
+
   const onSubmit = async (data: EditFormData) => {
     if (!staff) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await updateStaff(staff.id, {
@@ -144,8 +166,10 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
         department: data.department || undefined,
         notes: data.notes || undefined,
       });
-      
+
       if (success) {
+        // Also save module access changes
+        await saveModuleAccess(staff.id, editModuleIds);
         setIsEditing(false);
       }
     } finally {
@@ -174,6 +198,9 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   };
 
   if (!staff) return null;
+
+  // Map moduleIds to module names for the view mode
+  const accessibleModules = userModules.filter((um) => moduleIds.includes(um.module_id));
 
   return (
     <>
@@ -287,6 +314,36 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                   )}
                 />
 
+                {/* Module Access (Edit Mode) */}
+                {userModules.length > 0 && (
+                  <div className="space-y-3 rounded-lg border p-4">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-sm font-medium">Module Access</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Select which modules this staff member can access.
+                    </p>
+                    <div className="space-y-2">
+                      {userModules.map((um) => (
+                        <div key={um.module_id} className="flex items-center gap-3">
+                          <Checkbox
+                            id={`edit-module-${um.module_id}`}
+                            checked={editModuleIds.includes(um.module_id)}
+                            onCheckedChange={() => toggleEditModule(um.module_id)}
+                          />
+                          <Label
+                            htmlFor={`edit-module-${um.module_id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {um.module?.name || 'Unknown Module'}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
                     type="button"
@@ -367,6 +424,32 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Module Access (View Mode) */}
+              {userModules.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Module Access</p>
+                  </div>
+                  {moduleAccessLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Loading...
+                    </div>
+                  ) : accessibleModules.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {accessibleModules.map((um) => (
+                        <Badge key={um.module_id} variant="secondary" className="text-xs">
+                          {um.module?.name || 'Unknown'}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No modules assigned</p>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-4 border-t">
