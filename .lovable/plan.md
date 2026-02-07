@@ -1,123 +1,69 @@
 
 
-# Simple Mobile Money Payment Flow
+# Security Hardening: Auth Flow Protection
 
-## The Approach
+## What This Fixes
 
-No Stripe, no external integrations. Just clear M-Pesa/bank transfer instructions and a paywall that blocks access when the trial expires. You manually activate subscriptions from your admin panel after confirming payment.
+Three security gaps in the current auth enforcement:
 
-## What Gets Built
+### 1. PaymentRequired page is unprotected at the route level
+The `/payment-required` route is NOT wrapped in `ProtectedRoute`. While it does check auth internally, an unauthenticated visitor can momentarily see the loading spinner and page structure before any redirect happens. Every non-public page must be gated at the router level.
 
-### 1. Paywall Page
+**Fix:** Wrap `/payment-required` in `ProtectedRoute` in `App.tsx`, and remove the redundant internal auth check from the page itself.
 
-A new `/payment-required` page that users see when their 7-day trial expires. It shows:
+### 2. Landing page does not redirect authenticated users
+If a logged-in user visits `/` (the landing page), they see the marketing site with "Sign In" and "Start Free Trial" buttons. This is confusing and could lead someone to think they are not authenticated. Authenticated users should be sent straight to their dashboard.
 
-- "Your trial has ended" message
-- Their selected package name and monthly price
-- Clear M-Pesa payment instructions (paybill number, account reference)
-- Bank transfer details as a fallback
-- A "I've Made Payment" button that notifies you (the admin)
-- A unique payment reference based on their user ID so you can match payments
+**Fix:** Add an auth-aware redirect on the Landing page -- if `user` exists, redirect to `/dashboard` (or `/admin` for admins). This means a signed-in user can never land on the marketing page and think they need to sign in again.
 
-### 2. Trial Enforcement
+### 3. ProtectedRoute fails open on errors
+Line 98 of `ProtectedRoute.tsx` has `setHasSubscription(true)` in the catch block, meaning if the subscription check throws an error (network issue, database problem), the user is allowed through anyway. Security should fail closed -- block access and show an error state rather than granting access.
 
-Update the `ProtectedRoute` to check if the trial has expired. If it has and the subscription is not `active`, redirect to the paywall page instead of letting them into the app.
-
-### 3. Payment Notification to Admin
-
-When a user clicks "I've Made Payment," a notification is inserted into the `notifications` table for the admin. This way you see it in your admin panel and can verify the payment, then flip the subscription to "active."
-
-### 4. Updated Billing Page
-
-Replace the vague "contact us" section with proper payment instructions:
-- M-Pesa paybill number and how to pay
-- Bank transfer details (bank name, account number, branch)
-- The user's unique payment reference
-- Current subscription status (trialing / active / expired)
+**Fix:** Change the error handler to block access and show a retry option instead of silently granting entry.
 
 ---
-
-## User Flow
-
-```text
-Trial expires (day 7)
-    |
-    v
-User tries to access any page
-    |
-    v
-ProtectedRoute detects expired trial
-    |
-    v
-Redirect to /payment-required
-    |
-    +-- Shows M-Pesa instructions
-    |   "Send M350 to Paybill 123456"
-    |   "Account: REF-abc123"
-    |
-    +-- [I've Made Payment] button
-    |       |
-    |       v
-    |   Notification sent to admin
-    |   "User X says they've paid (REF-abc123)"
-    |
-    +-- Admin checks M-Pesa statement
-    |       |
-    |       v
-    |   Admin opens admin panel > Edit Subscription > Set to "Active"
-    |       |
-    |       v
-    |   User refreshes and gets full access
-```
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/pages/PaymentRequired.tsx` | Paywall page with M-Pesa instructions and "I've paid" button |
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/layout/ProtectedRoute.tsx` | Add trial-expiry check; redirect to `/payment-required` when expired |
-| `src/pages/Billing.tsx` | Replace "contact us" with proper M-Pesa and bank transfer instructions |
-| `src/App.tsx` | Add `/payment-required` route |
-| `src/hooks/useSubscription.tsx` | Add `needsPayment` helper that combines trial-expired + not-active checks |
+| `src/App.tsx` | Wrap `/payment-required` route in `ProtectedRoute` |
+| `src/pages/PaymentRequired.tsx` | Remove internal auth redirect logic (now handled by route guard) |
+| `src/pages/Landing.tsx` | Add auth check: redirect signed-in users to `/dashboard` or `/admin` |
+| `src/components/layout/ProtectedRoute.tsx` | Change error handling from fail-open to fail-closed with a retry UI |
 
 ## No Changes Needed
 
-- No database migrations (existing `subscriptions` table has everything we need)
-- No edge functions
-- No external API keys or integrations
-- Admin panel already supports editing subscription status
+- Auth form (`/auth`) -- already works correctly
+- `AdminProtectedRoute` -- already properly guarded
+- Sidebar / BottomNav -- already behind protected routes
+- AuthContext -- already handles session state correctly
 
 ---
 
 ## Technical Details
 
-### ProtectedRoute Update
+### App.tsx Route Change
+```text
+Before:  <Route path="/payment-required" element={<PaymentRequired />} />
+After:   <Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
+```
 
-The route guard will fetch the subscription and check:
-- If `status === 'trialing'` AND `trial_ends_at < now()` AND `status !== 'active'` then redirect to `/payment-required`
-- Active users pass through normally
-- Users still in their trial pass through normally
+### Landing Page Auth Redirect
+Add a simple check at the top of the Landing component:
+- Import `useAuth` and `Navigate` from react-router
+- If `loading` is true, show nothing (or a spinner)
+- If `user` exists and `isAdmin`, redirect to `/admin`
+- If `user` exists, redirect to `/dashboard`
+- Otherwise render the landing page normally
 
-### Payment Reference
+This ensures that no authenticated user ever sees a "Sign In" button when they are already signed in.
 
-Generated from the user's ID: `REF-{first 8 chars of user_id}`. This gives each user a unique reference to quote when paying via M-Pesa so you can match payments easily.
+### ProtectedRoute Error Handling
+Replace the catch block's `setHasSubscription(true)` (fail-open) with:
+- Set a new `error` state to `true`
+- In the render, if `error` is true, show a simple error card with a "Try Again" button that re-runs the subscription check
+- The user is never granted access when the system cannot verify their subscription status
 
-### "I've Made Payment" Button
-
-Inserts a row into the existing `notifications` table targeting the admin user. The notification includes the user's company name, payment reference, and amount. You will see this notification in the admin panel.
-
-### Billing Page Payment Section
-
-Two clear sections:
-1. **M-Pesa**: Step-by-step instructions -- dial `*111#`, select Pay Bill, enter number, enter reference, enter amount, confirm
-2. **Bank Transfer**: Bank name, account number, branch code, and reference to include
-
-You will need to provide your actual M-Pesa paybill number and bank details -- placeholder values will be used initially that you can update later in Settings.
-
+### PaymentRequired Cleanup
+Since the route is now wrapped in `ProtectedRoute`, the page no longer needs to handle the case where `user` is null. The `ProtectedRoute` guarantees a valid user before the page ever renders. Remove any redundant unauthenticated redirect logic from the component.
