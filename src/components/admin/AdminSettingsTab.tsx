@@ -137,7 +137,7 @@ export function AdminSettingsTab() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Recommended: PNG or SVG, max 2MB. The logo will appear on the landing page, login, footer, and admin header.
+            Preferred size: <strong>200 × 60 px</strong> (or similar aspect ratio). PNG or SVG, max 2 MB. The logo will appear on the landing page, login, footer, and admin header.
           </p>
         </CardContent>
       </Card>
