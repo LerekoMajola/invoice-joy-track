@@ -1,90 +1,54 @@
 
 
-# Fix: Include Staff Module in All Workshop Tiers
+# Add Change Password Feature to Settings
 
-## The Problem
+## What's Missing
 
-The Workshop Starter tier lists these modules: `core_crm, workshop, quotes, invoices, tasks, delivery_notes` -- but **not** `staff`. However, the job card creation form requires selecting a technician from your staff list. Without the Staff module, workshop users on the Starter plan:
+Currently, the only way to change your password is through the "Forgot Password" flow on the login page, which sends an email link. There is no way for a logged-in user to change their password directly from within the app.
 
-- Cannot see the Staff page in their sidebar
-- Cannot add technicians
-- Cannot assign anyone to job cards
+## What Gets Added
 
-Staff is a **dependency** for the Workshop module, not an optional add-on.
+A new **"Account Security"** card in the Settings page that lets you change your password while logged in. It will include:
 
-## The Fix
+- Current password field (for verification)
+- New password field
+- Confirm new password field
+- Validation (minimum 6 characters, passwords must match)
+- Success/error feedback via toast messages
 
-### 1. Add `staff` to Workshop Starter tier
+This card will appear at the top of the Settings page, since account security is a high-priority setting.
 
-Update `src/components/auth/PackageTierSelector.tsx` to include `'staff'` in the Workshop Starter `moduleKeys` array, and mark "Staff & HR" as included in the features list.
+## How It Will Look
 
-Before:
-- moduleKeys: `['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes']`
-- "Staff & HR" shown as not included
+The card follows the same design pattern as the other Settings cards:
+- A Lock icon with the title "Account Security"
+- Description: "Change your account password"
+- Three password fields stacked vertically
+- A "Change Password" button at the bottom of the card
 
-After:
-- moduleKeys: `['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff']`
-- "Staff & HR" shown as included
-
-The Professional and Enterprise tiers already include `staff`, so no changes needed there.
-
-### 2. Fix current workshop user's modules
-
-Run a one-time data fix to add the `staff` module to the existing workshop user (`be86cadc-9e1f-46e9-937b-de74186e4237`) so they don't have to re-register.
-
-### 3. Add technician text fallback in CreateJobCardDialog
-
-Even with Staff included, a brand new user may not have added their technicians yet. Update `src/components/workshop/CreateJobCardDialog.tsx` to:
-- Show a text input if no staff members exist (so they can still type a name and create the job card)
-- Add a small "+ Add staff member" link that opens the AddStaffDialog inline
-- Automatically refresh the dropdown when a new staff member is added
-
----
-
-## Files to Change
+## File to Change
 
 | File | Change |
 |------|--------|
-| `src/components/auth/PackageTierSelector.tsx` | Add `'staff'` to Workshop Starter moduleKeys; mark "Staff & HR" as `included: true` |
-| `src/components/workshop/CreateJobCardDialog.tsx` | Add text input fallback for technician name when no staff exist; add inline "Add Staff" option |
-| Database (one-time fix) | Insert `staff` module for existing workshop user |
+| `src/pages/Settings.tsx` | Add an "Account Security" card with a change password form |
 
 ## Technical Details
 
-### PackageTierSelector change (line 95-96)
+### Implementation approach
 
-```
-// Before
-moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes'],
-// ...
-{ name: 'Staff & HR', included: false },
+The change password form uses `supabase.auth.updateUser({ password })` to update the password. Before calling this, it:
 
-// After
-moduleKeys: ['core_crm', 'workshop', 'quotes', 'invoices', 'tasks', 'delivery_notes', 'staff'],
-// ...
-{ name: 'Staff & HR', included: true },
-```
+1. Validates the new password is at least 6 characters
+2. Confirms the new password matches the confirmation field
+3. Verifies the current password by calling `supabase.auth.signInWithPassword()` with the user's email and current password -- this ensures only the actual user can change their password
+4. On success, clears the form and shows a success toast
+5. On failure, shows an appropriate error message
 
-### CreateJobCardDialog technician section
+### Form state
 
-The technician field will work in two modes:
+Three new state variables: `currentPassword`, `newPassword`, `confirmNewPassword`, plus a `changingPassword` loading flag. These are local to the Settings component and reset after successful change.
 
-**Mode A -- No staff members yet:**
-- Text input: "Enter technician name" 
-- Small link below: "+ Add to your team" (opens AddStaffDialog)
+### Placement
 
-**Mode B -- Staff members exist:**
-- Dropdown to select from staff list (current behavior)
-- Small link below: "+ Add to your team" (for convenience)
-
-When a staff member is added via the inline dialog, the `useStaff` hook's `refetch` function is called, and the dropdown automatically shows the new person.
-
-### Database fix
-
-Add the missing `staff` module to the workshop user:
-```sql
-INSERT INTO user_modules (user_id, module_id)
-SELECT 'be86cadc-9e1f-46e9-937b-de74186e4237', id 
-FROM platform_modules WHERE key = 'staff';
-```
+The Account Security card will be placed as the first card in the Settings page, before the Document Header card, making it easy to find.
 
