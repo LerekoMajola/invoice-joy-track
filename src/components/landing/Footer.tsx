@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export function Footer() {
   return (
@@ -9,7 +9,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg px-4 py-2 inline-block mb-4">
-              <img src={orionLabsLogo} alt="Orion Labs" className="h-8 w-auto" />
+              <PlatformLogo className="h-8 w-auto" />
             </div>
             <p className="text-primary-foreground/70 max-w-sm">
               The all-in-one business management platform designed for your business. 

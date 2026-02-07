@@ -5,8 +5,8 @@
  import { Input } from '@/components/ui/input';
  import { Label } from '@/components/ui/label';
  import { Mail, Lock, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
- import { toast } from 'sonner';
- import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { toast } from 'sonner';
+import { PlatformLogo } from '@/components/shared/PlatformLogo';
  
  type ResetStep = 'request' | 'update' | 'success';
  
@@ -126,9 +126,9 @@
        {/* Left Side - Branding */}
        <div className="hidden lg:flex lg:w-1/2 bg-gradient-sidebar items-center justify-center p-12">
          <div className="max-w-md text-center">
-           <div className="flex items-center justify-center mb-8">
-             <img src={orionLabsLogo} alt="Orion Labs" className="h-16 w-auto" />
-           </div>
+            <div className="flex items-center justify-center mb-8">
+              <PlatformLogo className="h-16 w-auto" />
+            </div>
            <h2 className="font-display text-2xl font-semibold text-sidebar-foreground mb-4">
              Reset Your Password
            </h2>
@@ -142,9 +142,9 @@
        <div className="flex-1 flex items-center justify-center p-8">
          <div className="w-full max-w-md">
            {/* Mobile Logo */}
-           <div className="lg:hidden flex items-center justify-center mb-8">
-             <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto" />
-           </div>
+            <div className="lg:hidden flex items-center justify-center mb-8">
+              <PlatformLogo className="h-12 w-auto" />
+            </div>
  
            {step === 'request' && !emailSent && (
              <>

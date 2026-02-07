@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, FileText, Receipt, Users, TrendingUp } from 'lucide-react';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export function Hero() {
   return (
@@ -22,7 +22,7 @@ export function Hero() {
         {/* Header */}
         <header className="flex items-center justify-between py-6">
           <div className="bg-white rounded-xl px-4 py-2 shadow-lg">
-            <img src={orionLabsLogo} alt="Orion Labs" className="h-8 w-auto" />
+            <PlatformLogo className="h-8 w-auto" />
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
