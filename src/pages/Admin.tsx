@@ -4,13 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Shield, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AdminOverviewTab, TenantsTab, SubscriptionsTab } from '@/components/admin';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { AdminOverviewTab, TenantsTab, SubscriptionsTab, AdminSettingsTab } from '@/components/admin';
+import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export default function Admin() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const [logoError, setLogoError] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -23,21 +22,17 @@ export default function Admin() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {logoError ? (
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-            ) : (
-              <img
-                src={orionLabsLogo}
-                alt="Orion Labs"
-                className="h-8 w-auto"
-                onError={() => setLogoError(true)}
-              />
-            )}
+            <PlatformLogo
+              className="h-8 w-auto"
+              fallbackIcon={
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+              }
+            />
             <div>
               <h1 className="text-xl font-bold">Platform Admin</h1>
-              <p className="text-sm text-muted-foreground">Orion Labs Management Console</p>
+              <p className="text-sm text-muted-foreground">Management Console</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -58,6 +53,7 @@ export default function Admin() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tenants">Tenants</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -70,6 +66,10 @@ export default function Admin() {
 
           <TabsContent value="subscriptions">
             <SubscriptionsTab />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <AdminSettingsTab />
           </TabsContent>
         </Tabs>
       </main>

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -112,7 +112,7 @@ export default function Auth() {
         <div className="relative max-w-md text-center animate-slide-up">
           <div className="flex items-center justify-center mb-8 animate-bounce-in">
             <div className="bg-white rounded-2xl px-6 py-3 shadow-2xl">
-              <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto" />
+              <PlatformLogo className="h-12 w-auto" />
             </div>
           </div>
           <h2 className="font-display text-3xl font-bold text-white mb-4">
@@ -144,7 +144,7 @@ export default function Auth() {
           <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
             <div className="bg-gradient-to-r from-primary to-violet p-1 rounded-2xl shadow-glow-md">
               <div className="bg-white rounded-xl px-4 py-2">
-                <img src={orionLabsLogo} alt="Orion Labs" className="h-10 w-auto" />
+                <PlatformLogo className="h-10 w-auto" />
               </div>
             </div>
           </div>
