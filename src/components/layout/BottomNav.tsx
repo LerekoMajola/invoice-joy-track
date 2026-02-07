@@ -1,4 +1,4 @@
-import { Home, Users, FileText, Receipt, MoreHorizontal } from 'lucide-react';
+import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,8 +9,8 @@ import { MoreMenuSheet } from './MoreMenuSheet';
 // Module key mapping for bottom nav items (null = always visible)
 const allNavItems = [
   { icon: Home, label: 'Home', path: '/dashboard', moduleKey: null },
-  { icon: Users, label: 'CRM', path: '/crm', moduleKey: 'core_crm' },
-  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes' },
+  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students' },
+  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees' },
   { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices' },
 ];
 
@@ -34,7 +34,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/delivery-notes', '/tasks', '/tenders', '/profitability', '/accounting', '/staff', '/billing', '/fleet', '/workshop', '/students', '/school-admin', '/school-fees'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/billing'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (

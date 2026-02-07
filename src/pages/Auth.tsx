@@ -6,25 +6,24 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Edit } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, GraduationCap, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { TrustBadges } from '@/components/auth/TrustBadges';
 import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
 import { ModuleSelector } from '@/components/auth/ModuleSelector';
-import { SystemSelector, type SystemType } from '@/components/auth/SystemSelector';
 import { PackageTierSelector } from '@/components/auth/PackageTierSelector';
 
-type SignupStep = 'system' | 'package' | 'review' | 'credentials' | 'custom-modules';
+type SignupStep = 'package' | 'review' | 'credentials' | 'custom-modules';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [signupStep, setSignupStep] = useState<SignupStep>('system');
-  const [selectedSystem, setSelectedSystem] = useState<SystemType | null>(null);
+  const [signupStep, setSignupStep] = useState<SignupStep>('package');
+  const [selectedSystem] = useState('school');
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [selectedModuleKeys, setSelectedModuleKeys] = useState<string[]>([]);
   const [savingModules, setSavingModules] = useState(false);
@@ -52,11 +51,6 @@ export default function Auth() {
       return false;
     }
     return true;
-  };
-
-  const handleSystemSelect = (system: SystemType) => {
-    setSelectedSystem(system);
-    setSignupStep('package');
   };
 
   const handleTierSelect = async (tierName: string, moduleKeys: string[]) => {
@@ -90,7 +84,7 @@ export default function Auth() {
         // Signup flow — validate selections first
         if (!selectedSystem || selectedModuleKeys.length === 0) {
           toast.error('Please complete your package selection first');
-          setSignupStep('system');
+          setSignupStep('package');
           setSubmitting(false);
           return;
         }
@@ -176,13 +170,13 @@ export default function Auth() {
         }
       }
 
-      toast.success('Your package is ready! Please check your email to verify your account.');
-      setSignupStep('system');
+      toast.success('Your package is ready!');
+      setSignupStep('package');
       setIsLogin(true);
     } catch (error: any) {
       console.error('Error saving signup data:', error);
       toast.error('Account created but failed to save package. You can update it in Billing.');
-      setSignupStep('system');
+      setSignupStep('package');
       setIsLogin(true);
     } finally {
       setSavingModules(false);
@@ -224,68 +218,29 @@ export default function Auth() {
 
   // Signup steps (full-screen)
   if (!isLogin) {
-    if (signupStep === 'system') {
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
-          <div className="w-full">
-            <SystemSelector onSelect={handleSystemSelect} />
-            <div className="text-center mt-8">
-              <button
-                type="button"
-                onClick={() => setIsLogin(true)}
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                Already have an account? Sign in
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (signupStep === 'package' && selectedSystem) {
+    if (signupStep === 'package') {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
           <PackageTierSelector
             systemType={selectedSystem}
             onSelect={handleTierSelect}
-            onBack={() => setSignupStep('system')}
+            onBack={() => setIsLogin(true)}
             onCustomBuild={handleCustomBuild}
           />
         </div>
       );
     }
 
-    if (signupStep === 'review' && selectedSystem && selectedTier) {
-      const systemLabels: Record<SystemType, string> = {
-        business: 'Business Management',
-        workshop: 'Workshop Management',
-        school: 'School Management',
-      };
-      const systemIcons: Record<SystemType, React.ReactNode> = {
-        business: <Briefcase className="h-6 w-6" />,
-        workshop: <Wrench className="h-6 w-6" />,
-        school: <GraduationCap className="h-6 w-6" />,
-      };
-      const systemGradients: Record<SystemType, string> = {
-        business: 'from-primary to-violet',
-        workshop: 'from-coral to-warning',
-        school: 'from-info to-cyan',
-      };
+    if (signupStep === 'review' && selectedTier) {
+      const systemLabel = 'School Management';
+      const systemIcon = <GraduationCap className="h-6 w-6" />;
+      const systemGradient = 'from-info to-cyan';
 
-      // Map module keys to readable names
       const moduleNameMap: Record<string, string> = {
-        core_crm: 'Core CRM & Clients',
-        quotes: 'Quotes',
         invoices: 'Invoices',
         tasks: 'Task Management',
-        delivery_notes: 'Delivery Notes',
-        profitability: 'Profitability Tracking',
-        tenders: 'Tender Tracking',
         accounting: 'Accounting',
         staff: 'Staff & HR',
-        fleet: 'Fleet Management',
-        workshop: 'Workshop (Job Cards)',
         school_admin: 'School Admin',
         students: 'Student Management',
         school_fees: 'School Fees',
@@ -311,12 +266,12 @@ export default function Auth() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-white',
-                  systemGradients[selectedSystem]
+                  systemGradient
                 )}>
-                  {systemIcons[selectedSystem]}
+                  {systemIcon}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-foreground">{systemLabels[selectedSystem]}</p>
+                  <p className="font-semibold text-foreground">{systemLabel}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge variant="secondary" className="text-xs">
                       {selectedTier}
@@ -413,7 +368,7 @@ export default function Auth() {
                 </h1>
                 <p className="text-muted-foreground mt-2">
                   {selectedTier
-                    ? `${selectedSystem === 'business' ? 'Business' : selectedSystem === 'workshop' ? 'Workshop' : 'School'} · ${selectedTier} package`
+                    ? `School · ${selectedTier} package`
                     : 'Custom package'}
                 </p>
               </div>
@@ -501,21 +456,15 @@ export default function Auth() {
       );
     }
 
-    // Fallback: if signup but no step matched, reset to system selection
+    // Fallback: redirect to package selection
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full">
-          <SystemSelector onSelect={handleSystemSelect} />
-          <div className="text-center mt-8">
-            <button
-              type="button"
-              onClick={() => setIsLogin(true)}
-              className="text-sm text-primary hover:underline font-medium"
-            >
-              Already have an account? Sign in
-            </button>
-          </div>
-        </div>
+        <PackageTierSelector
+          systemType={selectedSystem}
+          onSelect={handleTierSelect}
+          onBack={() => setIsLogin(true)}
+          onCustomBuild={handleCustomBuild}
+        />
       </div>
     );
   }
@@ -603,7 +552,7 @@ export default function Auth() {
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => { setIsLogin(false); setSignupStep('system'); }}
+              onClick={() => { setIsLogin(false); setSignupStep('package'); }}
               className="text-sm text-primary hover:underline font-medium"
             >
               Don't have an account? Sign up

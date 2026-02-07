@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Check, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
@@ -15,193 +13,48 @@ interface PackageTier {
   features: { name: string; included: boolean }[];
 }
 
-interface SystemPackages {
-  system: string;
-  label: string;
-  subtitle: string;
-  gradient: string;
-  tiers: PackageTier[];
-}
-
-const packages: SystemPackages[] = [
+const tiers: PackageTier[] = [
   {
-    system: 'business',
-    label: 'Business Management',
-    subtitle: 'For service companies, contractors & SMEs',
-    gradient: 'from-primary to-violet',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 350,
-        target: 'Growing service companies',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: false },
-          { name: 'Accounting', included: false },
-          { name: 'Staff & HR', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 520,
-        target: 'Established contractors',
-        popular: true,
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 680,
-        target: 'Large operations & teams',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Tender Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+    name: 'Starter',
+    price: 720,
+    target: 'Small private schools',
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: false },
     ],
   },
   {
-    system: 'workshop',
-    label: 'Workshop Management',
-    subtitle: 'For auto workshops & repair centres',
-    gradient: 'from-coral to-warning',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 450,
-        target: 'Small repair shops',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: false },
-          { name: 'Profitability Tracking', included: false },
-          { name: 'Accounting', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 650,
-        target: 'Busy workshops',
-        popular: true,
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 850,
-        target: 'Multi-bay service centres',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'Workshop (Job Cards)', included: true },
-          { name: 'Quotes', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Delivery Notes', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+    name: 'Professional',
+    price: 950,
+    target: 'Mid-size academies',
+    popular: true,
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
     ],
   },
   {
-    system: 'school',
-    label: 'School Management',
-    subtitle: 'For private schools & academies',
-    gradient: 'from-info to-cyan',
-    tiers: [
-      {
-        name: 'Starter',
-        price: 720,
-        target: 'Small private schools',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: false },
-          { name: 'Profitability Tracking', included: false },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Professional',
-        price: 950,
-        target: 'Mid-size academies',
-        popular: true,
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Fleet Management', included: false },
-        ],
-      },
-      {
-        name: 'Enterprise',
-        price: 1200,
-        target: 'Large schools & campuses',
-        features: [
-          { name: 'Core CRM & Clients', included: true },
-          { name: 'School Admin', included: true },
-          { name: 'Student Management', included: true },
-          { name: 'School Fees', included: true },
-          { name: 'Invoices', included: true },
-          { name: 'Task Management', included: true },
-          { name: 'Staff & HR', included: true },
-          { name: 'Accounting', included: true },
-          { name: 'Profitability Tracking', included: true },
-          { name: 'Fleet Management', included: true },
-        ],
-      },
+    name: 'Enterprise',
+    price: 1200,
+    target: 'Large schools & campuses',
+    features: [
+      { name: 'School Admin', included: true },
+      { name: 'Student Management', included: true },
+      { name: 'School Fees', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
     ],
   },
 ];
@@ -269,24 +122,6 @@ function PricingCard({ tier }: { tier: PackageTier }) {
 }
 
 export function PricingTable() {
-  const [activeTab, setActiveTab] = useState('business');
-
-  // Listen for hash changes to switch tabs (e.g. #pricing-workshop)
-  useEffect(() => {
-    const handleHash = () => {
-      const hash = window.location.hash;
-      if (hash.startsWith('#pricing-')) {
-        const system = hash.replace('#pricing-', '');
-        if (['business', 'workshop', 'school'].includes(system)) {
-          setActiveTab(system);
-        }
-      }
-    };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -295,41 +130,22 @@ export function PricingTable() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose the package that fits your industry. Start with a 7-day free trial — no credit card required.
+            Choose the package that fits your school. Start with a 7-day free trial — no credit card required.
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mx-auto mb-10 flex w-fit gap-2 bg-muted/60 p-1.5 rounded-2xl">
-            {packages.map((pkg) => (
-              <TabsTrigger
-                key={pkg.system}
-                value={pkg.system}
-                className="rounded-xl px-6 sm:px-8 py-3 text-sm sm:text-base font-semibold data-[state=active]:shadow-lg transition-all"
-              >
-                {pkg.system === 'business' ? 'Business' : pkg.system === 'workshop' ? 'Workshop' : 'School'}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="text-center mb-10">
+          <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-info to-cyan bg-clip-text text-transparent mb-2">
+            School Management
+          </h3>
+          <p className="text-muted-foreground">For private schools & academies</p>
+        </div>
 
-          {packages.map((systemPkg) => (
-            <TabsContent key={systemPkg.system} value={systemPkg.system}>
-              {/* System heading with gradient */}
-              <div className="text-center mb-10">
-                <h3 className={`font-display text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r ${systemPkg.gradient} bg-clip-text text-transparent mb-2`}>
-                  {systemPkg.label}
-                </h3>
-                <p className="text-muted-foreground">{systemPkg.subtitle}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
-                {systemPkg.tiers.map((tier) => (
-                  <PricingCard key={tier.name} tier={tier} />
-                ))}
-              </div>
-            </TabsContent>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+          {tiers.map((tier) => (
+            <PricingCard key={tier.name} tier={tier} />
           ))}
-        </Tabs>
+        </div>
 
         <div className="text-center mt-12">
           <Link to="/auth" className="text-sm text-primary hover:underline underline-offset-4 font-medium">
