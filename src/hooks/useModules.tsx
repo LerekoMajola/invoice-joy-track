@@ -128,6 +128,13 @@ export function useModules() {
     },
   });
 
+  // Filter platform modules by system type
+  const getModulesForSystem = (systemType: string): PlatformModule[] => {
+    return platformModules.filter(
+      (m) => !(m as any).system_type || (m as any).system_type === 'shared' || (m as any).system_type === systemType
+    );
+  };
+
   return {
     platformModules,
     userModules,
@@ -137,5 +144,6 @@ export function useModules() {
     getMonthlyTotal,
     saveUserModules,
     toggleModule,
+    getModulesForSystem,
   };
 }

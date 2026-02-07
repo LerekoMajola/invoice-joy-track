@@ -24,6 +24,7 @@ interface PlatformModule {
 interface ModuleSelectorProps {
   onComplete: (selectedModuleIds: string[]) => void;
   loading?: boolean;
+  systemType?: string;
 }
 
 function getIcon(iconName: string) {
@@ -31,7 +32,7 @@ function getIcon(iconName: string) {
   return Icon || Package;
 }
 
-export function ModuleSelector({ onComplete, loading }: ModuleSelectorProps) {
+export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelectorProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: modules = [], isLoading } = useQuery({
@@ -43,7 +44,14 @@ export function ModuleSelector({ onComplete, loading }: ModuleSelectorProps) {
         .eq('is_active', true)
         .order('sort_order');
       if (error) throw error;
-      return data as PlatformModule[];
+      // Filter by system_type if provided
+      const allModules = data as (PlatformModule & { system_type?: string })[];
+      if (systemType) {
+        return allModules.filter(
+          (m) => !m.system_type || m.system_type === 'shared' || m.system_type === systemType
+        );
+      }
+      return allModules;
     },
   });
 

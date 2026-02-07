@@ -376,7 +376,7 @@ export default function Auth() {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
           <div className="w-full">
-            <ModuleSelector onComplete={handleModulesComplete} loading={savingModules} />
+            <ModuleSelector onComplete={handleModulesComplete} loading={savingModules} systemType={selectedSystem || undefined} />
             <div className="text-center mt-4">
               <button
                 type="button"

@@ -1283,6 +1283,7 @@ export type Database = {
           monthly_price: number
           name: string
           sort_order: number
+          system_type: string
           updated_at: string
         }
         Insert: {
@@ -1296,6 +1297,7 @@ export type Database = {
           monthly_price?: number
           name: string
           sort_order?: number
+          system_type?: string
           updated_at?: string
         }
         Update: {
@@ -1309,6 +1311,7 @@ export type Database = {
           monthly_price?: number
           name?: string
           sort_order?: number
+          system_type?: string
           updated_at?: string
         }
         Relationships: []
