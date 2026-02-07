@@ -1,67 +1,60 @@
 
-# Fix: Prevent Signup Without Completing Selection Steps
 
-## The Problem
+# Enable Auto-Confirm and Prevent Duplicate Email Signups
 
-The signup flow has no validation guards, allowing users to create accounts without choosing a system type, package, or modules. There are two specific bugs:
+## Overview
 
-1. **No validation in `handleAuth`**: The signup submission only checks email and password. It never verifies that `selectedSystem`, `selectedTier`, or `selectedModuleKeys` are set, so it happily creates an account with null/empty selections.
+Two changes: enable auto-confirm so users can sign in immediately after signup (no email verification), and properly detect duplicate email addresses during signup.
 
-2. **Fallthrough to login form**: If `isLogin` is false but the signup step conditions don't match (e.g., credentials step without a selected system), the component falls through all the `if` blocks and renders the login form -- but since `isLogin` is still false, submitting that form runs the signup code path, bypassing all selection steps entirely.
+## What Changes
 
-## The Fix
+### 1. Enable Auto-Confirm
 
-Three changes to `src/pages/Auth.tsx`:
+Use the auth configuration tool to turn on auto-confirm for email signups. This means new users get a session immediately upon signup -- no confirmation email needed.
 
-### 1. Add signup validation in `handleAuth`
+### 2. Handle Duplicate Email Detection
 
-Before the signup API call, check that required selections exist:
-- `selectedSystem` must not be null
-- `selectedModuleKeys` must have at least one entry
-- If either is missing, show a toast error and redirect back to the system selection step
+With auto-confirm enabled, the backend does NOT return an error when someone signs up with an existing email (this is by design to prevent email enumeration attacks). Instead, it returns a user object with an **empty `identities` array**. The code needs to detect this and show a friendly error.
 
-### 2. Add a guard on the credentials step rendering
+### 3. Update Signup Success Flow
 
-The credentials step (line 396) currently only checks `signupStep === 'credentials'`. Add a condition that also requires `selectedSystem` to be set. If someone lands on credentials without a system selected, automatically redirect them back to the system step.
+Currently the code has two branches:
+- `data.user && !data.session` -- assumes email confirmation is required (shows "check your email" toast)
+- `data.user && data.session` -- treats as auto-confirm fallback
 
-### 3. Add a fallback catch-all for signup
+With auto-confirm always on, the primary path becomes `data.user && data.session`. The "check your email" branch becomes irrelevant and should be removed. On successful signup with a session, the code should immediately save the user's module selections and redirect to the dashboard.
 
-After all the signup step `if` blocks, before the login form renders, add a catch-all that redirects unmatched signup states back to the system selection step. This prevents the fallthrough-to-login-form bug.
-
-## Files to Change
+## File to Change
 
 | File | Change |
 |------|--------|
-| `src/pages/Auth.tsx` | Add 3 validation guards described above |
+| Auth configuration | Enable auto-confirm for email signups |
+| `src/pages/Auth.tsx` | Fix duplicate email detection and simplify signup success handling |
 
-## Technical Detail
+## Technical Details
 
-**Change 1 -- in `handleAuth` (around line 89):**
-Add before the `supabase.auth.signUp` call:
+### Duplicate Email Detection
+
 ```text
-if (!selectedSystem || selectedModuleKeys.length === 0) {
-  toast.error('Please complete your package selection first');
-  setSignupStep('system');
-  setSubmitting(false);
+// After supabase.auth.signUp returns:
+if (data.user && data.user.identities?.length === 0) {
+  // Email already exists - no new identity was created
+  toast.error('This email is already registered. Please login instead.');
   return;
 }
 ```
 
-**Change 2 -- credentials step guard (around line 396):**
-Change the condition from:
+### Simplified Signup Success
+
 ```text
-if (signupStep === 'credentials')
-```
-to:
-```text
-if (signupStep === 'credentials' && selectedSystem && selectedModuleKeys.length > 0)
+// With auto-confirm, successful signup always returns a session
+if (data.user && data.session) {
+  await saveSignupData(data.user.id);
+  toast.success('Account created! Welcome aboard.');
+}
 ```
 
-**Change 3 -- catch-all fallback (after line 498, before the login form):**
-Add a fallback when `!isLogin` but no step matched:
-```text
-// Fallback: if signup but no step matched, reset to system selection
-return (reset to system selection step UI)
-```
+### Remove Dead Code
 
-This calls `setSignupStep('system')` and renders the system selector, preventing any possibility of reaching the login form while in signup mode.
+The `data.user && !data.session` branch (email confirmation flow) will be removed since auto-confirm is now always on. The "check your email" toast message and the related state resets are no longer needed.
+
