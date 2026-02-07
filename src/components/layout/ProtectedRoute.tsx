@@ -57,6 +57,30 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           });
         }
 
+        // Check if user has modules — if not (legacy user), assign all active modules
+        const { data: userModules } = await supabase
+          .from('user_modules')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (!userModules || userModules.length === 0) {
+          // Fetch all active modules and assign them
+          const { data: allModules } = await supabase
+            .from('platform_modules')
+            .select('id')
+            .eq('is_active', true);
+
+          if (allModules && allModules.length > 0) {
+            const rows = allModules.map((m) => ({
+              user_id: user.id,
+              module_id: m.id,
+              is_active: true,
+            }));
+            await supabase.from('user_modules').insert(rows);
+          }
+        }
+
         setHasSubscription(true);
       } catch (error) {
         console.error('Error checking subscription:', error);

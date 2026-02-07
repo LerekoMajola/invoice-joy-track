@@ -1,57 +1,36 @@
-import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { UsageMeter } from '@/components/subscription/UsageMeter';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Check, ArrowRight, Clock, AlertTriangle } from 'lucide-react';
+import { useModules } from '@/hooks/useModules';
+import { Clock, AlertTriangle, Package, Loader2 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { formatMaluti } from '@/lib/currency';
 
-const plans = [
-  {
-    id: 'basic' as const,
-    name: 'Basic',
-    price: 'M300',
-    period: '/month',
-    description: 'Perfect for small businesses.',
-    features: ['50 clients', '100 quotes/month', '50 invoices/month', 'Email support'],
-  },
-  {
-    id: 'standard' as const,
-    name: 'Standard',
-    price: 'M500',
-    period: '/month',
-    description: 'For growing businesses.',
-    features: ['200 clients', 'Unlimited quotes', 'Unlimited invoices', 'Priority support'],
-    popular: true,
-  },
-  {
-    id: 'pro' as const,
-    name: 'Pro',
-    price: 'M800',
-    period: '/month',
-    description: 'For established businesses.',
-    features: ['Unlimited clients', 'Unlimited quotes', 'Unlimited invoices', 'Dedicated support'],
-  },
-];
+function getIcon(iconName: string) {
+  const Icon = (LucideIcons as any)[iconName];
+  return Icon || Package;
+}
 
 export default function Billing() {
-  const { subscription, currentPlan, isTrialing, isTrialExpired, trialDaysRemaining } = useSubscription();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { isTrialing, isTrialExpired, trialDaysRemaining } = useSubscription();
+  const { platformModules, userModules, isLoading, getMonthlyTotal, toggleModule } = useModules();
 
-  const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
-    toast.info('Payment integration coming soon! Contact us to upgrade your plan.');
-  };
+  // Build a set of active module IDs for the user
+  const activeModuleIds = new Set(
+    userModules.filter(um => um.is_active).map(um => um.module_id)
+  );
 
   return (
     <DashboardLayout>
       <Header 
         title="Billing & Subscription" 
-        subtitle="Manage your subscription plan and payment details" 
+        subtitle="Manage your modules and payment details" 
       />
       
       <div className="p-4 md:p-6 space-y-6 pb-safe">
@@ -76,8 +55,8 @@ export default function Billing() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isTrialExpired 
-                    ? 'Upgrade to a paid plan to continue using all features.' 
-                    : 'Upgrade now to ensure uninterrupted access to all features.'
+                    ? 'Contact us to activate your subscription.' 
+                    : 'Enjoy full access to all your selected modules during the trial.'
                   }
                 </p>
               </div>
@@ -88,70 +67,75 @@ export default function Billing() {
         {/* Current Usage */}
         <UsageMeter />
 
-        {/* Plans */}
+        {/* Active Modules */}
         <div>
-          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-            Choose Your Plan
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id}
-                className={cn(
-                  "relative transition-all",
-                  plan.popular && "border-primary shadow-lg",
-                  currentPlan === plan.id && "ring-2 ring-primary"
-                )}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary">Most Popular</Badge>
-                  </div>
-                )}
-                
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {plan.name}
-                    {currentPlan === plan.id && (
-                      <Badge variant="secondary">Current</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="pt-2">
-                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-accent" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    className="w-full"
-                    variant={currentPlan === plan.id ? "outline" : "default"}
-                    disabled={currentPlan === plan.id}
-                    onClick={() => handleSelectPlan(plan.id)}
-                  >
-                    {currentPlan === plan.id ? (
-                      'Current Plan'
-                    ) : (
-                      <>
-                        Upgrade to {plan.name}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-xl font-semibold text-foreground">
+              Your Modules
+            </h2>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Monthly total</p>
+              <p className="text-2xl font-bold text-foreground">
+                {formatMaluti(getMonthlyTotal())}
+              </p>
+            </div>
           </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {platformModules.map((mod) => {
+                const isActive = activeModuleIds.has(mod.id);
+                const IconComponent = getIcon(mod.icon);
+
+                return (
+                  <Card
+                    key={mod.id}
+                    className={cn(
+                      'transition-all',
+                      isActive ? 'border-primary/30 bg-primary/5' : 'opacity-60'
+                    )}
+                  >
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={cn(
+                          'p-2.5 rounded-xl',
+                          isActive ? 'bg-primary/10' : 'bg-muted'
+                        )}>
+                          <IconComponent className={cn(
+                            'h-5 w-5',
+                            isActive ? 'text-primary' : 'text-muted-foreground'
+                          )} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm truncate">{mod.name}</p>
+                            {mod.is_core && (
+                              <Badge variant="secondary" className="text-[9px] px-1.5">Required</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {formatMaluti(mod.monthly_price)}/mo
+                          </p>
+                        </div>
+                      </div>
+
+                      <Switch
+                        checked={isActive}
+                        onCheckedChange={(checked) => {
+                          toggleModule.mutate({ moduleId: mod.id, activate: checked });
+                        }}
+                        disabled={mod.is_core || toggleModule.isPending}
+                      />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Payment Info */}
@@ -164,7 +148,7 @@ export default function Billing() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              To upgrade your plan, please contact us at{' '}
+              To activate your subscription, please contact us at{' '}
               <a href="mailto:support@orionlabs.com" className="text-primary hover:underline">
                 support@orionlabs.com
               </a>

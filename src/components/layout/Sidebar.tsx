@@ -12,25 +12,29 @@ import {
   TrendingUp,
   CreditCard,
   UserPlus,
-  Calculator
+  Calculator,
+  Car
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useModules } from '@/hooks/useModules';
 import { Button } from '@/components/ui/button';
 
+// Map nav items to module keys (null = always visible)
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Clients & Leads', href: '/crm', icon: Users },
-  { name: 'Quotes', href: '/quotes', icon: FileText },
-  { name: 'Invoices', href: '/invoices', icon: Receipt },
-  { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck },
-  { name: 'Profitability', href: '/profitability', icon: TrendingUp },
-  { name: 'Accounting', href: '/accounting', icon: Calculator },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase },
-  { name: 'Staff', href: '/staff', icon: UserPlus },
-  { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Billing', href: '/billing', icon: CreditCard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: null },
+  { name: 'Clients & Leads', href: '/crm', icon: Users, moduleKey: 'core_crm' },
+  { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes' },
+  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices' },
+  { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes' },
+  { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability' },
+  { name: 'Accounting', href: '/accounting', icon: Calculator, moduleKey: 'accounting' },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks' },
+  { name: 'Tenders & RFQs', href: '/tenders', icon: Briefcase, moduleKey: 'tenders' },
+  { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff' },
+  { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet' },
+  { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null },
+  { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null },
 ];
 
 interface SidebarProps {
@@ -40,6 +44,16 @@ interface SidebarProps {
 export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { hasModule, userModules } = useModules();
+
+  const filteredNavigation = navigation.filter((item) => {
+    // Always show items without a module key
+    if (!item.moduleKey) return true;
+    // If user has no modules yet (legacy/loading), show everything
+    if (userModules.length === 0) return true;
+    // Gate by subscribed module
+    return hasModule(item.moduleKey);
+  });
 
   const handleClick = () => {
     onNavigate?.();
@@ -57,7 +71,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="flex h-full flex-col">
         {/* Navigation */}
         <nav className="relative flex-1 space-y-1 px-3 py-6 overflow-y-auto scrollbar-hide">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link

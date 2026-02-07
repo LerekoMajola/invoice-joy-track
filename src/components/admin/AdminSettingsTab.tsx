@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import orionLabsLogo from '@/assets/orion-labs-logo.png';
 import { AppIconSettings } from './AppIconSettings';
+import { ModuleManagement } from './ModuleManagement';
 
 export function AdminSettingsTab() {
   const { logoUrl, updateLogoUrl } = usePlatformSettings();
@@ -144,6 +145,8 @@ export function AdminSettingsTab() {
       </Card>
 
       <AppIconSettings />
+
+      <ModuleManagement />
     </div>
   );
 }

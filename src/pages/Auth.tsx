@@ -10,25 +10,29 @@ import { toast } from 'sonner';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { TrustBadges } from '@/components/auth/TrustBadges';
 import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
+import { ModuleSelector } from '@/components/auth/ModuleSelector';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [signupStep, setSignupStep] = useState<'credentials' | 'modules'>('credentials');
+  const [newUserId, setNewUserId] = useState<string | null>(null);
+  const [savingModules, setSavingModules] = useState(false);
   const navigate = useNavigate();
   const { user, isAdmin, loading } = useAuth();
 
-  // Redirect authenticated users based on role
+  // Redirect authenticated users based on role (only after module selection is done)
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && signupStep === 'credentials') {
       if (isAdmin) {
         navigate('/admin', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, isAdmin, loading, navigate, signupStep]);
 
   const validateForm = () => {
     if (!email || !email.includes('@')) {
@@ -65,7 +69,7 @@ export default function Auth() {
           toast.success('Welcome back!');
         }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -78,14 +82,43 @@ export default function Auth() {
           } else {
             toast.error(error.message);
           }
-        } else {
-          toast.success('Account created successfully!');
+        } else if (data.user) {
+          setNewUserId(data.user.id);
+          setSignupStep('modules');
+          toast.success('Account created! Now choose your modules.');
         }
       }
     } catch (error: any) {
       toast.error('An unexpected error occurred');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleModulesComplete = async (selectedModuleIds: string[]) => {
+    if (!newUserId) return;
+    setSavingModules(true);
+
+    try {
+      // Save selected modules
+      const rows = selectedModuleIds.map((moduleId) => ({
+        user_id: newUserId,
+        module_id: moduleId,
+        is_active: true,
+      }));
+
+      const { error } = await supabase.from('user_modules').insert(rows);
+      if (error) throw error;
+
+      toast.success('Your package is ready!');
+      setSignupStep('credentials');
+      // The useEffect will handle redirect now
+    } catch (error: any) {
+      console.error('Error saving modules:', error);
+      toast.error('Failed to save modules. You can update them later in Billing.');
+      setSignupStep('credentials');
+    } finally {
+      setSavingModules(false);
     }
   };
 
@@ -97,6 +130,15 @@ export default function Auth() {
           <Loader2 className="h-10 w-10 animate-spin text-white" />
           <p className="text-white/80 text-sm">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Module selection step (full-screen)
+  if (signupStep === 'modules') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <ModuleSelector onComplete={handleModulesComplete} loading={savingModules} />
       </div>
     );
   }
