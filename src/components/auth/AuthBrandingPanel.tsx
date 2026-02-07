@@ -13,9 +13,7 @@ export function AuthBrandingPanel() {
 
       <div className="relative max-w-md text-center animate-slide-up">
         <div className="flex items-center justify-center mb-8 animate-bounce-in">
-          <div className="bg-white rounded-2xl px-6 py-3 shadow-2xl">
-            <PlatformLogo className="h-12 w-auto" />
-          </div>
+          <PlatformLogo className="h-32 w-auto rounded-3xl p-8 bg-white shadow-sm" />
         </div>
         <h2 className="font-display text-3xl font-bold text-white mb-4">
           Manage Your Business Operations

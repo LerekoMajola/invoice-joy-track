@@ -110,13 +110,9 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
-            <div className="bg-gradient-to-r from-primary to-violet p-1 rounded-2xl shadow-glow-md">
-              <div className="bg-white rounded-xl px-4 py-2">
-                <PlatformLogo className="h-10 w-auto" />
-              </div>
-            </div>
-          </div>
+           <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
+              <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+           </div>
 
           <div className="text-center mb-8 animate-slide-up">
             <h1 className="font-display text-3xl font-bold text-foreground">

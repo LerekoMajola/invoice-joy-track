@@ -8,9 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-lg px-4 py-2 inline-block mb-4">
-              <PlatformLogo className="h-8 w-auto" />
-            </div>
+            <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-sm mb-4" />
             <p className="text-primary-foreground/70 max-w-sm">
               The all-in-one business management platform designed for your business. 
               Quotes, invoices, and more.

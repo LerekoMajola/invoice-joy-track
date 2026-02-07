@@ -23,7 +23,7 @@ export default function Admin() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <PlatformLogo
-              className="h-8 w-auto"
+              className="h-16 w-auto rounded-2xl p-4 bg-white shadow-sm"
               fallbackIcon={
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Shield className="h-6 w-6 text-primary" />

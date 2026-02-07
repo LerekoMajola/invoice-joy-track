@@ -142,9 +142,9 @@ export default function ResetPassword() {
        <div className="flex-1 flex items-center justify-center p-8">
          <div className="w-full max-w-md">
            {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center justify-center mb-8">
-              <PlatformLogo className="h-12 w-auto" />
-            </div>
+             <div className="lg:hidden flex items-center justify-center mb-8">
+               <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+             </div>
  
            {step === 'request' && !emailSent && (
              <>
