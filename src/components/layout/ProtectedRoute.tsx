@@ -12,6 +12,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [needsPayment, setNeedsPayment] = useState(false);
 
   useEffect(() => {
     async function checkSubscription() {
@@ -24,7 +25,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         // Check if user has a subscription
         const { data: subscription } = await supabase
           .from('subscriptions')
-          .select('id')
+          .select('id, status, trial_ends_at')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -55,6 +56,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             quotes_count: 0,
             invoices_count: 0,
           });
+        } else {
+          // Check if trial has expired and subscription is not active
+          const isTrialing = subscription.status === 'trialing';
+          const trialExpired = isTrialing && subscription.trial_ends_at
+            ? new Date(subscription.trial_ends_at).getTime() < Date.now()
+            : false;
+          const isActive = subscription.status === 'active';
+
+          if (trialExpired && !isActive) {
+            setNeedsPayment(true);
+          }
         }
 
         // Check if user has modules — if not (legacy user), assign all active modules
@@ -65,7 +77,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           .limit(1);
 
         if (!userModules || userModules.length === 0) {
-          // Fetch all active modules and assign them
           const { data: allModules } = await supabase
             .from('platform_modules')
             .select('id')
@@ -105,6 +116,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (needsPayment) {
+    return <Navigate to="/payment-required" replace />;
   }
 
   return <>{children}</>;

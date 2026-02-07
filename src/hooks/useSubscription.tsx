@@ -148,6 +148,12 @@ export function useSubscription() {
 
   const isTrialExpired = isTrialing && trialDaysRemaining <= 0;
 
+  // Determines if user needs to pay — trial expired and not active
+  const needsPayment = isTrialExpired && !isActive;
+
+  // Generate payment reference from user ID
+  const paymentReference = user ? `REF-${user.id.slice(0, 8).toUpperCase()}` : '';
+
   // System type from subscription
   const systemType: SystemType = (subscription as any)?.system_type || 'business';
 
@@ -166,6 +172,8 @@ export function useSubscription() {
     isExpired,
     isTrialExpired,
     trialDaysRemaining,
+    needsPayment,
+    paymentReference,
     systemType,
   };
 }
