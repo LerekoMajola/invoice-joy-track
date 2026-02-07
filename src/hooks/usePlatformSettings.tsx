@@ -1,45 +1,45 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export function usePlatformSettings() {
+function usePlatformSetting(key: string) {
   const queryClient = useQueryClient();
 
-  const { data: logoUrl, isLoading } = useQuery({
-    queryKey: ['platform-settings', 'platform_logo_url'],
+  const { data: value, isLoading } = useQuery({
+    queryKey: ['platform-settings', key],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
         .select('value')
-        .eq('key', 'platform_logo_url')
+        .eq('key', key)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching platform logo:', error);
+        console.error(`Error fetching ${key}:`, error);
         return null;
       }
       return data?.value ?? null;
     },
-    staleTime: 1000 * 60 * 30, // 30 minutes - logo rarely changes
+    staleTime: 1000 * 60 * 30,
   });
 
-  const updateLogoUrl = useMutation({
+  const updateValue = useMutation({
     mutationFn: async (url: string | null) => {
       const { data: existing } = await supabase
         .from('platform_settings')
         .select('id')
-        .eq('key', 'platform_logo_url')
+        .eq('key', key)
         .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
           .from('platform_settings')
           .update({ value: url, updated_at: new Date().toISOString() })
-          .eq('key', 'platform_logo_url');
+          .eq('key', key);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('platform_settings')
-          .insert({ key: 'platform_logo_url', value: url });
+          .insert({ key, value: url });
         if (error) throw error;
       }
     },
@@ -48,5 +48,23 @@ export function usePlatformSettings() {
     },
   });
 
-  return { logoUrl: logoUrl ?? null, isLoading, updateLogoUrl };
+  return { value: value ?? null, isLoading, updateValue };
+}
+
+export function usePlatformSettings() {
+  const logo = usePlatformSetting('platform_logo_url');
+  const favicon = usePlatformSetting('platform_favicon_url');
+  const appIcon = usePlatformSetting('platform_app_icon_url');
+
+  return {
+    logoUrl: logo.value,
+    isLoading: logo.isLoading,
+    updateLogoUrl: logo.updateValue,
+    faviconUrl: favicon.value,
+    isFaviconLoading: favicon.isLoading,
+    updateFaviconUrl: favicon.updateValue,
+    appIconUrl: appIcon.value,
+    isAppIconLoading: appIcon.isLoading,
+    updateAppIconUrl: appIcon.updateValue,
+  };
 }

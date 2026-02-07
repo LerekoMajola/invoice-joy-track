@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/layout/AdminProtectedRoute";
+import { DynamicAppIcons } from "@/components/shared/DynamicAppIcons";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -22,7 +23,7 @@ import Billing from "./pages/Billing";
 import Staff from "./pages/Staff";
 import Accounting from "./pages/Accounting";
 import NotFound from "./pages/NotFound";
- import ResetPassword from "./pages/ResetPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -32,11 +33,12 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <DynamicAppIcons />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<AdminProtectedRoute><Admin /></AdminProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
