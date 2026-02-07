@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -260,6 +261,24 @@ function PricingCard({ tier }: { tier: PackageTier }) {
 }
 
 export function PricingTable() {
+  const [activeTab, setActiveTab] = useState('business');
+
+  // Listen for hash changes to switch tabs (e.g. #pricing-workshop)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#pricing-')) {
+        const system = hash.replace('#pricing-', '');
+        if (['business', 'workshop', 'school'].includes(system)) {
+          setActiveTab(system);
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -272,7 +291,7 @@ export function PricingTable() {
           </p>
         </div>
 
-        <Tabs defaultValue="business" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mx-auto mb-12 flex w-fit gap-1 bg-muted/60 p-1 rounded-xl">
             <TabsTrigger value="business" className="rounded-lg px-6 py-2.5 text-sm font-medium">
               Business

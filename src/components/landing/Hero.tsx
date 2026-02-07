@@ -4,9 +4,9 @@ import { ArrowRight, Briefcase, Wrench, GraduationCap } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 const systems = [
-  { icon: Briefcase, label: 'Business Management', gradient: 'from-primary to-violet' },
-  { icon: Wrench, label: 'Workshop Management', gradient: 'from-coral to-warning' },
-  { icon: GraduationCap, label: 'School Management', gradient: 'from-info to-cyan' },
+  { icon: Briefcase, label: 'Business Management', gradient: 'from-primary to-violet', pricingHash: '#pricing-business' },
+  { icon: Wrench, label: 'Workshop Management', gradient: 'from-coral to-warning', pricingHash: '#pricing-workshop' },
+  { icon: GraduationCap, label: 'School Management', gradient: 'from-info to-cyan', pricingHash: '#pricing-school' },
 ];
 
 export function Hero() {
@@ -28,6 +28,17 @@ export function Hero() {
         {/* Header */}
         <header className="flex items-center justify-between py-6">
           <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="#solutions" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
+              Solutions
+            </a>
+            <a href="#features" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
+              Features
+            </a>
+            <a href="#pricing" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
+              Pricing
+            </a>
+          </nav>
           <div className="flex items-center gap-4">
             <Link to="/auth">
               <Button variant="ghost" className="text-white hover:bg-white/20 rounded-xl">
@@ -61,19 +72,19 @@ export function Hero() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <a href="#solutions">
+            <a href="#pricing">
               <Button size="lg" variant="ghost" className="text-white hover:bg-white/20 px-8 py-6 text-lg rounded-2xl">
-                Explore Solutions
+                View Pricing
               </Button>
             </a>
           </div>
 
           {/* System Pills */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
-            {systems.map(({ icon: Icon, label, gradient }, index) => (
+            {systems.map(({ icon: Icon, label, gradient, pricingHash }, index) => (
               <a
                 key={label}
-                href="#solutions"
+                href={pricingHash}
                 className="group flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 hover:-translate-y-1 animate-float"
                 style={{ animationDelay: `${index * 0.2}s` }}
               >

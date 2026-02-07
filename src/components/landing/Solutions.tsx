@@ -107,12 +107,19 @@ export function Solutions() {
                   {solution.description}
                 </p>
 
-                <Link to="/auth">
-                  <Button variant="outline" className="rounded-xl group">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                  <a href={`#pricing-${solution.id}`}>
+                    <Button variant="outline" className="rounded-xl group">
+                      View Pricing
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  </a>
+                  <Link to="/auth">
+                    <Button variant="ghost" className="rounded-xl text-primary">
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               {/* Feature Grid */}
