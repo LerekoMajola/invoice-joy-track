@@ -102,12 +102,7 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Wave Divider */}
-      <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-[60px]">
-          <path d="M0 0L1440 60H0Z" fill="hsl(var(--background))" />
-        </svg>
-      </div>
+
     </section>
   );
 }
