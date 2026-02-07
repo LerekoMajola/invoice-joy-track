@@ -62,16 +62,13 @@ import { PlatformLogo } from '@/components/shared/PlatformLogo';
      setSubmitting(true);
  
      try {
-       const response = await supabase.functions.invoke('send-password-reset', {
-         body: {
-           email,
-           redirectUrl: `${window.location.origin}/reset-password`,
-         },
-       });
- 
-       if (response.error) {
-         throw response.error;
-       }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+          throw error;
+        }
  
        setEmailSent(true);
        toast.success('Check your email for a password reset link');
