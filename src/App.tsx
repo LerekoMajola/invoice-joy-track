@@ -29,6 +29,7 @@ import SchoolAdmin from "./pages/SchoolAdmin";
 import SchoolFees from "./pages/SchoolFees";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import PaymentRequired from "./pages/PaymentRequired";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<AdminProtectedRoute><Admin /></AdminProtectedRoute>} />
+            <Route path="/payment-required" element={<PaymentRequired />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
