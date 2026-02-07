@@ -7,23 +7,32 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-sm mb-4" />
-            <p className="text-primary-foreground/70 max-w-sm">
-              The all-in-one business management platform designed for your business. 
-              Quotes, invoices, and more.
+            <p className="text-primary-foreground/70 text-sm">
+              The modular platform for businesses, workshops, and schools across Africa.
             </p>
           </div>
 
-          {/* Product */}
+          {/* Business */}
           <div>
-            <h4 className="font-display font-semibold mb-4">Product</h4>
+            <h4 className="font-display font-semibold mb-4">Business Management</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Quotes</Link></li>
-              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Invoices</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Quotes & Invoices</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Client CRM</Link></li>
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Delivery Notes</Link></li>
-              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">CRM</Link></li>
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Profitability</Link></li>
+            </ul>
+          </div>
+
+          {/* Workshop & School */}
+          <div>
+            <h4 className="font-display font-semibold mb-4">Workshop & School</h4>
+            <ul className="space-y-2 text-sm text-primary-foreground/70">
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Job Cards</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Parts & Labour</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Student Records</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">School Fees</Link></li>
             </ul>
           </div>
 
@@ -32,7 +41,7 @@ export function Footer() {
             <h4 className="font-display font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Sign In</Link></li>
-              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Sign Up</Link></li>
+              <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Start Free Trial</Link></li>
               <li><a href="mailto:support@orionlabs.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
             </ul>
           </div>
