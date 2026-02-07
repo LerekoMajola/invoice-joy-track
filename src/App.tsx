@@ -24,6 +24,9 @@ import Staff from "./pages/Staff";
 import Accounting from "./pages/Accounting";
 import Fleet from "./pages/Fleet";
 import Workshop from "./pages/Workshop";
+import Students from "./pages/Students";
+import SchoolAdmin from "./pages/SchoolAdmin";
+import SchoolFees from "./pages/SchoolFees";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -56,6 +59,9 @@ const App = () => (
             <Route path="/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
             <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
             <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
+            <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+            <Route path="/school-admin" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
+            <Route path="/school-fees" element={<ProtectedRoute><SchoolFees /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
