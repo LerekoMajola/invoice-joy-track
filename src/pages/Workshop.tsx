@@ -347,12 +347,12 @@ export default function Workshop() {
       />
 
       <ConfirmDialog
-        open={confirmDialog.open}
+        open={confirmDialog?.open ?? false}
         onOpenChange={closeConfirmDialog}
-        title={confirmDialog.title}
-        description={confirmDialog.description}
-        confirmLabel={confirmDialog.confirmLabel}
-        variant={confirmDialog.variant as any}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant as any}
         onConfirm={handleConfirm}
       />
     </DashboardLayout>
