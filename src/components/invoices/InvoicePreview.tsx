@@ -176,7 +176,7 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
                 <Palette className="h-4 w-4" /> Template
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[540px]" align="start">
+            <PopoverContent className="w-[600px]" align="start">
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">Choose Template</h4>
                 <TemplateSelector selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} />

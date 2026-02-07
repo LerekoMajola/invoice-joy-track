@@ -97,7 +97,7 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2"><Palette className="h-4 w-4" /> Template</Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[540px]" align="end">
+          <PopoverContent className="w-[600px]" align="end">
             <div className="space-y-3">
               <h4 className="font-medium text-sm">Choose Template</h4>
               <TemplateSelector selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} />

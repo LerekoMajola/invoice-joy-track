@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { FontSelector } from './FontSelector';
-import { Palette, LayoutTemplate } from 'lucide-react';
+import { Palette, LayoutTemplate, Check } from 'lucide-react';
+import { DocumentMiniPreview } from './DocumentMiniPreview';
+import { templates as documentTemplates } from '@/components/quotes/DocumentTemplates';
+import type { DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import type { HeaderStyle } from '@/components/quotes/DocumentTemplates';
 
 interface TemplateSettings {
@@ -208,21 +211,41 @@ export function TemplateEditor({ value, onChange }: TemplateEditorProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Preset Templates */}
+        {/* Template Presets with Full Previews */}
         <div className="space-y-3">
-          <Label>Quick Presets</Label>
-          <div className="grid grid-cols-5 gap-2">
-            {PRESET_TEMPLATES.map((preset) => (
-              <Button
-                key={preset.id}
-                variant="outline"
-                className="h-auto py-3 flex flex-col gap-2"
-                onClick={() => applyPreset(preset)}
-              >
-                <div className="h-6 w-full rounded" style={{ backgroundColor: preset.primary }} />
-                <span className="text-xs truncate w-full">{preset.name}</span>
-              </Button>
-            ))}
+          <Label>Choose a Template</Label>
+          <p className="text-sm text-muted-foreground">Click a template to apply its style. Each has a unique layout structure.</p>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {PRESET_TEMPLATES.map((preset, idx) => {
+              const docTemplate = documentTemplates[idx];
+              const isSelected = value.template_header_style === preset.header && value.template_primary_color === preset.primary;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => applyPreset(preset)}
+                  className={`relative rounded-xl border-2 transition-all hover:shadow-lg overflow-hidden text-left ${
+                    isSelected
+                      ? 'border-primary ring-2 ring-primary/20 shadow-md'
+                      : 'border-border hover:border-muted-foreground/30'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground rounded-full p-1 shadow-md">
+                      <Check className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+                  {/* Scaled-down full document preview */}
+                  <div className="w-full overflow-hidden" style={{ height: '220px' }}>
+                    {docTemplate && <DocumentMiniPreview template={docTemplate} />}
+                  </div>
+                  {/* Label bar */}
+                  <div className="p-2.5 border-t bg-card flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: preset.primary }} />
+                    <span className="text-xs font-medium truncate">{preset.name}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
