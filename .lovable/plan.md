@@ -1,44 +1,83 @@
 
 
-# Fix Platform Logo Upload and Add Size Guidance
+# Add Trust Signals to the Auth Page
 
-## Problem
+Enhance the login/signup page with visual trust indicators that reassure users their data is safe -- without requiring any backend changes.
 
-The logo upload fails with a "row-level security policy" error because the storage policies on `company-assets` require the first folder in the path to match the logged-in user's ID (e.g., `user-uuid/logo.png`). The admin upload uses the path `platform/logo.png`, which does not match any user ID and gets blocked.
+---
 
-## Solution
+## What Changes
 
-### 1. Add storage policies for the `platform/` prefix
+### 1. Security trust badges below the form
 
-Create new RLS policies on the `storage.objects` table that allow super admins to INSERT, UPDATE, DELETE, and SELECT files where the path starts with `platform/`.
+Add a row of small trust indicators beneath the sign-in/sign-up button showing:
 
-The policies will use the existing `has_role()` function to verify the user is a `super_admin`.
+- **Shield icon** -- "256-bit SSL Encrypted"
+- **Lock icon** -- "Secure Authentication"  
+- **Eye-off icon** -- "We never share your data"
 
-**New policies:**
+These appear as subtle, muted-text items with icons, giving users confidence without cluttering the form.
 
-| Policy | Command | Condition |
-|--------|---------|-----------|
-| Super admins can upload platform assets | INSERT | bucket = `company-assets`, folder starts with `platform`, user has `super_admin` role |
-| Super admins can update platform assets | UPDATE | Same as above |
-| Super admins can delete platform assets | DELETE | Same as above |
-| Anyone can view platform assets | SELECT | bucket = `company-assets`, folder starts with `platform` |
+### 2. Left-side branding panel improvements (desktop)
 
-The SELECT policy is public because the logo needs to be visible on unauthenticated pages (landing, login, etc.). The bucket is already public, but the RLS SELECT policy is also needed.
+Replace the generic "Manage Your Business Operations" text area with trust-building content:
 
-### 2. Add recommended size guidance to the upload UI
+- Add a short **testimonial quote** from a satisfied user (placeholder text that can be updated later)
+- Add a "Trusted by **50+** businesses" line with a small stat
+- Keep the existing feature pills (Quotes, Invoices, CRM, Tasks)
 
-Update the `AdminSettingsTab` component to show clear size recommendations:
+### 3. Footer-level trust line on the form
 
-- **Recommended dimensions:** 200 x 60 pixels (or similar aspect ratio)
-- **Format:** PNG or SVG
-- **Max file size:** 2 MB
+Add a small line at the very bottom of the form area:
 
-This information will be displayed near the upload button so admins know the ideal specifications before uploading.
+> "Your data is protected with enterprise-grade security"
+
+This is a subtle, muted text line that appears below the "Don't have an account?" toggle.
+
+### 4. Remove hardcoded "Orion Labs" references
+
+The signup subtitle currently says "Get started with Orion Labs today" -- this should be made generic (e.g., "Get started today") since the platform name is now dynamic via the admin logo settings.
+
+---
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| Database migration (SQL) | Add 4 new storage RLS policies for `platform/` prefix |
-| `src/components/admin/AdminSettingsTab.tsx` | Update recommendation text to include preferred dimensions |
+| `src/pages/Auth.tsx` | Add trust badges below form button, add footer trust line, add testimonial to left panel, remove hardcoded "Orion Labs" text |
+
+---
+
+## Technical Details
+
+### Trust badges section (below the submit button)
+
+```text
+A flex row with 3 items, each containing:
+- A lucide-react icon (Shield, Lock, EyeOff) at 14px
+- A small muted text label
+- Styled with text-xs text-muted-foreground, spaced evenly
+- Separated by subtle dot dividers
+```
+
+### Left panel testimonial (desktop only)
+
+```text
+Below the existing description text, add:
+- A blockquote with italic text: a short user testimonial
+- Author name and title in smaller text
+- A "Trusted by 50+ businesses" badge-style element
+- All white/semi-transparent text to match the existing gradient panel
+```
+
+### Hardcoded text fix
+
+```text
+Line 159: "Get started with Orion Labs today"
+Changes to: "Get started with your free account"
+```
+
+### Icons used
+
+All from `lucide-react` (already installed): `Shield`, `EyeOff` (added to imports alongside existing `Mail`, `Lock`, `Loader2`)
 
