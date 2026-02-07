@@ -1,54 +1,95 @@
 
 
-# Add Change Password Feature to Settings
+# Add 10 Distinct Document Layout Templates
 
-## What's Missing
+## Overview
 
-Currently, the only way to change your password is through the "Forgot Password" flow on the login page, which sends an email link. There is no way for a logged-in user to change their password directly from within the app.
+Currently, your documents (quotes, invoices, delivery notes) all use the same basic layout -- only the colors and fonts change between the 5 existing templates. This plan introduces 10 truly distinct layout designs with different visual structures, so each business can look unique while handling the same information.
 
-## What Gets Added
+## What Changes
 
-A new **"Account Security"** card in the Settings page that lets you change your password while logged in. It will include:
+### 1. Expand to 10 Unique Templates
 
-- Current password field (for verification)
-- New password field
-- Confirm new password field
-- Validation (minimum 6 characters, passwords must match)
-- Success/error feedback via toast messages
+Each template will have its own visual identity, not just different colors but different structural layouts:
 
-This card will appear at the top of the Settings page, since account security is a high-priority setting.
+| # | Template Name | Layout Style | Key Visual Feature |
+|---|--------------|-------------|-------------------|
+| 1 | Navy Professional | Classic top-aligned header | Company info left, logo right, traditional look |
+| 2 | Emerald Modern | Centered header with accent bar | Full-width color banner, centered company name |
+| 3 | Slate Minimal | Ultra-clean with lots of whitespace | Thin accent lines, minimal borders |
+| 4 | Royal Blue | Split header with sidebar accent | Colored sidebar strip on the left edge |
+| 5 | Burgundy Classic | Elegant with decorative borders | Double-line borders, serif typography |
+| 6 | Teal Corporate | Two-column header layout | Logo and company info side-by-side in a card |
+| 7 | Charcoal Bold | Dark header with white text overlay | Large bold document title in header band |
+| 8 | Sunset Warm | Gradient header accent | Warm tones with a subtle gradient bar |
+| 9 | Forest Executive | Boxed sections with rounded corners | Each section in a distinct rounded box |
+| 10 | Midnight Contrast | High-contrast with accent highlights | Dark theme with bright accent color pops |
 
-## How It Will Look
+### 2. Make Template Selector Available Everywhere
 
-The card follows the same design pattern as the other Settings cards:
-- A Lock icon with the title "Account Security"
-- Description: "Change your account password"
-- Three password fields stacked vertically
-- A "Change Password" button at the bottom of the card
+Currently only the Quotes page has a template picker. This will be extended so:
+- **Invoices** get the same template selector popover in their toolbar
+- **Delivery Notes** get the same template selector
+- All documents respect the chosen template's layout
 
-## File to Change
+### 3. Layout Rendering System
+
+Instead of just swapping colors, a new layout rendering approach will generate different HTML structures based on the template's `headerStyle` property (which currently exists but is unused). This will be expanded to support the 10 layout variations.
+
+## How It Works for Users
+
+1. Go to **Settings** and pick a default template from 10 options (with live preview)
+2. When viewing any document (quote, invoice, delivery note), click the **Template** button to switch layouts on the fly
+3. Each template produces a visually distinct PDF when downloaded
+4. The selected template in Settings becomes the default for all new documents
+
+## Files to Change
 
 | File | Change |
 |------|--------|
-| `src/pages/Settings.tsx` | Add an "Account Security" card with a change password form |
+| `src/components/quotes/DocumentTemplates.tsx` | Add 5 new templates (total 10), add `layoutId` property, update `TemplateSelector` grid to handle 10 items (2 rows of 5) |
+| `src/components/quotes/QuotePreview.tsx` | Refactor document body to use layout-specific rendering for header, client info, and table sections |
+| `src/components/invoices/InvoicePreview.tsx` | Add template selector popover (like quotes have), use layout-specific rendering instead of hardcoded layout |
+| `src/components/delivery-notes/DeliveryNotePreview.tsx` | Add template selector popover, use layout-specific rendering |
+| `src/components/settings/TemplateEditor.tsx` | Update preset list to 10 templates, improve preview to reflect layout differences |
+| `src/components/workshop/JobCardPreview.tsx` | Add template selector support for job cards |
 
 ## Technical Details
 
-### Implementation approach
+### New Template Properties
 
-The change password form uses `supabase.auth.updateUser({ password })` to update the password. Before calling this, it:
+The `DocumentTemplate` interface will be extended with a `layoutId` field that determines the structural layout:
 
-1. Validates the new password is at least 6 characters
-2. Confirms the new password matches the confirmation field
-3. Verifies the current password by calling `supabase.auth.signInWithPassword()` with the user's email and current password -- this ensures only the actual user can change their password
-4. On success, clears the form and shows a success toast
-5. On failure, shows an appropriate error message
+```
+interface DocumentTemplate {
+  id: string;
+  name: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  fontFamily: string;
+  headerStyle: 'classic' | 'modern' | 'minimal' | 'centered' | 'sidebar' | 'elegant' | 'split' | 'bold-banner' | 'gradient' | 'boxed' | 'contrast';
+  tableStyle: 'striped' | 'bordered' | 'clean';
+}
+```
 
-### Form state
+### Layout-Specific Rendering
 
-Three new state variables: `currentPassword`, `newPassword`, `confirmNewPassword`, plus a `changingPassword` loading flag. These are local to the Settings component and reset after successful change.
+A shared helper component/function will render different header and table sections based on the template's `headerStyle`. For example:
+- **"sidebar"** layout places a colored vertical bar on the left with document title rotated
+- **"centered"** layout centers the company name in a full-width banner
+- **"bold-banner"** layout uses a large dark header block with the document title in oversized text
+- **"boxed"** layout wraps each section (header, client info, items, totals) in rounded bordered cards
 
-### Placement
+### Shared Document Layout Component
 
-The Account Security card will be placed as the first card in the Settings page, before the Document Header card, making it easy to find.
+To avoid code duplication across QuotePreview, InvoicePreview, and DeliveryNotePreview, shared layout rendering functions will be extracted into a new helper file (`src/components/quotes/DocumentLayoutRenderer.tsx`). Each preview component will call this renderer with its specific data, and the renderer will output the correct HTML structure based on the selected template.
+
+### Database
+
+No database changes needed. The existing `company_profiles` table already stores template settings (colors, font, header style, table style). The `headerStyle` field will now hold one of the expanded layout values.
+
+### Template Selector Grid
+
+The selector UI will be updated to show 2 rows of 5 templates, with a small preview thumbnail for each showing the layout structure (not just a color swatch).
 
