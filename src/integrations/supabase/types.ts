@@ -1900,6 +1900,7 @@ export type Database = {
           payment_reference: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           status: Database["public"]["Enums"]["subscription_status"]
+          system_type: string
           trial_ends_at: string | null
           updated_at: string | null
           user_id: string
@@ -1913,6 +1914,7 @@ export type Database = {
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: Database["public"]["Enums"]["subscription_status"]
+          system_type?: string
           trial_ends_at?: string | null
           updated_at?: string | null
           user_id: string
@@ -1926,6 +1928,7 @@ export type Database = {
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: Database["public"]["Enums"]["subscription_status"]
+          system_type?: string
           trial_ends_at?: string | null
           updated_at?: string | null
           user_id?: string

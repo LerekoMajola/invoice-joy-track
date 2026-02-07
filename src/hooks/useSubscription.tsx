@@ -56,6 +56,8 @@ const PLAN_LIMITS = {
   },
 } as const;
 
+export type SystemType = 'business' | 'workshop' | 'school';
+
 export function useSubscription() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -72,7 +74,7 @@ export function useSubscription() {
         .maybeSingle();
       
       if (error) throw error;
-      return data as Subscription | null;
+      return data as (Subscription & { system_type?: string }) | null;
     },
     enabled: !!user,
   });
@@ -146,6 +148,9 @@ export function useSubscription() {
 
   const isTrialExpired = isTrialing && trialDaysRemaining <= 0;
 
+  // System type from subscription
+  const systemType: SystemType = (subscription as any)?.system_type || 'business';
+
   return {
     subscription,
     usage,
@@ -161,5 +166,6 @@ export function useSubscription() {
     isExpired,
     isTrialExpired,
     trialDaysRemaining,
+    systemType,
   };
 }
