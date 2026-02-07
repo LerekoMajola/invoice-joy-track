@@ -38,6 +38,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
+        // Read system_type from user_metadata (set during signup)
+        const systemType = user.user_metadata?.system_type || 'business';
+
         await supabase.from('subscriptions').insert({
           user_id: user.id,
           plan: 'free_trial',
@@ -45,6 +48,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           trial_ends_at: trialEndsAt.toISOString(),
           current_period_start: new Date().toISOString(),
           current_period_end: trialEndsAt.toISOString(),
+          system_type: systemType,
         });
 
         // Initialize usage tracking
@@ -73,7 +77,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         }
       }
 
-      // Check if user has modules — if not (legacy user), assign all active modules
+      // Check if user has modules — if not, assign based on signup metadata or all (legacy)
       const { data: userModules } = await supabase
         .from('user_modules')
         .select('id')
@@ -81,18 +85,43 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .limit(1);
 
       if (!userModules || userModules.length === 0) {
-        const { data: allModules } = await supabase
-          .from('platform_modules')
-          .select('id')
-          .eq('is_active', true);
+        const selectedKeys: string[] = user.user_metadata?.selected_module_keys;
 
-        if (allModules && allModules.length > 0) {
-          const rows = allModules.map((m) => ({
-            user_id: user.id,
-            module_id: m.id,
-            is_active: true,
-          }));
-          await supabase.from('user_modules').insert(rows);
+        if (selectedKeys && selectedKeys.length > 0) {
+          // New user: assign only the modules they selected during signup + core modules
+          const { data: allModules } = await supabase
+            .from('platform_modules')
+            .select('id, key, is_core')
+            .eq('is_active', true);
+
+          if (allModules && allModules.length > 0) {
+            const modulesToAssign = allModules.filter(
+              (m) => selectedKeys.includes(m.key) || m.is_core
+            );
+            if (modulesToAssign.length > 0) {
+              const rows = modulesToAssign.map((m) => ({
+                user_id: user.id,
+                module_id: m.id,
+                is_active: true,
+              }));
+              await supabase.from('user_modules').insert(rows);
+            }
+          }
+        } else {
+          // Legacy user with no metadata: assign all active modules
+          const { data: allModules } = await supabase
+            .from('platform_modules')
+            .select('id')
+            .eq('is_active', true);
+
+          if (allModules && allModules.length > 0) {
+            const rows = allModules.map((m) => ({
+              user_id: user.id,
+              module_id: m.id,
+              is_active: true,
+            }));
+            await supabase.from('user_modules').insert(rows);
+          }
         }
       }
     } catch (err) {
