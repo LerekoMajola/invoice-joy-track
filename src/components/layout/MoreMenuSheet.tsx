@@ -1,4 +1,4 @@
-import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School } from 'lucide-react';
+import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ const allMenuItems = [
   { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting' },
   { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff' },
   { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin' },
+  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly class schedule', moduleKey: 'school_admin' },
   { icon: Settings, label: 'Settings', path: '/settings', description: 'School profile', moduleKey: null },
   { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null },
 ];
