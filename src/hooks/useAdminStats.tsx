@@ -9,6 +9,14 @@ const PLAN_PRICES: Record<string, number> = {
   pro: 800,
 };
 
+export interface SystemBreakdown {
+  system_type: string;
+  total: number;
+  active: number;
+  trialing: number;
+  expired: number;
+}
+
 export interface AdminStats {
   totalTenants: number;
   mrr: number;
@@ -20,6 +28,7 @@ export interface AdminStats {
   recentSignups: number;
   signupsByMonth: { month: string; count: number }[];
   revenueByMonth: { month: string; revenue: number }[];
+  systemBreakdown: SystemBreakdown[];
 }
 
 export function useAdminStats() {
@@ -87,6 +96,21 @@ export function useAdminStats() {
       // Revenue by month (last 6 months)
       const revenueByMonth = getMonthlyRevenue(invoices || [], 6);
 
+      // System type breakdown
+      const systemMap = new Map<string, { total: number; active: number; trialing: number; expired: number }>();
+      for (const sub of subscriptions || []) {
+        const st = (sub as any).system_type || 'business';
+        if (!systemMap.has(st)) systemMap.set(st, { total: 0, active: 0, trialing: 0, expired: 0 });
+        const entry = systemMap.get(st)!;
+        entry.total++;
+        if (sub.status === 'active') entry.active++;
+        else if (sub.status === 'trialing') entry.trialing++;
+        else entry.expired++;
+      }
+      const systemBreakdown: SystemBreakdown[] = Array.from(systemMap.entries())
+        .map(([system_type, counts]) => ({ system_type, ...counts }))
+        .sort((a, b) => b.total - a.total);
+
       return {
         totalTenants,
         mrr,
@@ -98,6 +122,7 @@ export function useAdminStats() {
         recentSignups,
         signupsByMonth,
         revenueByMonth,
+        systemBreakdown,
       };
     },
     enabled: isAdmin,
