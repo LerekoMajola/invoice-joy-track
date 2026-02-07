@@ -14,7 +14,10 @@ import {
   UserPlus,
   Calculator,
   Car,
-  Wrench
+  Wrench,
+  GraduationCap,
+  School,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +38,9 @@ const navigation = [
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff' },
   { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet' },
   { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop' },
+  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students' },
+  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin' },
+  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees' },
   { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null },
   { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null },
 ];

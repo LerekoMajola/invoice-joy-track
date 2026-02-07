@@ -1,4 +1,4 @@
-import { Truck, CheckSquare, FileSearch, TrendingUp, Calculator, Users2, Settings, CreditCard, X, Car, Wrench } from 'lucide-react';
+import { Truck, CheckSquare, FileSearch, TrendingUp, Calculator, Users2, Settings, CreditCard, X, Car, Wrench, GraduationCap, School, Wallet } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,9 @@ const allMenuItems = [
   { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff' },
   { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet' },
   { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards & repairs', moduleKey: 'workshop' },
+  { icon: GraduationCap, label: 'Students', path: '/students', description: 'Student records', moduleKey: 'students' },
+  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin' },
+  { icon: Wallet, label: 'School Fees', path: '/school-fees', description: 'Fee tracking', moduleKey: 'school_fees' },
   { icon: Settings, label: 'Settings', path: '/settings', description: 'Company profile', moduleKey: null },
   { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null },
 ];
