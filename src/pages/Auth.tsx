@@ -1,13 +1,15 @@
- import { useState, useEffect } from 'react';
- import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
+import { TrustBadges } from '@/components/auth/TrustBadges';
+import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -61,7 +63,6 @@ export default function Auth() {
           }
         } else {
           toast.success('Welcome back!');
-          // Navigation will be handled by the useEffect watching auth state
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -103,39 +104,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-hero items-center justify-center p-12 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-violet/30 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-80 h-80 bg-cyan/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl" />
-        
-        <div className="relative max-w-md text-center animate-slide-up">
-          <div className="flex items-center justify-center mb-8 animate-bounce-in">
-            <div className="bg-white rounded-2xl px-6 py-3 shadow-2xl">
-              <PlatformLogo className="h-12 w-auto" />
-            </div>
-          </div>
-          <h2 className="font-display text-3xl font-bold text-white mb-4">
-            Manage Your Business Operations
-          </h2>
-          <p className="text-white/70 text-lg">
-            Quotes, invoices, delivery notes, client management, and more - all in one powerful platform designed for your business.
-          </p>
-          
-          {/* Feature pills */}
-          <div className="flex flex-wrap justify-center gap-2 mt-8">
-            {['Quotes', 'Invoices', 'CRM', 'Tasks'].map((feature, index) => (
-              <span 
-                key={feature}
-                className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/80 text-sm font-medium animate-slide-up"
-                style={{ animationDelay: `${0.3 + index * 0.1}s` }}
-              >
-                {feature}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+      <AuthBrandingPanel />
 
       {/* Right Side - Auth Form */}
       <div className="flex-1 flex items-center justify-center p-8">
@@ -156,70 +125,73 @@ export default function Auth() {
             <p className="text-muted-foreground mt-2">
               {isLogin 
                 ? 'Enter your credentials to access your account' 
-                : 'Get started with Orion Labs today'}
+                : 'Get started with your free account'}
             </p>
           </div>
 
-           <form onSubmit={handleAuth} className="space-y-5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-             <div className="space-y-2 group">
-               <Label htmlFor="email">Email</Label>
-               <div className="relative">
-                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                 <Input
-                   id="email"
-                   type="email"
-                   placeholder="you@company.com"
-                   value={email}
-                   onChange={(e) => setEmail(e.target.value)}
-                   className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
-                   required
-                 />
-               </div>
-             </div>
- 
-             <div className="space-y-2 group">
-               <div className="flex items-center justify-between">
-                 <Label htmlFor="password">Password</Label>
-                 {isLogin && (
-                   <Link
-                     to="/reset-password"
-                     className="text-sm text-primary hover:underline font-medium"
-                   >
-                     Forgot password?
-                   </Link>
-                 )}
-               </div>
-               <div className="relative">
-                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                 <Input
-                   id="password"
-                   type="password"
-                   placeholder="••••••••"
-                   value={password}
-                   onChange={(e) => setPassword(e.target.value)}
-                   className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
-                   required
-                   minLength={6}
-                 />
-               </div>
-             </div>
- 
-             <Button 
-               type="submit" 
-               variant="gradient"
-               className="w-full h-12 rounded-xl text-base font-semibold" 
-               disabled={submitting}
-             >
-               {submitting ? (
-                 <>
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                   {isLogin ? 'Signing in...' : 'Creating account...'}
-                 </>
-               ) : (
-                 isLogin ? 'Sign in' : 'Create account'
-               )}
-             </Button>
-           </form>
+          <form onSubmit={handleAuth} className="space-y-5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <div className="space-y-2 group">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 group">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {isLogin && (
+                  <Link
+                    to="/reset-password"
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              variant="gradient"
+              className="w-full h-12 rounded-xl text-base font-semibold" 
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isLogin ? 'Signing in...' : 'Creating account...'}
+                </>
+              ) : (
+                isLogin ? 'Sign in' : 'Create account'
+              )}
+            </Button>
+          </form>
+
+          {/* Trust badges */}
+          <TrustBadges />
 
           <div className="mt-6 text-center">
             <button
@@ -231,6 +203,14 @@ export default function Auth() {
                 ? "Don't have an account? Sign up" 
                 : 'Already have an account? Sign in'}
             </button>
+          </div>
+
+          {/* Footer trust line */}
+          <div className="mt-6 text-center flex items-center justify-center gap-1.5">
+            <Shield className="h-3 w-3 text-muted-foreground/50" />
+            <p className="text-xs text-muted-foreground/50">
+              Your data is protected with enterprise-grade security
+            </p>
           </div>
         </div>
       </div>
