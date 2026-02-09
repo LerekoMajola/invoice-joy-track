@@ -10,7 +10,7 @@ export function Footer() {
           <div className="md:col-span-1">
             <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-sm mb-4" />
             <p className="text-primary-foreground/70 text-sm">
-              The modular platform for businesses, workshops, schools, law firms, and rental companies across Africa.
+              The modular platform for businesses, workshops, schools, law firms, rental companies, and guest houses across Africa.
             </p>
           </div>
 
@@ -23,6 +23,7 @@ export function Footer() {
               <li><Link to="/auth?system=school" className="hover:text-primary-foreground transition-colors">School Admin</Link></li>
               <li><Link to="/auth?system=legal" className="hover:text-primary-foreground transition-colors">Legal Practice</Link></li>
               <li><Link to="/auth?system=hire" className="hover:text-primary-foreground transition-colors">Tool & Equipment Hire</Link></li>
+              <li><Link to="/auth?system=guesthouse" className="hover:text-primary-foreground transition-colors">Guest House</Link></li>
             </ul>
           </div>
 

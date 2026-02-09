@@ -265,12 +265,65 @@ const hireTiers: PackageTier[] = [
   },
 ];
 
+const guesthouseTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 650,
+    target: 'Small guest houses',
+    moduleKeys: ['gh_rooms', 'gh_bookings', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Room Management', included: true },
+      { name: 'Bookings & Calendar', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Housekeeping', included: false },
+      { name: 'Accounting', included: false },
+      { name: 'Guest Reviews', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 850,
+    target: 'Growing lodges',
+    popular: true,
+    moduleKeys: ['gh_rooms', 'gh_bookings', 'gh_housekeeping', 'invoices', 'tasks', 'staff', 'accounting', 'gh_reviews'],
+    features: [
+      { name: 'Room Management', included: true },
+      { name: 'Bookings & Calendar', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Housekeeping', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Guest Reviews', included: true },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 1100,
+    target: 'Established hospitality',
+    moduleKeys: ['gh_rooms', 'gh_bookings', 'gh_housekeeping', 'gh_reviews', 'invoices', 'tasks', 'staff', 'accounting', 'core_crm'],
+    features: [
+      { name: 'Room Management', included: true },
+      { name: 'Bookings & Calendar', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Housekeeping', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Guest Reviews', included: true },
+    ],
+  },
+];
+
 const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
   business: { label: 'Business Management', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
   workshop: { label: 'Workshop Management', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
   school: { label: 'School Management', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
   legal: { label: 'Legal Practice', subtitle: 'For law firms & practitioners', gradient: 'from-emerald-500 to-teal-500', tiers: legalTiers },
   hire: { label: 'Tool Hire', subtitle: 'For equipment rental companies', gradient: 'from-amber-500 to-orange-500', tiers: hireTiers },
+  guesthouse: { label: 'Guest House', subtitle: 'For lodges & hospitality', gradient: 'from-rose-500 to-pink-500', tiers: guesthouseTiers },
 };
 
 interface PackageTierSelectorProps {

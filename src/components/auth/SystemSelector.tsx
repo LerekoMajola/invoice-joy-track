@@ -1,8 +1,8 @@
-import { Briefcase, Wrench, GraduationCap, Scale, Hammer, ArrowRight } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire';
+export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse';
 
 interface SystemOption {
   type: SystemType;
@@ -59,6 +59,15 @@ const systems: SystemOption[] = [
     icon: Hammer,
     gradient: 'from-amber-500 to-orange-500',
     iconBg: 'bg-amber-500/10 text-amber-600',
+  },
+  {
+    type: 'guesthouse',
+    label: 'Guest House',
+    description: 'Room management, bookings, housekeeping, meal plans & guest reviews for hospitality',
+    startingPrice: 'M650',
+    icon: Hotel,
+    gradient: 'from-rose-500 to-pink-500',
+    iconBg: 'bg-rose-500/10 text-rose-600',
   },
 ];
 
