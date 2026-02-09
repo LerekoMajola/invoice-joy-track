@@ -18,7 +18,7 @@ const industries = [
     system: 'business',
     gradient: 'from-primary to-violet',
     features: ['Quotes & Invoices', 'Client CRM & Pipeline', 'Delivery Notes', 'Profitability Tracking'],
-    price: 'R199/mo',
+    price: 'M350/mo',
   },
   {
     icon: Wrench,
@@ -26,7 +26,7 @@ const industries = [
     system: 'workshop',
     gradient: 'from-coral to-warning',
     features: ['Job Cards & Tracking', 'Parts & Labour Costing', 'Vehicle History', 'Technician Assignment'],
-    price: 'R199/mo',
+    price: 'M450/mo',
   },
   {
     icon: GraduationCap,
@@ -34,7 +34,7 @@ const industries = [
     system: 'school',
     gradient: 'from-info to-cyan',
     features: ['Student Records', 'Fee Tracking & Invoicing', 'Class Management', 'Announcements'],
-    price: 'R199/mo',
+    price: 'M720/mo',
   },
   {
     icon: Scale,
@@ -42,7 +42,7 @@ const industries = [
     system: 'legal',
     gradient: 'from-violet to-primary',
     features: ['Case Management', 'Time & Billing', 'Court Calendar', 'Legal Documents'],
-    price: 'R199/mo',
+    price: 'M500/mo',
   },
   {
     icon: Hammer,
@@ -50,7 +50,7 @@ const industries = [
     system: 'hire',
     gradient: 'from-success to-info',
     features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage Tracking'],
-    price: 'R199/mo',
+    price: 'M400/mo',
   },
   {
     icon: Hotel,
