@@ -30,9 +30,10 @@ interface ReceiptPreviewProps {
 
 const paymentMethodLabels: Record<string, string> = {
   cash: 'Cash',
-  bank_transfer: 'Bank Transfer',
-  mobile_money: 'Mobile Money',
-  cheque: 'Cheque',
+  eft: 'EFT',
+  card_swipe: 'Card Swipe',
+  mpesa: 'M-Pesa',
+  ecocash: 'EcoCash',
 };
 
 export function ReceiptPreview({ receipt }: ReceiptPreviewProps) {

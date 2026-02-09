@@ -14,9 +14,10 @@ interface RecordPaymentDialogProps {
 
 const paymentMethods = [
   { value: 'cash', label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'mobile_money', label: 'Mobile Money' },
-  { value: 'cheque', label: 'Cheque' },
+  { value: 'eft', label: 'EFT' },
+  { value: 'card_swipe', label: 'Card Swipe' },
+  { value: 'mpesa', label: 'M-Pesa' },
+  { value: 'ecocash', label: 'EcoCash' },
 ];
 
 export function RecordPaymentDialog({ open, onOpenChange, invoiceNumber, onSubmit }: RecordPaymentDialogProps) {
