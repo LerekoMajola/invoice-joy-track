@@ -1,17 +1,27 @@
-import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal } from 'lucide-react';
+import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal, Users, FileText, Wrench } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { useModules } from '@/hooks/useModules';
+import { useSubscription, SystemType } from '@/hooks/useSubscription';
 import { MoreMenuSheet } from './MoreMenuSheet';
 
-// Module key mapping for bottom nav items (null = always visible)
+// Bottom nav items per system type
+// systemTypes: null = all systems, string[] = specific systems only
 const allNavItems = [
-  { icon: Home, label: 'Home', path: '/dashboard', moduleKey: null },
-  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students' },
-  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees' },
-  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices' },
+  { icon: Home, label: 'Home', path: '/dashboard', moduleKey: null, systemTypes: null },
+  // Business
+  { icon: Users, label: 'Clients', path: '/clients', moduleKey: 'core_crm', systemTypes: ['business'] },
+  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['business'] },
+  // Workshop
+  { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['workshop'] },
+  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['workshop'] },
+  // School
+  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'] },
+  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'] },
+  // Shared
+  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null },
 ];
 
 export function BottomNav() {
@@ -19,8 +29,13 @@ export function BottomNav() {
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
   const { hasModule, userModules } = useModules();
+  const { systemType } = useSubscription();
 
   const navItems = allNavItems.filter((item) => {
+    // System type filter
+    if (item.systemTypes !== null && !item.systemTypes.includes(systemType)) {
+      return false;
+    }
     if (!item.moduleKey) return true;
     if (userModules.length === 0) return false;
     return hasModule(item.moduleKey);
@@ -34,7 +49,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (

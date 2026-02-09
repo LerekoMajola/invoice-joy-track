@@ -11,26 +11,46 @@ import {
   GraduationCap,
   School,
   Wallet,
-  Clock
+  Clock,
+  Users,
+  FileText,
+  Briefcase,
+  Truck,
+  Wrench,
+  TrendingUp,
+  Kanban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useModules } from '@/hooks/useModules';
+import { useSubscription, SystemType } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 
-// Map nav items to module keys (null = always visible)
+// Map nav items to module keys and system types
+// systemTypes: null = all systems, string[] = specific systems only
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: null },
-  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students' },
-  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin' },
-  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees' },
-  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin' },
-  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices' },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks' },
-  { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff' },
-  { name: 'Accounting', href: '/accounting', icon: Calculator, moduleKey: 'accounting' },
-  { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null },
-  { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: null, systemTypes: null },
+  // Business
+  { name: 'Clients', href: '/clients', icon: Users, moduleKey: 'core_crm', systemTypes: ['business', 'workshop'] },
+  { name: 'CRM', href: '/crm', icon: Kanban, moduleKey: 'core_crm', systemTypes: ['business'] },
+  { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes', systemTypes: ['business', 'workshop'] },
+  { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'] },
+  { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes', systemTypes: ['business'] },
+  { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
+  // Workshop
+  { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['workshop'] },
+  // School
+  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['school'] },
+  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['school'] },
+  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['school'] },
+  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['school'] },
+  // Shared
+  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null },
+  { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks', systemTypes: null },
+  { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff', systemTypes: null },
+  { name: 'Accounting', href: '/accounting', icon: Calculator, moduleKey: 'accounting', systemTypes: null },
+  { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null, systemTypes: null },
+  { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null, systemTypes: null },
 ];
 
 interface SidebarProps {
@@ -41,11 +61,16 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { hasModule, userModules } = useModules();
+  const { systemType } = useSubscription();
 
   const filteredNavigation = navigation.filter((item) => {
+    // System type filter
+    if (item.systemTypes !== null && !item.systemTypes.includes(systemType)) {
+      return false;
+    }
     // Always show items without a module key
     if (!item.moduleKey) return true;
-    // If user has no modules yet, only show base nav (not everything)
+    // If user has no modules yet, only show base nav
     if (userModules.length === 0) return false;
     // Gate by subscribed module
     return hasModule(item.moduleKey);
