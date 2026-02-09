@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useEquipment, CreateEquipmentInput } from '@/hooks/useEquipment';
 import { formatMaluti } from '@/lib/currency';
+import { Progress } from '@/components/ui/progress';
 import { Plus, Search, Loader2, Hammer, Package } from 'lucide-react';
 
 const CATEGORIES = ['Power Tools', 'Earthmoving', 'Generators', 'Scaffolding', 'Cleaning', 'Compactors', 'Event/Party', 'General'];
@@ -41,6 +42,7 @@ export default function Equipment() {
     monthly_rate: undefined,
     deposit_amount: 0,
     condition: 'good',
+    quantity_total: 1,
   });
 
   const filtered = equipment.filter(e => {
@@ -54,7 +56,7 @@ export default function Equipment() {
     if (!form.name.trim()) return;
     createEquipment(form);
     setAddOpen(false);
-    setForm({ name: '', category: 'General', daily_rate: 0, description: '', serial_number: '', deposit_amount: 0, condition: 'good' });
+    setForm({ name: '', category: 'General', daily_rate: 0, description: '', serial_number: '', deposit_amount: 0, condition: 'good', quantity_total: 1 });
   };
 
   const uniqueCategories = [...new Set(equipment.map(e => e.category))];
@@ -109,11 +111,22 @@ export default function Equipment() {
                       <h3 className="font-semibold text-sm">{item.name}</h3>
                       <p className="text-xs text-muted-foreground">{item.category}</p>
                     </div>
-                    <Badge className={statusColor[item.status] || ''} variant="secondary">
-                      {item.status.replace('_', ' ')}
-                    </Badge>
+                    {item.quantity_total > 1 ? (
+                      <Badge variant="secondary" className={item.available_quantity > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}>
+                        {item.available_quantity} / {item.quantity_total} available
+                      </Badge>
+                    ) : (
+                      <Badge className={statusColor[item.status] || ''} variant="secondary">
+                        {item.status.replace('_', ' ')}
+                      </Badge>
+                    )}
                   </div>
                   {item.serial_number && <p className="text-xs text-muted-foreground mb-2">S/N: {item.serial_number}</p>}
+                  {item.quantity_total > 1 && (
+                    <div className="mb-2">
+                      <Progress value={(item.available_quantity / item.quantity_total) * 100} className="h-1.5" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t">
                     <div>
                       <p className="text-xs text-muted-foreground">Daily Rate</p>
@@ -192,6 +205,12 @@ export default function Equipment() {
                     {CONDITIONS.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Qty Owned</Label>
+                <Input type="number" min={1} value={form.quantity_total || 1} onChange={e => setForm(f => ({ ...f, quantity_total: parseInt(e.target.value) || 1 }))} />
               </div>
             </div>
           </div>

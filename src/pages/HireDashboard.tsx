@@ -13,8 +13,9 @@ export default function HireDashboard() {
   const { equipment } = useEquipment();
   const { orders } = useHireOrders();
 
-  const onHire = equipment.filter(e => e.status === 'on_hire').length;
-  const available = equipment.filter(e => e.status === 'available').length;
+  const totalUnits = equipment.reduce((sum, e) => sum + (e.quantity_total || 1), 0);
+  const totalAvailable = equipment.reduce((sum, e) => sum + e.available_quantity, 0);
+  const onHireUnits = totalUnits - totalAvailable;
   const overdueOrders = orders.filter(o => o.status === 'overdue' || (o.status === 'active' && new Date(o.hire_end) < new Date())).length;
   const revenueThisMonth = orders
     .filter(o => {
@@ -38,8 +39,8 @@ export default function HireDashboard() {
       <Header title="Tool Hire Dashboard" subtitle="Equipment rental overview" />
       <div className="p-4 md:p-6 space-y-6 pb-safe">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Equipment" value={equipment.length} icon={Package} />
-          <StatCard title="On Hire" value={onHire} icon={Hammer} />
+          <StatCard title="Total Units" value={totalUnits} icon={Package} />
+          <StatCard title="On Hire" value={onHireUnits} icon={Hammer} />
           <StatCard title="Overdue Returns" value={overdueOrders} icon={AlertTriangle} />
           <StatCard title="Revenue (Month)" value={formatMaluti(revenueThisMonth)} icon={ClipboardList} />
         </div>

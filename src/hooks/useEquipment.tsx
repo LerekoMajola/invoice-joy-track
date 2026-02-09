@@ -18,6 +18,8 @@ export interface EquipmentItem {
   status: string;
   image_url: string | null;
   notes: string | null;
+  quantity_total: number;
+  available_quantity: number;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +37,7 @@ export interface CreateEquipmentInput {
   status?: string;
   image_url?: string;
   notes?: string;
+  quantity_total?: number;
 }
 
 export function useEquipment() {
@@ -49,7 +52,33 @@ export function useEquipment() {
         .select('*')
         .order('name');
       if (error) throw error;
-      return data as EquipmentItem[];
+
+      // Fetch on-hire counts
+      const { data: hireCounts, error: hireError } = await supabase
+        .from('hire_order_items')
+        .select('equipment_item_id, quantity, hire_order_id');
+      
+      let onHireMap: Record<string, number> = {};
+      if (!hireError && hireCounts) {
+        // Get active order IDs
+        const { data: activeOrders } = await supabase
+          .from('hire_orders')
+          .select('id')
+          .eq('status', 'active');
+        
+        const activeIds = new Set((activeOrders || []).map(o => o.id));
+        
+        for (const item of hireCounts) {
+          if (item.equipment_item_id && activeIds.has(item.hire_order_id)) {
+            onHireMap[item.equipment_item_id] = (onHireMap[item.equipment_item_id] || 0) + item.quantity;
+          }
+        }
+      }
+
+      return (data as any[]).map(item => ({
+        ...item,
+        available_quantity: (item.quantity_total || 1) - (onHireMap[item.id] || 0),
+      })) as EquipmentItem[];
     },
     enabled: !!user,
   });
