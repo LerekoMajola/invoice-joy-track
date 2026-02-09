@@ -15,9 +15,11 @@ import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefca
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
+  const { systemType } = useSubscription();
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const handleSendBackup = async () => {
@@ -192,6 +194,134 @@ export default function Settings() {
       />
       
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-4xl pb-safe">
+        {/* Company Profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Company Profile
+            </CardTitle>
+            <CardDescription>
+              Your business identity — this information is required for full platform access
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="company_name">
+                  {systemType === 'legal' ? 'Firm Name' : systemType === 'school' ? 'School Name' : systemType === 'workshop' ? 'Workshop Name' : 'Company Name'} *
+                </Label>
+                <Input
+                  id="company_name"
+                  value={formData.company_name || ''}
+                  onChange={(e) => handleChange('company_name', e.target.value)}
+                  placeholder="Enter your company name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                  placeholder="info@example.com"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone || ''}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  placeholder="+266 xxxx xxxx"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  value={formData.website || ''}
+                  onChange={(e) => handleChange('website', e.target.value)}
+                  placeholder="https://example.com"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="address_line_1">Address Line 1</Label>
+                <Input
+                  id="address_line_1"
+                  value={formData.address_line_1 || ''}
+                  onChange={(e) => handleChange('address_line_1', e.target.value)}
+                  placeholder="Street address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_line_2">Address Line 2</Label>
+                <Input
+                  id="address_line_2"
+                  value={formData.address_line_2 || ''}
+                  onChange={(e) => handleChange('address_line_2', e.target.value)}
+                  placeholder="Suite, unit, etc."
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={formData.city || ''}
+                  onChange={(e) => handleChange('city', e.target.value)}
+                  placeholder="City"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">Postal Code</Label>
+                <Input
+                  id="postal_code"
+                  value={formData.postal_code || ''}
+                  onChange={(e) => handleChange('postal_code', e.target.value)}
+                  placeholder="Postal code"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={formData.country || 'Lesotho'}
+                  onChange={(e) => handleChange('country', e.target.value)}
+                  placeholder="Country"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="registration_number">Registration Number</Label>
+                <Input
+                  id="registration_number"
+                  value={formData.registration_number || ''}
+                  onChange={(e) => handleChange('registration_number', e.target.value)}
+                  placeholder="Business registration number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vat_number">VAT Number</Label>
+                <Input
+                  id="vat_number"
+                  value={formData.vat_number || ''}
+                  onChange={(e) => handleChange('vat_number', e.target.value)}
+                  placeholder="VAT registration number"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account Security */}
         <ChangePasswordCard />
 
