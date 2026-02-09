@@ -7,3 +7,4 @@ export { PlatformStatsCards } from './PlatformStatsCards';
 export { SignupsChart } from './SignupsChart';
 export { RevenueChart } from './RevenueChart';
 export { AdminSettingsTab } from './AdminSettingsTab';
+export { SignupsTab } from './SignupsTab';
