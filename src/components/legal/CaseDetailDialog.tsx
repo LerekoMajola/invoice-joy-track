@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { Scale, Clock, FileText, StickyNote, Receipt, Trash2, Save, Plus } from 'lucide-react';
+import { CaseDocumentsTab } from './CaseDocumentsTab';
 import { type LegalCase } from '@/hooks/useLegalCases';
 import { useLegalTimeEntries } from '@/hooks/useLegalTimeEntries';
 import { useLegalCaseExpenses } from '@/hooks/useLegalCaseExpenses';
@@ -302,7 +303,7 @@ export function CaseDetailDialog({ caseData, open, onOpenChange, onUpdate }: Pro
             </TabsContent>
 
             <TabsContent value="documents" className="mt-4">
-              <p className="text-sm text-muted-foreground text-center py-8">View documents in the Documents section linked to this case</p>
+              <CaseDocumentsTab caseId={caseData.id} />
             </TabsContent>
 
             <TabsContent value="notes" className="mt-4">
