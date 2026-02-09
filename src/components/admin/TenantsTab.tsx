@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, Settings, Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { Search, Eye, Settings, Briefcase, Wrench, GraduationCap, Trash2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +26,7 @@ import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { TenantDetailDialog } from './TenantDetailDialog';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 const statusColors: Record<string, string> = {
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
@@ -65,6 +68,34 @@ export function TenantsTab() {
   const [systemFilter, setSystemFilter] = useState<string>('all');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (tenant: Tenant) => {
+      // Delete subscription first (if exists), then company profile
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', tenant.user_id);
+      if (subError) throw subError;
+
+      const { error: profileError } = await supabase
+        .from('company_profiles')
+        .delete()
+        .eq('id', tenant.id);
+      if (profileError) throw profileError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success('Tenant deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Delete tenant error:', error);
+      toast.error('Failed to delete tenant');
+    },
+  });
 
   if (isLoading) {
     return (
@@ -217,6 +248,14 @@ export function TenantsTab() {
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeletingTenant(tenant)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -236,6 +275,16 @@ export function TenantsTab() {
         tenant={editingTenant}
         open={!!editingTenant}
         onOpenChange={(open) => !open && setEditingTenant(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deletingTenant}
+        onOpenChange={(open) => !open && setDeletingTenant(null)}
+        title="Delete Tenant"
+        description={`This will permanently delete "${deletingTenant?.company_name}" and their subscription. This action cannot be undone.`}
+        onConfirm={() => deletingTenant && deleteMutation.mutate(deletingTenant)}
+        variant="destructive"
+        confirmLabel="Delete"
       />
     </div>
   );
