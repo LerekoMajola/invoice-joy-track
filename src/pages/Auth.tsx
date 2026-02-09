@@ -585,7 +585,7 @@ export default function Auth() {
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => { setIsLogin(false); setSignupStep('package'); }}
+              onClick={() => { setIsLogin(false); setSignupStep('system'); }}
               className="text-sm text-primary hover:underline font-medium"
             >
               Don't have an account? Sign up
