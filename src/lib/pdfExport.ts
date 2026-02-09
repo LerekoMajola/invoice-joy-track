@@ -27,6 +27,11 @@ export async function exportSectionBasedPDF(
   // Fallback: if no sections are marked, treat the whole container as one section
   const targets = sections.length > 0 ? sections : [container];
 
+  // Use the container's width as the consistent render width for all sections.
+  // This prevents text clipping caused by each section being rendered at
+  // a different windowWidth.
+  const containerWidth = container.scrollWidth;
+
   const captured: { canvas: HTMLCanvasElement; heightMM: number }[] = [];
 
   for (const section of targets) {
@@ -34,8 +39,10 @@ export async function exportSectionBasedPDF(
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
-      width: section.scrollWidth,
-      windowWidth: section.scrollWidth,
+      width: containerWidth,
+      windowWidth: containerWidth,
+      scrollX: 0,
+      scrollY: -window.scrollY,
     });
 
     const widthPx = canvas.width / 2; // scale factor = 2
