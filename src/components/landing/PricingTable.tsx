@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale } from 'lucide-react';
+import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 
@@ -203,6 +203,54 @@ const systems: SystemTab[] = [
           { name: 'Accounting', included: true },
           { name: 'Document Management', included: true },
           { name: 'Court Calendar', included: true },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'hire',
+    label: 'Tool Hire',
+    icon: <Hammer className="h-4 w-4" />,
+    gradient: 'from-amber-500 to-orange-500',
+    subtitle: 'For equipment rental companies',
+    tiers: [
+      {
+        name: 'Starter', price: 400, target: 'Small rental shops',
+        features: [
+          { name: 'Equipment Catalogue', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Hire Orders', included: false },
+          { name: 'Accounting', included: false },
+          { name: 'Availability Calendar', included: false },
+          { name: 'Returns & Tracking', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 600, target: 'Growing rental businesses', popular: true,
+        features: [
+          { name: 'Equipment Catalogue', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Hire Orders', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Availability Calendar', included: false },
+          { name: 'Returns & Tracking', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 850, target: 'Large hire companies',
+        features: [
+          { name: 'Equipment Catalogue', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Hire Orders', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Availability Calendar', included: true },
+          { name: 'Returns & Tracking', included: true },
         ],
       },
     ],

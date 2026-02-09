@@ -659,6 +659,63 @@ export type Database = {
           },
         ]
       }
+      equipment_items: {
+        Row: {
+          category: string
+          condition: string
+          created_at: string
+          daily_rate: number
+          deposit_amount: number
+          description: string | null
+          id: string
+          image_url: string | null
+          monthly_rate: number | null
+          name: string
+          notes: string | null
+          serial_number: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          weekly_rate: number | null
+        }
+        Insert: {
+          category?: string
+          condition?: string
+          created_at?: string
+          daily_rate?: number
+          deposit_amount?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          monthly_rate?: number | null
+          name: string
+          notes?: string | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          weekly_rate?: number | null
+        }
+        Update: {
+          category?: string
+          condition?: string
+          created_at?: string
+          daily_rate?: number
+          deposit_amount?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          monthly_rate?: number | null
+          name?: string
+          notes?: string | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          weekly_rate?: number | null
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           color: string | null
@@ -808,6 +865,128 @@ export type Database = {
             columns: ["term_id"]
             isOneToOne: false
             referencedRelation: "academic_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hire_order_items: {
+        Row: {
+          condition_in: string | null
+          condition_out: string | null
+          created_at: string
+          daily_rate: number
+          damage_charge: number
+          damage_notes: string | null
+          equipment_item_id: string | null
+          equipment_name: string
+          hire_order_id: string
+          id: string
+          quantity: number
+          subtotal: number
+        }
+        Insert: {
+          condition_in?: string | null
+          condition_out?: string | null
+          created_at?: string
+          daily_rate?: number
+          damage_charge?: number
+          damage_notes?: string | null
+          equipment_item_id?: string | null
+          equipment_name: string
+          hire_order_id: string
+          id?: string
+          quantity?: number
+          subtotal?: number
+        }
+        Update: {
+          condition_in?: string | null
+          condition_out?: string | null
+          created_at?: string
+          daily_rate?: number
+          damage_charge?: number
+          damage_notes?: string | null
+          equipment_item_id?: string | null
+          equipment_name?: string
+          hire_order_id?: string
+          id?: string
+          quantity?: number
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_order_items_equipment_item_id_fkey"
+            columns: ["equipment_item_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hire_order_items_hire_order_id_fkey"
+            columns: ["hire_order_id"]
+            isOneToOne: false
+            referencedRelation: "hire_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hire_orders: {
+        Row: {
+          actual_return_date: string | null
+          client_id: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          deposit_paid: number
+          hire_end: string
+          hire_start: string
+          id: string
+          notes: string | null
+          order_number: string
+          status: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_return_date?: string | null
+          client_id?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          deposit_paid?: number
+          hire_end: string
+          hire_start: string
+          id?: string
+          notes?: string | null
+          order_number: string
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_return_date?: string | null
+          client_id?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          deposit_paid?: number
+          hire_end?: string
+          hire_start?: string
+          id?: string
+          notes?: string | null
+          order_number?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

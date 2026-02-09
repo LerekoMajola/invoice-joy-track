@@ -37,6 +37,8 @@ import CaseDetail from "./pages/CaseDetail";
 import LegalTimeTracking from "./pages/LegalTimeTracking";
 import LegalDocuments from "./pages/LegalDocuments";
 import LegalCalendar from "./pages/LegalCalendar";
+import Equipment from "./pages/Equipment";
+import HireOrders from "./pages/HireOrders";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,8 @@ const App = () => (
             <Route path="/legal-time-tracking" element={<ProtectedRoute><LegalTimeTracking /></ProtectedRoute>} />
             <Route path="/legal-documents" element={<ProtectedRoute><LegalDocuments /></ProtectedRoute>} />
             <Route path="/legal-calendar" element={<ProtectedRoute><LegalCalendar /></ProtectedRoute>} />
+            <Route path="/equipment" element={<ProtectedRoute><Equipment /></ProtectedRoute>} />
+            <Route path="/hire-orders" element={<ProtectedRoute><HireOrders /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
