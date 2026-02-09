@@ -119,7 +119,7 @@ export default function HireOrders() {
     setOrderItems([]);
   };
 
-  const availableEquipment = equipment.filter(e => e.status === 'available');
+  const availableEquipment = equipment.filter(e => e.available_quantity > 0);
 
   return (
     <DashboardLayout>
@@ -231,7 +231,7 @@ export default function HireOrders() {
                         <SelectTrigger className="flex-1"><SelectValue placeholder="Select equipment..." /></SelectTrigger>
                         <SelectContent>
                           {availableEquipment.map(eq => (
-                            <SelectItem key={eq.id} value={eq.id}>{eq.name} — {formatMaluti(eq.daily_rate)}/day</SelectItem>
+                            <SelectItem key={eq.id} value={eq.id}>{eq.name} — {formatMaluti(eq.daily_rate)}/day ({eq.available_quantity} avail)</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

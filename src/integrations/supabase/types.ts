@@ -672,6 +672,7 @@ export type Database = {
           monthly_rate: number | null
           name: string
           notes: string | null
+          quantity_total: number
           serial_number: string | null
           status: string
           updated_at: string
@@ -690,6 +691,7 @@ export type Database = {
           monthly_rate?: number | null
           name: string
           notes?: string | null
+          quantity_total?: number
           serial_number?: string | null
           status?: string
           updated_at?: string
@@ -708,6 +710,7 @@ export type Database = {
           monthly_rate?: number | null
           name?: string
           notes?: string | null
+          quantity_total?: number
           serial_number?: string | null
           status?: string
           updated_at?: string

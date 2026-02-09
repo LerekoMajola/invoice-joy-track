@@ -1,0 +1,1 @@
+ALTER TABLE public.equipment_items ADD COLUMN quantity_total integer NOT NULL DEFAULT 1;
