@@ -1,32 +1,54 @@
 
-# Fix Close Button Overlapping Dialog Header Content
+
+# Auto-Fill Client When Creating Quote From Job Card
 
 ## The Problem
-The dialog close button (X) is absolutely positioned at `right-3 top-3` inside `DialogContent`. When dialog headers contain extra elements like badges (e.g., "Active", "Staff" in the Staff Detail dialog), they extend into the close button's space, causing overlap.
+When you click "Create Quote" from a job card, you're taken to the Quotes page and the quote form opens -- but you still see the client dropdown and have to verify/confirm the client, even though that information was already entered on the job card. This is unnecessary friction.
 
 ## The Fix
 
-### File: `src/components/ui/dialog.tsx`
+### File: `src/pages/Quotes.tsx`
 
-Add right padding to `DialogHeader` so its content never reaches under the close button:
+1. **Track when quote is created from a job card** -- add a state variable (e.g., `fromJobCard`) that gets set to `true` when the form is opened via the job card flow.
 
-**Current:**
-```tsx
-<div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} />
+2. **Lock the client field** -- when `fromJobCard` is true, show the client name as read-only text instead of the dropdown selector, since the client is already determined by the job card.
+
+3. **Also pre-fill line items from the job card** -- currently only the description is carried over. The job card already has parts and labour costs added via "Quick Add Cost." These should be pre-populated as quote line items so you don't have to re-enter them.
+
+### File: `src/pages/Workshop.tsx`
+
+4. **Pass line items in the session data** -- update `handleGenerateQuote` to include the job card's line items (parts and labour) alongside the client info and description, similar to how `handleGenerateInvoice` already does it.
+
+## Technical Details
+
+### Workshop.tsx changes
+Update `handleGenerateQuote` to include line items:
+```ts
+const handleGenerateQuote = (jc: JobCard) => {
+  const quoteData = {
+    sourceJobCardId: jc.id,
+    clientId: jc.clientId,
+    clientName: jc.clientName,
+    description: [jc.diagnosis, jc.recommendedWork].filter(Boolean).join('\n\n'),
+    lineItems: jc.lineItems.map((item) => ({
+      description: `${item.itemType === 'labour' ? '[Labour] ' : ''}${item.description}${item.partNumber ? ` (Part #${item.partNumber})` : ''}`,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      costPrice: item.costPrice || 0,
+    })),
+  };
+  // ... rest stays the same
+};
 ```
 
-**New:**
-```tsx
-<div className={cn("flex flex-col space-y-1.5 text-center sm:text-left pr-8", className)} />
-```
+### Quotes.tsx changes
+- Add `const [fromJobCard, setFromJobCard] = useState(false);`
+- In the `newQuoteFromJobCard` useEffect: set `fromJobCard` to `true`, pre-fill line items from the passed data
+- In the client selector section: when `fromJobCard` is true, show the client name as plain text (read-only) instead of the dropdown
+- Reset `fromJobCard` to `false` when the form closes
 
-Adding `pr-8` (2rem / 32px) provides enough clearance for the close button (which sits at `right-3` with a ~20px icon), preventing overlap in all dialogs system-wide.
-
-### Why this is the right approach
-- Fixes all 19+ dialog files at once with a single line change
-- No need to modify individual dialog components
-- Follows the existing pattern where `DialogContent` already accounts for the close button positioning
-- Safe default -- dialogs without extra header content simply get harmless extra padding
-
-### Files changed
-- `src/components/ui/dialog.tsx` -- one line change to `DialogHeader`
+### Summary
+- **2 files** modified: `src/pages/Workshop.tsx` and `src/pages/Quotes.tsx`
+- Client is auto-filled and locked (read-only) when coming from a job card
+- Line items (parts and labour) are carried over so you don't re-enter costs
+- No database changes needed
