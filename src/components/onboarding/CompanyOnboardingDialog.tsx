@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Upload, X, Wrench, GraduationCap, Scale } from 'lucide-react';
+import { Building2, Upload, X, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ const SYSTEM_CONFIG: Record<SystemType, { icon: React.ElementType; title: string
   workshop: { icon: Wrench, title: "Let's set up your workshop", entityLabel: 'Workshop' },
   school: { icon: GraduationCap, title: "Let's set up your school", entityLabel: 'School' },
   legal: { icon: Scale, title: "Let's set up your practice", entityLabel: 'Firm' },
+  hire: { icon: Hammer, title: "Let's set up your rental business", entityLabel: 'Business' },
 };
 
 interface CompanyOnboardingDialogProps {

@@ -209,7 +209,7 @@ export default function Settings() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="company_name">
-                  {systemType === 'legal' ? 'Firm Name' : systemType === 'school' ? 'School Name' : systemType === 'workshop' ? 'Workshop Name' : 'Company Name'} *
+                  {systemType === 'legal' ? 'Firm Name' : systemType === 'school' ? 'School Name' : systemType === 'workshop' ? 'Workshop Name' : systemType === 'hire' ? 'Business Name' : 'Company Name'} *
                 </Label>
                 <Input
                   id="company_name"

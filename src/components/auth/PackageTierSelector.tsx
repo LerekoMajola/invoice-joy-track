@@ -213,11 +213,64 @@ const legalTiers: PackageTier[] = [
   },
 ];
 
+const hireTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 400,
+    target: 'Small rental shops',
+    moduleKeys: ['hire_equipment', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Equipment Catalogue', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Hire Orders', included: false },
+      { name: 'Accounting', included: false },
+      { name: 'Availability Calendar', included: false },
+      { name: 'Returns & Tracking', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 600,
+    target: 'Growing rental businesses',
+    popular: true,
+    moduleKeys: ['hire_equipment', 'hire_orders', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'Equipment Catalogue', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Hire Orders', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Availability Calendar', included: false },
+      { name: 'Returns & Tracking', included: false },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 850,
+    target: 'Large hire companies',
+    moduleKeys: ['hire_equipment', 'hire_orders', 'hire_calendar', 'hire_returns', 'invoices', 'tasks', 'staff', 'accounting', 'core_crm'],
+    features: [
+      { name: 'Equipment Catalogue', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Hire Orders', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Availability Calendar', included: true },
+      { name: 'Returns & Tracking', included: true },
+    ],
+  },
+];
+
 const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
   business: { label: 'Business Management', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
   workshop: { label: 'Workshop Management', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
   school: { label: 'School Management', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
   legal: { label: 'Legal Practice', subtitle: 'For law firms & practitioners', gradient: 'from-emerald-500 to-teal-500', tiers: legalTiers },
+  hire: { label: 'Tool Hire', subtitle: 'For equipment rental companies', gradient: 'from-amber-500 to-orange-500', tiers: hireTiers },
 };
 
 interface PackageTierSelectorProps {
