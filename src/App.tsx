@@ -21,6 +21,13 @@ import Students from "./pages/Students";
 import SchoolAdmin from "./pages/SchoolAdmin";
 import SchoolFees from "./pages/SchoolFees";
 import Timetable from "./pages/Timetable";
+import Clients from "./pages/Clients";
+import CRM from "./pages/CRM";
+import Quotes from "./pages/Quotes";
+import Tenders from "./pages/Tenders";
+import DeliveryNotes from "./pages/DeliveryNotes";
+import Workshop from "./pages/Workshop";
+import Profitability from "./pages/Profitability";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentRequired from "./pages/PaymentRequired";
@@ -52,6 +59,13 @@ const App = () => (
             <Route path="/school-admin" element={<ProtectedRoute><SchoolAdmin /></ProtectedRoute>} />
             <Route path="/school-fees" element={<ProtectedRoute><SchoolFees /></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><Timetable /></ProtectedRoute>} />
+            <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+            <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
+            <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
+            <Route path="/tenders" element={<ProtectedRoute><Tenders /></ProtectedRoute>} />
+            <Route path="/delivery-notes" element={<ProtectedRoute><DeliveryNotes /></ProtectedRoute>} />
+            <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
+            <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

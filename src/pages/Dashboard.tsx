@@ -2,14 +2,18 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { CompanyOnboardingDialog } from '@/components/onboarding/CompanyOnboardingDialog';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const SchoolDashboard = lazy(() => import('@/pages/SchoolDashboard'));
+const BusinessDashboard = lazy(() => import('@/pages/BusinessDashboard'));
+const WorkshopDashboard = lazy(() => import('@/pages/WorkshopDashboard'));
 
 export default function Dashboard() {
   const { hasProfile, isLoading: profileLoading } = useCompanyProfile();
   const { isAdmin } = useAuth();
+  const { systemType } = useSubscription();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -29,9 +33,21 @@ export default function Dashboard() {
     setShowOnboarding(open);
   };
 
+  const renderDashboard = () => {
+    switch (systemType) {
+      case 'workshop':
+        return <WorkshopDashboard />;
+      case 'school':
+        return <SchoolDashboard />;
+      case 'business':
+      default:
+        return <BusinessDashboard />;
+    }
+  };
+
   return (
     <Suspense fallback={<DashboardLoading />}>
-      <SchoolDashboard />
+      {renderDashboard()}
       <CompanyOnboardingDialog open={showOnboarding} onOpenChange={handleOnboardingClose} />
     </Suspense>
   );

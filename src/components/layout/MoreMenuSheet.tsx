@@ -1,33 +1,48 @@
-import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock } from 'lucide-react';
+import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock, Briefcase, Truck, TrendingUp, Kanban, Wrench } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { useModules } from '@/hooks/useModules';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface MoreMenuSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Module key mapping (null = always visible)
+// systemTypes: null = all systems, string[] = specific systems only
 const allMenuItems = [
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks' },
-  { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting' },
-  { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff' },
-  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin' },
-  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly class schedule', moduleKey: 'school_admin' },
-  { icon: Settings, label: 'Settings', path: '/settings', description: 'School profile', moduleKey: null },
-  { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null },
+  // Business-specific
+  { icon: Kanban, label: 'CRM', path: '/crm', description: 'Sales pipeline', moduleKey: 'core_crm', systemTypes: ['business'] },
+  { icon: Briefcase, label: 'Tenders', path: '/tenders', description: 'Track opportunities', moduleKey: 'tenders', systemTypes: ['business'] },
+  { icon: Truck, label: 'Delivery Notes', path: '/delivery-notes', description: 'Track deliveries', moduleKey: 'delivery_notes', systemTypes: ['business'] },
+  { icon: TrendingUp, label: 'Profitability', path: '/profitability', description: 'Margins & costs', moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
+  // Workshop-specific
+  { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'] },
+  // School-specific
+  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['school'] },
+  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['school'] },
+  // Shared
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks', systemTypes: null },
+  { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting', systemTypes: null },
+  { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff', systemTypes: null },
+  { icon: Settings, label: 'Settings', path: '/settings', description: 'Company profile', moduleKey: null, systemTypes: null },
+  { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null, systemTypes: null },
 ];
 
 export function MoreMenuSheet({ open, onOpenChange }: MoreMenuSheetProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { hasModule, userModules } = useModules();
+  const { systemType } = useSubscription();
 
   const menuItems = allMenuItems.filter((item) => {
+    // System type filter
+    if (item.systemTypes !== null && !item.systemTypes.includes(systemType)) {
+      return false;
+    }
     if (!item.moduleKey) return true;
     if (userModules.length === 0) return false;
     return hasModule(item.moduleKey);
