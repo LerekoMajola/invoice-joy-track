@@ -1,52 +1,32 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { UsageMeter } from '@/components/subscription/UsageMeter';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useModules } from '@/hooks/useModules';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import {
-  Clock, AlertTriangle, Package, Loader2, Smartphone, Building2,
+  Clock, AlertTriangle, Loader2, Smartphone, Building2,
   CheckCircle2, ChevronDown, Copy
 } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatMaluti } from '@/lib/currency';
 import { toast } from 'sonner';
 
 const ADMIN_USER_ID = '89710bb3-dff7-4e5e-9af0-7ef7f3ad105d';
 
-function getIcon(iconName: string) {
-  const Icon = (LucideIcons as any)[iconName];
-  return Icon || Package;
-}
-
 export default function Billing() {
   const { user } = useAuth();
-  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, subscription, systemType } = useSubscription();
-  const { platformModules, userModules, isLoading, getMonthlyTotal, toggleModule, getModulesForSystem } = useModules();
-  
-  // Only show modules relevant to user's system type
-  const filteredModules = getModulesForSystem(systemType);
+  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference } = useSubscription();
   const { profile: companyProfile } = useCompanyProfile();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
 
-  const monthlyTotal = getMonthlyTotal();
   const companyName = companyProfile?.company_name || 'your company';
-
-  // Build a set of active module IDs for the user
-  const activeModuleIds = new Set(
-    userModules.filter(um => um.is_active).map(um => um.module_id)
-  );
 
   const copyReference = () => {
     navigator.clipboard.writeText(paymentReference);
@@ -61,7 +41,7 @@ export default function Billing() {
         user_id: ADMIN_USER_ID,
         type: 'payment',
         title: 'Payment Notification',
-        message: `${companyName} says they've made payment of ${formatMaluti(monthlyTotal)}. Reference: ${paymentReference}`,
+        message: `${companyName} says they've made a payment. Reference: ${paymentReference}`,
         reference_id: user.id,
         reference_type: 'subscription',
         link: '/admin',
@@ -78,7 +58,6 @@ export default function Billing() {
     }
   };
 
-  // Subscription status badge
   const statusBadge = () => {
     if (isActive) return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>;
     if (isTrialExpired) return <Badge variant="destructive">Trial Expired</Badge>;
@@ -90,7 +69,7 @@ export default function Billing() {
     <DashboardLayout>
       <Header 
         title="Billing & Subscription" 
-        subtitle="Manage your modules and payment details" 
+        subtitle="Manage your subscription and payment details" 
       />
       
       <div className="p-4 md:p-6 space-y-6 pb-safe">
@@ -107,10 +86,6 @@ export default function Billing() {
                   </span>
                 )}
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Monthly total</p>
-              <p className="text-2xl font-bold text-foreground">{formatMaluti(monthlyTotal)}</p>
             </div>
           </CardContent>
         </Card>
@@ -137,16 +112,13 @@ export default function Billing() {
                 <p className="text-sm text-muted-foreground">
                   {isTrialExpired 
                     ? 'Make a payment below to continue using the platform.' 
-                    : 'Enjoy full access to all your selected modules during the trial.'
+                    : 'Enjoy full access during the trial.'
                   }
                 </p>
               </div>
             </CardContent>
           </Card>
         )}
-
-        {/* Current Usage */}
-        <UsageMeter />
 
         {/* Payment Section */}
         <div>
@@ -200,10 +172,6 @@ export default function Billing() {
                 </li>
                 <li className="flex gap-2">
                   <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">5</Badge>
-                  <span>Enter amount: <strong className="text-foreground">{formatMaluti(monthlyTotal)}</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">6</Badge>
                   <span>Enter your PIN and confirm</span>
                 </li>
               </ol>
@@ -272,69 +240,6 @@ export default function Billing() {
                 "I've Made Payment"
               )}
             </Button>
-          )}
-        </div>
-
-        {/* Active Modules */}
-        <div>
-          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-            Your Modules
-          </h2>
-
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {filteredModules.map((mod) => {
-                const isActive = activeModuleIds.has(mod.id);
-                const IconComponent = getIcon(mod.icon);
-
-                return (
-                  <Card
-                    key={mod.id}
-                    className={cn(
-                      'transition-all',
-                      isActive ? 'border-primary/30 bg-primary/5' : 'opacity-60'
-                    )}
-                  >
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={cn(
-                          'p-2.5 rounded-xl',
-                          isActive ? 'bg-primary/10' : 'bg-muted'
-                        )}>
-                          <IconComponent className={cn(
-                            'h-5 w-5',
-                            isActive ? 'text-primary' : 'text-muted-foreground'
-                          )} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm truncate">{mod.name}</p>
-                            {mod.is_core && (
-                              <Badge variant="secondary" className="text-[9px] px-1.5">Required</Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {formatMaluti(mod.monthly_price)}/mo
-                          </p>
-                        </div>
-                      </div>
-
-                      <Switch
-                        checked={isActive}
-                        onCheckedChange={(checked) => {
-                          toggleModule.mutate({ moduleId: mod.id, activate: checked });
-                        }}
-                        disabled={mod.is_core || toggleModule.isPending}
-                      />
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
           )}
         </div>
       </div>
