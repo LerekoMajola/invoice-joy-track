@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { AddDeliveryNoteDialog } from '@/components/delivery-notes/AddDeliveryNoteDialog';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -106,6 +107,7 @@ export default function DeliveryNotes() {
   const { invoices } = useInvoices();
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const handleUpdateNote = async (data: {
@@ -214,7 +216,7 @@ export default function DeliveryNotes() {
       <Header 
         title="Delivery Notes" 
         subtitle="Track deliveries and shipments"
-        action={{ label: 'New Delivery Note', onClick: () => {} }}
+        action={{ label: 'New Delivery Note', onClick: () => setShowCreateDialog(true) }}
       />
       
       <div className="p-4 md:p-6">
@@ -371,6 +373,11 @@ export default function DeliveryNotes() {
         onConfirm={handleConfirm}
         variant={confirmDialog?.variant}
         confirmLabel={confirmDialog?.confirmLabel}
+      />
+
+      <AddDeliveryNoteDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
       />
     </DashboardLayout>
   );
