@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
+import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 
@@ -255,6 +255,54 @@ const systems: SystemTab[] = [
       },
     ],
   },
+  {
+    key: 'guesthouse',
+    label: 'Guest House',
+    icon: <Hotel className="h-4 w-4" />,
+    gradient: 'from-rose-500 to-pink-500',
+    subtitle: 'For guest houses & lodges',
+    tiers: [
+      {
+        name: 'Starter', price: 650, target: 'Small guest houses',
+        features: [
+          { name: 'Room Management', included: true },
+          { name: 'Bookings', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Housekeeping', included: false },
+          { name: 'Accounting', included: false },
+          { name: 'Guest Reviews', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 850, target: 'Growing lodges', popular: true,
+        features: [
+          { name: 'Room Management', included: true },
+          { name: 'Bookings', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Housekeeping', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Guest Reviews', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 1100, target: 'Large hospitality businesses',
+        features: [
+          { name: 'Room Management', included: true },
+          { name: 'Bookings', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Housekeeping', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Guest Reviews', included: true },
+        ],
+      },
+    ],
+  },
 ];
 
 function PricingCard({ tier, systemKey }: { tier: PackageTier; systemKey: string }) {
@@ -345,7 +393,7 @@ export function PricingTable() {
                 className={cn(
                   'flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   activeSystem === sys.key
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? `bg-gradient-to-r ${sys.gradient} text-white shadow-md`
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
