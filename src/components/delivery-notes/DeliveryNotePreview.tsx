@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import html2pdf from 'html2pdf.js';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
 import { cn } from '@/lib/utils';
 import { TemplateSelector, templates, DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import {
@@ -79,17 +79,9 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
 
   const handleSave = () => { if (onUpdate) onUpdate(data); setIsEditing(false); };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!contentRef.current) return;
-    const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
-      filename: `${data.note_number}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-    };
-    html2pdf().set(opt).from(contentRef.current).save();
+    await exportSectionBasedPDF(contentRef.current, `${data.note_number}.pdf`);
   };
 
   const handlePrint = () => { window.print(); };
@@ -176,28 +168,30 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
         {/* Scrollable Content - becomes flat for print */}
         <div className="flex-1 overflow-auto p-6 bg-muted/30 delivery-note-print-content">
           <DocumentWrapper template={selectedTemplate} fontFamily={selectedTemplate.fontFamily} innerRef={contentRef}>
-            <DocumentHeader
-              template={selectedTemplate}
-              company={company}
-              documentTitle="Delivery Note"
-              fields={headerFields}
-            />
+            <div data-pdf-section>
+              <DocumentHeader
+                template={selectedTemplate}
+                company={company}
+                documentTitle="Delivery Note"
+                fields={headerFields}
+              />
 
-            <ClientInfoSection template={selectedTemplate} label="Deliver To" fields={headerFields}>
-              {isEditing ? (
-                <Input value={data.client_name} onChange={(e) => setData({ ...data, client_name: e.target.value })} className="text-base font-bold mb-2 h-8" placeholder="Client Name" />
-              ) : (
-                <h3 className="text-base font-bold text-gray-900">{data.client_name}</h3>
-              )}
-              {isEditing ? (
-                <Textarea value={data.delivery_address || ''} onChange={(e) => setData({ ...data, delivery_address: e.target.value })} className="text-sm min-h-[60px]" placeholder="Delivery Address" />
-              ) : (
-                data.delivery_address && <p className="text-sm text-gray-600 whitespace-pre-line">{data.delivery_address}</p>
-              )}
-            </ClientInfoSection>
+              <ClientInfoSection template={selectedTemplate} label="Deliver To" fields={headerFields}>
+                {isEditing ? (
+                  <Input value={data.client_name} onChange={(e) => setData({ ...data, client_name: e.target.value })} className="text-base font-bold mb-2 h-8" placeholder="Client Name" />
+                ) : (
+                  <h3 className="text-base font-bold text-gray-900">{data.client_name}</h3>
+                )}
+                {isEditing ? (
+                  <Textarea value={data.delivery_address || ''} onChange={(e) => setData({ ...data, delivery_address: e.target.value })} className="text-sm min-h-[60px]" placeholder="Delivery Address" />
+                ) : (
+                  data.delivery_address && <p className="text-sm text-gray-600 whitespace-pre-line">{data.delivery_address}</p>
+                )}
+              </ClientInfoSection>
+            </div>
 
             {/* Items Table */}
-            <div className="mb-8">
+            <div className="mb-8" data-pdf-section>
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={thStyle}>
@@ -246,7 +240,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
             </div>
 
             {/* Goods Receipt Acknowledgment */}
-            <div className="border-2 rounded-lg p-6 mb-8 goods-receipt-section" style={{ borderColor: selectedTemplate.primaryColor }}>
+            <div className="border-2 rounded-lg p-6 mb-8 goods-receipt-section" style={{ borderColor: selectedTemplate.primaryColor }} data-pdf-section>
               <h3 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: selectedTemplate.primaryColor }}>
                 Goods Receipt Acknowledgment
               </h3>
@@ -283,25 +277,27 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
               </div>
             </div>
 
-            {/* Remarks */}
-            <div className="mb-8">
-              <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: selectedTemplate.accentColor }}>
-                Remarks / Condition of Goods
-              </h3>
-              <div className="border rounded p-3 min-h-[80px]">
-                <div className="border-b border-gray-200 py-2"></div>
-                <div className="border-b border-gray-200 py-2"></div>
-                <div className="border-b border-gray-200 py-2"></div>
+            {/* Remarks & Footer */}
+            <div data-pdf-section>
+              <div className="mb-8">
+                <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: selectedTemplate.accentColor }}>
+                  Remarks / Condition of Goods
+                </h3>
+                <div className="border rounded p-3 min-h-[80px]">
+                  <div className="border-b border-gray-200 py-2"></div>
+                  <div className="border-b border-gray-200 py-2"></div>
+                  <div className="border-b border-gray-200 py-2"></div>
+                </div>
               </div>
-            </div>
 
-            <DocumentFooter
-              template={selectedTemplate}
-              footerText={profile?.footer_text}
-              phone={profile?.phone}
-              email={profile?.email}
-              website={profile?.website}
-            />
+              <DocumentFooter
+                template={selectedTemplate}
+                footerText={profile?.footer_text}
+                phone={profile?.phone}
+                email={profile?.email}
+                website={profile?.website}
+              />
+            </div>
           </DocumentWrapper>
         </div>
       </div>
