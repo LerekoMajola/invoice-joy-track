@@ -32,6 +32,7 @@ import { useStaff, CreateStaffData, StaffRole } from '@/hooks/useStaff';
 import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
 import { Loader2, Shield } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const staffSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
@@ -55,7 +56,14 @@ const departments = [
   { value: 'sales', label: 'Sales' },
   { value: 'finance', label: 'Finance' },
   { value: 'admin', label: 'Admin' },
+  { value: 'workshop', label: 'Workshop' },
   { value: 'other', label: 'Other' },
+];
+
+const jobTitleSuggestions = [
+  'Technician',
+  'Senior Technician',
+  'Workshop Foreman',
 ];
 
 const roles = [
@@ -184,8 +192,20 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
                 <FormItem>
                   <FormLabel>Job Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Sales Manager" {...field} />
+                    <Input placeholder="e.g. Technician, Sales Manager" {...field} />
                   </FormControl>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {jobTitleSuggestions.map((title) => (
+                      <Badge
+                        key={title}
+                        variant={field.value === title ? 'default' : 'outline'}
+                        className="cursor-pointer text-xs"
+                        onClick={() => form.setValue('jobTitle', title, { shouldValidate: true })}
+                      >
+                        {title}
+                      </Badge>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
