@@ -35,7 +35,7 @@ export default function Auth() {
   // Pre-select system from URL query param (e.g. /auth?system=business)
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
-    if (systemParam && ['business', 'workshop', 'school', 'legal'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep('package');
       setIsLogin(false);

@@ -1,14 +1,14 @@
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { Quote } from 'lucide-react';
 
-const features = ['Quotes', 'Invoices', 'CRM', 'Tasks'];
+const industries = ['Business', 'Workshop', 'School', 'Legal', 'Tool Hire'];
 
 export function AuthBrandingPanel() {
   return (
     <div className="hidden lg:flex lg:w-1/2 bg-gradient-hero items-center justify-center p-12 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute top-20 left-10 w-64 h-64 bg-violet/30 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-20 right-10 w-80 h-80 bg-cyan/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-coral/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl" />
 
       <div className="relative max-w-md text-center animate-slide-up">
@@ -16,10 +16,10 @@ export function AuthBrandingPanel() {
           <PlatformLogo className="h-32 w-auto rounded-3xl p-8 bg-white shadow-sm" />
         </div>
         <h2 className="font-display text-3xl font-bold text-white mb-4">
-          Manage Your Business Operations
+          One Platform, Five Industries
         </h2>
         <p className="text-white/70 text-lg">
-          Quotes, invoices, delivery notes, client management, and more — all in one powerful platform designed for your business.
+          Business operations, workshop management, school admin, legal practice, and equipment hire — all in one powerful modular platform.
         </p>
 
         {/* Testimonial */}
@@ -42,19 +42,19 @@ export function AuthBrandingPanel() {
         {/* Trusted by badge */}
         <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <p className="text-white/60 text-sm">
-            Trusted by <span className="text-white font-semibold">5000+</span> businesses
+            Trusted by <span className="text-white font-semibold">5 000+</span> organisations
           </p>
         </div>
 
-        {/* Feature pills */}
+        {/* Industry pills */}
         <div className="flex flex-wrap justify-center gap-2 mt-6">
-          {features.map((feature, index) => (
+          {industries.map((ind, index) => (
             <span
-              key={feature}
+              key={ind}
               className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/80 text-sm font-medium animate-slide-up"
               style={{ animationDelay: `${0.4 + index * 0.1}s` }}
             >
-              {feature}
+              {ind}
             </span>
           ))}
         </div>
