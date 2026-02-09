@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.admin-get-signups]
 verify_jwt = false
+
+[functions.check-hearing-reminders]
+verify_jwt = false
