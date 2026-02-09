@@ -82,10 +82,12 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
   const handleDownloadPDF = () => {
     if (!contentRef.current) return;
     const opt = {
-      margin: 0, filename: `${data.note_number}.pdf`,
+      margin: [10, 10, 10, 10] as [number, number, number, number],
+      filename: `${data.note_number}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
+      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     };
     html2pdf().set(opt).from(contentRef.current).save();
   };
@@ -139,11 +141,11 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
   ];
 
   return createPortal(
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 print-portal">
       <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
 
-        {/* Header Actions */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
+        {/* Header Actions - hidden when printing */}
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2 delivery-note-modal-chrome">
           <div className="flex items-center gap-2 min-w-0">
             <Package className="h-5 w-5 text-primary flex-shrink-0" />
             <h2 className="text-base sm:text-lg font-semibold truncate">Delivery Note Preview</h2>
@@ -171,8 +173,8 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto p-6 bg-muted/30">
+        {/* Scrollable Content - becomes flat for print */}
+        <div className="flex-1 overflow-auto p-6 bg-muted/30 delivery-note-print-content">
           <DocumentWrapper template={selectedTemplate} fontFamily={selectedTemplate.fontFamily} innerRef={contentRef}>
             <DocumentHeader
               template={selectedTemplate}
@@ -244,7 +246,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
             </div>
 
             {/* Goods Receipt Acknowledgment */}
-            <div className="border-2 rounded-lg p-6 mb-8" style={{ borderColor: selectedTemplate.primaryColor }}>
+            <div className="border-2 rounded-lg p-6 mb-8 goods-receipt-section" style={{ borderColor: selectedTemplate.primaryColor }}>
               <h3 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: selectedTemplate.primaryColor }}>
                 Goods Receipt Acknowledgment
               </h3>

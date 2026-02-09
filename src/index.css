@@ -482,3 +482,59 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* A4 Print Styles */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Hide everything except the printable document */
+  body > *:not(.print-portal) {
+    display: none !important;
+  }
+
+  .print-portal {
+    display: block !important;
+    position: static !important;
+    background: none !important;
+  }
+
+  /* Hide UI chrome (header bar, scrollable wrapper) */
+  .delivery-note-modal-chrome {
+    display: none !important;
+  }
+
+  .delivery-note-print-content {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: none !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Let the document fill the page naturally */
+  .delivery-note-print-content > div {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 8mm !important;
+  }
+
+  /* Ensure tables don't break across pages awkwardly */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Keep acknowledgment section together */
+  .goods-receipt-section {
+    page-break-inside: avoid;
+  }
+}
