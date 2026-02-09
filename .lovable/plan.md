@@ -1,43 +1,33 @@
 
 
-# WhatsApp Client Alert Button on Job Card
+# Add Client Directly from Job Card Creation
 
-## What This Does
-Adds a WhatsApp button to the job card detail view that, with one tap, opens WhatsApp with the client's number and a pre-filled message about the job status update. No API keys or third-party services needed — it uses the standard `https://wa.me/` deep link that works on both mobile and desktop.
+## What Changes
+
+Right now, to create a job card you must first go to the Clients page, add a client there, then come back to Workshop and create the job card. This adds an "Add New Client" option directly inside the Create Job Card dialog so you can do it all in one place -- including capturing their phone number for WhatsApp alerts.
 
 ## How It Works
 
-1. **Fetch client phone number**: When the job card detail opens, look up the client's phone number from the `clients` table using the existing `clientId` on the job card.
-
-2. **WhatsApp button in the sticky footer**: Add a green WhatsApp icon button next to the existing action buttons. One tap opens WhatsApp (or WhatsApp Web on desktop) with:
-   - The client's phone number pre-filled
-   - A status-appropriate message like: *"Hi [Client Name], update on your vehicle [Reg]: your job (JC-0012) is now In Progress. We'll keep you posted!"*
-
-3. **Status-aware messages**: The pre-filled message automatically changes based on the current job status:
-   - **Diagnosing**: "We've started diagnosing your vehicle..."
-   - **Diagnosed**: "Diagnosis is complete, we'll send you a quote shortly..."
-   - **In Progress**: "Work has started on your vehicle..."
-   - **Completed**: "Your vehicle is ready for collection!"
-   - etc.
-
-4. **Fallback**: If no phone number is available, the button is disabled with a tooltip saying "No phone number on file."
+1. **"+ Add New Client" link** appears below the client dropdown (similar to the existing "+ Add to your team" link for staff)
+2. Clicking it opens a compact inline form (or the existing AddClientDialog) to capture: Name, Contact Person, Phone, Email, Address
+3. After saving, the new client is automatically selected in the job card form
+4. The job card is then linked to this client, so their phone number is available for WhatsApp alerts later
 
 ## Technical Details
 
-### File: `src/components/workshop/JobCardDetailDialog.tsx`
+### File: `src/components/workshop/CreateJobCardDialog.tsx`
 
-- Add a `clientPhone` state, fetched from the `clients` table using `jobCard.clientId` when the dialog opens
-- Add a helper function `getWhatsAppUrl(phone, jobCard)` that:
-  - Strips non-numeric characters from the phone number
-  - Builds a status-specific message template
-  - Returns `https://wa.me/{phone}?text={encodedMessage}`
-- Add a green WhatsApp button (using a MessageCircle or custom icon) in the sticky bottom bar
-- The button calls `window.open(whatsAppUrl, '_blank')` on click
+- Import the `AddClientDialog` component from `src/components/crm/AddClientDialog.tsx` (already exists and handles client creation with phone number)
+- Add a `showAddClient` state (same pattern as the existing `showAddStaff`)
+- Add a "+ Add new client" link below the client Select dropdown, styled the same as the "+ Add to your team" link (using `UserPlus` icon)
+- After the AddClientDialog closes, call `refetch()` from `useClients` to reload the clients list
+- Auto-select the newly created client: compare the refreshed clients list to find the new entry and set `clientId` + `clientName`
 
-### File: `src/components/workshop/jobCardFlowUtils.ts`
+**Changes summary:**
+- Add `showAddClient` state
+- Add `handleAddClientClose` callback that refetches clients and auto-selects the newest one
+- Add the `UserPlus` / `Plus` link below the client selector
+- Render `<AddClientDialog>` alongside the existing `<AddStaffDialog>`
 
-- Add a `getStatusMessage(status, clientName, vehicleReg, jobCardNumber)` function that returns an appropriate WhatsApp message template for each status
-
-### No database changes needed
-The `clients` table already has a `phone` column. The `job_cards` table already has `client_id`.
-
+### No database or backend changes needed
+The `AddClientDialog` already saves the phone number to the `clients` table, and the WhatsApp feature already reads from there.
