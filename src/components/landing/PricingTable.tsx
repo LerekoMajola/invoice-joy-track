@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus } from 'lucide-react';
+import { Check, Minus, Briefcase, Wrench, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 
@@ -13,53 +14,154 @@ interface PackageTier {
   features: { name: string; included: boolean }[];
 }
 
-const tiers: PackageTier[] = [
+interface SystemTab {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  gradient: string;
+  subtitle: string;
+  tiers: PackageTier[];
+}
+
+const systems: SystemTab[] = [
   {
-    name: 'Starter',
-    price: 720,
-    target: 'Small private schools',
-    features: [
-      { name: 'School Admin', included: true },
-      { name: 'Student Management', included: true },
-      { name: 'School Fees', included: true },
-      { name: 'Invoices', included: true },
-      { name: 'Task Management', included: true },
-      { name: 'Staff & HR', included: true },
-      { name: 'Accounting', included: false },
+    key: 'business',
+    label: 'Business',
+    icon: <Briefcase className="h-4 w-4" />,
+    gradient: 'from-primary to-violet',
+    subtitle: 'For companies & professionals',
+    tiers: [
+      {
+        name: 'Starter', price: 350, target: 'Freelancers & sole traders',
+        features: [
+          { name: 'Quotes & Estimates', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'CRM & Leads', included: false },
+          { name: 'Accounting', included: false },
+          { name: 'Tenders', included: false },
+          { name: 'Delivery Notes', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 550, target: 'Growing businesses', popular: true,
+        features: [
+          { name: 'Quotes & Estimates', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'CRM & Leads', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Tenders', included: false },
+          { name: 'Delivery Notes', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 800, target: 'Established companies',
+        features: [
+          { name: 'Quotes & Estimates', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'CRM & Leads', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Tenders', included: true },
+          { name: 'Delivery Notes', included: true },
+        ],
+      },
     ],
   },
   {
-    name: 'Professional',
-    price: 950,
-    target: 'Mid-size academies',
-    popular: true,
-    features: [
-      { name: 'School Admin', included: true },
-      { name: 'Student Management', included: true },
-      { name: 'School Fees', included: true },
-      { name: 'Invoices', included: true },
-      { name: 'Task Management', included: true },
-      { name: 'Staff & HR', included: true },
-      { name: 'Accounting', included: true },
+    key: 'workshop',
+    label: 'Workshop',
+    icon: <Wrench className="h-4 w-4" />,
+    gradient: 'from-coral to-warning',
+    subtitle: 'For auto shops & service centres',
+    tiers: [
+      {
+        name: 'Starter', price: 450, target: 'Small repair shops',
+        features: [
+          { name: 'Workshop & Job Cards', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: false },
+          { name: 'Fleet Management', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 650, target: 'Mid-size workshops', popular: true,
+        features: [
+          { name: 'Workshop & Job Cards', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Fleet Management', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 900, target: 'Large service centres',
+        features: [
+          { name: 'Workshop & Job Cards', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Fleet Management', included: true },
+        ],
+      },
     ],
   },
   {
-    name: 'Enterprise',
-    price: 1200,
-    target: 'Large schools & campuses',
-    features: [
-      { name: 'School Admin', included: true },
-      { name: 'Student Management', included: true },
-      { name: 'School Fees', included: true },
-      { name: 'Invoices', included: true },
-      { name: 'Task Management', included: true },
-      { name: 'Staff & HR', included: true },
-      { name: 'Accounting', included: true },
+    key: 'school',
+    label: 'School',
+    icon: <GraduationCap className="h-4 w-4" />,
+    gradient: 'from-info to-cyan',
+    subtitle: 'For private schools & academies',
+    tiers: [
+      {
+        name: 'Starter', price: 720, target: 'Small private schools',
+        features: [
+          { name: 'School Admin', included: true },
+          { name: 'Student Management', included: true },
+          { name: 'School Fees', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 950, target: 'Mid-size academies', popular: true,
+        features: [
+          { name: 'School Admin', included: true },
+          { name: 'Student Management', included: true },
+          { name: 'School Fees', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: true },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 1200, target: 'Large schools & campuses',
+        features: [
+          { name: 'School Admin', included: true },
+          { name: 'Student Management', included: true },
+          { name: 'School Fees', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Accounting', included: true },
+        ],
+      },
     ],
   },
 ];
 
-function PricingCard({ tier }: { tier: PackageTier }) {
+function PricingCard({ tier, systemKey }: { tier: PackageTier; systemKey: string }) {
   return (
     <div
       className={cn(
@@ -106,7 +208,7 @@ function PricingCard({ tier }: { tier: PackageTier }) {
         ))}
       </ul>
 
-      <Link to="/auth">
+      <Link to={`/auth?system=${systemKey}`}>
         <Button
           variant={tier.popular ? 'gradient' : 'outline'}
           className="w-full rounded-xl h-12 font-semibold"
@@ -122,6 +224,9 @@ function PricingCard({ tier }: { tier: PackageTier }) {
 }
 
 export function PricingTable() {
+  const [activeSystem, setActiveSystem] = useState('business');
+  const current = systems.find((s) => s.key === activeSystem)!;
+
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -130,20 +235,44 @@ export function PricingTable() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Choose the package that fits your school. Start with a 7-day free trial — no credit card required.
+            Choose the package that fits your needs. Start with a 7-day free trial — no credit card required.
           </p>
         </div>
 
+        {/* System tabs */}
+        <div className="flex justify-center mb-10">
+          <div className="inline-flex items-center gap-1 rounded-xl bg-muted p-1.5">
+            {systems.map((sys) => (
+              <button
+                key={sys.key}
+                onClick={() => setActiveSystem(sys.key)}
+                className={cn(
+                  'flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  activeSystem === sys.key
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {sys.icon}
+                <span className="hidden sm:inline">{sys.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="text-center mb-10">
-          <h3 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-info to-cyan bg-clip-text text-transparent mb-2">
-            School Management
+          <h3 className={cn(
+            'font-display text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent mb-2',
+            current.gradient
+          )}>
+            {current.label}
           </h3>
-          <p className="text-muted-foreground">For private schools & academies</p>
+          <p className="text-muted-foreground">{current.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
-          {tiers.map((tier) => (
-            <PricingCard key={tier.name} tier={tier} />
+          {current.tiers.map((tier) => (
+            <PricingCard key={`${current.key}-${tier.name}`} tier={tier} systemKey={current.key} />
           ))}
         </div>
 

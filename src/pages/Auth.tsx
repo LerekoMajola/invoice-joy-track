@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,18 @@ export default function Auth() {
   const [selectedModuleKeys, setSelectedModuleKeys] = useState<string[]>([]);
   const [savingModules, setSavingModules] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAdmin, loading } = useAuth();
+
+  // Pre-select system from URL query param (e.g. /auth?system=business)
+  useEffect(() => {
+    const systemParam = searchParams.get('system') as SystemType | null;
+    if (systemParam && ['business', 'workshop', 'school'].includes(systemParam) && !selectedSystem) {
+      setSelectedSystem(systemParam);
+      setSignupStep('package');
+      setIsLogin(false);
+    }
+  }, [searchParams]);
 
   // Redirect authenticated users (only when not in a signup step)
   useEffect(() => {
