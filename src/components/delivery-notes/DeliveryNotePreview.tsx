@@ -141,31 +141,31 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header Actions */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Delivery Note Preview</h2>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Package className="h-5 w-5 text-primary flex-shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold truncate">Delivery Note Preview</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end">
             {isEditing ? (
-              <Button variant="default" size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-2" /> Save</Button>
+              <Button variant="default" size="sm" onClick={handleSave}><Save className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Save</span></Button>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}><Pencil className="h-4 w-4 mr-2" /> Edit</Button>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}><Pencil className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Edit</span></Button>
             )}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2"><Palette className="h-4 w-4" /> Template</Button>
+                <Button variant="outline" size="sm"><Palette className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Template</span></Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[600px]" align="end">
+              <PopoverContent className="w-[min(600px,calc(100vw-2rem))]" align="end">
                 <div className="space-y-3">
                   <h4 className="font-medium text-sm">Choose Template</h4>
                   <TemplateSelector selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate} />
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" size="sm" onClick={handlePrint} disabled={isEditing}><Printer className="h-4 w-4 mr-2" /> Print</Button>
-            <Button variant="default" size="sm" onClick={handleDownloadPDF} disabled={isEditing}><Download className="h-4 w-4 mr-2" /> Download PDF</Button>
-            <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" onClick={handlePrint} disabled={isEditing}><Printer className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Print</span></Button>
+            <Button variant="default" size="sm" onClick={handleDownloadPDF} disabled={isEditing}><Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">PDF</span></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
           </div>
         </div>
 
