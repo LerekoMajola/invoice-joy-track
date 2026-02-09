@@ -40,12 +40,25 @@ const statusLabels: Record<string, string> = {
 const caseTypes = ['civil', 'criminal', 'family', 'corporate', 'labour', 'property', 'other'];
 const priorities = ['low', 'medium', 'high'];
 
+function generateNextCaseNumber(cases: LegalCase[]): string {
+  let max = 0;
+  for (const c of cases) {
+    const match = c.caseNumber.match(/(\d+)$/);
+    if (match) max = Math.max(max, parseInt(match[1], 10));
+  }
+  return `CASE-${String(max + 1).padStart(4, '0')}`;
+}
+
 export default function LegalCases() {
   const { user } = useAuth();
   const { cases, isLoading, refetch } = useLegalCases();
   const { clients } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [addOpen, setAddOpen] = useState(false);
+  const openAddDialog = () => {
+    setForm(f => ({ ...f, caseNumber: generateNextCaseNumber(cases) }));
+    setAddOpen(true);
+  };
   const [selectedCase, setSelectedCase] = useState<LegalCase | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [form, setForm] = useState({
@@ -61,8 +74,8 @@ export default function LegalCases() {
   });
 
   const handleSubmit = async () => {
-    if (!user || !form.caseNumber || !form.title) {
-      toast.error('Case number and title are required');
+    if (!user || !form.title) {
+      toast.error('Title is required');
       return;
     }
     const { error } = await supabase.from('legal_cases').insert({
@@ -86,7 +99,7 @@ export default function LegalCases() {
 
   return (
     <DashboardLayout>
-      <Header title="Cases" subtitle="Manage legal cases and matters" action={{ label: 'New Case', onClick: () => setAddOpen(true) }} />
+      <Header title="Cases" subtitle="Manage legal cases and matters" action={{ label: 'New Case', onClick: openAddDialog }} />
 
       <div className="p-4 md:p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -192,7 +205,7 @@ export default function LegalCases() {
           )}
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Case Number *</Label><Input value={form.caseNumber} onChange={(e) => setForm(f => ({ ...f, caseNumber: e.target.value }))} placeholder="CASE-001" /></div>
+              <div><Label>Case Number</Label><Input value={form.caseNumber} readOnly className="bg-muted" /></div>
               <div><Label>Type</Label>
                 <Select value={form.caseType} onValueChange={(v) => setForm(f => ({ ...f, caseType: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
