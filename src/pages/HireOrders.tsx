@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useHireOrders, CreateHireOrderInput } from '@/hooks/useHireOrders';
+import { useHireOrders, CreateHireOrderInput, HireOrder, HireOrderItem } from '@/hooks/useHireOrders';
 import { useEquipment } from '@/hooks/useEquipment';
 import { useClients } from '@/hooks/useClients';
 import { formatMaluti } from '@/lib/currency';
 import { format } from 'date-fns';
-import { Plus, Loader2, ClipboardList, Search, Trash2 } from 'lucide-react';
+import { Plus, Loader2, ClipboardList, Search, Trash2, RotateCcw, FileText } from 'lucide-react';
+import { ProcessReturnDialog } from '@/components/hire/ProcessReturnDialog';
+import { HireOrderPreview } from '@/components/hire/HireOrderPreview';
 
 const statusColor: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -31,12 +33,20 @@ interface OrderItemForm {
 }
 
 export default function HireOrders() {
-  const { orders, isLoading, createOrder, isCreating } = useHireOrders();
+  const { orders, isLoading, createOrder, isCreating, getOrderItems } = useHireOrders();
   const { equipment } = useEquipment();
   const { clients } = useClients();
   const [addOpen, setAddOpen] = useState(false);
   const [statusTab, setStatusTab] = useState('all');
   const [search, setSearch] = useState('');
+
+  // Return dialog state
+  const [returnOrder, setReturnOrder] = useState<HireOrder | null>(null);
+
+  // Preview state
+  const [previewOrder, setPreviewOrder] = useState<HireOrder | null>(null);
+  const [previewItems, setPreviewItems] = useState<HireOrderItem[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const [form, setForm] = useState({
     client_name: '',
@@ -64,7 +74,6 @@ export default function HireOrders() {
     setOrderItems(prev => prev.map((item, i) => {
       if (i !== index) return item;
       const updated = { ...item, [field]: value };
-      // If equipment selected, auto-fill name and rate
       if (field === 'equipment_item_id') {
         const eq = equipment.find(e => e.id === value);
         if (eq) {
@@ -117,6 +126,14 @@ export default function HireOrders() {
     setAddOpen(false);
     setForm({ client_name: '', client_id: '', client_phone: '', hire_start: format(new Date(), 'yyyy-MM-dd'), hire_end: '', deposit_paid: 0, notes: '' });
     setOrderItems([]);
+  };
+
+  const handleOpenPreview = async (order: HireOrder) => {
+    setPreviewLoading(true);
+    setPreviewOrder(order);
+    const items = await getOrderItems(order.id);
+    setPreviewItems(items);
+    setPreviewLoading(false);
   };
 
   const availableEquipment = equipment.filter(e => e.available_quantity > 0);
@@ -172,6 +189,17 @@ export default function HireOrders() {
                         {format(new Date(order.hire_start), 'dd MMM')} — {format(new Date(order.hire_end), 'dd MMM yyyy')}
                       </p>
                     </div>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => handleOpenPreview(order)}>
+                      <FileText className="h-3.5 w-3.5 mr-1" />Agreement
+                    </Button>
+                    {(order.status === 'active' || order.status === 'overdue') && (
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setReturnOrder(order)}>
+                        <RotateCcw className="h-3.5 w-3.5 mr-1" />Process Return
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -259,6 +287,24 @@ export default function HireOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Process Return Dialog */}
+      {returnOrder && (
+        <ProcessReturnDialog
+          order={returnOrder}
+          open={!!returnOrder}
+          onOpenChange={(open) => { if (!open) setReturnOrder(null); }}
+        />
+      )}
+
+      {/* Hire Order Preview */}
+      {previewOrder && !previewLoading && (
+        <HireOrderPreview
+          order={previewOrder}
+          items={previewItems}
+          onClose={() => setPreviewOrder(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }

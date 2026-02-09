@@ -39,6 +39,7 @@ import LegalDocuments from "./pages/LegalDocuments";
 import LegalCalendar from "./pages/LegalCalendar";
 import Equipment from "./pages/Equipment";
 import HireOrders from "./pages/HireOrders";
+import HireCalendar from "./pages/HireCalendar";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/legal-calendar" element={<ProtectedRoute><LegalCalendar /></ProtectedRoute>} />
             <Route path="/equipment" element={<ProtectedRoute><Equipment /></ProtectedRoute>} />
             <Route path="/hire-orders" element={<ProtectedRoute><HireOrders /></ProtectedRoute>} />
+            <Route path="/hire-calendar" element={<ProtectedRoute><HireCalendar /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

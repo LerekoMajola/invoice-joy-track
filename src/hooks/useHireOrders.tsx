@@ -55,6 +55,18 @@ export interface CreateHireOrderInput {
   }[];
 }
 
+export interface ProcessReturnInput {
+  orderId: string;
+  actualReturnDate: string;
+  items: {
+    id: string;
+    condition_in: string;
+    damage_notes: string | null;
+    damage_charge: number;
+  }[];
+  adjustedTotal: number;
+}
+
 export function useHireOrders() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -72,11 +84,32 @@ export function useHireOrders() {
     enabled: !!user,
   });
 
+  // Fetch all order items (for calendar view)
+  const { data: allOrderItems = [] } = useQuery({
+    queryKey: ['hire-order-items-all', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hire_order_items')
+        .select('*');
+      if (error) throw error;
+      return data as HireOrderItem[];
+    },
+    enabled: !!user,
+  });
+
+  const getOrderItems = async (orderId: string): Promise<HireOrderItem[]> => {
+    const { data, error } = await supabase
+      .from('hire_order_items')
+      .select('*')
+      .eq('hire_order_id', orderId);
+    if (error) throw error;
+    return data as HireOrderItem[];
+  };
+
   const createOrder = useMutation({
     mutationFn: async (input: CreateHireOrderInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Generate order number
       const count = orders.length + 1;
       const orderNumber = `HO-${String(count).padStart(3, '0')}`;
 
@@ -99,7 +132,6 @@ export function useHireOrders() {
         .single();
       if (error) throw error;
 
-      // Insert line items
       if (input.items.length > 0) {
         const { error: itemsError } = await supabase.from('hire_order_items').insert(
           input.items.map((item) => ({
@@ -117,6 +149,7 @@ export function useHireOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
       toast.success('Hire order created');
     },
     onError: () => toast.error('Failed to create hire order'),
@@ -144,17 +177,57 @@ export function useHireOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
       toast.success('Order deleted');
     },
     onError: () => toast.error('Failed to delete order'),
   });
 
+  const processReturn = useMutation({
+    mutationFn: async (input: ProcessReturnInput) => {
+      // Update order status and return date
+      const { error: orderError } = await supabase
+        .from('hire_orders')
+        .update({
+          status: 'returned',
+          actual_return_date: input.actualReturnDate,
+          total: input.adjustedTotal,
+        })
+        .eq('id', input.orderId);
+      if (orderError) throw orderError;
+
+      // Update each item's condition and damage info
+      for (const item of input.items) {
+        const { error: itemError } = await supabase
+          .from('hire_order_items')
+          .update({
+            condition_in: item.condition_in,
+            damage_notes: item.damage_notes,
+            damage_charge: item.damage_charge,
+          })
+          .eq('id', item.id);
+        if (itemError) throw itemError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
+      queryClient.invalidateQueries({ queryKey: ['equipment'] });
+      toast.success('Return processed successfully');
+    },
+    onError: () => toast.error('Failed to process return'),
+  });
+
   return {
     orders,
     isLoading,
+    allOrderItems,
+    getOrderItems,
     createOrder: createOrder.mutate,
     updateOrder: updateOrder.mutate,
     deleteOrder: deleteOrder.mutate,
+    processReturn: processReturn.mutate,
     isCreating: createOrder.isPending,
+    isProcessingReturn: processReturn.isPending,
   };
 }
