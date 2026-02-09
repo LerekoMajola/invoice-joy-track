@@ -1,33 +1,25 @@
 
 
-# Add Client Directly from Job Card Creation
+# Make Phone Number Prominent in Add Client Dialog
 
-## What Changes
+## The Problem
+When adding a new client from the Job Card creation flow, the phone field is buried and easy to skip. But the phone number is essential for WhatsApp job update alerts.
 
-Right now, to create a job card you must first go to the Clients page, add a client there, then come back to Workshop and create the job card. This adds an "Add New Client" option directly inside the Create Job Card dialog so you can do it all in one place -- including capturing their phone number for WhatsApp alerts.
+## Changes
 
-## How It Works
+### File: `src/components/crm/AddClientDialog.tsx`
 
-1. **"+ Add New Client" link** appears below the client dropdown (similar to the existing "+ Add to your team" link for staff)
-2. Clicking it opens a compact inline form (or the existing AddClientDialog) to capture: Name, Contact Person, Phone, Email, Address
-3. After saving, the new client is automatically selected in the job card form
-4. The job card is then linked to this client, so their phone number is available for WhatsApp alerts later
+Reorder the form fields and add a WhatsApp hint to make the phone number prominent:
 
-## Technical Details
+1. **Move Phone up** -- place it right after Organisation Name and Contact Person, before Email
+2. **Add WhatsApp hint** -- show a small green helper text below the phone field: "Used for WhatsApp job updates" with a message icon
+3. **Reorder layout**:
+   - Row 1: Organisation Name (full width, required)
+   - Row 2: Contact Person + Phone (for WhatsApp)
+   - Row 3: Email + Source
+   - Row 4: Address
+   - Row 5: Status
 
-### File: `src/components/workshop/CreateJobCardDialog.tsx`
+The phone label changes to **"Phone (WhatsApp)"** and gets a small green hint underneath so users understand why it matters.
 
-- Import the `AddClientDialog` component from `src/components/crm/AddClientDialog.tsx` (already exists and handles client creation with phone number)
-- Add a `showAddClient` state (same pattern as the existing `showAddStaff`)
-- Add a "+ Add new client" link below the client Select dropdown, styled the same as the "+ Add to your team" link (using `UserPlus` icon)
-- After the AddClientDialog closes, call `refetch()` from `useClients` to reload the clients list
-- Auto-select the newly created client: compare the refreshed clients list to find the new entry and set `clientId` + `clientName`
-
-**Changes summary:**
-- Add `showAddClient` state
-- Add `handleAddClientClose` callback that refetches clients and auto-selects the newest one
-- Add the `UserPlus` / `Plus` link below the client selector
-- Render `<AddClientDialog>` alongside the existing `<AddStaffDialog>`
-
-### No database or backend changes needed
-The `AddClientDialog` already saves the phone number to the `clients` table, and the WhatsApp feature already reads from there.
+No database or backend changes needed -- the phone column already exists in the clients table.
