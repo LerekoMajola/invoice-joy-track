@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, FileText, TrendingUp, Receipt, Plus, Briefcase, CalendarDays, Sparkles } from 'lucide-react';
+import { Users, FileText, TrendingUp, Receipt, Plus } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TenderSourceLinks } from '@/components/dashboard/TenderSourceLinks';
-import { format, getDayOfYear } from 'date-fns';
+import { DashboardDateBanner } from '@/components/dashboard/DashboardDateBanner';
 
 const businessQuotes = [
   "Success is not final, failure is not fatal — it is the courage to continue that counts.",
@@ -88,24 +88,8 @@ export default function BusinessDashboard() {
       />
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-safe">
-        {/* Date & Motivational Message */}
-        {(() => {
-          const today = new Date();
-          const dayIndex = getDayOfYear(today);
-          const dailyQuote = businessQuotes[dayIndex % businessQuotes.length];
-          return (
-            <div className="rounded-xl border border-primary/10 bg-gradient-to-r from-primary/5 via-background to-primary/5 p-4 md:p-5">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <CalendarDays className="h-4 w-4 text-primary" />
-                <span className="font-medium">{format(today, 'EEEE, d MMMM yyyy')}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
-                <p className="text-sm italic text-muted-foreground leading-relaxed">"{dailyQuote}"</p>
-              </div>
-            </div>
-          );
-        })()}
+        {/* Date, Clock & Motivational Message */}
+        <DashboardDateBanner quotes={businessQuotes} theme="business" />
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

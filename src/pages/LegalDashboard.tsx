@@ -3,9 +3,9 @@ import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Scale, Timer, CalendarDays, Receipt, Plus, FolderOpen, Sparkles } from 'lucide-react';
+import { Scale, Timer, CalendarDays, Receipt, Plus, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format, getDayOfYear } from 'date-fns';
+import { DashboardDateBanner } from '@/components/dashboard/DashboardDateBanner';
 
 const legalQuotes = [
   "Justice delayed is justice denied.",
@@ -28,9 +28,6 @@ const legalQuotes = [
 export default function LegalDashboard() {
   const navigate = useNavigate();
 
-  const today = new Date();
-  const dayIndex = getDayOfYear(today);
-  const dailyQuote = legalQuotes[dayIndex % legalQuotes.length];
 
   return (
     <DashboardLayout>
@@ -40,17 +37,8 @@ export default function LegalDashboard() {
       />
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-safe">
-        {/* Date & Motivational Message */}
-        <div className="rounded-xl border border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 via-background to-teal-500/5 p-4 md:p-5">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <CalendarDays className="h-4 w-4 text-emerald-600" />
-            <span className="font-medium">{format(today, 'EEEE, d MMMM yyyy')}</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <Sparkles className="h-4 w-4 text-emerald-500/60 mt-0.5 flex-shrink-0" />
-            <p className="text-sm italic text-muted-foreground leading-relaxed">"{dailyQuote}"</p>
-          </div>
-        </div>
+        {/* Date, Clock & Motivational Message */}
+        <DashboardDateBanner quotes={legalQuotes} theme="legal" />
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
