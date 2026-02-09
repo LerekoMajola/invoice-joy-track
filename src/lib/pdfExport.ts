@@ -35,6 +35,10 @@ export async function exportSectionBasedPDF(
   const captured: { canvas: HTMLCanvasElement; heightMM: number }[] = [];
 
   for (const section of targets) {
+    // Temporarily ensure the section is fully visible for capture
+    const prevOverflow = section.style.overflow;
+    section.style.overflow = 'visible';
+
     const canvas = await html2canvas(section, {
       scale: 2,
       useCORS: true,
@@ -43,7 +47,10 @@ export async function exportSectionBasedPDF(
       windowWidth: containerWidth,
       scrollX: 0,
       scrollY: -window.scrollY,
+      height: section.scrollHeight + 10, // extra buffer to prevent clipping
     });
+
+    section.style.overflow = prevOverflow;
 
     const widthPx = canvas.width / 2; // scale factor = 2
     const heightPx = canvas.height / 2;

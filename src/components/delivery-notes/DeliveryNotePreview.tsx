@@ -168,7 +168,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
         {/* Scrollable Content - becomes flat for print */}
         <div className="flex-1 overflow-auto p-6 bg-muted/30 delivery-note-print-content">
           <DocumentWrapper template={selectedTemplate} fontFamily={selectedTemplate.fontFamily} innerRef={contentRef}>
-            <div data-pdf-section>
+            <div data-pdf-section style={{ paddingBottom: '4px' }}>
               <DocumentHeader
                 template={selectedTemplate}
                 company={company}
@@ -191,7 +191,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
             </div>
 
             {/* Items Table */}
-            <div className="mb-8" data-pdf-section>
+            <div className="mb-8" data-pdf-section style={{ paddingBottom: '4px' }}>
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={thStyle}>
@@ -240,7 +240,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
             </div>
 
             {/* Goods Receipt Acknowledgment */}
-            <div className="border-2 rounded-lg p-6 mb-8 goods-receipt-section" style={{ borderColor: selectedTemplate.primaryColor }} data-pdf-section>
+            <div className="border-2 rounded-lg p-6 mb-8 goods-receipt-section" style={{ borderColor: selectedTemplate.primaryColor, marginBottom: '4px' }} data-pdf-section>
               <h3 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: selectedTemplate.primaryColor }}>
                 Goods Receipt Acknowledgment
               </h3>
