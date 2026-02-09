@@ -19,12 +19,15 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
-import { Timer, Loader2, Clock, DollarSign, FileText } from 'lucide-react';
+import { Timer, Loader2, Clock, DollarSign, FileText, Play, Square, Receipt } from 'lucide-react';
 import { useLegalTimeEntries, type LegalTimeEntry } from '@/hooks/useLegalTimeEntries';
 import { useLegalCases } from '@/hooks/useLegalCases';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { TimeEntryEditDialog } from '@/components/legal/TimeEntryEditDialog';
+import { GenerateInvoiceDialog } from '@/components/legal/GenerateInvoiceDialog';
+import { useEffect, useRef, useCallback } from 'react';
 
 const activityTypes = ['consultation', 'research', 'drafting', 'court_appearance', 'negotiation', 'review', 'meeting', 'travel', 'other'];
 
@@ -33,10 +36,63 @@ export default function LegalTimeTracking() {
   const { entries, isLoading, refetch } = useLegalTimeEntries();
   const { cases } = useLegalCases();
   const [addOpen, setAddOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<LegalTimeEntry | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [filterCase, setFilterCase] = useState('all');
+  const [filterBillable, setFilterBillable] = useState('all');
+
+  // Running timer
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerCaseId, setTimerCaseId] = useState('');
+  const [timerStart, setTimerStart] = useState<number | null>(null);
+  const [timerElapsed, setTimerElapsed] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [form, setForm] = useState({
     caseId: '', date: new Date().toISOString().split('T')[0], hours: '', hourlyRate: '',
     description: '', activityType: 'consultation', isBillable: true,
   });
+
+  useEffect(() => {
+    if (timerRunning && timerStart) {
+      timerRef.current = setInterval(() => {
+        setTimerElapsed(Math.floor((Date.now() - timerStart) / 1000));
+      }, 1000);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [timerRunning, timerStart]);
+
+  const startTimer = () => {
+    if (!timerCaseId) { toast.error('Select a case first'); return; }
+    setTimerStart(Date.now());
+    setTimerElapsed(0);
+    setTimerRunning(true);
+  };
+
+  const stopTimer = useCallback(() => {
+    if (!timerStart) return;
+    const hours = (Date.now() - timerStart) / 3600000;
+    setTimerRunning(false);
+    setTimerStart(null);
+    setForm(f => ({ ...f, caseId: timerCaseId, hours: hours.toFixed(2) }));
+    setAddOpen(true);
+  }, [timerStart, timerCaseId]);
+
+  const formatTimer = (secs: number) => {
+    const h = Math.floor(secs / 3600); const m = Math.floor((secs % 3600) / 60); const s = secs % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter(e => {
+      if (filterCase !== 'all' && e.caseId !== filterCase) return false;
+      if (filterBillable === 'billable' && !e.isBillable) return false;
+      if (filterBillable === 'unbilled' && (!e.isBillable || e.isInvoiced)) return false;
+      if (filterBillable === 'invoiced' && !e.isInvoiced) return false;
+      return true;
+    });
+  }, [entries, filterCase, filterBillable]);
 
   const stats = useMemo(() => {
     const totalHours = entries.reduce((s, e) => s + e.hours, 0);
@@ -58,14 +114,9 @@ export default function LegalTimeTracking() {
       return;
     }
     const { error } = await supabase.from('legal_time_entries').insert({
-      user_id: user.id,
-      case_id: form.caseId,
-      date: form.date,
-      hours: parseFloat(form.hours),
-      hourly_rate: parseFloat(form.hourlyRate) || 0,
-      description: form.description,
-      activity_type: form.activityType,
-      is_billable: form.isBillable,
+      user_id: user.id, case_id: form.caseId, date: form.date, hours: parseFloat(form.hours),
+      hourly_rate: parseFloat(form.hourlyRate) || 0, description: form.description,
+      activity_type: form.activityType, is_billable: form.isBillable,
     });
     if (error) { toast.error('Failed to log time'); return; }
     toast.success('Time entry logged');
@@ -74,6 +125,7 @@ export default function LegalTimeTracking() {
     refetch();
   };
 
+  const openEdit = (e: LegalTimeEntry) => { setEditEntry(e); setEditOpen(true); };
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
@@ -81,6 +133,25 @@ export default function LegalTimeTracking() {
       <Header title="Time Tracking" subtitle="Log and manage billable hours" action={{ label: 'Log Time', onClick: () => setAddOpen(true) }} />
 
       <div className="p-4 md:p-6">
+        {/* Timer */}
+        <Card className="p-4 mb-6 flex items-center gap-4 flex-wrap">
+          <Select value={timerCaseId} onValueChange={setTimerCaseId}>
+            <SelectTrigger className="w-[250px]"><SelectValue placeholder="Select case for timer" /></SelectTrigger>
+            <SelectContent>{cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>)}</SelectContent>
+          </Select>
+          {timerRunning ? (
+            <>
+              <span className="text-2xl font-mono font-bold text-primary">{formatTimer(timerElapsed)}</span>
+              <Button variant="destructive" size="sm" onClick={stopTimer}><Square className="h-4 w-4 mr-1" />Stop</Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={startTimer} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Play className="h-4 w-4 mr-1" />Start Timer</Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setInvoiceOpen(true)} className="ml-auto">
+            <Receipt className="h-4 w-4 mr-1" />Generate Invoice
+          </Button>
+        </Card>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
@@ -99,20 +170,39 @@ export default function LegalTimeTracking() {
           ))}
         </div>
 
+        {/* Filters */}
+        <div className="flex gap-3 mb-4 flex-wrap">
+          <Select value={filterCase} onValueChange={setFilterCase}>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="All cases" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Cases</SelectItem>
+              {cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterBillable} onValueChange={setFilterBillable}>
+            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="billable">Billable</SelectItem>
+              <SelectItem value="unbilled">Unbilled</SelectItem>
+              <SelectItem value="invoiced">Invoiced</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-        ) : entries.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <Card className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <Timer className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No time entries yet</p>
-            <p className="text-sm">Log your first time entry to get started</p>
+            <p className="text-lg font-medium">No time entries</p>
+            <p className="text-sm">Log your first time entry or adjust filters</p>
           </Card>
         ) : (
           <>
-            {/* Mobile Cards */}
             <div className="md:hidden space-y-3">
-              {entries.map((e) => (
-                <Card key={e.id} className="p-4">
+              {filteredEntries.map((e) => (
+                <Card key={e.id} className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => openEdit(e)}>
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-card-foreground truncate">{caseMap[e.caseId] || 'Unknown Case'}</p>
@@ -133,7 +223,6 @@ export default function LegalTimeTracking() {
               ))}
             </div>
 
-            {/* Desktop Table */}
             <div className="hidden md:block rounded-xl border border-border bg-card shadow-card overflow-hidden">
               <Table>
                 <TableHeader>
@@ -149,8 +238,8 @@ export default function LegalTimeTracking() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {entries.map((e) => (
-                    <TableRow key={e.id} className="hover:bg-muted/50">
+                  {filteredEntries.map((e) => (
+                    <TableRow key={e.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => openEdit(e)}>
                       <TableCell className="text-muted-foreground">{formatDate(e.date)}</TableCell>
                       <TableCell className="font-medium max-w-[200px] truncate">{caseMap[e.caseId] || '-'}</TableCell>
                       <TableCell className="capitalize text-muted-foreground">{(e.activityType || '').replace('_', ' ')}</TableCell>
@@ -190,8 +279,7 @@ export default function LegalTimeTracking() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Date</Label><Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-              <div>
-                <Label>Activity</Label>
+              <div><Label>Activity</Label>
                 <Select value={form.activityType} onValueChange={(v) => setForm(f => ({ ...f, activityType: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{activityTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>)}</SelectContent>
@@ -214,6 +302,9 @@ export default function LegalTimeTracking() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TimeEntryEditDialog entry={editEntry} cases={cases} open={editOpen} onOpenChange={setEditOpen} onUpdate={refetch} />
+      <GenerateInvoiceDialog entries={entries} cases={cases} open={invoiceOpen} onOpenChange={setInvoiceOpen} onGenerated={refetch} />
     </DashboardLayout>
   );
 }
