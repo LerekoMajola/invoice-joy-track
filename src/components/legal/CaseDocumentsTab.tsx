@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { FileText, Upload, Trash2, Download, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +23,8 @@ interface CaseDocument {
   createdAt: string;
 }
 
+const documentTypes = ['contract', 'agreement', 'court_paper', 'evidence', 'correspondence', 'pleading', 'affidavit', 'other'];
+
 interface Props {
   caseId: string;
 }
@@ -30,6 +36,7 @@ export function CaseDocumentsTab({ caseId }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
+  const [documentType, setDocumentType] = useState('other');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,7 +102,7 @@ export function CaseDocumentsTab({ caseId }: Props) {
           file_name: selectedFile.name,
           file_size: selectedFile.size,
           file_url: urlData.publicUrl,
-          document_type: 'case_document',
+          document_type: documentType,
         })
         .select()
         .single();
@@ -116,6 +123,7 @@ export function CaseDocumentsTab({ caseId }: Props) {
       ]);
 
       setTitle('');
+      setDocumentType('other');
       setSelectedFile(null);
       setShowForm(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -130,7 +138,6 @@ export function CaseDocumentsTab({ caseId }: Props) {
 
   const handleDelete = async (doc: CaseDocument) => {
     try {
-      // Try to remove from storage
       const url = new URL(doc.fileUrl);
       const pathParts = url.pathname.split('/storage/v1/object/public/legal-documents/');
       if (pathParts[1]) {
@@ -174,6 +181,17 @@ export function CaseDocumentsTab({ caseId }: Props) {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Document title..." />
           </div>
           <div>
+            <Label>Document Type</Label>
+            <Select value={documentType} onValueChange={setDocumentType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {documentTypes.map(t => (
+                  <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>File</Label>
             <Input
               ref={fileInputRef}
@@ -183,7 +201,7 @@ export function CaseDocumentsTab({ caseId }: Props) {
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setTitle(''); setSelectedFile(null); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowForm(false); setTitle(''); setDocumentType('other'); setSelectedFile(null); }}>
               Cancel
             </Button>
             <Button size="sm" onClick={handleUpload} disabled={isUploading || !title.trim() || !selectedFile}>
@@ -207,7 +225,10 @@ export function CaseDocumentsTab({ caseId }: Props) {
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{doc.title}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate">{doc.title}</p>
+                    <Badge variant="outline" className="capitalize text-[10px] px-1.5 py-0">{doc.documentType.replace('_', ' ')}</Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {doc.fileName && <span>{doc.fileName} • </span>}
                     {formatFileSize(doc.fileSize)}

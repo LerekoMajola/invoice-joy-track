@@ -16,7 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { FolderOpen, Search, Loader2, Upload, Download, FileText, File } from 'lucide-react';
+import { FolderOpen, Search, Loader2, Upload, Download, FileText, Trash2 } from 'lucide-react';
 import { useLegalCases } from '@/hooks/useLegalCases';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,6 +42,8 @@ export default function LegalDocuments() {
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [caseFilter, setCaseFilter] = useState('all');
   const [addOpen, setAddOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ title: '', documentType: 'other', caseId: '', notes: '' });
@@ -64,8 +66,19 @@ export default function LegalDocuments() {
   const caseMap = new Map(cases.map(c => [c.id, `${c.caseNumber} - ${c.title}`]));
 
   const filtered = documents.filter(d => {
+    // Type filter
+    if (typeFilter !== 'all' && d.documentType !== typeFilter) return false;
+    // Case filter
+    if (caseFilter === 'unlinked' && d.caseId !== null) return false;
+    if (caseFilter !== 'all' && caseFilter !== 'unlinked' && d.caseId !== caseFilter) return false;
+    // Text search
     const q = searchQuery.toLowerCase();
-    return d.title.toLowerCase().includes(q) || (d.fileName || '').toLowerCase().includes(q);
+    if (!q) return true;
+    const caseName = d.caseId ? (caseMap.get(d.caseId) || '') : '';
+    return d.title.toLowerCase().includes(q)
+      || (d.fileName || '').toLowerCase().includes(q)
+      || d.documentType.replace('_', ' ').toLowerCase().includes(q)
+      || caseName.toLowerCase().includes(q);
   });
 
   const handleSubmit = async () => {
@@ -106,6 +119,23 @@ export default function LegalDocuments() {
     }
   };
 
+  const handleDelete = async (doc: LegalDocument) => {
+    try {
+      const url = new URL(doc.fileUrl);
+      const pathParts = url.pathname.split('/storage/v1/object/public/legal-documents/');
+      if (pathParts[1]) {
+        await supabase.storage.from('legal-documents').remove([pathParts[1]]);
+      }
+      const { error } = await supabase.from('legal_documents').delete().eq('id', doc.id);
+      if (error) throw error;
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      toast.success('Document deleted');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document');
+    }
+  };
+
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatSize = (bytes: number | null) => {
     if (!bytes) return '-';
@@ -119,9 +149,31 @@ export default function LegalDocuments() {
       <Header title="Legal Documents" subtitle="Upload and manage case documents" action={{ label: 'Upload', onClick: () => setAddOpen(true) }} />
 
       <div className="p-4 md:p-6">
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents..." className="pl-9" />
+        </div>
+
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Types" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {documentTypes.map(t => (
+                <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={caseFilter} onValueChange={setCaseFilter}>
+            <SelectTrigger className="w-[200px]"><SelectValue placeholder="All Cases" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Cases</SelectItem>
+              <SelectItem value="unlinked">Unlinked (No Case)</SelectItem>
+              {cases.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
@@ -129,8 +181,8 @@ export default function LegalDocuments() {
         ) : filtered.length === 0 ? (
           <Card className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <FolderOpen className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No documents yet</p>
-            <p className="text-sm">Upload your first document</p>
+            <p className="text-lg font-medium">No documents found</p>
+            <p className="text-sm">Upload your first document or adjust filters</p>
           </Card>
         ) : (
           <>
@@ -145,14 +197,19 @@ export default function LegalDocuments() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-card-foreground truncate">{d.title}</p>
                       <p className="text-xs text-muted-foreground">{d.fileName} • {formatSize(d.fileSize)}</p>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <Badge variant="outline" className="capitalize text-xs">{d.documentType.replace('_', ' ')}</Badge>
                         <span>{formatDate(d.createdAt)}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-                      <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4" /></a>
-                    </Button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button variant="ghost" size="icon" asChild>
+                        <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4" /></a>
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(d)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -169,7 +226,7 @@ export default function LegalDocuments() {
                     <TableHead className="font-semibold">File</TableHead>
                     <TableHead className="font-semibold">Size</TableHead>
                     <TableHead className="font-semibold">Date</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -182,9 +239,14 @@ export default function LegalDocuments() {
                       <TableCell className="text-muted-foreground">{formatSize(d.fileSize)}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(d.createdAt)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" asChild>
-                          <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4" /></a>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" asChild>
+                            <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4" /></a>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(d)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
