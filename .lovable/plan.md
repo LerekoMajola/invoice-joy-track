@@ -1,57 +1,63 @@
 
 
-# Hearing Reminder Notifications
+# Persist Time Tracker Across Navigation
+
+## Problem
+
+The timer on the Time Tracking page is component-local state. When you navigate to another page, the component unmounts, the interval is cleared, and the timer state is lost.
+
+## Solution
+
+Create a **React context** that holds the timer state and persists the start timestamp to **localStorage**. This way:
+
+- The timer keeps "running" even when you leave the page (the start time is saved, elapsed time is recalculated on return)
+- A small floating indicator appears in the header/sidebar so you can see the timer is active from any page
+- Clicking the floating indicator navigates you back to Time Tracking to stop/log the entry
 
 ## What Changes
 
-You'll receive automatic notifications when court hearings or legal calendar events are approaching. Following legal industry standards, reminders will be sent at **7 days** and **1 day** before a hearing -- giving you enough time to prepare while also catching last-minute items.
+| File | Action |
+|------|--------|
+| `src/contexts/TimerContext.tsx` | **New** -- React context providing `timerCaseId`, `timerStart`, `isRunning`, `startTimer()`, `stopTimer()`, and `elapsed` |
+| `src/pages/LegalTimeTracking.tsx` | **Modify** -- Replace local timer state with the shared context |
+| `src/components/layout/Header.tsx` | **Modify** -- Show a small running-timer badge when a timer is active |
+| `src/App.tsx` | **Modify** -- Wrap the app tree with `TimerProvider` |
 
 ## How It Works
 
-A scheduled background function runs daily and checks two sources:
-1. **Case hearing dates** (`next_hearing_date` on legal cases)
-2. **Calendar events** (hearings, deadlines, filing deadlines from `legal_calendar_events`)
-
-For each upcoming hearing found within the reminder windows (7 days out and 1 day out), it creates an in-app notification and optionally sends a push notification if the user has push enabled.
-
-## Reminder Schedule
-
-| Timing | Notification |
-|--------|-------------|
-| 7 days before | "Upcoming Hearing in 7 days" -- preparation reminder |
-| 1 day before | "Hearing Tomorrow" -- final reminder |
-| Day of (overdue/today) | "Hearing Today" -- same-day alert |
-
-## Files Summary
-
-| File | Action |
-|------|--------|
-| `supabase/functions/check-hearing-reminders/index.ts` | **New** -- Edge function that queries upcoming hearings and creates notifications |
-| `supabase/config.toml` | Add `verify_jwt = false` for the new function |
-
-A cron job (daily schedule) will also be set up to call this function automatically.
+1. **TimerContext** stores `timerStart` (timestamp) and `timerCaseId` in both React state and `localStorage`
+2. On mount, it reads from `localStorage` -- if a start time exists, it resumes the elapsed counter automatically
+3. The `elapsed` value updates every second via `setInterval` inside the context (always mounted)
+4. When the user stops the timer, it calculates total hours from `Date.now() - timerStart` and clears `localStorage`
+5. The Header shows a pulsing clock icon with elapsed time when a timer is running; clicking it navigates to `/legal-time-tracking`
 
 ## Technical Details
 
-### Edge Function Logic
+### TimerContext API
 
-The function will:
-1. Query `legal_cases` for cases where `next_hearing_date` is within 7 days, 1 day, or today, and status is not `closed`
-2. Query `legal_calendar_events` for events where `event_date` is within the same windows and `is_completed = false`
-3. Deduplicate (avoid sending duplicate notifications for the same hearing by checking existing notifications with matching `reference_id`)
-4. Insert in-app notifications into the `notifications` table with `type = 'system'`, linking to `/legal-cases/CASE_ID`
-5. Send push notifications to users who have push subscriptions enabled
+```typescript
+interface TimerContextValue {
+  isRunning: boolean;
+  timerCaseId: string;
+  elapsed: number; // seconds
+  startTimer: (caseId: string) => void;
+  stopTimer: () => { caseId: string; hours: number } | null;
+  formatElapsed: () => string;
+}
+```
 
-### Notification Format
+### localStorage Keys
 
-- **7 days**: "Hearing in 7 days: [Case Number] - [Title/Event Title] on [Date]"
-- **1 day**: "Hearing Tomorrow: [Case Number] - [Title/Event Title]"
-- **Today**: "Hearing Today: [Case Number] - [Title/Event Title] at [Time]"
+- `legal_timer_start` -- timestamp (number)
+- `legal_timer_case_id` -- case UUID (string)
 
-### Cron Schedule
+### Header Indicator
 
-A daily cron job at 7:00 AM will invoke the function via `pg_cron` + `pg_net`.
+A small badge next to the bell icon showing something like "01:23:45" with a pulsing dot, only visible when a timer is active. Clicking it navigates to the time tracking page.
 
-### Pattern
+### LegalTimeTracking Changes
 
-This follows the exact same pattern as the existing `check-task-reminders` function -- same Supabase service role client, same notification table structure, same push notification integration.
+- Remove local `timerRunning`, `timerStart`, `timerCaseId`, `timerElapsed`, `timerRef` state
+- Import `useTimer()` from context
+- `startTimer` and `stopTimer` call context methods
+- `stopTimer` returns `{ caseId, hours }` which is used to pre-fill the "Log Time" form
