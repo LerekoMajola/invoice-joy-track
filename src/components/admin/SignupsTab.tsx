@@ -30,21 +30,11 @@ export function SignupsTab() {
 
   const deleteMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const session = (await supabase.auth.getSession()).data.session;
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-get-signups?userId=${userId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Delete failed');
-      }
+      const { data, error } = await supabase.functions.invoke('admin-get-signups', {
+        body: { action: 'delete', userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       toast.success('User deleted successfully');
