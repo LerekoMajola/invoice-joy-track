@@ -47,6 +47,16 @@ const statusConfig: Record<JobCardStatus, { label: string; color: string }> = {
   collected: { label: 'Collected', color: 'bg-muted text-muted-foreground' },
 };
 
+const statusActions: { label: string; status: JobCardStatus; icon: any }[] = [
+  { label: 'Start Diagnosis', status: 'diagnosing', icon: Stethoscope },
+  { label: 'Mark Diagnosed', status: 'diagnosed', icon: CheckCircle },
+  { label: 'Start Work', status: 'in_progress', icon: Play },
+  { label: 'Awaiting Parts', status: 'awaiting_parts', icon: Pause },
+  { label: 'Quality Check', status: 'quality_check', icon: Eye },
+  { label: 'Mark Completed', status: 'completed', icon: CheckCircle },
+  { label: 'Mark Collected', status: 'collected', icon: Package },
+];
+
 interface JobCardDetailDialogProps {
   jobCard: JobCard | null;
   open: boolean;
@@ -118,321 +128,314 @@ export function JobCardDetailDialog({
   const tax = subtotal * (jobCard.taxRate / 100);
   const total = subtotal + tax;
 
-  const statusActions: { label: string; status: JobCardStatus; icon: any }[] = [
-    { label: 'Start Diagnosis', status: 'diagnosing', icon: Stethoscope },
-    { label: 'Mark Diagnosed', status: 'diagnosed', icon: CheckCircle },
-    { label: 'Start Work', status: 'in_progress', icon: Play },
-    { label: 'Awaiting Parts', status: 'awaiting_parts', icon: Pause },
-    { label: 'Quality Check', status: 'quality_check', icon: Eye },
-    { label: 'Mark Completed', status: 'completed', icon: CheckCircle },
-    { label: 'Mark Collected', status: 'collected', icon: Package },
-  ];
+  const canInvoice = ['completed', 'quality_check'].includes(jobCard.status) && jobCard.lineItems.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              {jobCard.jobCardNumber}
-            </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Badge className={cn('capitalize', status.color)}>{status.label}</Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Update Status <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {statusActions.map((action) => (
-                    <DropdownMenuItem
-                      key={action.status}
-                      onClick={() => onUpdateStatus(jobCard.id, action.status)}
-                      disabled={jobCard.status === action.status}
-                    >
-                      <action.icon className="h-4 w-4 mr-2" />
-                      {action.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <DialogContent className="max-w-3xl w-full h-[100dvh] md:h-auto md:max-h-[90vh] flex flex-col p-0 gap-0">
+        {/* Sticky Header */}
+        <div className="px-4 pt-4 pb-2 border-b border-border shrink-0">
+          <DialogHeader className="mb-2">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Wrench className="h-4 w-4 text-primary" />
+                {jobCard.jobCardNumber}
+              </DialogTitle>
+              <Badge className={cn('capitalize text-xs', status.color)}>{status.label}</Badge>
             </div>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
-        {/* Tab Nav */}
-        <div className="flex gap-1 border-b border-border">
-          {[
-            { key: 'details', label: 'Details', icon: Car },
-            { key: 'diagnosis', label: 'Diagnosis', icon: Stethoscope },
-            { key: 'items', label: 'Parts & Labour', icon: Wrench },
-            { key: 'preview', label: 'Preview', icon: Eye },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
-                activeTab === tab.key
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
+          {/* Tab Nav */}
+          <div className="flex gap-1">
+            {[
+              { key: 'details', label: 'Details', icon: Car },
+              { key: 'diagnosis', label: 'Diagnosis', icon: Stethoscope },
+              { key: 'items', label: 'Parts & Labour', icon: Wrench },
+              { key: 'preview', label: 'Preview', icon: Eye },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors',
+                  activeTab === tab.key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <tab.icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Details Tab */}
-        {activeTab === 'details' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Client</Label>
-                <p className="font-medium">{jobCard.clientName}</p>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Priority</Label>
-                <Badge variant="outline" className="capitalize">{jobCard.priority}</Badge>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Vehicle Info</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                {[
-                  { label: 'Registration', value: jobCard.vehicleReg },
-                  { label: 'Make', value: jobCard.vehicleMake },
-                  { label: 'Model', value: jobCard.vehicleModel },
-                  { label: 'Year', value: jobCard.vehicleYear },
-                  { label: 'VIN', value: jobCard.vehicleVin },
-                  { label: 'Mileage', value: jobCard.vehicleMileage },
-                  { label: 'Color', value: jobCard.vehicleColor },
-                ].map((field) => field.value && (
-                  <div key={field.label}>
-                    <p className="text-xs text-muted-foreground">{field.label}</p>
-                    <p className="text-sm font-medium">{field.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {jobCard.reportedIssue && (
-              <>
-                <Separator />
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {/* Details Tab */}
+          {activeTab === 'details' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Reported Issue</Label>
-                  <p className="text-sm mt-1 whitespace-pre-line">{jobCard.reportedIssue}</p>
+                  <Label className="text-xs text-muted-foreground">Client</Label>
+                  <p className="font-medium text-sm">{jobCard.clientName}</p>
                 </div>
-              </>
-            )}
-
-            {jobCard.assignedTechnicianName && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Assigned Technician</Label>
-                <p className="text-sm font-medium">{jobCard.assignedTechnicianName}</p>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Priority</Label>
+                  <Badge variant="outline" className="capitalize text-xs">{jobCard.priority}</Badge>
+                </div>
               </div>
-            )}
 
-            {jobCard.notes && (
+              <Separator />
+
               <div>
-                <Label className="text-xs text-muted-foreground">Notes</Label>
-                <p className="text-sm mt-1 whitespace-pre-line">{jobCard.notes}</p>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Vehicle Info</Label>
+                <div className="grid grid-cols-3 gap-2 mt-1.5">
+                  {[
+                    { label: 'Reg', value: jobCard.vehicleReg },
+                    { label: 'Make', value: jobCard.vehicleMake },
+                    { label: 'Model', value: jobCard.vehicleModel },
+                    { label: 'Year', value: jobCard.vehicleYear },
+                    { label: 'VIN', value: jobCard.vehicleVin },
+                    { label: 'Mileage', value: jobCard.vehicleMileage },
+                    { label: 'Color', value: jobCard.vehicleColor },
+                  ].map((field) => field.value && (
+                    <div key={field.label}>
+                      <p className="text-[10px] text-muted-foreground">{field.label}</p>
+                      <p className="text-xs font-medium">{field.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Diagnosis Tab */}
-        {activeTab === 'diagnosis' && (
-          <div className="space-y-4">
-            <div>
-              <Label>Diagnosis Notes</Label>
-              <Textarea
-                defaultValue={jobCard.diagnosis || ''}
-                onChange={(e) => setDiagnosis(e.target.value)}
-                placeholder="What did the technician find wrong?"
-                rows={4}
-              />
-            </div>
-            <div>
-              <Label>Recommended Work</Label>
-              <Textarea
-                defaultValue={jobCard.recommendedWork || ''}
-                onChange={(e) => setRecommendedWork(e.target.value)}
-                placeholder="What work needs to be done?"
-                rows={4}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSaveDiagnosis} disabled={isSavingDiagnosis}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Diagnosis
-              </Button>
-              {(jobCard.status === 'diagnosed' || jobCard.diagnosis) && (
-                <Button variant="outline" onClick={() => onGenerateQuote(jobCard)}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Quote
-                </Button>
+              {jobCard.reportedIssue && (
+                <>
+                  <Separator />
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Reported Issue</Label>
+                    <p className="text-sm mt-0.5 whitespace-pre-line">{jobCard.reportedIssue}</p>
+                  </div>
+                </>
+              )}
+
+              {jobCard.assignedTechnicianName && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Assigned Technician</Label>
+                  <p className="text-sm font-medium">{jobCard.assignedTechnicianName}</p>
+                </div>
+              )}
+
+              {jobCard.notes && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Notes</Label>
+                  <p className="text-sm mt-0.5 whitespace-pre-line">{jobCard.notes}</p>
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Parts & Labour Tab */}
-        {activeTab === 'items' && (
-          <div className="space-y-4">
-            {/* Add Item Form */}
-            <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Add Item</span>
+          {/* Diagnosis Tab */}
+          {activeTab === 'diagnosis' && (
+            <div className="space-y-3">
+              <div>
+                <Label>Diagnosis Notes</Label>
+                <Textarea
+                  defaultValue={jobCard.diagnosis || ''}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                  placeholder="What did the technician find wrong?"
+                  rows={3}
+                />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={newItemType} onValueChange={(v) => setNewItemType(v as 'parts' | 'labour')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="parts">Parts</SelectItem>
-                    <SelectItem value="labour">Labour</SelectItem>
-                  </SelectContent>
-                </Select>
-                {newItemType === 'parts' && (
-                  <Input
-                    value={newItemPartNumber}
-                    onChange={(e) => setNewItemPartNumber(e.target.value)}
-                    placeholder="Part number"
-                  />
+              <div>
+                <Label>Recommended Work</Label>
+                <Textarea
+                  defaultValue={jobCard.recommendedWork || ''}
+                  onChange={(e) => setRecommendedWork(e.target.value)}
+                  placeholder="What work needs to be done?"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveDiagnosis} disabled={isSavingDiagnosis} size="sm">
+                  <Save className="h-4 w-4 mr-1" />
+                  Save
+                </Button>
+                {(jobCard.status === 'diagnosed' || jobCard.diagnosis) && (
+                  <Button variant="outline" size="sm" onClick={() => onGenerateQuote(jobCard)}>
+                    <FileText className="h-4 w-4 mr-1" />
+                    Generate Quote
+                  </Button>
                 )}
               </div>
-              <Input
-                value={newItemDesc}
-                onChange={(e) => setNewItemDesc(e.target.value)}
-                placeholder="Description"
-              />
-              <div className="grid grid-cols-3 gap-2">
-                <Input
-                  type="number"
-                  value={newItemQty}
-                  onChange={(e) => setNewItemQty(e.target.value)}
-                  placeholder="Qty"
-                  min="1"
-                />
-                <Input
-                  type="number"
-                  value={newItemPrice}
-                  onChange={(e) => setNewItemPrice(e.target.value)}
-                  placeholder="Unit price"
-                  min="0"
-                  step="0.01"
-                />
-                <Button onClick={handleAddLineItem} disabled={!newItemDesc.trim() || !newItemPrice}>
-                  <Plus className="h-4 w-4 mr-1" /> Add
-                </Button>
-              </div>
             </div>
+          )}
 
-            {/* Parts List */}
-            {partsItems.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Parts</h4>
-                <div className="space-y-1">
-                  {partsItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-card border border-border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.description}</p>
-                        {item.partNumber && <p className="text-xs text-muted-foreground">Part #: {item.partNumber}</p>}
+          {/* Parts & Labour Tab */}
+          {activeTab === 'items' && (
+            <div className="space-y-3">
+              {/* Add Item Form */}
+              <div className="rounded-lg border border-border p-2.5 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Plus className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-medium">Add Item</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select value={newItemType} onValueChange={(v) => setNewItemType(v as 'parts' | 'labour')}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="parts">Parts</SelectItem>
+                      <SelectItem value="labour">Labour</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {newItemType === 'parts' && (
+                    <Input
+                      value={newItemPartNumber}
+                      onChange={(e) => setNewItemPartNumber(e.target.value)}
+                      placeholder="Part number"
+                      className="h-9"
+                    />
+                  )}
+                </div>
+                <Input
+                  value={newItemDesc}
+                  onChange={(e) => setNewItemDesc(e.target.value)}
+                  placeholder="Description"
+                  className="h-9"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    type="number"
+                    value={newItemQty}
+                    onChange={(e) => setNewItemQty(e.target.value)}
+                    placeholder="Qty"
+                    min="1"
+                    className="h-9"
+                  />
+                  <Input
+                    type="number"
+                    value={newItemPrice}
+                    onChange={(e) => setNewItemPrice(e.target.value)}
+                    placeholder="Unit price"
+                    min="0"
+                    step="0.01"
+                    className="h-9"
+                  />
+                  <Button onClick={handleAddLineItem} disabled={!newItemDesc.trim() || !newItemPrice} size="sm" className="h-9">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add
+                  </Button>
+                </div>
+              </div>
+
+              {/* Parts List */}
+              {partsItems.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Parts</h4>
+                  <div className="space-y-1">
+                    {partsItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-1.5 rounded-lg bg-card border border-border">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{item.description}</p>
+                          {item.partNumber && <p className="text-[10px] text-muted-foreground">Part #: {item.partNumber}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground">{item.quantity} × {formatMaluti(item.unitPrice)}</span>
+                          <span className="font-medium">{formatMaluti(item.quantity * item.unitPrice)}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onRemoveLineItem(jobCard.id, item.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-muted-foreground">{item.quantity} × {formatMaluti(item.unitPrice)}</span>
-                        <span className="font-medium">{formatMaluti(item.quantity * item.unitPrice)}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive"
-                          onClick={() => onRemoveLineItem(jobCard.id, item.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                    ))}
+                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">
+                      Parts: {formatMaluti(partsSubtotal)}
                     </div>
-                  ))}
-                  <div className="text-right text-sm font-medium text-muted-foreground pr-10">
-                    Parts subtotal: {formatMaluti(partsSubtotal)}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Labour List */}
-            {labourItems.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Labour</h4>
-                <div className="space-y-1">
-                  {labourItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-card border border-border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.description}</p>
+              {/* Labour List */}
+              {labourItems.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Labour</h4>
+                  <div className="space-y-1">
+                    {labourItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-1.5 rounded-lg bg-card border border-border">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{item.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground">{item.quantity} hrs × {formatMaluti(item.unitPrice)}</span>
+                          <span className="font-medium">{formatMaluti(item.quantity * item.unitPrice)}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onRemoveLineItem(jobCard.id, item.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-muted-foreground">{item.quantity} hrs × {formatMaluti(item.unitPrice)}</span>
-                        <span className="font-medium">{formatMaluti(item.quantity * item.unitPrice)}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive"
-                          onClick={() => onRemoveLineItem(jobCard.id, item.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                    ))}
+                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">
+                      Labour: {formatMaluti(labourSubtotal)}
                     </div>
-                  ))}
-                  <div className="text-right text-sm font-medium text-muted-foreground pr-10">
-                    Labour subtotal: {formatMaluti(labourSubtotal)}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Totals */}
-            {jobCard.lineItems.length > 0 && (
-              <div className="border-t border-border pt-3 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatMaluti(subtotal)}</span>
+              {/* Totals */}
+              {jobCard.lineItems.length > 0 && (
+                <div className="border-t border-border pt-2 space-y-0.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatMaluti(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">VAT ({jobCard.taxRate}%)</span>
+                    <span>{formatMaluti(tax)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-sm">
+                    <span>Total</span>
+                    <span>{formatMaluti(total)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">VAT ({jobCard.taxRate}%)</span>
-                  <span>{formatMaluti(tax)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-base">
-                  <span>Total</span>
-                  <span>{formatMaluti(total)}</span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Generate Invoice */}
-            {['completed', 'quality_check'].includes(jobCard.status) && jobCard.lineItems.length > 0 && (
-              <Button onClick={() => onGenerateInvoice(jobCard)} className="w-full">
-                <Receipt className="h-4 w-4 mr-2" />
-                Generate Invoice
+          {/* Preview Tab */}
+          {activeTab === 'preview' && (
+            <JobCardPreview jobCard={jobCard} />
+          )}
+        </div>
+
+        {/* Sticky Bottom Action Bar */}
+        <div className="shrink-0 border-t border-border px-4 py-3 flex items-center gap-2 bg-background safe-area-bottom">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                Update Status <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
-            )}
-          </div>
-        )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {statusActions.map((action) => (
+                <DropdownMenuItem
+                  key={action.status}
+                  onClick={() => onUpdateStatus(jobCard.id, action.status)}
+                  disabled={jobCard.status === action.status}
+                >
+                  <action.icon className="h-4 w-4 mr-2" />
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        {/* Preview Tab */}
-        {activeTab === 'preview' && (
-          <JobCardPreview jobCard={jobCard} />
-        )}
+          {canInvoice && (
+            <Button onClick={() => onGenerateInvoice(jobCard)} size="sm" className="flex-1 sm:flex-none">
+              <Receipt className="h-4 w-4 mr-1" />
+              Create Invoice
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
