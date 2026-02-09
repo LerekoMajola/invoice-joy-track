@@ -1,24 +1,38 @@
 
 
-# Fix: "Sign up" Link Skips System Selection
+# Job Card Full-Screen View + Quick Invoice Button
 
 ## Problem
-When a user clicks "Don't have an account? Sign up" on the login form, they are sent directly to the package selection step (skipping system selection). Since no system has been chosen, `selectedSystem` is `null`, and the PackageTierSelector falls back to showing School tiers.
+1. The job card detail opens in a dialog with `max-h-[90vh]` requiring lots of scrolling, especially on mobile.
+2. The "Generate Invoice" button is buried in the "Parts & Labour" tab and only visible when scrolled down -- easy to miss.
 
-## Root Cause
-In `src/pages/Auth.tsx`, line 588:
-```
-onClick={() => { setIsLogin(false); setSignupStep('package'); }}
-```
-This should be `setSignupStep('system')` so users first choose Business, Workshop, or School.
+## Solution
 
-## Fix
-**File:** `src/pages/Auth.tsx` (line 588)
+### 1. Make the dialog full-screen on mobile, larger on desktop
+- Change `DialogContent` from `max-w-2xl max-h-[90vh]` to full-screen on mobile (`max-h-[100dvh] h-full w-full`) and keep a comfortable large dialog on desktop (`md:max-w-3xl md:max-h-[90vh]`).
+- This matches the existing mobile-first pattern described in the project's UI conventions.
 
-Change `setSignupStep('package')` to `setSignupStep('system')` in the "Don't have an account? Sign up" button handler.
+### 2. Add a sticky bottom action bar
+- Add a persistent footer bar at the bottom of the dialog (outside the scrollable area) with key actions:
+  - **"Create Invoice"** button -- always visible when the job card status is `completed`, `quality_check`, or `invoiced` and has line items.
+  - **"Update Status"** dropdown -- quick access from the bottom bar on mobile.
+- This eliminates the need to navigate to a specific tab to find the invoice button.
 
-This single-line fix ensures:
-- Users who click "Sign up" from the login form see the system selector first
-- Users arriving via `/auth?system=business` (from the landing page) still skip directly to package selection as intended
-- The flow remains: System Selection -> Package Tier -> Review -> Credentials
+### 3. Compact the tab content for less scrolling
+- In the **Details** tab, use a tighter layout (smaller spacing, condensed vehicle info grid).
+- In the **Parts & Labour** tab, keep the "Generate Invoice" button at the bottom but the sticky footer provides the primary path.
+
+## Technical Details
+
+### File: `src/components/workshop/JobCardDetailDialog.tsx`
+
+**Changes:**
+- Update `DialogContent` className to be full-screen on mobile: `className="max-w-3xl w-full h-[100dvh] md:h-auto md:max-h-[90vh] flex flex-col p-0"`
+- Restructure layout into: fixed header, scrollable middle, sticky footer
+- Move the header (title + status badge + dropdown) into a sticky top section with padding
+- Wrap tab navigation + tab content in an `overflow-y-auto flex-1` container
+- Add a sticky bottom bar with the "Create Invoice" button (visible when status is completed/quality_check and line items exist), plus a compact status update button on mobile
+- Reduce spacing in grid layouts from `gap-4` to `gap-2`/`gap-3` for mobile compactness
+
+No database or backend changes needed.
 
