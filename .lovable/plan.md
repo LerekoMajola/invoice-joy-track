@@ -1,54 +1,81 @@
 
 
-# Auto-Fill Client When Creating Quote From Job Card
+# Payment Recording and Receipt Generation for Invoices
 
-## The Problem
-When you click "Create Quote" from a job card, you're taken to the Quotes page and the quote form opens -- but you still see the client dropdown and have to verify/confirm the client, even though that information was already entered on the job card. This is unnecessary friction.
+## Overview
+When marking an invoice as paid, the system will now capture payment details (method, date, reference number) and allow generating a downloadable "Proof of Payment" / "Receipt" document.
 
-## The Fix
+## What Changes
 
-### File: `src/pages/Quotes.tsx`
+### 1. Database: Add payment columns to `invoices` table
+Add three new columns to store payment information:
+- `payment_method` (text, nullable) -- e.g., "cash", "bank_transfer", "mobile_money", "cheque"
+- `payment_date` (date, nullable) -- when payment was received
+- `payment_reference` (text, nullable) -- receipt or reference number
 
-1. **Track when quote is created from a job card** -- add a state variable (e.g., `fromJobCard`) that gets set to `true` when the form is opened via the job card flow.
+### 2. "Mark as Paid" becomes a dialog instead of a simple button
+Currently clicking "Mark as Paid" immediately changes the status. Instead, it will open a **Record Payment Dialog** that collects:
+- Payment method (Cash, Bank Transfer, Mobile Money, Cheque)
+- Payment date (defaults to today)
+- Reference number (optional)
 
-2. **Lock the client field** -- when `fromJobCard` is true, show the client name as read-only text instead of the dropdown selector, since the client is already determined by the job card.
+Once submitted, the invoice status changes to "paid" and the payment details are saved.
 
-3. **Also pre-fill line items from the job card** -- currently only the description is carried over. The job card already has parts and labour costs added via "Quick Add Cost." These should be pre-populated as quote line items so you don't have to re-enter them.
+### 3. Invoice interface and hook updates
+- Add `paymentMethod`, `paymentDate`, `paymentReference` to the `Invoice` interface in `useInvoices.tsx`
+- Map the new DB columns in fetch/update logic
 
-### File: `src/pages/Workshop.tsx`
+### 4. Receipt / Proof of Payment document
+Add a new `ReceiptPreview` component that renders a professional receipt document (using the same template system as invoices/quotes) showing:
+- "RECEIPT" / "PROOF OF PAYMENT" title
+- Receipt number (based on invoice number, e.g., "REC-0001")
+- Company branding (logo, address, etc.)
+- Client name and details
+- Invoice reference number
+- Amount paid
+- Payment method and reference
+- Payment date
+- "PAID" watermark/stamp
 
-4. **Pass line items in the session data** -- update `handleGenerateQuote` to include the job card's line items (parts and labour) alongside the client info and description, similar to how `handleGenerateInvoice` already does it.
+This can be downloaded as PDF, just like invoices.
+
+### 5. UI additions on the Invoices page
+- For paid invoices, show a "Download Receipt" button in the actions menu and in the invoice preview
+- Show payment details (method, date, reference) on the invoice preview when the invoice is paid
+
+## Files to Change
+
+| File | Change |
+|------|--------|
+| **Migration** | Add `payment_method`, `payment_date`, `payment_reference` columns to `invoices` |
+| `src/hooks/useInvoices.tsx` | Add new fields to `Invoice` interface, map in fetch/update |
+| `src/components/invoices/RecordPaymentDialog.tsx` | **New file** -- dialog to capture payment details when marking as paid |
+| `src/components/invoices/ReceiptPreview.tsx` | **New file** -- receipt/proof of payment document with PDF export |
+| `src/components/invoices/InvoicePreview.tsx` | Show payment info section when paid; add "Download Receipt" button |
+| `src/pages/Invoices.tsx` | Replace direct status change with RecordPaymentDialog; add receipt viewing |
 
 ## Technical Details
 
-### Workshop.tsx changes
-Update `handleGenerateQuote` to include line items:
-```ts
-const handleGenerateQuote = (jc: JobCard) => {
-  const quoteData = {
-    sourceJobCardId: jc.id,
-    clientId: jc.clientId,
-    clientName: jc.clientName,
-    description: [jc.diagnosis, jc.recommendedWork].filter(Boolean).join('\n\n'),
-    lineItems: jc.lineItems.map((item) => ({
-      description: `${item.itemType === 'labour' ? '[Labour] ' : ''}${item.description}${item.partNumber ? ` (Part #${item.partNumber})` : ''}`,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      costPrice: item.costPrice || 0,
-    })),
-  };
-  // ... rest stays the same
-};
+### New columns (migration):
+```sql
+ALTER TABLE invoices ADD COLUMN payment_method text;
+ALTER TABLE invoices ADD COLUMN payment_date date;
+ALTER TABLE invoices ADD COLUMN payment_reference text;
 ```
 
-### Quotes.tsx changes
-- Add `const [fromJobCard, setFromJobCard] = useState(false);`
-- In the `newQuoteFromJobCard` useEffect: set `fromJobCard` to `true`, pre-fill line items from the passed data
-- In the client selector section: when `fromJobCard` is true, show the client name as plain text (read-only) instead of the dropdown
-- Reset `fromJobCard` to `false` when the form closes
+### RecordPaymentDialog
+- Similar pattern to the existing `RecordPaymentDialog` used in school fees
+- Payment methods: Cash, Bank Transfer, Mobile Money, Cheque
+- On submit: calls `updateInvoice` with status "paid" plus payment fields
 
-### Summary
-- **2 files** modified: `src/pages/Workshop.tsx` and `src/pages/Quotes.tsx`
-- Client is auto-filled and locked (read-only) when coming from a job card
-- Line items (parts and labour) are carried over so you don't re-enter costs
-- No database changes needed
+### ReceiptPreview component
+- Uses the same `DocumentLayoutRenderer` components (DocumentHeader, DocumentWrapper, DocumentFooter, etc.) for consistent branding
+- Shows a "PAID" stamp/badge prominently
+- Includes: receipt number, payment date, payment method, reference, amount paid, invoice reference
+- PDF download via html2pdf (same approach as InvoicePreview)
+
+### Flow change for "Mark as Paid"
+```
+Before: Click "Mark as Paid" -> status changes immediately
+After:  Click "Mark as Paid" -> RecordPaymentDialog opens -> user fills payment details -> submit -> status changes + payment recorded
+```
