@@ -1,41 +1,43 @@
 
 
-# Fix Link Preview (Open Graph) Logo
+# Fix Multi-System Pricing: Add Business and Workshop Tiers
 
 ## Problem
-When sharing the website URL (e.g. on WhatsApp), the link preview card shows the old "LEE" (Leekay) logo instead of the Orion Labs logo. This happens because:
-- The `index.html` file is missing an `og:image` meta tag, so platforms pick up whatever image they find
-- The old `leekay-logo.png` file still exists in the project
-- The PWA icon files (`pwa-192x192.png`, `pwa-512x512.png`, `apple-touch-icon.png`, `favicon.ico`) may still contain old branding
+The landing page pricing table and the signup flow's package selector are hardcoded with only **School** tiers (Starter M720, Professional M950, Enterprise M1200). When users click "Start Free Trial" from the landing page, they go to `/auth` and see the system selector, but after choosing Business or Workshop, they still see School-labeled packages.
 
-## What Will Be Fixed
+## Root Cause
+Two files have hardcoded School-only data:
+- `src/components/landing/PricingTable.tsx` -- only School tiers
+- `src/components/auth/PackageTierSelector.tsx` -- only `schoolTiers` array, no Business or Workshop tiers
 
-### 1. Add Open Graph Image
-Add the `og:image` and `twitter:image` meta tags to `index.html` pointing to the Orion Labs logo. This is what messaging apps and social media platforms use to generate the preview card.
+## Changes
 
-### 2. Remove Old Leekay Logo
-Delete `src/assets/leekay-logo.png` from the project since it is no longer used. The platform already uses `orion-labs-logo.png` as the default fallback.
+### 1. Add Business and Workshop tiers to `PackageTierSelector.tsx`
+Add tier arrays for all three system types with appropriate modules and pricing:
 
-### 3. Copy Orion Labs Logo to Public Folder
-Place the Orion Labs logo in the `public/` folder as `og-image.png` so it can be referenced by the Open Graph meta tag with a full URL (OG images require absolute URLs).
+| System | Starter | Professional | Enterprise |
+|--------|---------|-------------|------------|
+| Business | M350/mo | M550/mo | M800/mo |
+| Workshop | M450/mo | M650/mo | M900/mo |
+| School | M720/mo | M950/mo | M1,200/mo |
+
+**Business modules:** quotes, invoices, crm, tasks, staff, accounting, tenders, delivery_notes
+**Workshop modules:** workshop, invoices, tasks, staff, accounting, fleet
+**School modules:** school_admin, students, school_fees, invoices, tasks, staff, accounting
+
+The component will dynamically select the correct tier array, heading, and gradient based on the `systemType` prop (which is already passed in).
+
+### 2. Update Landing Page `PricingTable.tsx`
+Replace the single School pricing grid with a tabbed/segmented view showing all three system types. Each tab will display the relevant tiers with correct pricing, features, and "Start Free Trial" links.
+
+### 3. Pass system context from Landing to Auth (optional enhancement)
+Update "Start Free Trial" links to include `?system=business` (etc.) so the auth page can skip directly to the package step when the user already chose a system from the landing page. This improves the flow but is not strictly required.
 
 ## Technical Details
 
-### Files to Modify
-| File | Change |
-|------|--------|
-| `index.html` | Add `og:image` and `twitter:image` meta tags pointing to `/og-image.png` |
+### Files to modify:
+- **`src/components/auth/PackageTierSelector.tsx`** -- Add `businessTiers` and `workshopTiers` arrays; dynamically select tier array and UI metadata (title, gradient) based on `systemType` prop
+- **`src/components/landing/PricingTable.tsx`** -- Add all three system types with a tab selector; update tier data to match the auth flow tiers
 
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `public/og-image.png` | Copy of the Orion Labs logo for Open Graph previews |
-
-### Files to Delete
-| File | Reason |
-|------|--------|
-| `src/assets/leekay-logo.png` | Old branding no longer used anywhere |
-
-### Important Note
-After publishing, platforms like WhatsApp cache link previews. It may take some time for the new image to appear. You can force a refresh on some platforms by using tools like the Facebook Sharing Debugger or simply waiting for the cache to expire.
+### No database or backend changes needed.
 
