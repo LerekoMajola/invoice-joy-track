@@ -17,13 +17,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { formatMaluti } from '@/lib/currency';
-import { Scale, Search, Loader2, Plus, Calendar } from 'lucide-react';
+import { Scale, Search, Loader2, Calendar } from 'lucide-react';
 import { useLegalCases, type LegalCase } from '@/hooks/useLegalCases';
 import { useClients } from '@/hooks/useClients';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { CaseDetailDialog } from '@/components/legal/CaseDetailDialog';
+import { ConflictCheckAlert } from '@/components/legal/ConflictCheckAlert';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
@@ -33,10 +34,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  on_hold: 'On Hold',
-  closed: 'Closed',
+  open: 'Open', in_progress: 'In Progress', on_hold: 'On Hold', closed: 'Closed',
 };
 
 const caseTypes = ['civil', 'criminal', 'family', 'corporate', 'labour', 'property', 'other'];
@@ -48,6 +46,8 @@ export default function LegalCases() {
   const { clients } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<LegalCase | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [form, setForm] = useState({
     caseNumber: '', title: '', caseType: 'civil', status: 'open', priority: 'medium',
     clientId: '', courtName: '', courtCaseNumber: '', opposingParty: '', opposingCounsel: '',
@@ -66,21 +66,12 @@ export default function LegalCases() {
       return;
     }
     const { error } = await supabase.from('legal_cases').insert({
-      user_id: user.id,
-      case_number: form.caseNumber,
-      title: form.title,
-      case_type: form.caseType,
-      status: form.status,
-      priority: form.priority,
-      client_id: form.clientId || null,
-      court_name: form.courtName || null,
-      court_case_number: form.courtCaseNumber || null,
-      opposing_party: form.opposingParty || null,
-      opposing_counsel: form.opposingCounsel || null,
-      judge_name: form.judgeName || null,
-      assigned_lawyer: form.assignedLawyer || null,
-      filing_date: form.filingDate || null,
-      description: form.description || null,
+      user_id: user.id, case_number: form.caseNumber, title: form.title, case_type: form.caseType,
+      status: form.status, priority: form.priority, client_id: form.clientId || null,
+      court_name: form.courtName || null, court_case_number: form.courtCaseNumber || null,
+      opposing_party: form.opposingParty || null, opposing_counsel: form.opposingCounsel || null,
+      judge_name: form.judgeName || null, assigned_lawyer: form.assignedLawyer || null,
+      filing_date: form.filingDate || null, description: form.description || null,
     });
     if (error) { toast.error('Failed to create case'); return; }
     toast.success('Case created');
@@ -89,6 +80,8 @@ export default function LegalCases() {
     refetch();
   };
 
+  const openDetail = (c: LegalCase) => { setSelectedCase(c); setDetailOpen(true); };
+
   const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
 
   return (
@@ -96,7 +89,6 @@ export default function LegalCases() {
       <Header title="Cases" subtitle="Manage legal cases and matters" action={{ label: 'New Case', onClick: () => setAddOpen(true) }} />
 
       <div className="p-4 md:p-6">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
             { label: 'Open', count: cases.filter(c => c.status === 'open').length, color: 'text-emerald-600' },
@@ -111,7 +103,6 @@ export default function LegalCases() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search cases..." className="pl-9" />
@@ -127,10 +118,9 @@ export default function LegalCases() {
           </Card>
         ) : (
           <>
-            {/* Mobile Cards */}
             <div className="md:hidden space-y-3">
               {filtered.map((c) => (
-                <Card key={c.id} className="p-4">
+                <Card key={c.id} className="p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => openDetail(c)}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-card-foreground">{c.caseNumber}</p>
@@ -151,7 +141,6 @@ export default function LegalCases() {
               ))}
             </div>
 
-            {/* Desktop Table */}
             <div className="hidden md:block rounded-xl border border-border bg-card shadow-card overflow-hidden">
               <Table>
                 <TableHeader>
@@ -167,7 +156,7 @@ export default function LegalCases() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((c) => (
-                    <TableRow key={c.id} className="hover:bg-muted/50">
+                    <TableRow key={c.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => openDetail(c)}>
                       <TableCell className="font-medium">{c.caseNumber}</TableCell>
                       <TableCell>{c.title}</TableCell>
                       <TableCell className="capitalize text-muted-foreground">{c.caseType}</TableCell>
@@ -198,11 +187,13 @@ export default function LegalCases() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Case</DialogTitle></DialogHeader>
+          {form.opposingParty && (
+            <ConflictCheckAlert opposingParty={form.opposingParty} clientName="" existingCases={cases} />
+          )}
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Case Number *</Label><Input value={form.caseNumber} onChange={(e) => setForm(f => ({ ...f, caseNumber: e.target.value }))} placeholder="CASE-001" /></div>
-              <div>
-                <Label>Type</Label>
+              <div><Label>Type</Label>
                 <Select value={form.caseType} onValueChange={(v) => setForm(f => ({ ...f, caseType: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{caseTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
@@ -211,15 +202,13 @@ export default function LegalCases() {
             </div>
             <div><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Case title" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Priority</Label>
+              <div><Label>Priority</Label>
                 <Select value={form.priority} onValueChange={(v) => setForm(f => ({ ...f, priority: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{priorities.map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Client</Label>
+              <div><Label>Client</Label>
                 <Select value={form.clientId} onValueChange={(v) => setForm(f => ({ ...f, clientId: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
                   <SelectContent>{clients.map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.company}</SelectItem>)}</SelectContent>
@@ -247,6 +236,8 @@ export default function LegalCases() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CaseDetailDialog caseData={selectedCase} open={detailOpen} onOpenChange={setDetailOpen} onUpdate={() => { refetch(); }} />
     </DashboardLayout>
   );
 }

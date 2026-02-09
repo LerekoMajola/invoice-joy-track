@@ -1223,6 +1223,66 @@ export type Database = {
           },
         ]
       }
+      legal_case_expenses: {
+        Row: {
+          amount: number
+          case_id: string
+          created_at: string
+          date: string
+          description: string
+          expense_type: string
+          id: string
+          invoice_id: string | null
+          is_billable: boolean | null
+          is_invoiced: boolean | null
+          receipt_url: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          case_id: string
+          created_at?: string
+          date?: string
+          description: string
+          expense_type?: string
+          id?: string
+          invoice_id?: string | null
+          is_billable?: boolean | null
+          is_invoiced?: boolean | null
+          receipt_url?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          case_id?: string
+          created_at?: string
+          date?: string
+          description?: string
+          expense_type?: string
+          id?: string
+          invoice_id?: string | null
+          is_billable?: boolean | null
+          is_invoiced?: boolean | null
+          receipt_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_expenses_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_expenses_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_case_notes: {
         Row: {
           case_id: string

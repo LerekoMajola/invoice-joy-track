@@ -14,13 +14,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { CalendarDays, Loader2, MapPin, Clock, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Loader2, MapPin, Clock, CheckCircle2, Grid, List, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useLegalCalendar, type LegalCalendarEvent } from '@/hooks/useLegalCalendar';
 import { useLegalCases } from '@/hooks/useLegalCases';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { differenceInDays, isAfter, startOfToday } from 'date-fns';
+import { differenceInDays, isAfter, startOfToday, format, addMonths, subMonths } from 'date-fns';
+import { CalendarGrid } from '@/components/legal/CalendarGrid';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const eventTypes = ['hearing', 'deadline', 'meeting', 'filing', 'mediation', 'other'];
 const priorities = ['low', 'medium', 'high'];
@@ -30,6 +32,11 @@ export default function LegalCalendar() {
   const { events, isLoading, refetch } = useLegalCalendar();
   const { cases } = useLegalCases();
   const [addOpen, setAddOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editEvent, setEditEvent] = useState<LegalCalendarEvent | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({
     title: '', eventType: 'hearing', eventDate: '', eventTime: '', endTime: '',
     location: '', description: '', priority: 'medium', caseId: '',
@@ -79,21 +86,38 @@ export default function LegalCalendar() {
       return;
     }
     const { error } = await supabase.from('legal_calendar_events').insert({
-      user_id: user.id,
-      title: form.title,
-      event_type: form.eventType,
-      event_date: form.eventDate,
-      event_time: form.eventTime || null,
-      end_time: form.endTime || null,
-      location: form.location || null,
-      description: form.description || null,
-      priority: form.priority,
-      case_id: form.caseId || null,
+      user_id: user.id, title: form.title, event_type: form.eventType, event_date: form.eventDate,
+      event_time: form.eventTime || null, end_time: form.endTime || null, location: form.location || null,
+      description: form.description || null, priority: form.priority, case_id: form.caseId || null,
     });
     if (error) { toast.error('Failed to create event'); return; }
     toast.success('Event created');
     setAddOpen(false);
     setForm({ title: '', eventType: 'hearing', eventDate: '', eventTime: '', endTime: '', location: '', description: '', priority: 'medium', caseId: '' });
+    refetch();
+  };
+
+  const handleEditSave = async () => {
+    if (!editEvent) return;
+    const { error } = await supabase.from('legal_calendar_events').update({
+      title: form.title, event_type: form.eventType, event_date: form.eventDate,
+      event_time: form.eventTime || null, end_time: form.endTime || null,
+      location: form.location || null, description: form.description || null,
+      priority: form.priority, case_id: form.caseId || null,
+    }).eq('id', editEvent.id);
+    if (error) { toast.error('Failed to update event'); return; }
+    toast.success('Event updated');
+    setEditOpen(false);
+    setEditEvent(null);
+    refetch();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('legal_calendar_events').delete().eq('id', deleteId);
+    if (error) { toast.error('Failed to delete'); return; }
+    toast.success('Event deleted');
+    setDeleteId(null);
     refetch();
   };
 
@@ -103,12 +127,28 @@ export default function LegalCalendar() {
     refetch();
   };
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const openEditDialog = (event: LegalCalendarEvent) => {
+    setEditEvent(event);
+    setForm({
+      title: event.title, eventType: event.eventType, eventDate: event.eventDate,
+      eventTime: event.eventTime || '', endTime: event.endTime || '', location: event.location || '',
+      description: event.description || '', priority: event.priority, caseId: event.caseId || '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleDayClick = (date: Date) => {
+    setForm(f => ({ ...f, eventDate: format(date, 'yyyy-MM-dd') }));
+    setAddOpen(true);
+  };
+
+  const formatDateStr = (d: string) => new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const renderEvent = (event: LegalCalendarEvent) => (
     <Card
       key={event.id}
-      className={cn('p-4 border-l-4 transition-all', event.isCompleted ? 'opacity-60 border-l-muted' : getUrgencyColor(event.eventDate))}
+      className={cn('p-4 border-l-4 transition-all cursor-pointer', event.isCompleted ? 'opacity-60 border-l-muted' : getUrgencyColor(event.eventDate))}
+      onClick={() => openEditDialog(event)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -120,19 +160,54 @@ export default function LegalCalendar() {
           </div>
           <p className={cn('font-medium text-card-foreground', event.isCompleted && 'line-through')}>{event.title}</p>
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDate(event.eventDate)}</span>
+            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDateStr(event.eventDate)}</span>
             {event.eventTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.eventTime}</span>}
             {event.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.location}</span>}
           </div>
         </div>
-        <Button
-          variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8"
-          onClick={() => toggleComplete(event)}
-        >
-          <CheckCircle2 className={cn('h-5 w-5', event.isCompleted ? 'text-emerald-500' : 'text-muted-foreground/40')} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); toggleComplete(event); }}>
+            <CheckCircle2 className={cn('h-5 w-5', event.isCompleted ? 'text-emerald-500' : 'text-muted-foreground/40')} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setDeleteId(event.id); }}>
+            <Trash2 className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
     </Card>
+  );
+
+  const eventFormFields = (
+    <div className="grid gap-4 py-2">
+      <div><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Hearing / Deadline title" /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Type</Label>
+          <Select value={form.eventType} onValueChange={(v) => setForm(f => ({ ...f, eventType: v }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{eventTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div><Label>Priority</Label>
+          <Select value={form.priority} onValueChange={(v) => setForm(f => ({ ...f, priority: v }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{priorities.map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div><Label>Date *</Label><Input type="date" value={form.eventDate} onChange={(e) => setForm(f => ({ ...f, eventDate: e.target.value }))} /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div><Label>Start Time</Label><Input type="time" value={form.eventTime} onChange={(e) => setForm(f => ({ ...f, eventTime: e.target.value }))} /></div>
+        <div><Label>End Time</Label><Input type="time" value={form.endTime} onChange={(e) => setForm(f => ({ ...f, endTime: e.target.value }))} /></div>
+      </div>
+      <div><Label>Case</Label>
+        <Select value={form.caseId} onValueChange={(v) => setForm(f => ({ ...f, caseId: v }))}>
+          <SelectTrigger><SelectValue placeholder="Link to case (optional)" /></SelectTrigger>
+          <SelectContent>{cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div><Label>Location</Label><Input value={form.location} onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Court / Office" /></div>
+      <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+    </div>
   );
 
   return (
@@ -140,6 +215,21 @@ export default function LegalCalendar() {
       <Header title="Court Calendar" subtitle="Hearings, deadlines, and events" action={{ label: 'New Event', onClick: () => setAddOpen(true) }} />
 
       <div className="p-4 md:p-6">
+        {/* View Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('list')}><List className="h-4 w-4 mr-1" />List</Button>
+            <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('grid')}><Grid className="h-4 w-4 mr-1" />Calendar</Button>
+          </div>
+          {viewMode === 'grid' && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(m => subMonths(m, 1))}><ChevronLeft className="h-4 w-4" /></Button>
+              <span className="text-sm font-medium min-w-[120px] text-center">{format(currentMonth, 'MMMM yyyy')}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(m => addMonths(m, 1))}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : events.length === 0 ? (
@@ -148,6 +238,8 @@ export default function LegalCalendar() {
             <p className="text-lg font-medium">No events yet</p>
             <p className="text-sm">Add your first court date or deadline</p>
           </Card>
+        ) : viewMode === 'grid' ? (
+          <CalendarGrid events={events} currentMonth={currentMonth} onDayClick={handleDayClick} />
         ) : (
           <div className="space-y-6">
             {upcomingEvents.length > 0 && (
@@ -170,45 +262,29 @@ export default function LegalCalendar() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>New Event</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div><Label>Title *</Label><Input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Hearing / Deadline title" /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Type</Label>
-                <Select value={form.eventType} onValueChange={(v) => setForm(f => ({ ...f, eventType: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{eventTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Priority</Label>
-                <Select value={form.priority} onValueChange={(v) => setForm(f => ({ ...f, priority: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{priorities.map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div><Label>Date *</Label><Input type="date" value={form.eventDate} onChange={(e) => setForm(f => ({ ...f, eventDate: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Start Time</Label><Input type="time" value={form.eventTime} onChange={(e) => setForm(f => ({ ...f, eventTime: e.target.value }))} /></div>
-              <div><Label>End Time</Label><Input type="time" value={form.endTime} onChange={(e) => setForm(f => ({ ...f, endTime: e.target.value }))} /></div>
-            </div>
-            <div>
-              <Label>Case</Label>
-              <Select value={form.caseId} onValueChange={(v) => setForm(f => ({ ...f, caseId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Link to case (optional)" /></SelectTrigger>
-                <SelectContent>{cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div><Label>Location</Label><Input value={form.location} onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Court / Office" /></div>
-            <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
-          </div>
+          {eventFormFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit}>Create Event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Event</DialogTitle></DialogHeader>
+          {eventFormFields}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)} title="Delete Event"
+        description="Are you sure you want to delete this event?" confirmLabel="Delete"
+        variant="destructive" onConfirm={handleDelete} />
     </DashboardLayout>
   );
 }
