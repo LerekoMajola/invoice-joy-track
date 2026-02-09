@@ -164,10 +164,41 @@ export function useExpenses() {
         .single();
       
       if (error) throw error;
+
+      // Auto-record to accounting ledger if expense is paid
+      if (data.status === 'paid') {
+        await supabase.from('accounting_transactions').insert({
+          user_id: user.id,
+          bank_account_id: data.bank_account_id || null,
+          transaction_type: 'expense',
+          reference_type: 'expense',
+          reference_id: expense.id,
+          date: data.date,
+          amount: data.amount,
+          description: data.description || 'Expense',
+        });
+
+        // Update bank balance if linked
+        if (data.bank_account_id) {
+          const { data: bankAccount } = await supabase
+            .from('bank_accounts')
+            .select('current_balance')
+            .eq('id', data.bank_account_id)
+            .single();
+          if (bankAccount) {
+            await supabase.from('bank_accounts')
+              .update({ current_balance: Number(bankAccount.current_balance) - data.amount })
+              .eq('id', data.bank_account_id);
+          }
+        }
+      }
+
       return expense;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
       toast({ title: 'Expense created' });
     },
     onError: (error: Error) => {
@@ -177,6 +208,9 @@ export function useExpenses() {
 
   const updateExpense = useMutation({
     mutationFn: async ({ id, ...data }: Partial<CreateExpenseData> & { id: string }) => {
+      // Check if status is changing to 'paid'
+      const existingExpense = expenses.find(e => e.id === id);
+      
       const { data: expense, error } = await supabase
         .from('expenses')
         .update(data)
@@ -185,10 +219,42 @@ export function useExpenses() {
         .single();
       
       if (error) throw error;
+
+      // Auto-record to ledger when expense newly becomes paid
+      if (data.status === 'paid' && existingExpense?.status !== 'paid' && user?.id) {
+        await supabase.from('accounting_transactions').insert({
+          user_id: user.id,
+          bank_account_id: data.bank_account_id || existingExpense?.bank_account_id || null,
+          transaction_type: 'expense',
+          reference_type: 'expense',
+          reference_id: id,
+          date: data.date || existingExpense?.date || new Date().toISOString().split('T')[0],
+          amount: data.amount || existingExpense?.amount || 0,
+          description: data.description || existingExpense?.description || 'Expense',
+        });
+
+        const bankId = data.bank_account_id || existingExpense?.bank_account_id;
+        const amount = data.amount || existingExpense?.amount || 0;
+        if (bankId) {
+          const { data: bankAccount } = await supabase
+            .from('bank_accounts')
+            .select('current_balance')
+            .eq('id', bankId)
+            .single();
+          if (bankAccount) {
+            await supabase.from('bank_accounts')
+              .update({ current_balance: Number(bankAccount.current_balance) - amount })
+              .eq('id', bankId);
+          }
+        }
+      }
+
       return expense;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
       toast({ title: 'Expense updated' });
     },
     onError: (error: Error) => {

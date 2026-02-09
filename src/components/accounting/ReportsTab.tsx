@@ -6,10 +6,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Download, FileText } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { formatMaluti } from '@/lib/currency';
 import { IncomeStatement } from './IncomeStatement';
+import { BalanceSheet } from './BalanceSheet';
+import { VATReport } from './VATReport';
 import { useAccountingStats } from '@/hooks/useAccountingStats';
 
-type ReportType = 'income-statement' | 'expense-report' | 'cash-flow';
+type ReportType = 'income-statement' | 'expense-report' | 'cash-flow' | 'balance-sheet' | 'vat-report';
 
 export function ReportsTab() {
   const [selectedReport, setSelectedReport] = useState<ReportType>('income-statement');
@@ -25,8 +28,10 @@ export function ReportsTab() {
 
   const reportOptions = [
     { id: 'income-statement' as const, name: 'Income Statement', icon: FileText },
+    { id: 'balance-sheet' as const, name: 'Balance Sheet', icon: FileText },
     { id: 'expense-report' as const, name: 'Expense Report', icon: FileText },
     { id: 'cash-flow' as const, name: 'Cash Flow', icon: FileText },
+    { id: 'vat-report' as const, name: 'VAT Report', icon: FileText },
   ];
 
   const quickDateRanges = [
@@ -151,6 +156,10 @@ export function ReportsTab() {
         </Card>
       )}
 
+      {selectedReport === 'balance-sheet' && (
+        <BalanceSheet periodEnd={dateRange.to} />
+      )}
+
       {selectedReport === 'cash-flow' && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -173,13 +182,13 @@ export function ReportsTab() {
                   <div className="flex justify-between">
                     <span>Sales Revenue (Paid Invoices)</span>
                     <span className="font-medium">
-                      M{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {formatMaluti(stats.totalRevenue)}
                     </span>
                   </div>
                   <div className="border-t mt-2 pt-2 flex justify-between font-bold">
                     <span>Total Inflows</span>
                     <span className="text-green-600">
-                      M{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {formatMaluti(stats.totalRevenue)}
                     </span>
                   </div>
                 </div>
@@ -190,23 +199,20 @@ export function ReportsTab() {
                     <div className="flex justify-between">
                       <span>Operating Expenses</span>
                       <span className="font-medium">
-                        M{stats.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        {formatMaluti(stats.totalExpenses)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Payroll</span>
                       <span className="font-medium">
-                        M{stats.payrollCosts.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        {formatMaluti(stats.payrollCosts)}
                       </span>
                     </div>
                   </div>
                   <div className="border-t mt-2 pt-2 flex justify-between font-bold">
                     <span>Total Outflows</span>
                     <span className="text-red-600">
-                      M
-                      {(stats.totalExpenses + stats.payrollCosts).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatMaluti(stats.totalExpenses + stats.payrollCosts)}
                     </span>
                   </div>
                 </div>
@@ -215,7 +221,7 @@ export function ReportsTab() {
                   <div className="flex justify-between font-bold text-lg">
                     <span>Net Cash Flow</span>
                     <span className={stats.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      M{stats.netCashFlow.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {formatMaluti(stats.netCashFlow)}
                     </span>
                   </div>
                 </div>
@@ -223,6 +229,10 @@ export function ReportsTab() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedReport === 'vat-report' && (
+        <VATReport periodStart={dateRange.from} periodEnd={dateRange.to} />
       )}
     </div>
   );

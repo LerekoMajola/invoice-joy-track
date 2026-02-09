@@ -307,7 +307,27 @@ export function usePayslips() {
   };
 
   const markAsPaid = async (id: string): Promise<boolean> => {
-    return updatePayslip(id, { status: 'paid' });
+    const payslip = payslips.find(p => p.id === id);
+    const result = await updatePayslip(id, { status: 'paid' });
+
+    // Auto-record to accounting ledger
+    if (result && payslip && user) {
+      try {
+        await supabase.from('accounting_transactions').insert({
+          user_id: user.id,
+          transaction_type: 'expense',
+          reference_type: 'payroll',
+          reference_id: id,
+          date: payslip.paymentDate,
+          amount: payslip.netPay,
+          description: `Payroll — ${payslip.staffName || 'Staff'}`,
+        });
+      } catch (err) {
+        console.error('Error auto-recording payroll transaction:', err);
+      }
+    }
+
+    return result;
   };
 
   return {
