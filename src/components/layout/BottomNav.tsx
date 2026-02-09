@@ -20,6 +20,7 @@ const allNavItems = [
   // Hire
   { icon: Hammer, label: 'Equipment', path: '/equipment', moduleKey: 'hire_equipment', systemTypes: ['hire'] },
   { icon: ClipboardList, label: 'Orders', path: '/hire-orders', moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  { icon: CalendarDays, label: 'Calendar', path: '/hire-calendar', moduleKey: 'hire_orders', systemTypes: ['hire'] },
   // Legal
   { icon: Scale, label: 'Cases', path: '/legal-cases', moduleKey: 'legal_cases', systemTypes: ['legal'] },
   { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'] },
@@ -56,7 +57,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents', '/equipment', '/hire-orders'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents', '/equipment', '/hire-orders', '/hire-calendar'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (

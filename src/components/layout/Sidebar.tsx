@@ -53,6 +53,7 @@ const navigation = [
   // Hire
   { name: 'Equipment', href: '/equipment', icon: Hammer, moduleKey: 'hire_equipment', systemTypes: ['hire'] },
   { name: 'Hire Orders', href: '/hire-orders', icon: ClipboardList, moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  { name: 'Availability', href: '/hire-calendar', icon: CalendarDays, moduleKey: 'hire_orders', systemTypes: ['hire'] },
   // School
   { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['school'] },
   { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['school'] },
