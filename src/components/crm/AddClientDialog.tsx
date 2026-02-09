@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useCRMClients, CLIENT_STATUSES } from '@/hooks/useCRMClients';
 import { LEAD_SOURCES } from '@/hooks/useLeads';
+import { MessageCircle } from 'lucide-react';
 
 interface AddClientDialogProps {
   open: boolean;
@@ -96,6 +97,31 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="phone">Phone (WhatsApp)</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+266 2231 1234"
+              />
+              <p className="text-[11px] text-green-600 flex items-center gap-1">
+                <MessageCircle size={11} /> Used for WhatsApp job updates
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="john@company.com"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="source">Source</Label>
               <Select 
                 value={formData.source} 
@@ -112,28 +138,6 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="john@company.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+266 2231 1234"
-              />
             </div>
           </div>
 
