@@ -1,160 +1,106 @@
 
 
-# Automated Weekly Data Backup via Email (All Systems)
+# Fix System-Type-Aware Dashboard and Navigation
 
-## Overview
+## Problem
 
-Create a universal data backup system that works across all three system types (Business, Workshop, School). Each user receives a weekly email with CSV attachments of all their relevant data tables -- tailored to their system type. Users can also trigger a manual backup from Settings at any time.
+Right now, the Dashboard always shows the School Dashboard for every user, regardless of their system type. The navigation sidebar and bottom nav are also hardcoded with school-specific items only. Your business account is seeing "School Dashboard" with students, fees, and school operations -- which is wrong.
 
-## System-Aware Table Selection
+## What This Fix Does
 
-The backup function will determine which tables to export based on the user's `system_type` from their subscription record.
+Make the entire app system-type-aware so that:
+- **Business users** see a Business Dashboard with quotes, invoices, CRM, and tenders
+- **Workshop users** see a Workshop Dashboard with job cards and repairs
+- **School users** see the School Dashboard (as it currently works)
+- Navigation menus adapt to show only relevant items per system type
 
-### Shared Tables (all systems)
+## Changes
 
-| Table | Description |
-|-------|-------------|
-| company_profiles | Company/school profile |
-| invoices + invoice_line_items | All invoices |
-| staff_members | Staff/teacher records |
-| expenses | Expense records |
-| tasks | Task records |
-| bank_accounts | Banking info |
-| contacts | Contact records |
-| tax_clearance_documents | Compliance docs |
+### 1. Dashboard Router (`src/pages/Dashboard.tsx`)
 
-### School-Only Tables
+Update to check the user's `system_type` from their subscription and render the correct dashboard:
+- `business` -- renders a new Business Dashboard (quotes, invoices, clients overview)
+- `workshop` -- renders the existing `WorkshopDashboard`
+- `school` -- renders the existing `SchoolDashboard`
 
-| Table | Description |
-|-------|-------------|
-| students | Student records |
-| school_classes | Class definitions |
-| school_subjects | Subject catalog |
-| school_periods | Period/time slot definitions |
-| timetable_entries | Timetable assignments |
-| academic_terms | Term definitions |
-| school_announcements | Announcements |
-| fee_schedules | Fee structure |
-| student_fee_payments | Payment records |
+### 2. New Business Dashboard (`src/pages/BusinessDashboard.tsx`)
 
-### Business-Only Tables
+Create a dedicated Business Dashboard with:
+- Stat cards: Total Clients, Quotes This Month, Revenue This Month, Pending Invoices
+- Quick actions: Create Quote, Create Invoice, Add Client
+- Recent activity / pipeline overview
+- Uses existing hooks (`useClients`, `useQuotes`, `useInvoices`)
 
-| Table | Description |
-|-------|-------------|
-| clients | Client records |
-| leads | Lead/prospect records |
-| lead_activities | Lead activity timeline |
-| quotes + quote_line_items | Quotation data |
-| delivery_note_items | Delivery note details |
-| deal_stakeholders | Deal contacts |
-| deal_tasks | Deal-specific tasks |
-| tender_source_links | Tender tracking |
+### 3. System-Aware Navigation
 
-### Workshop-Only Tables
+Update Sidebar, BottomNav, and MoreMenuSheet to show different nav items based on the user's `system_type`:
 
-| Table | Description |
-|-------|-------------|
-| clients | Client records |
-| leads | Lead/prospect records |
-| job_cards | Job card records |
-| quotes + quote_line_items | Quotation data |
+**Business navigation:**
+- Dashboard, Clients, CRM, Quotes, Invoices, Tenders, Delivery Notes, Tasks, Staff, Accounting, Settings, Billing
 
-## New Backend Function
+**Workshop navigation:**
+- Dashboard, Workshop, Quotes, Invoices, Tasks, Staff, Accounting, Settings, Billing
 
-### `supabase/functions/export-data-backup/index.ts`
+**School navigation (current):**
+- Dashboard, Students, School Admin, School Fees, Timetable, Invoices, Tasks, Staff, Accounting, Settings, Billing
 
-A dual-purpose function handling both manual and automated triggers:
+Each nav item will have a `systemTypes` property indicating which system(s) it belongs to, in addition to the existing `moduleKey` gating.
 
-**Manual mode** (user clicks button):
-1. Validate JWT from Authorization header
-2. Look up user's `system_type` from subscriptions table
-3. Query all relevant tables for that user
-4. Convert to CSV, send via Resend to their email
+### 4. Re-enable Routes (`src/App.tsx`)
 
-**Cron mode** (weekly schedule, no JWT):
-1. Fetch all users via `auth.admin.listUsers()`
-2. For each user, look up their `system_type`
-3. Query relevant tables, generate CSVs, send email
-4. Log results for each user
+Add back the missing routes that were removed during the school pivot:
+- `/clients` -- Clients page
+- `/crm` -- CRM page
+- `/quotes` -- Quotes page
+- `/tenders` -- Tenders page
+- `/delivery-notes` -- Delivery Notes page
+- `/workshop` -- Workshop page
+- `/profitability` -- Profitability page
 
-### CSV Generation Logic
+### 5. Re-activate Platform Modules (Database)
 
-- Header row with human-readable column names
-- Proper escaping (commas, quotes, newlines)
-- UTF-8 encoding
-- Dates preserved as ISO strings
-- Only non-empty tables included as attachments
+Re-enable the deactivated business and workshop modules so users on those systems can access them:
+- `core_crm` (CRM + Clients)
+- `quotes` (Quotes)
+- `delivery_notes` (Delivery Notes)
+- `tenders` (Tender Tracking)
+- `workshop` (Workshop Management)
+- `profitability` (Profitability)
 
-### Email Format
+The `fleet` module will remain deactivated unless requested.
 
-- **From**: Configured Resend sender address
-- **Subject**: "Your [School/Business/Workshop] Data Backup - [date]"
-- **Body**: Summary with table names and row counts
-- **Attachments**: One CSV per non-empty table
-
-## Cron Schedule
-
-A `pg_cron` job will call the function every Sunday at midnight UTC:
-
-```text
-Schedule: 0 0 * * 0
-Target: export-data-backup function
-```
-
-This requires enabling `pg_cron` and `pg_net` extensions.
-
-## Settings Page Update
-
-Add a "Data Backup" card to `src/pages/Settings.tsx` with:
-- An icon and title ("Data Backup")
-- Description explaining the automatic weekly schedule
-- A "Send Backup Now" button for on-demand backup
-- Loading state while generating
-- Success/error toast notifications
-
-The card will be placed after the Notifications card.
-
-## Files
+## Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `supabase/functions/export-data-backup/index.ts` | Create | Backend function with system-aware CSV export and Resend email |
-| `supabase/config.toml` | Update | Register the new function with `verify_jwt = false` |
-| `src/pages/Settings.tsx` | Update | Add Data Backup card with manual trigger button |
-| Database migration | Execute | Enable pg_cron + pg_net extensions, schedule weekly job |
+| `src/pages/Dashboard.tsx` | Modify | Route to correct dashboard based on system_type |
+| `src/pages/BusinessDashboard.tsx` | Create | New business-focused dashboard |
+| `src/components/layout/Sidebar.tsx` | Modify | Add all system nav items with system_type filtering |
+| `src/components/layout/BottomNav.tsx` | Modify | System-aware bottom nav items |
+| `src/components/layout/MoreMenuSheet.tsx` | Modify | System-aware more menu items |
+| `src/App.tsx` | Modify | Re-add missing routes for business/workshop pages |
+| Database migration | Execute | Re-enable deactivated modules |
+
+## How System Filtering Works
+
+Each navigation item will have a structure like:
+
+```text
+{
+  name: 'Clients',
+  href: '/clients',
+  icon: Users,
+  moduleKey: 'core_crm',
+  systemTypes: ['business']    // only shown for business users
+}
+```
+
+Items with `systemTypes: null` (like Dashboard, Settings, Billing) show for everyone. The filtering logic combines both checks: the item must match the user's system type AND the user must have the module active.
 
 ## Technical Details
 
-### Edge Function Authentication
-
-- Manual triggers: extract and validate JWT via `supabase.auth.getUser()`, export only that user's data
-- Cron triggers: no JWT present, uses service role key to iterate all users
-
-### System Type Resolution
-
-```text
-1. Query subscriptions table for user's system_type
-2. Default to 'business' if no subscription found
-3. Build table list: shared_tables + system_specific_tables
-4. Query each table with user_id filter
-```
-
-### Security
-
-- Each user only receives their own data (filtered by user_id)
-- Service role key used server-side to bypass RLS for efficient multi-table querying
-- No sensitive auth data (passwords, tokens) included in exports
-- Cron job uses the anon key for the HTTP call; the function uses service role internally
-
-### Dependencies
-
-- **RESEND_API_KEY**: Already configured as a secret
-- **pg_cron + pg_net**: Need to be enabled via migration
-- No new secrets required
-
-### Error Handling
-
-- If Resend fails for one user during cron, log the error and continue to the next user
-- If a specific table query fails, skip it and note it in the email body
-- Return detailed summary of successes and failures
+- The `useSubscription` hook already provides `systemType` -- we just need to consume it in the navigation and dashboard components
+- Business and Workshop dashboard pages already exist or will reuse existing hooks
+- No schema changes needed beyond re-activating modules
+- All routes remain protected behind `ProtectedRoute`
 
