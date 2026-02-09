@@ -99,10 +99,11 @@ export function JobCardDetailDialog({
   const [clientPhone, setClientPhone] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!jobCard?.clientId) { setClientPhone(null); return; }
+    setClientPhone(null);
+    if (!jobCard?.clientId) return;
     supabase.from('clients').select('phone').eq('id', jobCard.clientId).single()
       .then(({ data }) => setClientPhone(data?.phone ?? null));
-  }, [jobCard?.clientId]);
+  }, [jobCard?.id]);
 
   // Line item form
   const [newItemType, setNewItemType] = useState<'parts' | 'labour'>('parts');
@@ -457,7 +458,7 @@ export function JobCardDetailDialog({
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                {clientPhone ? 'Send WhatsApp update' : 'No phone number on file'}
+                {clientPhone ? `WhatsApp: ${clientPhone}` : 'No phone number on file'}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
