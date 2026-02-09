@@ -14,6 +14,104 @@ interface PackageTier {
   features: { name: string; included: boolean }[];
 }
 
+const businessTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 350,
+    target: 'Freelancers & sole traders',
+    moduleKeys: ['quotes', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Quotes & Estimates', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'CRM & Leads', included: false },
+      { name: 'Accounting', included: false },
+      { name: 'Tenders', included: false },
+      { name: 'Delivery Notes', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 550,
+    target: 'Growing businesses',
+    popular: true,
+    moduleKeys: ['quotes', 'invoices', 'crm', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'Quotes & Estimates', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'CRM & Leads', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Tenders', included: false },
+      { name: 'Delivery Notes', included: false },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 800,
+    target: 'Established companies',
+    moduleKeys: ['quotes', 'invoices', 'crm', 'tasks', 'staff', 'accounting', 'tenders', 'delivery_notes'],
+    features: [
+      { name: 'Quotes & Estimates', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'CRM & Leads', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Tenders', included: true },
+      { name: 'Delivery Notes', included: true },
+    ],
+  },
+];
+
+const workshopTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 450,
+    target: 'Small repair shops',
+    moduleKeys: ['workshop', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Workshop & Job Cards', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: false },
+      { name: 'Fleet Management', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 650,
+    target: 'Mid-size workshops',
+    popular: true,
+    moduleKeys: ['workshop', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'Workshop & Job Cards', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Fleet Management', included: false },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 900,
+    target: 'Large service centres',
+    moduleKeys: ['workshop', 'invoices', 'tasks', 'staff', 'accounting', 'fleet'],
+    features: [
+      { name: 'Workshop & Job Cards', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Fleet Management', included: true },
+    ],
+  },
+];
+
 const schoolTiers: PackageTier[] = [
   {
     name: 'Starter',
@@ -63,6 +161,12 @@ const schoolTiers: PackageTier[] = [
   },
 ];
 
+const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
+  business: { label: 'Business Management', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
+  workshop: { label: 'Workshop Management', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
+  school: { label: 'School Management', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
+};
+
 interface PackageTierSelectorProps {
   systemType: string;
   onSelect: (tierName: string, moduleKeys: string[]) => void;
@@ -71,6 +175,8 @@ interface PackageTierSelectorProps {
 }
 
 export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuild }: PackageTierSelectorProps) {
+  const config = SYSTEM_CONFIG[systemType] || SYSTEM_CONFIG.school;
+
   return (
     <div className="w-full max-w-5xl mx-auto animate-slide-up">
       <div className="text-center mb-10">
@@ -79,9 +185,9 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
         </div>
         <h1 className={cn(
           'font-display text-2xl sm:text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent mb-2',
-          'from-info to-cyan'
+          config.gradient
         )}>
-          School Management
+          {config.label}
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base">
           Choose a package to start your 7-day free trial
@@ -89,7 +195,7 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-8">
-        {schoolTiers.map((tier) => (
+        {config.tiers.map((tier) => (
           <div
             key={tier.name}
             className={cn(
