@@ -1,95 +1,104 @@
 
 
-# Legal Dashboard -- Live Data Integration
+# Legal System Navigation & Module Fix
 
-## Overview
-Transform the Legal Dashboard from static placeholders into a fully data-driven dashboard that reflects all core legal practice management modules: cases, time tracking, billing, calendar, and financial overview.
+## Problem
+The legal system sidebar is showing business-oriented modules (Clients, CRM) and generic shared items, but is missing legal-specific pages. Additionally, the legal pages have **no routes defined** in `App.tsx`, so navigating to `/legal-cases`, `/legal-time-tracking`, `/legal-documents`, or `/legal-calendar` would show a 404 page.
 
 ## What Changes
 
-### New Hooks (3 files)
+### 1. Update Sidebar Navigation (`src/components/layout/Sidebar.tsx`)
 
-1. **`src/hooks/useLegalCases.tsx`** -- Fetch all `legal_cases` for the current user. Returns cases array, loading state, and CRUD mutations (add, update, delete).
+**Add "Clients" for legal users** -- law firms need client management too, so include `'legal'` in the Clients systemTypes array.
 
-2. **`src/hooks/useLegalTimeEntries.tsx`** -- Fetch all `legal_time_entries` for the current user. Returns entries array, loading state, and add/update/delete mutations.
+**Hide irrelevant shared modules for legal**:
+- CRM pipeline view is business-specific (already hidden -- correct)
+- Quotes, Tenders, Delivery Notes are business-only (already hidden -- correct)
+- Keep Invoices, Tasks, Staff, Accounting, Settings, Billing as shared (legal firms use all of these)
 
-3. **`src/hooks/useLegalCalendar.tsx`** -- Fetch all `legal_calendar_events` for the current user. Returns events array, loading state, and CRUD mutations.
+The current sidebar config is actually mostly correct. The main fix is:
+- Add `'legal'` to the Clients nav item so legal users can manage their clients
+- Ensure legal nav order makes sense: Cases first, then Clients, Time Tracking, Legal Docs, Court Calendar
 
-### Updated Dashboard: `src/pages/LegalDashboard.tsx`
+### 2. Create Legal Page Components (4 new files)
 
-Replace all placeholder content with live data from the three new hooks plus existing `useInvoices` hook.
+| File | Purpose |
+|------|---------|
+| `src/pages/LegalCases.tsx` | Cases & Matters management -- list, add, view cases |
+| `src/pages/LegalTimeTracking.tsx` | Time entry logging and billable hours tracking |
+| `src/pages/LegalDocuments.tsx` | Document management with file upload |
+| `src/pages/LegalCalendar.tsx` | Court calendar with deadlines and hearing dates |
 
-#### 1. Stats Cards (live numbers)
+Each page will follow the existing dashboard layout pattern with `DashboardLayout`, `Header`, and appropriate CRUD dialogs.
 
-| Card | Source | Calculation |
-|------|--------|-------------|
-| Active Cases | `legal_cases` | Count where status is `open` or `in_progress` |
-| Unbilled Hours | `legal_time_entries` | Sum of `hours` where `is_billable = true` AND `is_invoiced = false` |
-| Revenue This Month | `invoices` | Sum of `total` where `status = 'paid'` and date is in current month |
-| Upcoming Hearings | `legal_calendar_events` | Count where `event_type = 'hearing'` and `event_date >= today` and `is_completed = false` |
+### 3. Add Routes to `App.tsx`
 
-#### 2. Quick Actions (unchanged, already wired)
+Register four new protected routes:
+- `/legal-cases`
+- `/legal-time-tracking`
+- `/legal-documents`
+- `/legal-calendar`
 
-New Case, Log Time, Court Calendar, Documents buttons stay as-is.
+### 4. Update platform_modules (database)
 
-#### 3. Recent Cases card (live data)
+Currently `core_crm` is `system_type: 'shared'`, which means legal users who subscribe to it see "Clients" and "CRM". We should:
+- Keep `core_crm` as shared (it genuinely is cross-system for client management)
+- The sidebar already gates CRM to `['business']` only, so legal users get Clients but not CRM pipeline -- which is correct
 
-- Show the 5 most recently created/updated cases
-- Each row shows: case number, title, status badge (color-coded), case type, and priority
-- Clickable to navigate to `/legal-cases`
-- Empty state if no cases
-
-#### 4. Upcoming Deadlines card (live data)
-
-- Show the next 5 upcoming `legal_calendar_events` (sorted by date ascending, future only, not completed)
-- Each row shows: title, event type badge, date, linked case title (if any)
-- Color-coded by priority and how close the deadline is (red if within 2 days, amber within 7, green otherwise)
-- Empty state if none
-
-#### 5. NEW: Today's Time Log (new section)
-
-- Show time entries logged today with case name, hours, and description
-- Total hours today displayed prominently
-- Quick "Log Time" button
-
-#### 6. NEW: Financial Overview card (new section)
-
-- Outstanding fees: sum of unpaid invoice totals (status = sent or overdue)
-- Revenue this month: already calculated for stat card, reuse
-- Total billable value: sum of unbilled hours x hourly rate
-- Simple 3-metric display
-
-#### 7. NEW: Cases by Status breakdown (small visual)
-
-- Mini horizontal bar or pill badges showing count per status: Open, In Progress, On Hold, Closed
-- Quick visual of workload distribution
-
-## Layout Structure
+## Sidebar for Legal Users (after changes)
 
 ```text
-[Date Banner]
-[Stats: Active Cases | Unbilled Hours | Revenue | Hearings]
-[Quick Actions]
-[Recent Cases          |  Upcoming Deadlines    ]
-[Today's Time Log      |  Financial Overview    ]
-[Cases by Status (full width)]
+Dashboard
+Cases           (legal_cases)
+Clients         (core_crm -- now includes 'legal')
+Time Tracking   (legal_billing)
+Legal Docs      (legal_documents)
+Court Calendar  (legal_calendar)
+------- shared -------
+Invoices
+Tasks
+Staff
+Accounting
+Settings
+Billing
 ```
 
 ## Technical Details
 
-- All three hooks follow existing patterns (e.g., `useClients`, `useInvoices`): `useQuery` from TanStack React Query, Supabase select with `order by`, return typed arrays
-- Stats computed via `useMemo` to avoid re-renders
-- Status badge colors: open = emerald, in_progress = blue, on_hold = amber, closed = gray, archived = slate
-- Priority colors: high = red, medium = amber, low = green
-- Currency formatting uses existing `formatMaluti()` helper
-- No new database changes needed -- all tables already exist from the prior migration
+### Legal Cases Page
+- Uses existing `useLegalCases` hook
+- Table/list view with case number, title, type, status, priority, assigned lawyer
+- Add Case dialog with full form (case number, title, type, court info, client link)
+- Status badges: Open (emerald), In Progress (blue), On Hold (amber), Closed (gray)
 
-## Files Summary
+### Legal Time Tracking Page
+- Uses existing `useLegalTimeEntries` hook
+- Log time entries with case selection, hours, rate, description, activity type
+- Summary showing total billable/unbilled hours
+- Filter by case, date range, billable status
+
+### Legal Documents Page
+- Uses Supabase storage bucket `legal-documents` (already exists)
+- Upload files linked to cases
+- View/download documents
+- Categorize by type (contract, agreement, court paper, evidence, other)
+
+### Legal Calendar Page
+- Uses existing `useLegalCalendar` hook
+- Calendar view or list view of upcoming events
+- Add events with type (hearing, deadline, meeting, filing), date, time, location
+- Priority-based color coding
+- Link events to cases
+
+### Files Summary
 
 | File | Action |
 |------|--------|
-| `src/hooks/useLegalCases.tsx` | **Create** -- CRUD hook for `legal_cases` |
-| `src/hooks/useLegalTimeEntries.tsx` | **Create** -- CRUD hook for `legal_time_entries` |
-| `src/hooks/useLegalCalendar.tsx` | **Create** -- CRUD hook for `legal_calendar_events` |
-| `src/pages/LegalDashboard.tsx` | **Rewrite** -- Replace placeholders with live data sections |
+| `src/pages/LegalCases.tsx` | Create |
+| `src/pages/LegalTimeTracking.tsx` | Create |
+| `src/pages/LegalDocuments.tsx` | Create |
+| `src/pages/LegalCalendar.tsx` | Create |
+| `src/App.tsx` | Add 4 new routes |
+| `src/components/layout/Sidebar.tsx` | Add 'legal' to Clients systemTypes |
 
+No database changes needed -- all tables and storage buckets already exist.
