@@ -58,12 +58,18 @@ Deno.serve(async (req) => {
     // Use service role client to access auth.users
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { method } = req;
-    const url = new URL(req.url);
+    // Check if this is a delete action (via POST body)
+    let body: Record<string, unknown> = {};
+    if (req.method === "POST") {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
 
-    // Handle DELETE
-    if (method === "DELETE") {
-      const deleteUserId = url.searchParams.get("userId");
+    if (body.action === "delete") {
+      const deleteUserId = body.userId as string;
       if (!deleteUserId) {
         return new Response(JSON.stringify({ error: "userId required" }), {
           status: 400,
