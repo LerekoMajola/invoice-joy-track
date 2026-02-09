@@ -9,30 +9,34 @@ interface DashboardDateBannerProps {
 
 const themeConfig = {
   business: {
-    containerGradient: 'from-indigo-500/10 via-violet-500/5 to-pink-500/10',
-    borderColor: 'border-indigo-500/20',
-    orbColors: ['bg-indigo-500/20', 'bg-violet-500/15', 'bg-pink-500/10'],
-    clockGradient: 'from-indigo-500 via-violet-500 to-purple-500',
-    colonColor: 'text-violet-400',
-    dayBadgeGradient: 'from-indigo-500 to-violet-500',
-    calendarIconColor: 'text-indigo-500',
-    sparkleColor: 'text-violet-400',
-    quoteBarGradient: 'from-indigo-500 via-violet-500 to-pink-500',
-    quoteBorderGradient: 'from-indigo-500/30 via-violet-500/20 to-pink-500/30',
-    quoteMarkColor: 'text-indigo-300/30',
+    containerGradient: 'from-indigo-600 via-violet-600 to-purple-700',
+    borderColor: 'border-indigo-400/30',
+    orbColors: ['bg-white/10', 'bg-pink-400/20', 'bg-indigo-300/15'],
+    clockGradient: 'from-white via-indigo-100 to-white',
+    colonColor: 'text-indigo-200',
+    dayBadgeGradient: 'from-white/20 to-white/10',
+    calendarIconColor: 'text-indigo-200',
+    sparkleColor: 'text-yellow-300',
+    quoteBarGradient: 'from-pink-400 via-yellow-300 to-indigo-300',
+    quoteBorderGradient: 'from-white/20 via-white/10 to-white/20',
+    quoteMarkColor: 'text-white/20',
+    textColor: 'text-white',
+    subtextColor: 'text-indigo-100',
   },
   legal: {
-    containerGradient: 'from-emerald-500/10 via-teal-500/5 to-cyan-500/10',
-    borderColor: 'border-emerald-500/20',
-    orbColors: ['bg-emerald-500/20', 'bg-teal-500/15', 'bg-cyan-500/10'],
-    clockGradient: 'from-emerald-500 via-teal-500 to-cyan-500',
-    colonColor: 'text-teal-400',
-    dayBadgeGradient: 'from-emerald-500 to-teal-500',
-    calendarIconColor: 'text-emerald-500',
-    sparkleColor: 'text-teal-400',
-    quoteBarGradient: 'from-emerald-500 via-teal-500 to-cyan-500',
-    quoteBorderGradient: 'from-emerald-500/30 via-teal-500/20 to-cyan-500/30',
-    quoteMarkColor: 'text-emerald-300/30',
+    containerGradient: 'from-emerald-600 via-teal-600 to-cyan-700',
+    borderColor: 'border-emerald-400/30',
+    orbColors: ['bg-white/10', 'bg-cyan-400/20', 'bg-emerald-300/15'],
+    clockGradient: 'from-white via-emerald-100 to-white',
+    colonColor: 'text-emerald-200',
+    dayBadgeGradient: 'from-white/20 to-white/10',
+    calendarIconColor: 'text-emerald-200',
+    sparkleColor: 'text-yellow-300',
+    quoteBarGradient: 'from-cyan-300 via-yellow-300 to-emerald-300',
+    quoteBorderGradient: 'from-white/20 via-white/10 to-white/20',
+    quoteMarkColor: 'text-white/20',
+    textColor: 'text-white',
+    subtextColor: 'text-emerald-100',
   },
 };
 
@@ -74,7 +78,7 @@ export function DashboardDateBanner({ quotes, theme }: DashboardDateBannerProps)
             </span>
             <div className="flex items-center gap-2">
               <CalendarDays className={`h-5 w-5 ${t.calendarIconColor}`} />
-              <span className="text-lg font-bold text-foreground">{format(today, 'd MMMM yyyy')}</span>
+              <span className={`text-lg font-bold ${t.textColor}`}>{format(today, 'd MMMM yyyy')}</span>
             </div>
           </div>
 
@@ -97,7 +101,7 @@ export function DashboardDateBanner({ quotes, theme }: DashboardDateBannerProps)
 
         {/* Motivational quote – glassmorphism card */}
         <div
-          className={`relative rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-3.5 md:p-4 animate-slide-up-fade`}
+          className={`relative rounded-xl border border-white/15 bg-white/10 backdrop-blur-md p-3.5 md:p-4 animate-slide-up-fade`}
           style={{ animationDelay: '0.4s' }}
         >
           {/* Gradient accent bar on left */}
@@ -108,7 +112,7 @@ export function DashboardDateBanner({ quotes, theme }: DashboardDateBannerProps)
 
           <div className="flex items-start gap-2.5 pl-4">
             <Sparkles className={`h-4 w-4 ${t.sparkleColor} mt-0.5 flex-shrink-0`} style={{ animation: 'spin 4s linear infinite' }} />
-            <p className="text-sm italic text-muted-foreground leading-relaxed">
+            <p className={`text-sm italic ${t.subtextColor} leading-relaxed`}>
               "{dailyQuote}"
             </p>
           </div>
