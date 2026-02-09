@@ -1,53 +1,31 @@
 
+# Add "Workshop" Department and "Technician" Job Title Defaults
 
-# Fix WhatsApp Opening With Wrong Phone Number
+## What Changes
 
-## The Problem
-The WhatsApp button fetches the client's phone number using `jobCard.clientId`, but the query might be unreliable. Two potential issues:
+### File: `src/components/staff/AddStaffDialog.tsx`
 
-1. **Null clientId**: Older job cards created before the client selector was added have no `client_id`. The Supabase query `.eq('id', null)` could behave unexpectedly.
-2. **Stale state**: The `clientPhone` state from a previous job card might persist when opening a different one, causing a mismatch.
+1. **Add "Workshop" to the departments list** so technicians have a proper department:
+   ```
+   { value: 'workshop', label: 'Workshop' }
+   ```
 
-## The Fix
+2. **Add a "Technician" preset to the job title field** -- either as a suggestion placeholder or as a quick-select. Since the job title is a free-text field, the simplest approach is to change the placeholder to reflect the workshop use case and add common workshop job titles as quick-select chips (e.g., "Technician", "Senior Technician", "Workshop Foreman").
 
-### File: `src/components/workshop/JobCardDetailDialog.tsx`
-
-**1. Add a null guard** so the query only runs when `clientId` is a real UUID:
-
-```ts
-useEffect(() => {
-  if (!jobCard?.clientId) { setClientPhone(null); return; }
-  supabase.from('clients').select('phone').eq('id', jobCard.clientId).single()
-    .then(({ data }) => setClientPhone(data?.phone ?? null));
-}, [jobCard?.clientId]);
+### Updated departments array:
+```
+operations, sales, finance, admin, workshop, other
 ```
 
-This already looks correct in the current code. The real fix is:
+### Job title enhancement:
+Add clickable suggestion chips below the job title input for common roles like "Technician", "Senior Technician", "Workshop Foreman" -- these populate the input when clicked but still allow free text entry.
 
-**2. Add a debug log temporarily and verify data** -- but more importantly, add the client's phone number as visible text in the dialog so the user can confirm which number will be used before clicking:
+## Technical Details
 
-- Show the client phone number next to the WhatsApp button tooltip (e.g., "Send WhatsApp to +266 58335233")
-- This helps the user verify the correct number is being used
+**Single file change:** `src/components/staff/AddStaffDialog.tsx`
 
-**3. Reset clientPhone when dialog closes or job card changes** to prevent stale state:
+- Add `{ value: 'workshop', label: 'Workshop' }` to the `departments` array (before "Other")
+- Add a small row of clickable suggestion badges below the Job Title input that set the field value when clicked (e.g., "Technician", "Senior Technician", "Foreman")
+- When "Workshop" department is selected, the suggestions could prioritize workshop-relevant titles
 
-```ts
-useEffect(() => {
-  setClientPhone(null); // reset first
-  if (!jobCard?.clientId) return;
-  supabase.from('clients').select('phone').eq('id', jobCard.clientId).single()
-    .then(({ data }) => setClientPhone(data?.phone ?? null));
-}, [jobCard?.id]); // key on job card id, not just clientId
-```
-
-Changing the dependency to `jobCard?.id` ensures the phone is re-fetched whenever a different job card is opened, and resets to null first to prevent stale data.
-
-**4. Show the phone number in the tooltip** so users can verify:
-
-Update the tooltip from `"Send WhatsApp update"` to `"WhatsApp: {clientPhone}"` so the user sees which number will be messaged.
-
-### Summary of changes
-- **One file**: `src/components/workshop/JobCardDetailDialog.tsx`
-- Reset `clientPhone` to null at the start of the useEffect
-- Change dependency from `jobCard?.clientId` to `jobCard?.id`
-- Show the actual phone number in the tooltip for transparency
+This keeps things simple -- no database changes needed since `department` and `job_title` are plain text fields on `staff_members`.
