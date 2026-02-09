@@ -75,6 +75,7 @@ export default function Quotes() {
   };
   const [isOpen, setIsOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [fromJobCard, setFromJobCard] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
   const [leadTime, setLeadTime] = useState('');
@@ -102,6 +103,21 @@ export default function Quotes() {
         setSelectedClientId(matchingClient.id);
       }
       setQuoteDescription(data.description || '');
+      setFromJobCard(true);
+      
+      // Pre-fill line items from job card
+      if (data.lineItems && data.lineItems.length > 0) {
+        setLineItems(data.lineItems.map((item: any, index: number) => ({
+          id: String(index + 1),
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          costPrice: item.costPrice || 0,
+          inputMode: 'price' as const,
+          marginPercent: item.unitPrice > 0 ? ((item.unitPrice - (item.costPrice || 0)) / item.unitPrice) * 100 : 0,
+        })));
+      }
+      
       setIsOpen(true);
     }
   }, [clients]);
@@ -253,6 +269,7 @@ export default function Quotes() {
   const resetForm = () => {
     setIsOpen(false);
     setEditingQuote(null);
+    setFromJobCard(false);
     setSelectedClientId('');
     setQuoteDescription('');
     setLeadTime('');
@@ -579,19 +596,25 @@ export default function Quotes() {
             </div>
             <div>
               <Label>Select Client Organisation</Label>
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a client..." /></SelectTrigger>
-                <SelectContent>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{client.company}</span>
-                        <span className="text-xs text-muted-foreground">{client.contactPerson}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {fromJobCard && selectedClientId ? (
+                <div className="mt-1 px-3 py-2 rounded-md border border-border bg-muted/50 text-sm font-medium">
+                  {clients.find(c => c.id === selectedClientId)?.company || 'Client'}
+                </div>
+              ) : (
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a client..." /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{client.company}</span>
+                          <span className="text-xs text-muted-foreground">{client.contactPerson}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div>
               <Label htmlFor="description">Quote Description</Label>
