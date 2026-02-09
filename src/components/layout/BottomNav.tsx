@@ -1,4 +1,4 @@
-import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal, Users, FileText, Wrench } from 'lucide-react';
+import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal, Users, FileText, Wrench, Scale, Timer, CalendarDays } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,10 @@ const allNavItems = [
   // Workshop
   { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['workshop'] },
   { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['workshop'] },
+  // Legal
+  { icon: Scale, label: 'Cases', path: '/legal-cases', moduleKey: 'legal_cases', systemTypes: ['legal'] },
+  { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'] },
+  { icon: CalendarDays, label: 'Calendar', path: '/legal-calendar', moduleKey: 'legal_calendar', systemTypes: ['legal'] },
   // School
   { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'] },
   { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'] },
@@ -49,7 +53,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (

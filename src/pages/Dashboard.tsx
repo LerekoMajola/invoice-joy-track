@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 const SchoolDashboard = lazy(() => import('@/pages/SchoolDashboard'));
 const BusinessDashboard = lazy(() => import('@/pages/BusinessDashboard'));
 const WorkshopDashboard = lazy(() => import('@/pages/WorkshopDashboard'));
+const LegalDashboard = lazy(() => import('@/pages/LegalDashboard'));
 
 export default function Dashboard() {
   const { hasProfile, isLoading: profileLoading } = useCompanyProfile();
@@ -39,6 +40,8 @@ export default function Dashboard() {
         return <WorkshopDashboard />;
       case 'school':
         return <SchoolDashboard />;
+      case 'legal':
+        return <LegalDashboard />;
       case 'business':
       default:
         return <BusinessDashboard />;

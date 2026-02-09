@@ -1,4 +1,4 @@
-import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock, Briefcase, Truck, TrendingUp, Kanban, Wrench } from 'lucide-react';
+import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock, Briefcase, Truck, TrendingUp, Kanban, Wrench, FolderOpen } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,8 @@ const allMenuItems = [
   { icon: TrendingUp, label: 'Profitability', path: '/profitability', description: 'Margins & costs', moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
   // Workshop-specific
   { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'] },
+  // Legal-specific
+  { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'] },
   // School-specific
   { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['school'] },
   { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['school'] },
