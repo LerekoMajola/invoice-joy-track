@@ -1,48 +1,57 @@
 
 
-# Convert Case Detail from Popup to Full Page
+# Hearing Reminder Notifications
 
 ## What Changes
 
-Currently, clicking a case opens a small dialog popup. This will be converted to a **dedicated full page** at `/legal-cases/:id` that gives you the full screen to work with case details, time entries, expenses, documents, and notes.
+You'll receive automatic notifications when court hearings or legal calendar events are approaching. Following legal industry standards, reminders will be sent at **7 days** and **1 day** before a hearing -- giving you enough time to prepare while also catching last-minute items.
 
 ## How It Works
 
-- Clicking a case in the list navigates to `/legal-cases/CASE_ID` instead of opening a popup
-- The full page uses the same `DashboardLayout` with a header showing the case number, status badge, Edit/Delete buttons, and a Back button
-- All 5 tabs (Overview, Time, Expenses, Docs, Notes) remain the same but now have full-page width to breathe
-- After deleting a case, you're navigated back to `/legal-cases`
-- The "New Case" dialog remains a popup (it's small enough)
+A scheduled background function runs daily and checks two sources:
+1. **Case hearing dates** (`next_hearing_date` on legal cases)
+2. **Calendar events** (hearings, deadlines, filing deadlines from `legal_calendar_events`)
+
+For each upcoming hearing found within the reminder windows (7 days out and 1 day out), it creates an in-app notification and optionally sends a push notification if the user has push enabled.
+
+## Reminder Schedule
+
+| Timing | Notification |
+|--------|-------------|
+| 7 days before | "Upcoming Hearing in 7 days" -- preparation reminder |
+| 1 day before | "Hearing Tomorrow" -- final reminder |
+| Day of (overdue/today) | "Hearing Today" -- same-day alert |
 
 ## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/pages/CaseDetail.tsx` | **New** -- full-page version of the case detail view, reusing all the same logic from `CaseDetailDialog` |
-| `src/App.tsx` | Add route `/legal-cases/:id` pointing to the new page |
-| `src/pages/LegalCases.tsx` | Change `openDetail` to navigate to `/legal-cases/${c.id}` instead of opening a dialog; remove `CaseDetailDialog` usage |
-| `src/components/legal/CaseDetailDialog.tsx` | Can be kept for now (no deletion) but will no longer be used from the cases list |
+| `supabase/functions/check-hearing-reminders/index.ts` | **New** -- Edge function that queries upcoming hearings and creates notifications |
+| `supabase/config.toml` | Add `verify_jwt = false` for the new function |
+
+A cron job (daily schedule) will also be set up to call this function automatically.
 
 ## Technical Details
 
-### New Route
+### Edge Function Logic
 
-```
-/legal-cases/:id
-```
+The function will:
+1. Query `legal_cases` for cases where `next_hearing_date` is within 7 days, 1 day, or today, and status is not `closed`
+2. Query `legal_calendar_events` for events where `event_date` is within the same windows and `is_completed = false`
+3. Deduplicate (avoid sending duplicate notifications for the same hearing by checking existing notifications with matching `reference_id`)
+4. Insert in-app notifications into the `notifications` table with `type = 'system'`, linking to `/legal-cases/CASE_ID`
+5. Send push notifications to users who have push subscriptions enabled
 
-The page reads the `id` param, fetches the case from the existing `useLegalCases` hook, and renders the full detail view.
+### Notification Format
 
-### Page Layout
+- **7 days**: "Hearing in 7 days: [Case Number] - [Title/Event Title] on [Date]"
+- **1 day**: "Hearing Tomorrow: [Case Number] - [Title/Event Title]"
+- **Today**: "Hearing Today: [Case Number] - [Title/Event Title] at [Time]"
 
-- Wrapped in `DashboardLayout`
-- `Header` component with the case number as title, case title as subtitle, and a "Back to Cases" button
-- Status badge + Edit/Delete buttons in the header area
-- Full-width `Tabs` component below with all 5 tabs
-- Overview tab uses a wider grid layout since there's more horizontal space
+### Cron Schedule
 
-### Navigation Changes in LegalCases.tsx
+A daily cron job at 7:00 AM will invoke the function via `pg_cron` + `pg_net`.
 
-- Remove `selectedCase`, `detailOpen` state and `CaseDetailDialog` import
-- Change `openDetail` to: `const openDetail = (c: LegalCase) => navigate(\`/legal-cases/${c.id}\`)`
-- Add `useNavigate` import from react-router-dom
+### Pattern
+
+This follows the exact same pattern as the existing `check-task-reminders` function -- same Supabase service role client, same notification table structure, same push notification integration.
