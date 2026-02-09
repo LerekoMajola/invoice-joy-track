@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, GraduationCap } from 'lucide-react';
+import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
+
+const industries = [
+  { icon: Briefcase, label: 'Business', gradient: 'from-primary to-violet' },
+  { icon: Wrench, label: 'Workshop', gradient: 'from-coral to-warning' },
+  { icon: GraduationCap, label: 'School', gradient: 'from-info to-cyan' },
+  { icon: Scale, label: 'Legal', gradient: 'from-violet to-primary' },
+  { icon: Hammer, label: 'Tool Hire', gradient: 'from-success to-info' },
+];
 
 export function Hero() {
   return (
@@ -15,7 +23,7 @@ export function Hero() {
 
       {/* Animated gradient orbs */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-info/30 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-coral/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -23,6 +31,9 @@ export function Hero() {
         <header className="flex items-center justify-between py-6">
           <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
           <nav className="hidden md:flex items-center gap-6">
+            <a href="#solutions" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
+              Solutions
+            </a>
             <a href="#features" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
               Features
             </a>
@@ -46,22 +57,31 @@ export function Hero() {
 
         {/* Hero Content */}
         <div className="py-20 lg:py-32 text-center">
-          <div className="flex justify-center mb-6 animate-slide-up">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-info to-cyan flex items-center justify-center text-white shadow-lg">
-              <GraduationCap className="h-8 w-8" />
-            </div>
+          {/* 5 floating industry icons */}
+          <div className="flex justify-center gap-4 sm:gap-6 mb-10 animate-slide-up">
+            {industries.map((ind, i) => (
+              <div
+                key={ind.label}
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${ind.gradient} flex items-center justify-center text-white shadow-lg animate-float`}
+                style={{ animationDelay: `${i * 0.4}s` }}
+                title={ind.label}
+              >
+                <ind.icon className="h-7 w-7 sm:h-8 sm:w-8" />
+              </div>
+            ))}
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            Smart School
+
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            One Platform,
             <br />
-            <span className="bg-gradient-to-r from-cyan via-accent to-success bg-clip-text text-transparent">Management</span>
+            <span className="bg-gradient-to-r from-cyan via-accent to-coral bg-clip-text text-transparent">Every Industry</span>
           </h1>
-          <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Student records, fee tracking, class management, and staff administration — 
-            everything your school needs in one powerful platform.
+          <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            Business operations, workshop management, school admin, legal practice, 
+            and equipment hire — all powered by one modular platform.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <Link to="/auth">
               <Button size="lg" className="bg-gradient-to-r from-accent to-success hover:opacity-90 text-white px-8 py-6 text-lg rounded-2xl shadow-glow-success hover:shadow-lg transition-all duration-300 hover:scale-105">
                 Start 7-Day Free Trial
@@ -75,7 +95,7 @@ export function Hero() {
             </a>
           </div>
 
-          <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             No credit card required · 7-day free trial · Cancel anytime
           </p>
         </div>
