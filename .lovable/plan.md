@@ -1,47 +1,67 @@
 
+# Add Document Uploads to Clients and Case Details
 
-# Add Company Profile Card at Top of Settings
+## Two Problems Being Solved
 
-## Problem
-To be a "full tenant," a user needs a `company_profiles` record with at minimum a company name. Currently the Settings page doesn't have a dedicated section for basic company identity fields -- they're only captured during onboarding (name, email, phone) and everything else relies on a free-text "Document Header" textarea. This makes it unclear what information is needed.
+1. **Client Documents**: There's no way to attach documents (contracts, ID copies, etc.) to a client. You want to upload and view files when editing a client card.
+2. **Case Documents**: The "Docs" tab inside a case detail currently shows a placeholder message. You should be able to upload and view case documents directly from within a case, not just from the separate Legal Documents page.
 
-## Solution
-Add a new "Company Profile" card as the **first card** on the Settings page (above Change Password), containing all the core identity fields that make a user a proper tenant in the system.
+## What Will Change
 
-### Company Profile Card Fields
+### 1. Client Documents (New Feature)
 
-| Field | Maps To |
-|-------|---------|
-| Company / Firm Name * | `company_name` |
-| Email | `email` |
-| Phone | `phone` |
-| Website | `website` |
-| Address Line 1 | `address_line_1` |
-| Address Line 2 | `address_line_2` |
-| City | `city` |
-| Postal Code | `postal_code` |
-| Country | `country` |
-| Registration Number | `registration_number` |
-| VAT Number | `vat_number` |
+A new database table `client_documents` will store document references for each client. When you open the Edit Client dialog (on the Clients page), a new "Documents" section will appear below the form fields where you can:
+- Upload files (PDFs, images, Word docs, etc.)
+- See a list of uploaded documents with file name and date
+- Download or delete documents
+- Files are stored in the existing `company-assets` storage bucket under a `client-docs/` folder
 
-These fields already exist in the `company_profiles` table but are currently never shown as individual inputs on the Settings page.
+### 2. Case Documents (Enhancement)
 
-### Layout
-- The card uses the `Building2` icon and is titled "Company Profile" with subtitle "Your business identity -- this information is required for full platform access"
-- Fields are arranged in a responsive 2-column grid (single column on mobile)
-- Company Name is marked as required with an asterisk
-- The label adapts based on `systemType`: "Firm Name" for legal, "School Name" for school, "Workshop Name" for workshop, "Company Name" for business
+The "Docs" tab in the Case Detail dialog will be upgraded from a placeholder to a fully functional interface showing:
+- All documents from Legal Documents that are linked to this case
+- An "Upload" button to add a new document directly from the case (saves to the `legal-documents` bucket and `legal_documents` table with the case ID pre-filled)
+- Download and view buttons for each document
 
-### No Database Changes
-All columns already exist in `company_profiles`. This is purely a UI change.
+## Database Changes
+
+### New Table: `client_documents`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| user_id | uuid | For RLS |
+| client_id | uuid | Links to clients table |
+| title | text | Document name/label |
+| file_name | text | Original file name |
+| file_size | integer | In bytes |
+| file_url | text | Public URL from storage |
+| created_at | timestamptz | Auto |
+
+Standard RLS policies: users can only access their own documents.
+
+No new tables needed for case documents -- they already use the `legal_documents` table.
+
+## Files Summary
+
+| File | Action |
+|------|--------|
+| New migration | Create `client_documents` table with RLS |
+| `src/hooks/useClientDocuments.tsx` | New hook: fetch, upload, delete client documents |
+| `src/pages/Clients.tsx` | Add documents section to the Edit Client dialog with upload/list/delete |
+| `src/components/legal/CaseDetailDialog.tsx` | Replace the placeholder "Docs" tab with actual document list, upload button, and download links |
 
 ## Technical Details
 
-### File Modified
+### Client Documents Upload Flow
+- User opens Edit Client dialog and scrolls to the Documents section
+- Clicks "Upload" and selects a file
+- File is uploaded to `company-assets` bucket at path `client-docs/{user_id}/{timestamp}.{ext}`
+- A row is inserted into `client_documents` with the public URL
+- The document appears in the list immediately
 
-| File | Change |
-|------|--------|
-| `src/pages/Settings.tsx` | Add new "Company Profile" card as the first section, import `useSubscription` for system type label, add the identity fields bound to existing `formData` state |
-
-The form fields are already tracked in `formData` state (lines 37-71) with keys like `company_name`, `email`, `phone`, `address_line_1`, etc. -- they just need to be rendered as inputs. The existing `handleChange` and `handleSave` functions will handle persistence without modification.
-
+### Case Documents in Case Detail
+- The "Docs" tab queries `legal_documents` table filtered by `case_id`
+- "Upload" button opens an inline form (title + file picker) and uploads to `legal-documents` bucket
+- Inserts a row into `legal_documents` with the `case_id` pre-set
+- Existing documents show title, file name, size, and a download button
