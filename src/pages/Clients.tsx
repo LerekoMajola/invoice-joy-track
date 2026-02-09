@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Building2, Mail, Phone, MapPin, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ClientDocumentsSection } from '@/components/clients/ClientDocumentsSection';
+import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -410,6 +412,14 @@ export default function Clients() {
               />
             </div>
           </div>
+
+          {editingClient && (
+            <>
+              <Separator />
+              <ClientDocumentsSection clientId={editingClient.id} />
+            </>
+          )}
+
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
             <Button variant="outline" onClick={() => setEditingClient(null)} className="w-full sm:w-auto">
               Cancel

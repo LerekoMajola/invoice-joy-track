@@ -186,6 +186,47 @@ export type Database = {
           },
         ]
       }
+      client_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
