@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,6 @@ import { useClients } from '@/hooks/useClients';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { CaseDetailDialog } from '@/components/legal/CaseDetailDialog';
 import { ConflictCheckAlert } from '@/components/legal/ConflictCheckAlert';
 
 const statusStyles: Record<string, string> = {
@@ -51,6 +51,7 @@ function generateNextCaseNumber(cases: LegalCase[]): string {
 
 export default function LegalCases() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { cases, isLoading, refetch } = useLegalCases();
   const { clients } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,8 +60,6 @@ export default function LegalCases() {
     setForm(f => ({ ...f, caseNumber: generateNextCaseNumber(cases) }));
     setAddOpen(true);
   };
-  const [selectedCase, setSelectedCase] = useState<LegalCase | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [form, setForm] = useState({
     caseNumber: '', title: '', caseType: 'civil', status: 'open', priority: 'medium',
     clientId: '', courtName: '', courtCaseNumber: '', opposingParty: '', opposingCounsel: '',
@@ -93,7 +92,7 @@ export default function LegalCases() {
     refetch();
   };
 
-  const openDetail = (c: LegalCase) => { setSelectedCase(c); setDetailOpen(true); };
+  const openDetail = (c: LegalCase) => navigate(`/legal-cases/${c.id}`);
 
   const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
 
@@ -250,7 +249,6 @@ export default function LegalCases() {
         </DialogContent>
       </Dialog>
 
-      <CaseDetailDialog caseData={selectedCase} open={detailOpen} onOpenChange={setDetailOpen} onUpdate={() => { refetch(); }} />
     </DashboardLayout>
   );
 }
