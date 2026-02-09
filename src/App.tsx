@@ -31,6 +31,10 @@ import Profitability from "./pages/Profitability";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentRequired from "./pages/PaymentRequired";
+import LegalCases from "./pages/LegalCases";
+import LegalTimeTracking from "./pages/LegalTimeTracking";
+import LegalDocuments from "./pages/LegalDocuments";
+import LegalCalendar from "./pages/LegalCalendar";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +70,10 @@ const App = () => (
             <Route path="/delivery-notes" element={<ProtectedRoute><DeliveryNotes /></ProtectedRoute>} />
             <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
             <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
+            <Route path="/legal-cases" element={<ProtectedRoute><LegalCases /></ProtectedRoute>} />
+            <Route path="/legal-time-tracking" element={<ProtectedRoute><LegalTimeTracking /></ProtectedRoute>} />
+            <Route path="/legal-documents" element={<ProtectedRoute><LegalDocuments /></ProtectedRoute>} />
+            <Route path="/legal-calendar" element={<ProtectedRoute><LegalCalendar /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
