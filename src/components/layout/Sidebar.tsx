@@ -25,6 +25,10 @@ import {
   CalendarDays,
   Hammer,
   ClipboardList,
+  Hotel,
+  BedDouble,
+  CalendarCheck,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,6 +58,11 @@ const navigation = [
   { name: 'Equipment', href: '/equipment', icon: Hammer, moduleKey: 'hire_equipment', systemTypes: ['hire'] },
   { name: 'Hire Orders', href: '/hire-orders', icon: ClipboardList, moduleKey: 'hire_orders', systemTypes: ['hire'] },
   { name: 'Availability', href: '/hire-calendar', icon: CalendarDays, moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  // Guest House
+  { name: 'Rooms', href: '/rooms', icon: BedDouble, moduleKey: 'gh_rooms', systemTypes: ['guesthouse'] },
+  { name: 'Bookings', href: '/bookings', icon: CalendarCheck, moduleKey: 'gh_bookings', systemTypes: ['guesthouse'] },
+  { name: 'Housekeeping', href: '/housekeeping', icon: Hotel, moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'] },
+  { name: 'Reviews', href: '/guest-reviews', icon: Star, moduleKey: 'gh_reviews', systemTypes: ['guesthouse'] },
   // School
   { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['school'] },
   { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['school'] },

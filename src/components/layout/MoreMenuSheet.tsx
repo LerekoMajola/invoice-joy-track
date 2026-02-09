@@ -1,4 +1,4 @@
-import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock, Briefcase, Truck, TrendingUp, Kanban, Wrench, FolderOpen, Hammer, ClipboardList, CalendarDays } from 'lucide-react';
+import { CheckSquare, Calculator, Users2, Settings, CreditCard, X, School, Clock, Briefcase, Truck, TrendingUp, Kanban, Wrench, FolderOpen, Hammer, ClipboardList, CalendarDays, Hotel, Star } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,9 @@ const allMenuItems = [
   { icon: Hammer, label: 'Equipment', path: '/equipment', description: 'Tool catalogue', moduleKey: 'hire_equipment', systemTypes: ['hire'] },
   { icon: ClipboardList, label: 'Hire Orders', path: '/hire-orders', description: 'Rental bookings', moduleKey: 'hire_orders', systemTypes: ['hire'] },
   { icon: CalendarDays, label: 'Availability', path: '/hire-calendar', description: 'Booking calendar', moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  // Guest House-specific
+  { icon: Hotel, label: 'Housekeeping', path: '/housekeeping', description: 'Room cleaning tasks', moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'] },
+  { icon: Star, label: 'Reviews', path: '/guest-reviews', description: 'Guest feedback', moduleKey: 'gh_reviews', systemTypes: ['guesthouse'] },
   // Legal-specific
   { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'] },
   // School-specific

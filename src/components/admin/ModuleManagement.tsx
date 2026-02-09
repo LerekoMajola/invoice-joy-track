@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
+import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMaluti } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -85,6 +85,13 @@ const systemGroups: SystemGroup[] = [
     icon: Hammer,
     gradient: 'from-amber-500 to-orange-500',
     borderColor: 'border-amber-500/30',
+  },
+  {
+    id: 'guesthouse',
+    label: 'Guest House',
+    icon: Hotel,
+    gradient: 'from-rose-500 to-pink-500',
+    borderColor: 'border-rose-500/30',
   },
 ];
 

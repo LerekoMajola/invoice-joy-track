@@ -1,7 +1,7 @@
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { Quote } from 'lucide-react';
 
-const industries = ['Business', 'Workshop', 'School', 'Legal', 'Tool Hire'];
+const industries = ['Business', 'Workshop', 'School', 'Legal', 'Tool Hire', 'Guest House'];
 
 export function AuthBrandingPanel() {
   return (
@@ -16,10 +16,10 @@ export function AuthBrandingPanel() {
           <PlatformLogo className="h-32 w-auto rounded-3xl p-8 bg-white shadow-sm" />
         </div>
         <h2 className="font-display text-3xl font-bold text-white mb-4">
-          One Platform, Five Industries
+          One Platform, Six Industries
         </h2>
         <p className="text-white/70 text-lg">
-          Business operations, workshop management, school admin, legal practice, and equipment hire — all in one powerful modular platform.
+          Business operations, workshop management, school admin, legal practice, equipment hire, and guest house hospitality — all in one powerful modular platform.
         </p>
 
         {/* Testimonial */}

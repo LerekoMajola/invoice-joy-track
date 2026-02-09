@@ -151,6 +151,86 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          actual_check_in: string | null
+          actual_check_out: string | null
+          booking_number: string
+          check_in: string
+          check_out: string
+          created_at: string
+          deposit_paid: number
+          guest_email: string | null
+          guest_id_number: string | null
+          guest_name: string
+          guest_phone: string | null
+          id: string
+          meal_plan: string
+          notes: string | null
+          num_guests: number
+          room_id: string
+          special_requests: string | null
+          status: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          booking_number: string
+          check_in: string
+          check_out: string
+          created_at?: string
+          deposit_paid?: number
+          guest_email?: string | null
+          guest_id_number?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          id?: string
+          meal_plan?: string
+          notes?: string | null
+          num_guests?: number
+          room_id: string
+          special_requests?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_check_in?: string | null
+          actual_check_out?: string | null
+          booking_number?: string
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          deposit_paid?: number
+          guest_email?: string | null
+          guest_id_number?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          id?: string
+          meal_plan?: string
+          notes?: string | null
+          num_guests?: number
+          room_id?: string
+          special_requests?: string | null
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_activities: {
         Row: {
           activity_type: string
@@ -872,6 +952,44 @@ export type Database = {
           },
         ]
       }
+      guest_reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          source: string
+          user_id: string
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          source?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hire_order_items: {
         Row: {
           condition_in: string | null
@@ -990,6 +1108,53 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      housekeeping_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          priority: string
+          room_id: string
+          status: string
+          task_type: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: string
+          room_id: string
+          status?: string
+          task_type?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: string
+          room_id?: string
+          status?: string
+          task_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housekeeping_tasks_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -2061,6 +2226,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rooms: {
+        Row: {
+          amenities: string | null
+          capacity: number
+          created_at: string
+          daily_rate: number
+          description: string | null
+          id: string
+          name: string
+          room_number: string
+          room_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amenities?: string | null
+          capacity?: number
+          created_at?: string
+          daily_rate?: number
+          description?: string | null
+          id?: string
+          name: string
+          room_number: string
+          room_type?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amenities?: string | null
+          capacity?: number
+          created_at?: string
+          daily_rate?: number
+          description?: string | null
+          id?: string
+          name?: string
+          room_number?: string
+          room_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       school_announcements: {
         Row: {

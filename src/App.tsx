@@ -40,6 +40,10 @@ import LegalCalendar from "./pages/LegalCalendar";
 import Equipment from "./pages/Equipment";
 import HireOrders from "./pages/HireOrders";
 import HireCalendar from "./pages/HireCalendar";
+import Rooms from "./pages/Rooms";
+import Bookings from "./pages/Bookings";
+import Housekeeping from "./pages/Housekeeping";
+import GuestReviews from "./pages/GuestReviews";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +88,10 @@ const App = () => (
             <Route path="/equipment" element={<ProtectedRoute><Equipment /></ProtectedRoute>} />
             <Route path="/hire-orders" element={<ProtectedRoute><HireOrders /></ProtectedRoute>} />
             <Route path="/hire-calendar" element={<ProtectedRoute><HireCalendar /></ProtectedRoute>} />
+            <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
+            <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
+            <Route path="/housekeeping" element={<ProtectedRoute><Housekeeping /></ProtectedRoute>} />
+            <Route path="/guest-reviews" element={<ProtectedRoute><GuestReviews /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
+import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 const industries = [
@@ -9,6 +9,7 @@ const industries = [
   { icon: GraduationCap, label: 'School', gradient: 'from-info to-cyan' },
   { icon: Scale, label: 'Legal', gradient: 'from-violet to-primary' },
   { icon: Hammer, label: 'Tool Hire', gradient: 'from-success to-info' },
+  { icon: Hotel, label: 'Guest House', gradient: 'from-rose-500 to-pink-500' },
 ];
 
 export function Hero() {
@@ -78,7 +79,7 @@ export function Hero() {
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             Business operations, workshop management, school admin, legal practice, 
-            and equipment hire — all powered by one modular platform.
+            equipment hire, and guest house hospitality — all powered by one modular platform.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.3s' }}>

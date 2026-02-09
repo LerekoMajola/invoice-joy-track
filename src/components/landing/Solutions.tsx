@@ -7,6 +7,7 @@ import {
   GraduationCap, 
   Scale, 
   Hammer,
+  Hotel,
   CheckCircle2
 } from 'lucide-react';
 
@@ -51,6 +52,14 @@ const industries = [
     features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage Tracking'],
     price: 'R199/mo',
   },
+  {
+    icon: Hotel,
+    name: 'Guest House',
+    system: 'guesthouse',
+    gradient: 'from-rose-500 to-pink-500',
+    features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings'],
+    price: 'M650/mo',
+  },
 ];
 
 export function Solutions() {
@@ -59,7 +68,7 @@ export function Solutions() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-            5 Industries, 1 Platform
+            6 Industries, 1 Platform
           </div>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Solutions for Every Industry
