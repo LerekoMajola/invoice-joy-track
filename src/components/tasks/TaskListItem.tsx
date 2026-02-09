@@ -1,8 +1,9 @@
- import { format, parseISO, isToday, isPast, startOfDay } from 'date-fns';
- import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Button } from '@/components/ui/button';
- import { cn } from '@/lib/utils';
+import { format, parseISO, isToday, isPast, startOfDay } from 'date-fns';
+import { Calendar as CalendarIcon, Trash2, User } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
  import type { Task, TaskPriority } from '@/hooks/useTasks';
  
  interface TaskListItemProps {
@@ -97,7 +98,19 @@
              <CalendarIcon className="h-3 w-3" />
              {formatDueDate(task.due_date)}
            </span>
-         )}
+          )}
+          {task.assigned_to_name && (
+            <div className="hidden sm:flex items-center gap-1.5">
+              <Avatar className="h-5 w-5">
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
+                  {task.assigned_to_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs text-muted-foreground truncate max-w-[80px]">
+                {task.assigned_to_name}
+              </span>
+            </div>
+          )}
          <div
            className={cn(
              'px-2 py-0.5 rounded-full text-xs font-semibold capitalize',

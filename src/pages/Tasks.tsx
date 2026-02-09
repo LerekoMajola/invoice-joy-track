@@ -2,7 +2,8 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
- import { useTasks, Task, TaskPriority, TaskStatus } from '@/hooks/useTasks';
+import { useTasks, Task, TaskPriority, TaskStatus } from '@/hooks/useTasks';
+import { useStaff } from '@/hooks/useStaff';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
  import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -35,20 +36,23 @@ import { cn } from '@/lib/utils';
  type ViewMode = 'list' | 'calendar';
 
 export default function Tasks() {
-   const { tasks, isLoading, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
+  const { tasks, isLoading, createTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
+  const { staff } = useStaff();
   const [isOpen, setIsOpen] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
-     description: '',
-     dueDate: undefined as Date | undefined,
-     priority: 'medium' as TaskPriority,
+    description: '',
+    dueDate: undefined as Date | undefined,
+    priority: 'medium' as TaskPriority,
+    assignedTo: '' as string,
   });
-   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-   const [viewMode, setViewMode] = useState<ViewMode>('list');
-   const [searchQuery, setSearchQuery] = useState('');
-   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
-   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-   const [detailOpen, setDetailOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
  
    const { filteredTasks, counts } = useMemo(() => {
@@ -86,9 +90,16 @@ export default function Tasks() {
      }
  
      // Apply priority filter
-     if (priorityFilter !== 'all') {
-       filtered = filtered.filter(t => t.priority === priorityFilter);
-     }
+      if (priorityFilter !== 'all') {
+        filtered = filtered.filter(t => t.priority === priorityFilter);
+      }
+
+      // Apply assignee filter
+      if (assigneeFilter === 'unassigned') {
+        filtered = filtered.filter(t => !t.assigned_to);
+      } else if (assigneeFilter !== 'all') {
+        filtered = filtered.filter(t => t.assigned_to === assigneeFilter);
+      }
  
      return {
        filteredTasks: filtered,
@@ -99,19 +110,23 @@ export default function Tasks() {
          done: completed.length,
        },
      };
-   }, [tasks, activeFilter, searchQuery, priorityFilter]);
+   }, [tasks, activeFilter, searchQuery, priorityFilter, assigneeFilter]);
  
-   const handleAddTask = async () => {
-     if (!newTask.title.trim()) return;
-     
-     await createTask.mutateAsync({
-       title: newTask.title.trim(),
-       description: newTask.description.trim() || undefined,
-       due_date: newTask.dueDate ? format(newTask.dueDate, 'yyyy-MM-dd') : undefined,
-       priority: newTask.priority,
-     });
- 
-     setNewTask({ title: '', description: '', dueDate: undefined, priority: 'medium' });
+  const handleAddTask = async () => {
+    if (!newTask.title.trim()) return;
+    
+    const selectedStaff = staff.find(s => s.id === newTask.assignedTo);
+    
+    await createTask.mutateAsync({
+      title: newTask.title.trim(),
+      description: newTask.description.trim() || undefined,
+      due_date: newTask.dueDate ? format(newTask.dueDate, 'yyyy-MM-dd') : undefined,
+      priority: newTask.priority,
+      assigned_to: selectedStaff?.id,
+      assigned_to_name: selectedStaff?.name,
+    });
+
+    setNewTask({ title: '', description: '', dueDate: undefined, priority: 'medium', assignedTo: '' });
     setIsOpen(false);
   };
 
@@ -197,8 +212,24 @@ export default function Tasks() {
                <SelectItem value="medium">Medium</SelectItem>
                <SelectItem value="low">Low</SelectItem>
              </SelectContent>
-           </Select>
- 
+            </Select>
+
+            {/* Assignee Filter */}
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] rounded-xl">
+                <SelectValue placeholder="Assignee" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Assignees</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {staff.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
            {/* View Toggle */}
            <div className="flex border rounded-xl overflow-hidden">
              <Button
@@ -345,6 +376,25 @@ export default function Tasks() {
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Assign To (optional)</Label>
+              <Select
+                value={newTask.assignedTo || 'none'}
+                onValueChange={(value) => setNewTask({ ...newTask, assignedTo: value === 'none' ? '' : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {staff.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -2400,6 +2400,8 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
           created_at: string
           description: string | null
           due_date: string | null
@@ -2412,6 +2414,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -2424,6 +2428,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -2435,7 +2441,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tax_clearance_documents: {
         Row: {
