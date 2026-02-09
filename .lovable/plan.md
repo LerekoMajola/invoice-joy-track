@@ -1,38 +1,63 @@
 
 
-# Job Card Full-Screen View + Quick Invoice Button
+# Simplify Job Card Flow + Add Costs As You Go
 
-## Problem
-1. The job card detail opens in a dialog with `max-h-[90vh]` requiring lots of scrolling, especially on mobile.
-2. The "Generate Invoice" button is buried in the "Parts & Labour" tab and only visible when scrolled down -- easy to miss.
+## The Problems
+
+1. **Too many statuses are confusing**: The current flow has 11 statuses (received, diagnosing, diagnosed, quoted, approved, in_progress, awaiting_parts, quality_check, completed, invoiced, collected). Users must manually pick from a flat dropdown list with no guidance on what comes next.
+
+2. **Adding parts/labour requires switching tabs**: To add costs while working, you must navigate to the "Parts & Labour" tab, fill a form, then go back. This friction discourages updating costs as work progresses.
+
+3. **No visual flow indicator**: There's no way to see where you are in the job's lifecycle at a glance.
 
 ## Solution
 
-### 1. Make the dialog full-screen on mobile, larger on desktop
-- Change `DialogContent` from `max-w-2xl max-h-[90vh]` to full-screen on mobile (`max-h-[100dvh] h-full w-full`) and keep a comfortable large dialog on desktop (`md:max-w-3xl md:max-h-[90vh]`).
-- This matches the existing mobile-first pattern described in the project's UI conventions.
+### 1. Replace the flat status dropdown with a guided "Next Step" button
 
-### 2. Add a sticky bottom action bar
-- Add a persistent footer bar at the bottom of the dialog (outside the scrollable area) with key actions:
-  - **"Create Invoice"** button -- always visible when the job card status is `completed`, `quality_check`, or `invoiced` and has line items.
-  - **"Update Status"** dropdown -- quick access from the bottom bar on mobile.
-- This eliminates the need to navigate to a specific tab to find the invoice button.
+Instead of a dropdown listing all 11 statuses, show a single prominent **"Next Step"** button that automatically suggests the logical next action based on the current status:
 
-### 3. Compact the tab content for less scrolling
-- In the **Details** tab, use a tighter layout (smaller spacing, condensed vehicle info grid).
-- In the **Parts & Labour** tab, keep the "Generate Invoice" button at the bottom but the sticky footer provides the primary path.
+| Current Status | Next Step Button | 
+|---|---|
+| Received | "Start Diagnosis" |
+| Diagnosing | "Mark Diagnosed" |
+| Diagnosed | "Create Quote" (navigates to quote) |
+| Quoted | "Mark Approved" |
+| Approved | "Start Work" |
+| In Progress | "Mark Completed" |
+| Quality Check | "Mark Completed" |
+| Completed | "Create Invoice" |
+
+A small "More actions" overflow allows setting special statuses like "Awaiting Parts" or going back. This way the user always knows the one thing to do next.
+
+### 2. Add a quick "Add Cost" inline form to the sticky bottom bar
+
+Add a collapsible "Add Cost" button in the sticky footer that expands a compact inline form (description, qty, price, type) right at the bottom of the screen. This lets technicians add parts and labour from any tab without switching context. The running total updates live in the footer.
+
+### 3. Show a compact progress stepper in the header
+
+Add a small horizontal progress indicator below the job card number showing the simplified stages: **Intake -> Diagnosis -> Quote -> Work -> Complete -> Invoice**. The current stage is highlighted, giving instant context.
+
+### 4. Always show the running total in the footer
+
+Display the current total (e.g., "M1,250.00") in the sticky bottom bar so users always see how costs are accumulating without navigating to the Parts & Labour tab.
 
 ## Technical Details
 
 ### File: `src/components/workshop/JobCardDetailDialog.tsx`
 
 **Changes:**
-- Update `DialogContent` className to be full-screen on mobile: `className="max-w-3xl w-full h-[100dvh] md:h-auto md:max-h-[90vh] flex flex-col p-0"`
-- Restructure layout into: fixed header, scrollable middle, sticky footer
-- Move the header (title + status badge + dropdown) into a sticky top section with padding
-- Wrap tab navigation + tab content in an `overflow-y-auto flex-1` container
-- Add a sticky bottom bar with the "Create Invoice" button (visible when status is completed/quality_check and line items exist), plus a compact status update button on mobile
-- Reduce spacing in grid layouts from `gap-4` to `gap-2`/`gap-3` for mobile compactness
 
-No database or backend changes needed.
+- **Progress stepper**: Add a row of 6 small dots/steps below the header showing: Intake, Diagnosis, Quote, Work, Complete, Invoice. Map each of the 11 statuses to one of these 6 stages. Highlight completed stages and the current stage.
+
+- **Next Step button**: Replace the "Update Status" dropdown as the primary action. Add a `getNextAction(status)` function that returns `{ label, status, icon }` for the logical next step. Keep a secondary "..." button that opens the full status dropdown for edge cases (awaiting parts, etc.).
+
+- **Quick Add Cost panel**: Add a state `showQuickAdd` toggled by a "+" button in the footer. When open, render a compact row: type select (Parts/Labour), description input, qty input, price input, and an "Add" button. This sits above the footer bar.
+
+- **Running total in footer**: Always show `formatMaluti(total)` in the sticky bar alongside the action buttons.
+
+### File: `src/hooks/useJobCards.tsx`
+
+No changes needed -- the existing `addLineItem`, `updateStatus` functions support everything.
+
+### No database changes needed.
 
