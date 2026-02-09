@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AdminOverviewTab, TenantsTab, SubscriptionsTab, AdminSettingsTab } from '@/components/admin';
+import { AdminOverviewTab, TenantsTab, SubscriptionsTab, AdminSettingsTab, SignupsTab } from '@/components/admin';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export default function Admin() {
@@ -52,6 +52,7 @@ export default function Admin() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tenants">Tenants</TabsTrigger>
+            <TabsTrigger value="signups">Sign-ups</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -62,6 +63,10 @@ export default function Admin() {
 
           <TabsContent value="tenants">
             <TenantsTab />
+          </TabsContent>
+
+          <TabsContent value="signups">
+            <SignupsTab />
           </TabsContent>
 
           <TabsContent value="subscriptions">

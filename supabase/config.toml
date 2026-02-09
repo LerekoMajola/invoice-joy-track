@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.export-data-backup]
 verify_jwt = false
+
+[functions.admin-get-signups]
+verify_jwt = false
