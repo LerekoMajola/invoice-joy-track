@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentRequired from "./pages/PaymentRequired";
 import LegalCases from "./pages/LegalCases";
+import CaseDetail from "./pages/CaseDetail";
 import LegalTimeTracking from "./pages/LegalTimeTracking";
 import LegalDocuments from "./pages/LegalDocuments";
 import LegalCalendar from "./pages/LegalCalendar";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
             <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
             <Route path="/legal-cases" element={<ProtectedRoute><LegalCases /></ProtectedRoute>} />
+            <Route path="/legal-cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
             <Route path="/legal-time-tracking" element={<ProtectedRoute><LegalTimeTracking /></ProtectedRoute>} />
             <Route path="/legal-documents" element={<ProtectedRoute><LegalDocuments /></ProtectedRoute>} />
             <Route path="/legal-calendar" element={<ProtectedRoute><LegalCalendar /></ProtectedRoute>} />
