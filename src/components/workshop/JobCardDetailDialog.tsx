@@ -443,7 +443,13 @@ export function JobCardDetailDialog({
                       if (!clientPhone) return;
                       const clean = clientPhone.replace(/\D/g, '');
                       const msg = getWhatsAppMessage(jobCard.status, jobCard.clientName, jobCard.vehicleReg, jobCard.jobCardNumber);
-                      window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
+                      const link = document.createElement('a');
+                      link.href = `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
                     }}
                   >
                     <MessageCircle className="h-4 w-4" />
