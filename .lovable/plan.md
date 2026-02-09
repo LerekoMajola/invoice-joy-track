@@ -1,50 +1,32 @@
 
 
-# Add Standalone "Create Delivery Note" Dialog
+# Make Edit and Download Buttons Visible on Delivery Note Preview
 
 ## Problem
 
-Currently, delivery notes can only be created from an invoice -- the "New Delivery Note" button on the Delivery Notes page does nothing. You need the ability to create a delivery note directly, without needing a quote or invoice first.
+When viewing a delivery note, the action buttons (Edit, Template, Print, Download PDF, Close) are all in a single horizontal row in the header bar. On mobile or smaller screens, these buttons overflow and get cut off, making them invisible and inaccessible.
 
 ## Solution
 
-Create a new "Add Delivery Note" dialog that opens when you click the "New Delivery Note" button. It will let you fill in a client name, date, delivery address, and add line items manually -- no invoice or quote required.
-
-## What the Dialog Will Include
-
-- **Client Name** (required text field)
-- **Date** (date picker, defaults to today)
-- **Delivery Address** (optional textarea)
-- **Line Items** section with:
-  - Description and Quantity for each item
-  - "Add Item" button to add more rows
-  - Remove button on each item
-- **Optional**: A dropdown to link an existing client from your client list (auto-fills name and address)
-- Submit button to create the delivery note
+Restructure the header actions to be responsive:
+- On **mobile**: Show only icon buttons (no text labels) and use smaller sizing so all buttons fit in the available space. The Template button can be moved to a secondary row or kept as icon-only.
+- On **desktop**: Keep the current layout with full text labels.
 
 ## Changes
 
-### 1. New File: `src/components/delivery-notes/AddDeliveryNoteDialog.tsx`
+### File: `src/components/delivery-notes/DeliveryNotePreview.tsx`
 
-A dialog component following the same pattern as AddClientDialog:
-- Form with client name, date, delivery address, and items list
-- Optional client selector dropdown that pre-fills client name and address from existing clients
-- Dynamic item rows (add/remove)
-- Calls `createDeliveryNote` from the existing hook on submit
-- Resets form on close
+Update the header actions section (lines 144-170):
 
-### 2. Update: `src/pages/DeliveryNotes.tsx`
+1. **Wrap the button row** with `flex-wrap` so buttons can flow to a second line if needed
+2. **Use icon-only buttons on mobile** by hiding the text labels on small screens using `hidden sm:inline` on the button text spans
+3. **Add responsive sizing**: Use smaller button variants on mobile
+4. **Ensure the title row is responsive**: Make the title truncate if needed and give the buttons priority
 
-- Import the new `AddDeliveryNoteDialog`
-- Add state for dialog open/close (`showCreateDialog`)
-- Wire the "New Delivery Note" button to open the dialog (currently `onClick: () => {}`)
-- Pass `createDeliveryNote` or let the dialog use the hook directly
+The specific changes:
+- Add `flex-wrap` to the actions container so buttons wrap instead of overflowing
+- Wrap each button's text label (e.g., "Edit", "Download PDF") in a `<span className="hidden sm:inline">` so only the icon shows on mobile
+- Keep all buttons accessible on every screen size -- just more compact on mobile
 
-## Technical Details
-
-- The `useDeliveryNotes` hook already supports creating notes with optional `clientId` and `invoiceId` -- both can be `null`
-- The `DeliveryNoteInsert` interface already accepts optional `clientId` and `invoiceId`
-- The database `delivery_notes` table has `client_id` and `invoice_id` as nullable columns
-- No database changes needed -- the schema already supports standalone delivery notes
-- The dialog will use `useClients` to offer an optional client dropdown for convenience
+This is a simple CSS/layout adjustment with no logic changes.
 
