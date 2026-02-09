@@ -15,6 +15,8 @@ export interface Task {
   priority: TaskPriority;
   status: TaskStatus;
   sort_order: number;
+  assigned_to: string | null;
+  assigned_to_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +27,8 @@ export interface CreateTaskInput {
   due_date?: string;
   priority?: TaskPriority;
   status?: TaskStatus;
+  assigned_to?: string;
+  assigned_to_name?: string;
 }
 
 export interface UpdateTaskInput {
@@ -35,6 +39,8 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   status?: TaskStatus;
   sort_order?: number;
+  assigned_to?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export function useTasks() {
@@ -76,6 +82,8 @@ export function useTasks() {
           priority: input.priority || 'medium',
           status: input.status || 'todo',
           sort_order: maxOrder + 1,
+          assigned_to: input.assigned_to || null,
+          assigned_to_name: input.assigned_to_name || null,
         })
         .select()
         .single();

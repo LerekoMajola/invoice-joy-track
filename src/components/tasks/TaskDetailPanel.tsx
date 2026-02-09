@@ -1,15 +1,17 @@
- import { useState } from 'react';
- import { format, parseISO } from 'date-fns';
- import { X, Calendar as CalendarIcon, Flag, Clock, Edit2, Trash2, Save } from 'lucide-react';
- import { Button } from '@/components/ui/button';
- import { Input } from '@/components/ui/input';
- import { Textarea } from '@/components/ui/textarea';
- import { Badge } from '@/components/ui/badge';
- import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
- import { Calendar } from '@/components/ui/calendar';
- import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
- import { cn } from '@/lib/utils';
- import type { Task, TaskPriority, TaskStatus } from '@/hooks/useTasks';
+import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { X, Calendar as CalendarIcon, Flag, Clock, Edit2, Trash2, Save, UserCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import type { Task, TaskPriority, TaskStatus } from '@/hooks/useTasks';
+import { useStaff } from '@/hooks/useStaff';
  
  interface TaskDetailPanelProps {
    task: Task | null;
@@ -31,16 +33,17 @@
    done: { label: 'Done', className: 'bg-success/20 text-success' },
  };
  
- export function TaskDetailPanel({
-   task,
-   open,
-   onOpenChange,
-   onUpdate,
-   onDelete,
- }: TaskDetailPanelProps) {
-   const [isEditing, setIsEditing] = useState(false);
-   const [editTitle, setEditTitle] = useState('');
-   const [editDescription, setEditDescription] = useState('');
+export function TaskDetailPanel({
+  task,
+  open,
+  onOpenChange,
+  onUpdate,
+  onDelete,
+}: TaskDetailPanelProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const { staff } = useStaff();
  
    const handleStartEdit = () => {
      if (task) {
@@ -63,9 +66,20 @@
      onUpdate({ status });
    };
  
-   const handleDueDateChange = (date: Date | undefined) => {
-     onUpdate({ due_date: date ? format(date, 'yyyy-MM-dd') : null });
-   };
+  const handleDueDateChange = (date: Date | undefined) => {
+    onUpdate({ due_date: date ? format(date, 'yyyy-MM-dd') : null });
+  };
+
+  const handleAssigneeChange = (value: string) => {
+    if (value === 'unassigned') {
+      onUpdate({ assigned_to: null, assigned_to_name: null });
+    } else {
+      const member = staff.find(s => s.id === value);
+      if (member) {
+        onUpdate({ assigned_to: member.id, assigned_to_name: member.name });
+      }
+    }
+  };
  
    if (!task) return null;
  
@@ -192,24 +206,47 @@
              </Popover>
            </div>
  
-           {/* Description */}
-           <div>
-             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-               Description
-             </label>
-             {isEditing ? (
-               <Textarea
-                 value={editDescription}
-                 onChange={(e) => setEditDescription(e.target.value)}
-                 placeholder="Add a description..."
-                 className="mt-1.5 min-h-[120px]"
-               />
-             ) : (
-               <p className="mt-1.5 text-sm text-muted-foreground whitespace-pre-wrap">
-                 {task.description || 'No description'}
-               </p>
-             )}
-           </div>
+            {/* Assigned To */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Assigned To
+              </label>
+              <Select
+                value={task.assigned_to || 'unassigned'}
+                onValueChange={handleAssigneeChange}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {staff.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Description
+              </label>
+              {isEditing ? (
+                <Textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Add a description..."
+                  className="mt-1.5 min-h-[120px]"
+                />
+              ) : (
+                <p className="mt-1.5 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {task.description || 'No description'}
+                </p>
+              )}
+            </div>
  
            {/* Metadata */}
            <div className="pt-4 border-t space-y-2 text-xs text-muted-foreground">
