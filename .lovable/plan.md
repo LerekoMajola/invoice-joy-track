@@ -1,63 +1,40 @@
 
 
-# Persist Time Tracker Across Navigation
+# Align Legal Documents to Industry Standard
 
-## Problem
+## Changes
 
-The timer on the Time Tracking page is component-local state. When you navigate to another page, the component unmounts, the interval is cleared, and the timer state is lost.
+### 1. Case Documents Tab -- Add Document Type Selector
+Currently, documents uploaded from within a case are all hardcoded as `case_document`. This will be updated to include a document type dropdown matching the firm-wide library (contract, agreement, court paper, evidence, correspondence, pleading, affidavit, other). A type badge will also display on each document in the list.
 
-## Solution
+### 2. Legal Documents Page -- Add Type and Case Filters
+The firm-wide document library currently only has a text search. This will be enhanced with:
+- A **document type filter** dropdown to narrow by category
+- A **case filter** dropdown (All / Unlinked / specific case) so you can find orphaned documents or filter by matter
+- Search will also match against the document type and linked case name
 
-Create a **React context** that holds the timer state and persists the start timestamp to **localStorage**. This way:
+### 3. Legal Documents Page -- Add Delete Capability
+The firm-wide library currently has no delete button. A delete action will be added matching the pattern already used in the case-level tab.
 
-- The timer keeps "running" even when you leave the page (the start time is saved, elapsed time is recalculated on return)
-- A small floating indicator appears in the header/sidebar so you can see the timer is active from any page
-- Clicking the floating indicator navigates you back to Time Tracking to stop/log the entry
-
-## What Changes
+## Files
 
 | File | Action |
 |------|--------|
-| `src/contexts/TimerContext.tsx` | **New** -- React context providing `timerCaseId`, `timerStart`, `isRunning`, `startTimer()`, `stopTimer()`, and `elapsed` |
-| `src/pages/LegalTimeTracking.tsx` | **Modify** -- Replace local timer state with the shared context |
-| `src/components/layout/Header.tsx` | **Modify** -- Show a small running-timer badge when a timer is active |
-| `src/App.tsx` | **Modify** -- Wrap the app tree with `TimerProvider` |
-
-## How It Works
-
-1. **TimerContext** stores `timerStart` (timestamp) and `timerCaseId` in both React state and `localStorage`
-2. On mount, it reads from `localStorage` -- if a start time exists, it resumes the elapsed counter automatically
-3. The `elapsed` value updates every second via `setInterval` inside the context (always mounted)
-4. When the user stops the timer, it calculates total hours from `Date.now() - timerStart` and clears `localStorage`
-5. The Header shows a pulsing clock icon with elapsed time when a timer is running; clicking it navigates to `/legal-time-tracking`
+| `src/components/legal/CaseDocumentsTab.tsx` | Add document type selector to upload form, show type badge on each document |
+| `src/pages/LegalDocuments.tsx` | Add type filter, case filter (including "Unlinked" option), delete button, and enhanced search |
 
 ## Technical Details
 
-### TimerContext API
+### CaseDocumentsTab.tsx
+- Add `documentType` state defaulting to `'other'`
+- Add a `Select` dropdown in the upload form with the same `documentTypes` array used on the library page
+- Pass `documentType` instead of hardcoded `'case_document'` in the insert call
+- Show a small `Badge` with the document type on each document row
+- Reset `documentType` on cancel/submit
 
-```typescript
-interface TimerContextValue {
-  isRunning: boolean;
-  timerCaseId: string;
-  elapsed: number; // seconds
-  startTimer: (caseId: string) => void;
-  stopTimer: () => { caseId: string; hours: number } | null;
-  formatElapsed: () => string;
-}
-```
-
-### localStorage Keys
-
-- `legal_timer_start` -- timestamp (number)
-- `legal_timer_case_id` -- case UUID (string)
-
-### Header Indicator
-
-A small badge next to the bell icon showing something like "01:23:45" with a pulsing dot, only visible when a timer is active. Clicking it navigates to the time tracking page.
-
-### LegalTimeTracking Changes
-
-- Remove local `timerRunning`, `timerStart`, `timerCaseId`, `timerElapsed`, `timerRef` state
-- Import `useTimer()` from context
-- `startTimer` and `stopTimer` call context methods
-- `stopTimer` returns `{ caseId, hours }` which is used to pre-fill the "Log Time" form
+### LegalDocuments.tsx
+- Add `typeFilter` state (default `'all'`) and `caseFilter` state (default `'all'`)
+- Render two `Select` dropdowns below the search bar: one for document type, one for case (with "All", "Unlinked", and each case listed)
+- Update the `filtered` array to apply type and case filters in addition to text search
+- Include document type and case name in text search matching
+- Add a delete button to both mobile cards and desktop table rows, reusing the same storage + DB delete pattern from `CaseDocumentsTab`
