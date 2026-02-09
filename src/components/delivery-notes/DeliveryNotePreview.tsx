@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
 import { X, Download, Printer, Package, Pencil, Save, Plus, Trash2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -137,9 +138,10 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
     ...(invoiceNumber ? [{ label: 'Invoice Ref', value: invoiceNumber }] : []),
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+
         {/* Header Actions */}
         <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -301,6 +303,7 @@ export function DeliveryNotePreview({ deliveryNote, invoiceNumber, onClose, onUp
           </DocumentWrapper>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
