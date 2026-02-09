@@ -12,7 +12,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2, CheckCircle, Truck } from 'lucide-react';
+import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2, CheckCircle, Truck, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
+import { RecordPaymentDialog } from '@/components/invoices/RecordPaymentDialog';
+import { ReceiptPreview } from '@/components/invoices/ReceiptPreview';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
 import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +49,7 @@ function InvoiceCard({
   onView,
   onStatusChange,
   onGenerateDeliveryNote,
+  onViewReceipt,
   onDelete,
   hasDeliveryNote,
 }: {
@@ -54,6 +57,7 @@ function InvoiceCard({
   onView: () => void;
   onStatusChange: (status: Invoice['status']) => void;
   onGenerateDeliveryNote: () => void;
+  onViewReceipt: () => void;
   onDelete: () => void;
   hasDeliveryNote: boolean;
 }) {
@@ -105,6 +109,11 @@ function InvoiceCard({
                   )}
                 </>
               )}
+              {invoice.status === 'paid' && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewReceipt(); }}>
+                  <FileText className="h-4 w-4 mr-2" />View Receipt
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                 <Trash2 className="h-4 w-4 mr-2" />Delete
@@ -133,6 +142,9 @@ export default function Invoices() {
   const { deliveryNotes } = useDeliveryNotes();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
@@ -232,15 +244,33 @@ export default function Invoices() {
 
   const handleStatusChangeWithConfirm = async (invoiceId: string, newStatus: Invoice['status'], invoiceNumber: string) => {
     if (newStatus === 'paid') {
-      openConfirmDialog({
-        title: 'Mark as Paid',
-        description: `Mark ${invoiceNumber} as paid? This will update the invoice status.`,
-        confirmLabel: 'Mark as Paid',
-        action: async () => { await handleStatusChange(invoiceId, newStatus); },
-      });
+      const inv = invoices.find(i => i.id === invoiceId) || null;
+      setPaymentInvoice(inv);
+      setPaymentDialogOpen(true);
     } else {
       await handleStatusChange(invoiceId, newStatus);
     }
+  };
+
+  const handleRecordPayment = async (data: { paymentMethod: string; paymentDate: string; paymentReference: string }) => {
+    if (!paymentInvoice) return;
+    await updateInvoice(paymentInvoice.id, {
+      status: 'paid',
+      paymentMethod: data.paymentMethod,
+      paymentDate: data.paymentDate,
+      paymentReference: data.paymentReference || undefined,
+    });
+    toast.success(`Payment recorded for ${paymentInvoice.invoiceNumber}`);
+    if (selectedInvoice?.id === paymentInvoice.id) {
+      setSelectedInvoice({ ...selectedInvoice, status: 'paid', paymentMethod: data.paymentMethod, paymentDate: data.paymentDate, paymentReference: data.paymentReference });
+    }
+    setPaymentDialogOpen(false);
+    setPaymentInvoice(null);
+  };
+
+  const handleViewReceipt = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setReceiptOpen(true);
   };
 
   const handleGenerateDeliveryNoteWithConfirm = (invoice: Invoice) => {
@@ -331,6 +361,7 @@ export default function Invoices() {
                   onView={() => handleViewInvoice(invoice)}
                   onStatusChange={(status) => handleStatusChangeWithConfirm(invoice.id, status, invoice.invoiceNumber)}
                   onGenerateDeliveryNote={() => handleGenerateDeliveryNoteWithConfirm(invoice)}
+                  onViewReceipt={() => handleViewReceipt(invoice)}
                   onDelete={() => handleDeleteInvoice(invoice.id, invoice.invoiceNumber)}
                   hasDeliveryNote={invoicesWithDeliveryNotes.has(invoice.id)}
                 />
@@ -410,6 +441,11 @@ export default function Invoices() {
                                 <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
                               </DropdownMenuItem>
                             )}
+                            {invoice.status === 'paid' && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewReceipt(invoice); }}>
+                                <FileText className="h-4 w-4 mr-2" />View Receipt
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Download className="h-4 w-4 mr-2" />Download PDF
@@ -445,16 +481,51 @@ export default function Invoices() {
                 taxRate: selectedInvoice.taxRate,
                 status: selectedInvoice.status,
                 purchaseOrderNumber: selectedInvoice.purchaseOrderNumber || undefined,
+                paymentMethod: selectedInvoice.paymentMethod || undefined,
+                paymentDate: selectedInvoice.paymentDate || undefined,
+                paymentReference: selectedInvoice.paymentReference || undefined,
               }}
               hasDeliveryNote={invoicesWithDeliveryNotes.has(selectedInvoice.id)}
               onUpdate={handleUpdateInvoice}
-              onStatusChange={(newStatus) => handleStatusChange(selectedInvoice.id, newStatus)}
+              onStatusChange={(newStatus) => {
+                if (newStatus === 'paid') {
+                  handleStatusChangeWithConfirm(selectedInvoice.id, 'paid', selectedInvoice.invoiceNumber);
+                } else {
+                  handleStatusChange(selectedInvoice.id, newStatus);
+                }
+              }}
               onGenerateDeliveryNote={() => handleGenerateDeliveryNote(selectedInvoice)}
+              onViewReceipt={() => handleViewReceipt(selectedInvoice)}
               onClose={() => setPreviewOpen(false)}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
+        <DialogContent className="max-w-[240mm] max-h-[90vh] overflow-y-auto max-w-[calc(100%-1rem)] md:max-w-[240mm]">
+          {selectedInvoice && selectedInvoice.status === 'paid' && (
+            <ReceiptPreview
+              receipt={{
+                invoiceNumber: selectedInvoice.invoiceNumber,
+                clientName: selectedInvoice.clientName,
+                clientAddress: selectedInvoice.clientAddress || undefined,
+                total: selectedInvoice.total,
+                paymentMethod: selectedInvoice.paymentMethod || 'cash',
+                paymentDate: selectedInvoice.paymentDate || selectedInvoice.date,
+                paymentReference: selectedInvoice.paymentReference || undefined,
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <RecordPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        invoiceNumber={paymentInvoice?.invoiceNumber || ''}
+        onSubmit={handleRecordPayment}
+      />
 
       <ConfirmDialog
         open={confirmDialog?.open ?? false}

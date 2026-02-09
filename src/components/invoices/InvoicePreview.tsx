@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Download, Printer, Pencil, Save, Send, CheckCircle, Truck, Palette } from 'lucide-react';
+import { Download, Printer, Pencil, Save, Send, CheckCircle, Truck, Palette, FileText } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
 import html2pdf from 'html2pdf.js';
@@ -44,6 +44,9 @@ interface InvoiceData {
   taxRate: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
   purchaseOrderNumber?: string;
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentReference?: string;
 }
 
 interface InvoicePreviewProps {
@@ -52,10 +55,11 @@ interface InvoicePreviewProps {
   onUpdate?: (data: InvoiceData) => void;
   onStatusChange?: (status: InvoiceData['status']) => void;
   onGenerateDeliveryNote?: () => void;
+  onViewReceipt?: () => void;
   onClose?: () => void;
 }
 
-export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusChange, onGenerateDeliveryNote, onClose }: InvoicePreviewProps) {
+export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusChange, onGenerateDeliveryNote, onViewReceipt, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
@@ -160,6 +164,11 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
               <CheckCircle className="h-4 w-4" /> Mark as Paid
             </Button>
           )}
+          {onViewReceipt && invoiceData.status === 'paid' && (
+            <Button onClick={onViewReceipt} variant="outline" size="sm" className="gap-2">
+              <FileText className="h-4 w-4" /> View Receipt
+            </Button>
+          )}
           {onGenerateDeliveryNote && !hasDeliveryNote && (invoiceData.status === 'sent' || invoiceData.status === 'paid') && (
             <Button onClick={onGenerateDeliveryNote} variant="outline" size="sm" className="gap-2">
               <Truck className="h-4 w-4" /> Generate Delivery Note
@@ -257,6 +266,30 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
             <span>{formatMaluti(calculateTotal())}</span>
           </div>
         </TotalsSection>
+
+        {/* Payment Info (for paid invoices) */}
+        {invoiceData.status === 'paid' && invoiceData.paymentMethod && (
+          <DescriptionSection template={selectedTemplate} title="Payment Received">
+            <div className="flex flex-col gap-y-0.5 text-xs">
+              <div className="flex">
+                <span className="w-28" style={{ color: selectedTemplate.accentColor }}>Method:</span>
+                <span className="font-medium capitalize">{invoiceData.paymentMethod.replace('_', ' ')}</span>
+              </div>
+              {invoiceData.paymentDate && (
+                <div className="flex">
+                  <span className="w-28" style={{ color: selectedTemplate.accentColor }}>Date:</span>
+                  <span className="font-medium">{new Date(invoiceData.paymentDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {invoiceData.paymentReference && (
+                <div className="flex">
+                  <span className="w-28" style={{ color: selectedTemplate.accentColor }}>Reference:</span>
+                  <span className="font-medium">{invoiceData.paymentReference}</span>
+                </div>
+              )}
+            </div>
+          </DescriptionSection>
+        )}
 
         {/* Banking Details */}
         {hasBankingDetails && (
