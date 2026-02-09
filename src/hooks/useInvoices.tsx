@@ -26,6 +26,9 @@ export interface Invoice {
   taxRate: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue';
   purchaseOrderNumber: string | null;
+  paymentMethod: string | null;
+  paymentDate: string | null;
+  paymentReference: string | null;
   lineItems: LineItem[];
   createdAt: string;
   updatedAt: string;
@@ -42,6 +45,9 @@ interface InvoiceInsert {
   status?: 'draft' | 'sent' | 'paid' | 'overdue';
   taxRate?: number;
   purchaseOrderNumber?: string;
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentReference?: string;
   lineItems: Omit<LineItem, 'id'>[];
 }
 
@@ -119,6 +125,9 @@ export function useInvoices() {
           taxRate: Number(i.tax_rate),
           status: i.status as Invoice['status'],
           purchaseOrderNumber: i.purchase_order_number,
+          paymentMethod: i.payment_method,
+          paymentDate: i.payment_date,
+          paymentReference: i.payment_reference,
           lineItems: lineItemsByInvoice[i.id] || [],
           createdAt: i.created_at,
           updatedAt: i.updated_at,
@@ -181,6 +190,9 @@ export function useInvoices() {
           tax_rate: invoice.taxRate || 0,
           status: invoice.status || 'draft',
           purchase_order_number: invoice.purchaseOrderNumber || null,
+          payment_method: invoice.paymentMethod || null,
+          payment_date: invoice.paymentDate || null,
+          payment_reference: invoice.paymentReference || null,
         })
         .select()
         .single();
@@ -217,6 +229,9 @@ export function useInvoices() {
         taxRate: Number(invoiceData.tax_rate),
         status: invoiceData.status as Invoice['status'],
         purchaseOrderNumber: invoiceData.purchase_order_number,
+        paymentMethod: invoiceData.payment_method,
+        paymentDate: invoiceData.payment_date,
+        paymentReference: invoiceData.payment_reference,
         lineItems: (lineItemsData || []).map((item) => ({
           id: item.id,
           description: item.description,
@@ -262,6 +277,9 @@ export function useInvoices() {
           tax_rate: updates.taxRate,
           status: updates.status,
           purchase_order_number: updates.purchaseOrderNumber,
+          payment_method: updates.paymentMethod,
+          payment_date: updates.paymentDate,
+          payment_reference: updates.paymentReference,
         })
         .eq('id', id);
 

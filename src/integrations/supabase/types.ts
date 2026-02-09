@@ -820,6 +820,9 @@ export type Database = {
           due_date: string
           id: string
           invoice_number: string
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
           purchase_order_number: string | null
           source_quote_id: string | null
           status: string | null
@@ -839,6 +842,9 @@ export type Database = {
           due_date: string
           id?: string
           invoice_number: string
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
           purchase_order_number?: string | null
           source_quote_id?: string | null
           status?: string | null
@@ -858,6 +864,9 @@ export type Database = {
           due_date?: string
           id?: string
           invoice_number?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
           purchase_order_number?: string | null
           source_quote_id?: string | null
           status?: string | null
