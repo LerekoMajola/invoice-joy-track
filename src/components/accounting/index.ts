@@ -1,9 +1,14 @@
 export { OverviewTab } from './OverviewTab';
+export { TransactionsTab } from './TransactionsTab';
 export { ExpensesTab } from './ExpensesTab';
 export { BankAccountsTab } from './BankAccountsTab';
 export { ReportsTab } from './ReportsTab';
 export { AddExpenseDialog } from './AddExpenseDialog';
 export { AddBankAccountDialog } from './AddBankAccountDialog';
+export { AddTransactionDialog } from './AddTransactionDialog';
+export { AddCategoryDialog } from './AddCategoryDialog';
 export { ExpenseCategoryChart } from './ExpenseCategoryChart';
 export { CashFlowChart } from './CashFlowChart';
 export { IncomeStatement } from './IncomeStatement';
+export { BalanceSheet } from './BalanceSheet';
+export { VATReport } from './VATReport';

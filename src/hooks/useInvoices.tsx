@@ -243,9 +243,10 @@ export function useInvoices() {
     updates: Partial<Omit<InvoiceInsert, 'lineItems'>> & { lineItems?: LineItem[] }
   ): Promise<boolean> => {
     try {
+      const existingInvoice = invoices.find((i) => i.id === id);
       const total =
         updates.lineItems?.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) || 0;
-      const taxRate = updates.taxRate ?? invoices.find((i) => i.id === id)?.taxRate ?? 0;
+      const taxRate = updates.taxRate ?? existingInvoice?.taxRate ?? 0;
       const totalWithTax = total * (1 + taxRate / 100);
 
       const { error: invoiceError } = await supabase
@@ -281,6 +282,23 @@ export function useInvoices() {
         }));
 
         await supabase.from('invoice_line_items').insert(lineItemsToInsert);
+      }
+
+      // Auto-record to accounting ledger when invoice newly becomes paid
+      if (updates.status === 'paid' && existingInvoice?.status !== 'paid') {
+        const activeUser = await getActiveUser();
+        if (activeUser) {
+          const invoiceTotal = updates.lineItems ? totalWithTax : (existingInvoice?.total || 0);
+          await supabase.from('accounting_transactions').insert({
+            user_id: activeUser.id,
+            transaction_type: 'income',
+            reference_type: 'invoice',
+            reference_id: id,
+            date: updates.date || existingInvoice?.date || new Date().toISOString().split('T')[0],
+            amount: invoiceTotal,
+            description: `Invoice ${existingInvoice?.invoiceNumber || ''} — ${existingInvoice?.clientName || ''}`,
+          });
+        }
       }
 
       // Refetch to get updated data

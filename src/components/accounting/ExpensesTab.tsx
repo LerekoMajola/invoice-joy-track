@@ -28,11 +28,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Receipt, Trash2, Edit } from 'lucide-react';
+import { Plus, Search, Receipt, Trash2, Edit, FolderPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatMaluti } from '@/lib/currency';
 import { useExpenses, useExpenseCategories } from '@/hooks/useExpenses';
 import { AddExpenseDialog } from './AddExpenseDialog';
+import { AddCategoryDialog } from './AddCategoryDialog';
 
 export function ExpensesTab() {
   const { expenses, isLoading, deleteExpense, totalPaid, totalPending } = useExpenses();
@@ -43,6 +44,7 @@ export function ExpensesTab() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
   const filteredExpenses = expenses.filter((expense) => {
     const matchesSearch =
@@ -144,10 +146,16 @@ export function ExpensesTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Expense
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            New Category
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* Expenses Table */}
@@ -185,7 +193,29 @@ export function ExpensesTab() {
                     <TableCell>{format(new Date(expense.date), 'dd MMM yyyy')}</TableCell>
                     <TableCell className="font-medium">{expense.description}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{expense.category?.name || 'Uncategorized'}</Badge>
+                      <div className="flex items-center gap-2">
+                        {expense.category?.color && (
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{
+                              backgroundColor:
+                                expense.category.color === 'blue' ? '#3b82f6' :
+                                expense.category.color === 'purple' ? '#8b5cf6' :
+                                expense.category.color === 'green' ? '#22c55e' :
+                                expense.category.color === 'red' ? '#ef4444' :
+                                expense.category.color === 'yellow' ? '#eab308' :
+                                expense.category.color === 'pink' ? '#ec4899' :
+                                expense.category.color === 'indigo' ? '#6366f1' :
+                                expense.category.color === 'orange' ? '#f97316' :
+                                expense.category.color === 'amber' ? '#f59e0b' :
+                                expense.category.color === 'sky' ? '#0ea5e9' :
+                                expense.category.color === 'slate' ? '#64748b' :
+                                '#9ca3af'
+                            }}
+                          />
+                        )}
+                        <Badge variant="outline">{expense.category?.name || 'Uncategorized'}</Badge>
+                      </div>
                     </TableCell>
                     <TableCell>{expense.vendor_name || '-'}</TableCell>
                     <TableCell className="text-right font-medium">
@@ -244,6 +274,8 @@ export function ExpensesTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddCategoryDialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen} />
     </div>
   );
 }
