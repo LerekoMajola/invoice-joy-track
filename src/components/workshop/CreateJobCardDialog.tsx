@@ -18,8 +18,9 @@ import {
 } from '@/components/ui/select';
 import { useClients } from '@/hooks/useClients';
 import { useStaff } from '@/hooks/useStaff';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, Plus } from 'lucide-react';
 import { AddStaffDialog } from '@/components/staff/AddStaffDialog';
+import { AddClientDialog } from '@/components/crm/AddClientDialog';
 
 interface CreateJobCardDialogProps {
   open: boolean;
@@ -44,10 +45,11 @@ interface CreateJobCardDialogProps {
 }
 
 export function CreateJobCardDialog({ open, onOpenChange, onSubmit }: CreateJobCardDialogProps) {
-  const { clients } = useClients();
+  const { clients, refetch: refetchClients } = useClients();
   const { staff: staffMembers, refetch: refetchStaff } = useStaff();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const [clientId, setClientId] = useState('');
   const [clientName, setClientName] = useState('');
@@ -122,10 +124,26 @@ export function CreateJobCardDialog({ open, onOpenChange, onSubmit }: CreateJobC
 
   const handleAddStaffClose = (isOpen: boolean) => {
     setShowAddStaff(isOpen);
+    if (!isOpen) refetchStaff();
+  };
+
+  const [pendingAutoSelect, setPendingAutoSelect] = useState(false);
+
+  const handleAddClientClose = (isOpen: boolean) => {
+    setShowAddClient(isOpen);
     if (!isOpen) {
-      refetchStaff();
+      setPendingAutoSelect(true);
+      refetchClients();
     }
   };
+
+  // Auto-select newest client after AddClientDialog closes
+  if (pendingAutoSelect && clients.length > 0) {
+    const newest = clients[0]; // clients are ordered by created_at desc
+    setClientId(newest.id);
+    setClientName(newest.company);
+    setPendingAutoSelect(false);
+  }
 
   return (
     <>
@@ -167,6 +185,14 @@ export function CreateJobCardDialog({ open, onOpenChange, onSubmit }: CreateJobC
                   className="mt-1"
                 />
               )}
+              <button
+                type="button"
+                onClick={() => setShowAddClient(true)}
+                className="flex items-center gap-1 text-xs text-primary hover:underline mt-1.5"
+              >
+                <Plus className="h-3 w-3" />
+                Add new client
+              </button>
             </div>
 
             {/* Vehicle Details */}
@@ -296,6 +322,7 @@ export function CreateJobCardDialog({ open, onOpenChange, onSubmit }: CreateJobC
       </Dialog>
 
       <AddStaffDialog open={showAddStaff} onOpenChange={handleAddStaffClose} />
+      <AddClientDialog open={showAddClient} onOpenChange={handleAddClientClose} />
     </>
   );
 }
