@@ -66,10 +66,13 @@ export default function LegalCases() {
     judgeName: '', assignedLawyer: '', filingDate: '', description: '',
   });
 
+  const clientMap = Object.fromEntries(clients.map(cl => [cl.id, cl.company]));
+  const getClientName = (clientId: string | null) => clientId ? clientMap[clientId] || '-' : '-';
+
   const filtered = cases.filter((c) => {
     const q = searchQuery.toLowerCase();
     return c.caseNumber.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) ||
-      (c.assignedLawyer || '').toLowerCase().includes(q);
+      (c.assignedLawyer || '').toLowerCase().includes(q) || getClientName(c.clientId).toLowerCase().includes(q);
   });
 
   const handleSubmit = async () => {
@@ -144,6 +147,7 @@ export default function LegalCases() {
                   </div>
                   <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="capitalize">{c.caseType}</span>
+                    {getClientName(c.clientId) !== '-' && <span>• {getClientName(c.clientId)}</span>}
                     {c.assignedLawyer && <span>• {c.assignedLawyer}</span>}
                     {c.nextHearingDate && (
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(c.nextHearingDate)}</span>
@@ -160,6 +164,7 @@ export default function LegalCases() {
                     <TableHead className="font-semibold">Case #</TableHead>
                     <TableHead className="font-semibold">Title</TableHead>
                     <TableHead className="font-semibold">Type</TableHead>
+                    <TableHead className="font-semibold">Client</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Priority</TableHead>
                     <TableHead className="font-semibold">Lawyer</TableHead>
@@ -172,6 +177,7 @@ export default function LegalCases() {
                       <TableCell className="font-medium">{c.caseNumber}</TableCell>
                       <TableCell>{c.title}</TableCell>
                       <TableCell className="capitalize text-muted-foreground">{c.caseType}</TableCell>
+                      <TableCell className="text-muted-foreground">{getClientName(c.clientId)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn('capitalize', statusStyles[c.status])}>
                           {statusLabels[c.status] || c.status}
