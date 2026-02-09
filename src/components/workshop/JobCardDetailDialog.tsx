@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,17 +24,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import {
   Car, Wrench, Plus, Trash2, Save, FileText, Receipt,
-  Eye, Stethoscope, Play, Pause, CheckCircle, Package, MoreHorizontal, PlusCircle
+  Eye, Stethoscope, Play, Pause, CheckCircle, Package, MoreHorizontal, PlusCircle, MessageCircle
 } from 'lucide-react';
 import type { JobCard, JobCardLineItem, JobCardStatus } from '@/hooks/useJobCards';
 import { JobCardPreview } from './JobCardPreview';
 import { JobCardProgressStepper } from './JobCardProgressStepper';
 import { QuickAddCost } from './QuickAddCost';
-import { getNextAction } from './jobCardFlowUtils';
+import { getNextAction, getWhatsAppMessage } from './jobCardFlowUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const statusConfig: Record<JobCardStatus, { label: string; color: string }> = {
   received: { label: 'Received', color: 'bg-muted text-muted-foreground' },
@@ -89,6 +96,13 @@ export function JobCardDetailDialog({
   const [recommendedWork, setRecommendedWork] = useState('');
   const [isSavingDiagnosis, setIsSavingDiagnosis] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [clientPhone, setClientPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!jobCard?.clientId) { setClientPhone(null); return; }
+    supabase.from('clients').select('phone').eq('id', jobCard.clientId).single()
+      .then(({ data }) => setClientPhone(data?.phone ?? null));
+  }, [jobCard?.clientId]);
 
   // Line item form
   const [newItemType, setNewItemType] = useState<'parts' | 'labour'>('parts');
@@ -414,6 +428,33 @@ export function JobCardDetailDialog({
             <span className="text-[10px] text-muted-foreground leading-tight">Total</span>
             <span className="text-sm font-bold">{formatMaluti(total)}</span>
           </div>
+
+          {/* WhatsApp Alert */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                    disabled={!clientPhone}
+                    onClick={() => {
+                      if (!clientPhone) return;
+                      const clean = clientPhone.replace(/\D/g, '');
+                      const msg = getWhatsAppMessage(jobCard.status, jobCard.clientName, jobCard.vehicleReg, jobCard.jobCardNumber);
+                      window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {clientPhone ? 'Send WhatsApp update' : 'No phone number on file'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           {/* Quick Add Cost Toggle */}
           <Button
