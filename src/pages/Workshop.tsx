@@ -142,6 +142,12 @@ export default function Workshop() {
       clientId: jc.clientId,
       clientName: jc.clientName,
       description: [jc.diagnosis, jc.recommendedWork].filter(Boolean).join('\n\n'),
+      lineItems: jc.lineItems.map((item) => ({
+        description: `${item.itemType === 'labour' ? '[Labour] ' : ''}${item.description}${item.partNumber ? ` (Part #${item.partNumber})` : ''}`,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        costPrice: 0,
+      })),
     };
     sessionStorage.setItem('newQuoteFromJobCard', JSON.stringify(quoteData));
     toast.success('Creating quote from job card');
