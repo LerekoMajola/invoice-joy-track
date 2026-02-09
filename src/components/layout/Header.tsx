@@ -1,4 +1,4 @@
- import { Search, Plus, Settings, Menu, Building2 } from 'lucide-react';
+import { Search, Plus, Settings, Menu, Building2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Skeleton } from '@/components/ui/skeleton';
  import { useScrollDirection } from '@/hooks/useScrollDirection';
  import { cn } from '@/lib/utils';
+import { useTimer } from '@/contexts/TimerContext';
 
 interface HeaderProps {
   title: string;
@@ -26,9 +27,10 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const isMobile = useIsMobile();
   const { profile, isLoading } = useCompanyProfile();
    const { scrollDirection, isAtTop } = useScrollDirection();
+   const { isRunning, formatElapsed } = useTimer();
  
-   // Hide header on scroll down (mobile only)
-   const isHidden = isMobile && scrollDirection === 'down' && !isAtTop;
+    // Hide header on scroll down (mobile only)
+    const isHidden = isMobile && scrollDirection === 'down' && !isAtTop;
 
   return (
      <header 
@@ -67,8 +69,23 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           />
         </div>
 
+         {/* Running Timer Indicator */}
+         {isRunning && (
+           <button
+             onClick={() => navigate('/legal-time-tracking')}
+             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer border border-primary/20"
+           >
+             <span className="relative flex h-2 w-2">
+               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+             </span>
+             <Clock className="h-3.5 w-3.5 text-primary" />
+             <span className="text-xs font-mono font-semibold text-primary">{formatElapsed()}</span>
+           </button>
+         )}
+
          {/* Notifications */}
-         <NotificationPanel />
+          <NotificationPanel />
 
         {/* Settings - Desktop only */}
         <Tooltip>

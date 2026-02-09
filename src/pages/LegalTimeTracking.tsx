@@ -27,7 +27,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { TimeEntryEditDialog } from '@/components/legal/TimeEntryEditDialog';
 import { GenerateInvoiceDialog } from '@/components/legal/GenerateInvoiceDialog';
-import { useEffect, useRef, useCallback } from 'react';
+import { useTimer } from '@/contexts/TimerContext';
 
 const activityTypes = ['consultation', 'research', 'drafting', 'court_appearance', 'negotiation', 'review', 'meeting', 'travel', 'other'];
 
@@ -35,53 +35,30 @@ export default function LegalTimeTracking() {
   const { user } = useAuth();
   const { entries, isLoading, refetch } = useLegalTimeEntries();
   const { cases } = useLegalCases();
+  const { isRunning, timerCaseId, formatElapsed, startTimer, stopTimer } = useTimer();
   const [addOpen, setAddOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<LegalTimeEntry | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [filterCase, setFilterCase] = useState('all');
   const [filterBillable, setFilterBillable] = useState('all');
-
-  // Running timer
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerCaseId, setTimerCaseId] = useState('');
-  const [timerStart, setTimerStart] = useState<number | null>(null);
-  const [timerElapsed, setTimerElapsed] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState('');
 
   const [form, setForm] = useState({
     caseId: '', date: new Date().toISOString().split('T')[0], hours: '', hourlyRate: '',
     description: '', activityType: 'consultation', isBillable: true,
   });
 
-  useEffect(() => {
-    if (timerRunning && timerStart) {
-      timerRef.current = setInterval(() => {
-        setTimerElapsed(Math.floor((Date.now() - timerStart) / 1000));
-      }, 1000);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [timerRunning, timerStart]);
-
-  const startTimer = () => {
-    if (!timerCaseId) { toast.error('Select a case first'); return; }
-    setTimerStart(Date.now());
-    setTimerElapsed(0);
-    setTimerRunning(true);
+  const handleStartTimer = () => {
+    if (!selectedCaseId) { toast.error('Select a case first'); return; }
+    startTimer(selectedCaseId);
   };
 
-  const stopTimer = useCallback(() => {
-    if (!timerStart) return;
-    const hours = (Date.now() - timerStart) / 3600000;
-    setTimerRunning(false);
-    setTimerStart(null);
-    setForm(f => ({ ...f, caseId: timerCaseId, hours: hours.toFixed(2) }));
+  const handleStopTimer = () => {
+    const result = stopTimer();
+    if (!result) return;
+    setForm(f => ({ ...f, caseId: result.caseId, hours: result.hours.toFixed(2) }));
     setAddOpen(true);
-  }, [timerStart, timerCaseId]);
-
-  const formatTimer = (secs: number) => {
-    const h = Math.floor(secs / 3600); const m = Math.floor((secs % 3600) / 60); const s = secs % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const filteredEntries = useMemo(() => {
@@ -135,17 +112,20 @@ export default function LegalTimeTracking() {
       <div className="p-4 md:p-6">
         {/* Timer */}
         <Card className="p-4 mb-6 flex items-center gap-4 flex-wrap">
-          <Select value={timerCaseId} onValueChange={setTimerCaseId}>
-            <SelectTrigger className="w-[250px]"><SelectValue placeholder="Select case for timer" /></SelectTrigger>
-            <SelectContent>{cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>)}</SelectContent>
-          </Select>
-          {timerRunning ? (
+          {isRunning ? (
             <>
-              <span className="text-2xl font-mono font-bold text-primary">{formatTimer(timerElapsed)}</span>
-              <Button variant="destructive" size="sm" onClick={stopTimer}><Square className="h-4 w-4 mr-1" />Stop</Button>
+              <span className="text-sm text-muted-foreground">{caseMap[timerCaseId] || 'Timer running'}</span>
+              <span className="text-2xl font-mono font-bold text-primary">{formatElapsed()}</span>
+              <Button variant="destructive" size="sm" onClick={handleStopTimer}><Square className="h-4 w-4 mr-1" />Stop</Button>
             </>
           ) : (
-            <Button size="sm" onClick={startTimer} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Play className="h-4 w-4 mr-1" />Start Timer</Button>
+            <>
+              <Select value={selectedCaseId} onValueChange={setSelectedCaseId}>
+                <SelectTrigger className="w-[250px]"><SelectValue placeholder="Select case for timer" /></SelectTrigger>
+                <SelectContent>{cases.map(c => <SelectItem key={c.id} value={c.id}>{c.caseNumber} - {c.title}</SelectItem>)}</SelectContent>
+              </Select>
+              <Button size="sm" onClick={handleStartTimer} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Play className="h-4 w-4 mr-1" />Start Timer</Button>
+            </>
           )}
           <Button variant="outline" size="sm" onClick={() => setInvoiceOpen(true)} className="ml-auto">
             <Receipt className="h-4 w-4 mr-1" />Generate Invoice
