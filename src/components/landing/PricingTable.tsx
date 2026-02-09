@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus, Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 
@@ -155,6 +155,54 @@ const systems: SystemTab[] = [
           { name: 'Task Management', included: true },
           { name: 'Staff & HR', included: true },
           { name: 'Accounting', included: true },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'legal',
+    label: 'Legal',
+    icon: <Scale className="h-4 w-4" />,
+    gradient: 'from-emerald-500 to-teal-500',
+    subtitle: 'For law firms & practitioners',
+    tiers: [
+      {
+        name: 'Starter', price: 500, target: 'Solo practitioners',
+        features: [
+          { name: 'Cases & Matters', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Billing & Time Tracking', included: false },
+          { name: 'Accounting', included: false },
+          { name: 'Document Management', included: false },
+          { name: 'Court Calendar', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 700, target: 'Growing law firms', popular: true,
+        features: [
+          { name: 'Cases & Matters', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Billing & Time Tracking', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Document Management', included: true },
+          { name: 'Court Calendar', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 950, target: 'Established firms',
+        features: [
+          { name: 'Cases & Matters', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Task Management', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Billing & Time Tracking', included: true },
+          { name: 'Accounting', included: true },
+          { name: 'Document Management', included: true },
+          { name: 'Court Calendar', included: true },
         ],
       },
     ],

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Edit } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Scale, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
@@ -35,7 +35,7 @@ export default function Auth() {
   // Pre-select system from URL query param (e.g. /auth?system=business)
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
-    if (systemParam && ['business', 'workshop', 'school'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'workshop', 'school', 'legal'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep('package');
       setIsLogin(false);
@@ -268,6 +268,7 @@ export default function Auth() {
         business: { label: 'Business Management', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
         workshop: { label: 'Workshop Management', icon: <Wrench className="h-6 w-6" />, gradient: 'from-coral to-warning' },
         school: { label: 'School Management', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-info to-cyan' },
+        legal: { label: 'Legal Practice', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
 
@@ -279,6 +280,11 @@ export default function Auth() {
         school_admin: 'School Admin',
         students: 'Student Management',
         school_fees: 'School Fees',
+        legal_cases: 'Cases & Matters',
+        legal_billing: 'Billing & Time Tracking',
+        legal_documents: 'Document Management',
+        legal_calendar: 'Court Calendar',
+        core_crm: 'CRM & Clients',
       };
 
       return (

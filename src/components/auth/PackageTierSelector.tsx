@@ -161,10 +161,63 @@ const schoolTiers: PackageTier[] = [
   },
 ];
 
+const legalTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 500,
+    target: 'Solo practitioners',
+    moduleKeys: ['legal_cases', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Cases & Matters', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Billing & Time Tracking', included: false },
+      { name: 'Accounting', included: false },
+      { name: 'Document Management', included: false },
+      { name: 'Court Calendar', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 700,
+    target: 'Growing law firms',
+    popular: true,
+    moduleKeys: ['legal_cases', 'legal_billing', 'legal_documents', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'Cases & Matters', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Billing & Time Tracking', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Document Management', included: true },
+      { name: 'Court Calendar', included: false },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 950,
+    target: 'Established firms',
+    moduleKeys: ['legal_cases', 'legal_billing', 'legal_documents', 'legal_calendar', 'invoices', 'tasks', 'staff', 'accounting', 'core_crm'],
+    features: [
+      { name: 'Cases & Matters', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Billing & Time Tracking', included: true },
+      { name: 'Accounting', included: true },
+      { name: 'Document Management', included: true },
+      { name: 'Court Calendar', included: true },
+    ],
+  },
+];
+
 const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
   business: { label: 'Business Management', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
   workshop: { label: 'Workshop Management', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
   school: { label: 'School Management', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
+  legal: { label: 'Legal Practice', subtitle: 'For law firms & practitioners', gradient: 'from-emerald-500 to-teal-500', tiers: legalTiers },
 };
 
 interface PackageTierSelectorProps {

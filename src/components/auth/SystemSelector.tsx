@@ -1,8 +1,8 @@
-import { Briefcase, Wrench, GraduationCap, ArrowRight } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'workshop' | 'school';
+export type SystemType = 'business' | 'workshop' | 'school' | 'legal';
 
 interface SystemOption {
   type: SystemType;
@@ -42,6 +42,15 @@ const systems: SystemOption[] = [
     gradient: 'from-info to-cyan',
     iconBg: 'bg-info/10 text-info',
   },
+  {
+    type: 'legal',
+    label: 'Legal',
+    description: 'Case management, billable hours, court calendar & document management for law firms',
+    startingPrice: 'M500',
+    icon: Scale,
+    gradient: 'from-emerald-500 to-teal-500',
+    iconBg: 'bg-emerald-500/10 text-emerald-600',
+  },
 ];
 
 interface SystemSelectorProps {
@@ -63,7 +72,7 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {systems.map((system) => {
           const Icon = system.icon;
           return (

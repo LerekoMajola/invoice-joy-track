@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap, Scale } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMaluti } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -71,6 +71,13 @@ const systemGroups: SystemGroup[] = [
     icon: GraduationCap,
     gradient: 'from-info to-cyan',
     borderColor: 'border-info/30',
+  },
+  {
+    id: 'legal',
+    label: 'Legal Practice',
+    icon: Scale,
+    gradient: 'from-emerald-500 to-teal-500',
+    borderColor: 'border-emerald-500/30',
   },
 ];
 

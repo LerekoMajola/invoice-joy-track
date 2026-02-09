@@ -19,6 +19,10 @@ import {
   Wrench,
   TrendingUp,
   Kanban,
+  Scale,
+  Timer,
+  FolderOpen,
+  CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +43,11 @@ const navigation = [
   { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
   // Workshop
   { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['workshop'] },
+  // Legal
+  { name: 'Cases', href: '/legal-cases', icon: Scale, moduleKey: 'legal_cases', systemTypes: ['legal'] },
+  { name: 'Time Tracking', href: '/legal-time-tracking', icon: Timer, moduleKey: 'legal_billing', systemTypes: ['legal'] },
+  { name: 'Legal Docs', href: '/legal-documents', icon: FolderOpen, moduleKey: 'legal_documents', systemTypes: ['legal'] },
+  { name: 'Court Calendar', href: '/legal-calendar', icon: CalendarDays, moduleKey: 'legal_calendar', systemTypes: ['legal'] },
   // School
   { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['school'] },
   { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['school'] },

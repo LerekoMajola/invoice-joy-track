@@ -5,12 +5,13 @@ import { useAdminStats, SystemBreakdown } from '@/hooks/useAdminStats';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale } from 'lucide-react';
 
 const SYSTEM_CONFIG: Record<string, { label: string; icon: typeof Briefcase; color: string }> = {
   business: { label: 'Business', icon: Briefcase, color: 'text-primary' },
   workshop: { label: 'Workshop', icon: Wrench, color: 'text-warning' },
   school: { label: 'School', icon: GraduationCap, color: 'text-info' },
+  legal: { label: 'Legal', icon: Scale, color: 'text-emerald-600' },
 };
 
 function SystemBreakdownCards({ breakdown }: { breakdown: SystemBreakdown[] }) {
@@ -51,7 +52,7 @@ function SystemBreakdownCards({ breakdown }: { breakdown: SystemBreakdown[] }) {
           );
         })}
         {/* Show empty state for missing system types */}
-        {['business', 'workshop', 'school']
+        {['business', 'workshop', 'school', 'legal']
           .filter(st => !breakdown.some(b => b.system_type === st))
           .map(st => {
             const config = SYSTEM_CONFIG[st];
