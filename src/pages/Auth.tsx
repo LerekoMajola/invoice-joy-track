@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, GraduationCap, Edit } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
@@ -14,16 +14,17 @@ import { TrustBadges } from '@/components/auth/TrustBadges';
 import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
 import { ModuleSelector } from '@/components/auth/ModuleSelector';
 import { PackageTierSelector } from '@/components/auth/PackageTierSelector';
+import { SystemSelector, type SystemType } from '@/components/auth/SystemSelector';
 
-type SignupStep = 'package' | 'review' | 'credentials' | 'custom-modules';
+type SignupStep = 'system' | 'package' | 'review' | 'credentials' | 'custom-modules';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [signupStep, setSignupStep] = useState<SignupStep>('package');
-  const [selectedSystem] = useState('school');
+  const [signupStep, setSignupStep] = useState<SignupStep>('system');
+  const [selectedSystem, setSelectedSystem] = useState<SystemType | null>(null);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [selectedModuleKeys, setSelectedModuleKeys] = useState<string[]>([]);
   const [savingModules, setSavingModules] = useState(false);
@@ -218,13 +219,33 @@ export default function Auth() {
 
   // Signup steps (full-screen)
   if (!isLogin) {
-    if (signupStep === 'package') {
+    if (signupStep === 'system') {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+          <SystemSelector onSelect={(system) => {
+            setSelectedSystem(system);
+            setSignupStep('package');
+          }} />
+          <div className="fixed bottom-6 left-0 right-0 text-center">
+            <button
+              type="button"
+              onClick={() => setIsLogin(true)}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Already have an account? Sign in
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (signupStep === 'package' && selectedSystem) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
           <PackageTierSelector
             systemType={selectedSystem}
             onSelect={handleTierSelect}
-            onBack={() => setIsLogin(true)}
+            onBack={() => setSignupStep('system')}
             onCustomBuild={handleCustomBuild}
           />
         </div>
@@ -232,9 +253,12 @@ export default function Auth() {
     }
 
     if (signupStep === 'review' && selectedTier) {
-      const systemLabel = 'School Management';
-      const systemIcon = <GraduationCap className="h-6 w-6" />;
-      const systemGradient = 'from-info to-cyan';
+      const SYSTEM_META: Record<SystemType, { label: string; icon: React.ReactNode; gradient: string }> = {
+        business: { label: 'Business Management', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
+        workshop: { label: 'Workshop Management', icon: <Wrench className="h-6 w-6" />, gradient: 'from-coral to-warning' },
+        school: { label: 'School Management', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-info to-cyan' },
+      };
+      const meta = SYSTEM_META[selectedSystem || 'business'];
 
       const moduleNameMap: Record<string, string> = {
         invoices: 'Invoices',
@@ -266,12 +290,12 @@ export default function Auth() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-white',
-                  systemGradient
+                  meta.gradient
                 )}>
-                  {systemIcon}
+                  {meta.icon}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-foreground">{systemLabel}</p>
+                  <p className="font-semibold text-foreground">{meta.label}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge variant="secondary" className="text-xs">
                       {selectedTier}
@@ -368,7 +392,7 @@ export default function Auth() {
                 </h1>
                 <p className="text-muted-foreground mt-2">
                   {selectedTier
-                    ? `School · ${selectedTier} package`
+                    ? `${selectedSystem ? selectedSystem.charAt(0).toUpperCase() + selectedSystem.slice(1) : ''} · ${selectedTier} package`
                     : 'Custom package'}
                 </p>
               </div>
@@ -456,15 +480,13 @@ export default function Auth() {
       );
     }
 
-    // Fallback: redirect to package selection
+    // Fallback: redirect to system selection
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
-        <PackageTierSelector
-          systemType={selectedSystem}
-          onSelect={handleTierSelect}
-          onBack={() => setIsLogin(true)}
-          onCustomBuild={handleCustomBuild}
-        />
+        <SystemSelector onSelect={(system) => {
+          setSelectedSystem(system);
+          setSignupStep('package');
+        }} />
       </div>
     );
   }
