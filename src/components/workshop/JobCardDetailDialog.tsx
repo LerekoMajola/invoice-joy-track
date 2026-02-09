@@ -28,10 +28,13 @@ import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import {
   Car, Wrench, Plus, Trash2, Save, FileText, Receipt,
-  ChevronDown, Eye, Stethoscope, Play, Pause, CheckCircle, Package
+  Eye, Stethoscope, Play, Pause, CheckCircle, Package, MoreHorizontal, PlusCircle
 } from 'lucide-react';
 import type { JobCard, JobCardLineItem, JobCardStatus } from '@/hooks/useJobCards';
 import { JobCardPreview } from './JobCardPreview';
+import { JobCardProgressStepper } from './JobCardProgressStepper';
+import { QuickAddCost } from './QuickAddCost';
+import { getNextAction } from './jobCardFlowUtils';
 
 const statusConfig: Record<JobCardStatus, { label: string; color: string }> = {
   received: { label: 'Received', color: 'bg-muted text-muted-foreground' },
@@ -47,14 +50,15 @@ const statusConfig: Record<JobCardStatus, { label: string; color: string }> = {
   collected: { label: 'Collected', color: 'bg-muted text-muted-foreground' },
 };
 
-const statusActions: { label: string; status: JobCardStatus; icon: any }[] = [
-  { label: 'Start Diagnosis', status: 'diagnosing', icon: Stethoscope },
-  { label: 'Mark Diagnosed', status: 'diagnosed', icon: CheckCircle },
-  { label: 'Start Work', status: 'in_progress', icon: Play },
+const allStatuses: { label: string; status: JobCardStatus; icon: any }[] = [
+  { label: 'Received', status: 'received', icon: Car },
+  { label: 'Diagnosing', status: 'diagnosing', icon: Stethoscope },
+  { label: 'Diagnosed', status: 'diagnosed', icon: CheckCircle },
+  { label: 'In Progress', status: 'in_progress', icon: Play },
   { label: 'Awaiting Parts', status: 'awaiting_parts', icon: Pause },
   { label: 'Quality Check', status: 'quality_check', icon: Eye },
-  { label: 'Mark Completed', status: 'completed', icon: CheckCircle },
-  { label: 'Mark Collected', status: 'collected', icon: Package },
+  { label: 'Completed', status: 'completed', icon: CheckCircle },
+  { label: 'Collected', status: 'collected', icon: Package },
 ];
 
 interface JobCardDetailDialogProps {
@@ -84,6 +88,7 @@ export function JobCardDetailDialog({
   const [diagnosis, setDiagnosis] = useState('');
   const [recommendedWork, setRecommendedWork] = useState('');
   const [isSavingDiagnosis, setIsSavingDiagnosis] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   // Line item form
   const [newItemType, setNewItemType] = useState<'parts' | 'labour'>('parts');
@@ -95,6 +100,15 @@ export function JobCardDetailDialog({
   if (!jobCard) return null;
 
   const status = statusConfig[jobCard.status] || statusConfig.received;
+  const partsItems = jobCard.lineItems.filter((i) => i.itemType === 'parts');
+  const labourItems = jobCard.lineItems.filter((i) => i.itemType === 'labour');
+  const partsSubtotal = partsItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const labourSubtotal = labourItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const subtotal = partsSubtotal + labourSubtotal;
+  const tax = subtotal * (jobCard.taxRate / 100);
+  const total = subtotal + tax;
+
+  const nextAction = getNextAction(jobCard.status, jobCard.lineItems.length > 0);
 
   const handleSaveDiagnosis = async () => {
     setIsSavingDiagnosis(true);
@@ -120,15 +134,16 @@ export function JobCardDetailDialog({
     setNewItemPrice('');
   };
 
-  const partsItems = jobCard.lineItems.filter((i) => i.itemType === 'parts');
-  const labourItems = jobCard.lineItems.filter((i) => i.itemType === 'labour');
-  const partsSubtotal = partsItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const labourSubtotal = labourItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotal = partsSubtotal + labourSubtotal;
-  const tax = subtotal * (jobCard.taxRate / 100);
-  const total = subtotal + tax;
-
-  const canInvoice = ['completed', 'quality_check'].includes(jobCard.status) && jobCard.lineItems.length > 0;
+  const handleNextAction = () => {
+    if (!nextAction) return;
+    if (nextAction.isSpecial === 'quote') {
+      onGenerateQuote(jobCard);
+    } else if (nextAction.isSpecial === 'invoice') {
+      onGenerateInvoice(jobCard);
+    } else if (nextAction.nextStatus) {
+      onUpdateStatus(jobCard.id, nextAction.nextStatus);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,6 +159,11 @@ export function JobCardDetailDialog({
               <Badge className={cn('capitalize text-xs', status.color)}>{status.label}</Badge>
             </div>
           </DialogHeader>
+
+          {/* Progress Stepper */}
+          <div className="mb-2">
+            <JobCardProgressStepper status={jobCard.status} />
+          </div>
 
           {/* Tab Nav */}
           <div className="flex gap-1">
@@ -255,18 +275,10 @@ export function JobCardDetailDialog({
                   rows={3}
                 />
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSaveDiagnosis} disabled={isSavingDiagnosis} size="sm">
-                  <Save className="h-4 w-4 mr-1" />
-                  Save
-                </Button>
-                {(jobCard.status === 'diagnosed' || jobCard.diagnosis) && (
-                  <Button variant="outline" size="sm" onClick={() => onGenerateQuote(jobCard)}>
-                    <FileText className="h-4 w-4 mr-1" />
-                    Generate Quote
-                  </Button>
-                )}
-              </div>
+              <Button onClick={handleSaveDiagnosis} disabled={isSavingDiagnosis} size="sm">
+                <Save className="h-4 w-4 mr-1" />
+                Save
+              </Button>
             </div>
           )}
 
@@ -305,23 +317,8 @@ export function JobCardDetailDialog({
                   className="h-9"
                 />
                 <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    type="number"
-                    value={newItemQty}
-                    onChange={(e) => setNewItemQty(e.target.value)}
-                    placeholder="Qty"
-                    min="1"
-                    className="h-9"
-                  />
-                  <Input
-                    type="number"
-                    value={newItemPrice}
-                    onChange={(e) => setNewItemPrice(e.target.value)}
-                    placeholder="Unit price"
-                    min="0"
-                    step="0.01"
-                    className="h-9"
-                  />
+                  <Input type="number" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)} placeholder="Qty" min="1" className="h-9" />
+                  <Input type="number" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} placeholder="Unit price" min="0" step="0.01" className="h-9" />
                   <Button onClick={handleAddLineItem} disabled={!newItemDesc.trim() || !newItemPrice} size="sm" className="h-9">
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add
                   </Button>
@@ -348,9 +345,7 @@ export function JobCardDetailDialog({
                         </div>
                       </div>
                     ))}
-                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">
-                      Parts: {formatMaluti(partsSubtotal)}
-                    </div>
+                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">Parts: {formatMaluti(partsSubtotal)}</div>
                   </div>
                 </div>
               )}
@@ -374,9 +369,7 @@ export function JobCardDetailDialog({
                         </div>
                       </div>
                     ))}
-                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">
-                      Labour: {formatMaluti(labourSubtotal)}
-                    </div>
+                    <div className="text-right text-xs font-medium text-muted-foreground pr-8">Labour: {formatMaluti(labourSubtotal)}</div>
                   </div>
                 </div>
               )}
@@ -407,16 +400,40 @@ export function JobCardDetailDialog({
           )}
         </div>
 
+        {/* Quick Add Cost Panel */}
+        <QuickAddCost
+          open={showQuickAdd}
+          onOpenChange={setShowQuickAdd}
+          onAddItem={(item) => onAddLineItem(jobCard.id, item)}
+        />
+
         {/* Sticky Bottom Action Bar */}
         <div className="shrink-0 border-t border-border px-4 py-3 flex items-center gap-2 bg-background safe-area-bottom">
+          {/* Running Total */}
+          <div className="flex flex-col mr-auto">
+            <span className="text-[10px] text-muted-foreground leading-tight">Total</span>
+            <span className="text-sm font-bold">{formatMaluti(total)}</span>
+          </div>
+
+          {/* Quick Add Cost Toggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => setShowQuickAdd(!showQuickAdd)}
+          >
+            <PlusCircle className="h-4 w-4" />
+          </Button>
+
+          {/* More Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                Update Status <ChevronDown className="h-3 w-3 ml-1" />
+              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {statusActions.map((action) => (
+            <DropdownMenuContent align="end">
+              {allStatuses.map((action) => (
                 <DropdownMenuItem
                   key={action.status}
                   onClick={() => onUpdateStatus(jobCard.id, action.status)}
@@ -429,10 +446,11 @@ export function JobCardDetailDialog({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {canInvoice && (
-            <Button onClick={() => onGenerateInvoice(jobCard)} size="sm" className="flex-1 sm:flex-none">
-              <Receipt className="h-4 w-4 mr-1" />
-              Create Invoice
+          {/* Primary Next Step Button */}
+          {nextAction && (
+            <Button onClick={handleNextAction} size="sm" className="shrink-0">
+              <nextAction.icon className="h-4 w-4 mr-1" />
+              {nextAction.label}
             </Button>
           )}
         </div>
