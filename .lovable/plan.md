@@ -1,31 +1,32 @@
 
-# Add "Workshop" Department and "Technician" Job Title Defaults
+# Fix Close Button Overlapping Dialog Header Content
 
-## What Changes
+## The Problem
+The dialog close button (X) is absolutely positioned at `right-3 top-3` inside `DialogContent`. When dialog headers contain extra elements like badges (e.g., "Active", "Staff" in the Staff Detail dialog), they extend into the close button's space, causing overlap.
 
-### File: `src/components/staff/AddStaffDialog.tsx`
+## The Fix
 
-1. **Add "Workshop" to the departments list** so technicians have a proper department:
-   ```
-   { value: 'workshop', label: 'Workshop' }
-   ```
+### File: `src/components/ui/dialog.tsx`
 
-2. **Add a "Technician" preset to the job title field** -- either as a suggestion placeholder or as a quick-select. Since the job title is a free-text field, the simplest approach is to change the placeholder to reflect the workshop use case and add common workshop job titles as quick-select chips (e.g., "Technician", "Senior Technician", "Workshop Foreman").
+Add right padding to `DialogHeader` so its content never reaches under the close button:
 
-### Updated departments array:
-```
-operations, sales, finance, admin, workshop, other
+**Current:**
+```tsx
+<div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} />
 ```
 
-### Job title enhancement:
-Add clickable suggestion chips below the job title input for common roles like "Technician", "Senior Technician", "Workshop Foreman" -- these populate the input when clicked but still allow free text entry.
+**New:**
+```tsx
+<div className={cn("flex flex-col space-y-1.5 text-center sm:text-left pr-8", className)} />
+```
 
-## Technical Details
+Adding `pr-8` (2rem / 32px) provides enough clearance for the close button (which sits at `right-3` with a ~20px icon), preventing overlap in all dialogs system-wide.
 
-**Single file change:** `src/components/staff/AddStaffDialog.tsx`
+### Why this is the right approach
+- Fixes all 19+ dialog files at once with a single line change
+- No need to modify individual dialog components
+- Follows the existing pattern where `DialogContent` already accounts for the close button positioning
+- Safe default -- dialogs without extra header content simply get harmless extra padding
 
-- Add `{ value: 'workshop', label: 'Workshop' }` to the `departments` array (before "Other")
-- Add a small row of clickable suggestion badges below the Job Title input that set the field value when clicked (e.g., "Technician", "Senior Technician", "Foreman")
-- When "Workshop" department is selected, the suggestions could prioritize workshop-relevant titles
-
-This keeps things simple -- no database changes needed since `department` and `job_title` are plain text fields on `staff_members`.
+### Files changed
+- `src/components/ui/dialog.tsx` -- one line change to `DialogHeader`
