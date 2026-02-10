@@ -33,6 +33,8 @@ import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
 import { Loader2, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { StaffCredentialsDialog } from './StaffCredentialsDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const staffSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
@@ -76,6 +78,7 @@ const roles = [
 export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+  const [credentialsData, setCredentialsData] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
   const { createStaff } = useStaff();
   const { userModules } = useModules();
   const { saveModuleAccess } = useStaffModuleAccess();
@@ -125,6 +128,29 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
       if (result) {
         // Save module access for the new staff member
         await saveModuleAccess(result.id, selectedModuleIds);
+
+        // Create auth account for the staff member
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const response = await supabase.functions.invoke('create-staff-account', {
+            body: {
+              staffMemberId: result.id,
+              name: data.name,
+              email: data.email,
+            },
+          });
+
+          if (response.data?.tempPassword) {
+            setCredentialsData({
+              name: data.name,
+              email: data.email,
+              tempPassword: response.data.tempPassword,
+            });
+          }
+        } catch (err) {
+          console.error('Failed to create staff account:', err);
+        }
+
         form.reset();
         setSelectedModuleIds([]);
         onOpenChange(false);
@@ -135,6 +161,7 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -331,5 +358,17 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
         </Form>
       </DialogContent>
     </Dialog>
+
+    {credentialsData && (
+      <StaffCredentialsDialog
+        open={!!credentialsData}
+        onOpenChange={(open) => { if (!open) setCredentialsData(null); }}
+        staffName={credentialsData.name}
+        email={credentialsData.email}
+        tempPassword={credentialsData.tempPassword}
+      />
+    )}
+    </>
   );
 }
+

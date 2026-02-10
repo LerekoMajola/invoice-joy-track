@@ -4,3 +4,4 @@ export { StaffList } from './StaffList';
 export { PayrollTab } from './PayrollTab';
 export { GeneratePayslipDialog } from './GeneratePayslipDialog';
 export { PayslipPreview } from './PayslipPreview';
+export { StaffCredentialsDialog } from './StaffCredentialsDialog';
