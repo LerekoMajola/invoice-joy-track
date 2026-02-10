@@ -1,45 +1,58 @@
 
 
-# Fix Link Preview (OG Image) When Sharing
+# Fix Screen Freeze + Add 5-Minute Inactivity Auto-Logout
 
 ## Problem
 
-When sharing the link to `orionlabslesotho.com`, social platforms show the old logo because:
+Two related issues:
+1. **Screen freezes/refreshes when switching to another website** -- The app runs as a PWA with `display: standalone`. When the browser suspends the app in the background and restores it, stale state or unhandled promise rejections can cause the app to crash and reload, losing unsaved work.
+2. **No inactivity timeout** -- The session stays active indefinitely, so there's no graceful logout for idle users.
 
-1. The `og:image` meta tag uses a relative path (`/og-image.png`) -- social media crawlers require a full absolute URL to fetch the image correctly.
-2. The `og-image.png` file itself in the `public/` folder may still contain the old branding.
+## Solution
 
-## Fix
+### 1. Prevent crash on tab/app resume
 
-### 1. Update `index.html` -- Use absolute URL for OG image
+Add a global `unhandledrejection` handler in `App.tsx` to catch stray promise errors (e.g., failed token refreshes when the app wakes up) and prevent them from crashing the page. Also handle the `visibilitychange` event to gracefully refresh the session when the app comes back to the foreground instead of letting stale requests crash.
 
-Change the `og:image` and `twitter:image` meta tags from relative to absolute paths using the custom domain:
+### 2. Add 5-minute inactivity auto-logout
 
-| Tag | Current | Updated |
-|-----|---------|---------|
-| `og:image` | `/og-image.png` | `https://orionlabslesotho.com/og-image.png` |
-| `twitter:image` | `/og-image.png` | `https://orionlabslesotho.com/og-image.png` |
+Create an `useInactivityLogout` hook that:
+- Tracks user activity (touch, click, keypress, scroll)
+- Resets a 5-minute timer on each activity
+- When the timer expires, calls `signOut()` and redirects to `/auth`
+- Shows a toast notification so the user knows why they were logged out
 
-Also add the missing `og:url` tag:
-```
-og:url = https://orionlabslesotho.com
-```
+This hook will be used inside the `AuthProvider` so it applies globally to all authenticated users.
 
-### 2. Replace `public/og-image.png`
+---
 
-The current `og-image.png` file needs to be replaced with an updated image featuring the current Orion Labs branding. You will need to provide the new OG image (recommended size: 1200 x 630 px).
+## Technical Details
 
-## Files Changed
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `index.html` | Update `og:image` and `twitter:image` to absolute URLs, add `og:url` |
-| `public/og-image.png` | Replace with updated branding image (user to provide) |
+| `src/hooks/useInactivityLogout.tsx` | **New** -- hook that monitors user activity and triggers logout after 5 minutes of inactivity |
+| `src/contexts/AuthContext.tsx` | **Update** -- integrate the inactivity hook for authenticated users |
+| `src/App.tsx` | **Update** -- add global `unhandledrejection` handler and `visibilitychange` session refresh |
 
-## Note
+### `useInactivityLogout` Hook
 
-After publishing, social platforms cache old previews. You may need to clear the cache:
-- **Facebook**: Use the [Sharing Debugger](https://developers.facebook.com/tools/debug/) to scrape new info
-- **Twitter/X**: Use the [Card Validator](https://cards-dev.twitter.com/validator)
-- **WhatsApp**: Clear chat cache or wait for it to refresh (can take hours)
-- **LinkedIn**: Use the [Post Inspector](https://www.linkedin.com/post-inspector/)
+```text
+- Listen for: touchstart, mousedown, keydown, scroll
+- On any event: reset a 5-minute (300,000ms) setTimeout
+- On timeout: call signOut(), navigate to /auth, show toast "Logged out due to inactivity"
+- Cleanup: remove listeners and clear timeout on unmount
+- Only active when user is authenticated
+```
+
+### `App.tsx` Changes
+
+- Add a `useEffect` with a `window.addEventListener('unhandledrejection', ...)` handler that logs the error and prevents the default crash behavior
+- Add a `visibilitychange` listener that calls `supabase.auth.getSession()` when the app returns to the foreground, ensuring a fresh token is available instead of letting a stale refresh fail
+
+### `AuthContext.tsx` Changes
+
+- Import and call `useInactivityLogout(user, signOut)` inside `AuthProvider` so the timer is active whenever a user is logged in
+- The hook will handle navigation internally using `window.location` (since it's outside the Router)
+
