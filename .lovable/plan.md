@@ -1,29 +1,70 @@
 
 
-# Fix Solutions Card Pricing
+# Staff Login Credentials on Creation
 
 ## Problem
 
-All six industry cards on the landing page show "from R199/mo" instead of the correct starting prices. The currency should also be "M" (Maluti), not "R" (Rand).
+When you add a staff member, the system only saves their details in a database record. It does not create an actual login account, so there are no login credentials to display.
 
-## Fix
+## Solution
 
-Update the `price` field in the `industries` array in `src/components/landing/Solutions.tsx`:
+Create a backend function that generates a real user account with a temporary password when a staff member is added. After creation, display the login credentials (email + temporary password) in a dialog so you can share them with the staff member.
 
-| Industry | Current | Correct |
-|----------|---------|---------|
-| Business | R199/mo | M350/mo |
-| Workshop | R199/mo | M450/mo |
-| School | R199/mo | M720/mo |
-| Legal | R199/mo | M500/mo |
-| Tool Hire | R199/mo | M400/mo |
-| Guest House | M650/mo | M650/mo (already correct) |
+---
 
-## Files Changed
+## Technical Details
 
-| File | Change |
+### 1. New Edge Function: `create-staff-account`
+
+A backend function that:
+- Receives staff member details (name, email) and the staff record ID
+- Creates an auth user via the admin API with a generated temporary password (8-char alphanumeric)
+- Links the new auth user ID back to the `staff_members.user_id` column
+- Sets the staff status to `active`
+- Returns the temporary password to the caller
+- Requires authentication and verifies the caller owns the staff record
+
+### 2. Update `AddStaffDialog.tsx`
+
+After successfully creating the staff record:
+- Call the `create-staff-account` edge function
+- On success, show a **"Login Credentials"** dialog displaying the email and temporary password
+- Include a "Copy" button for easy sharing
+- Warn that the password should be changed on first login
+
+### 3. Update `useStaff.tsx`
+
+- Add a `createStaffAccount` function that calls the edge function
+- Update the `createStaff` flow to return the temporary password from the edge function
+
+### 4. New Component: `StaffCredentialsDialog.tsx`
+
+A dialog that shows:
+- Staff member name
+- Login email
+- Temporary password (with copy button)
+- A note: "Please share these credentials securely. The staff member should change their password on first login."
+
+---
+
+## Flow
+
+```text
+User clicks "Add Staff"
+  --> Fills form, clicks submit
+  --> Staff record created in database
+  --> Edge function called to create auth account
+  --> Temporary password generated
+  --> Credentials dialog shown with email + password
+  --> User copies/shares credentials with staff member
+```
+
+## Files
+
+| File | Action |
 |------|--------|
-| `src/components/landing/Solutions.tsx` | Update `price` values in the `industries` array (lines 21, 29, 37, 45, 53) |
-
-Single file, 5 line changes.
+| `supabase/functions/create-staff-account/index.ts` | New -- edge function to create auth user |
+| `src/components/staff/StaffCredentialsDialog.tsx` | New -- dialog to display login details |
+| `src/components/staff/AddStaffDialog.tsx` | Update -- call edge function after creation, show credentials dialog |
+| `src/components/staff/index.ts` | Update -- export new component |
 
