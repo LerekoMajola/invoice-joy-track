@@ -384,21 +384,21 @@ export function PricingTable() {
         </div>
 
         {/* System tabs */}
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex items-center gap-1 rounded-xl bg-muted p-1.5">
+        <div className="flex justify-center mb-10 overflow-x-auto scrollbar-hide px-2">
+          <div className="inline-flex items-center gap-1 rounded-xl bg-muted p-1.5 min-w-0">
             {systems.map((sys) => (
               <button
                 key={sys.key}
                 onClick={() => setActiveSystem(sys.key)}
                 className={cn(
-                  'flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-1.5 px-3 sm:px-6 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
                   activeSystem === sys.key
                     ? `bg-gradient-to-r ${sys.gradient} text-white shadow-md`
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {sys.icon}
-                <span className="hidden sm:inline">{sys.label}</span>
+                <span>{sys.label}</span>
               </button>
             ))}
           </div>
