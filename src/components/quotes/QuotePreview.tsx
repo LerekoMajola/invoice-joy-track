@@ -131,11 +131,11 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
   const handleDownloadPDF = () => {
     if (!quoteRef.current) return;
     const opt = {
-      margin: 0.5,
+      margin: 0,
       filename: `${data.quoteNumber}.pdf`,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      html2canvas: { scale: 2, useCORS: true, width: quoteRef.current.scrollWidth, windowWidth: quoteRef.current.scrollWidth },
+      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
     };
     html2pdf().set(opt).from(quoteRef.current).save();
   };
