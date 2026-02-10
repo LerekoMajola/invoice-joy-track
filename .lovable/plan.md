@@ -1,70 +1,45 @@
 
 
-# Staff Login Credentials on Creation
+# Fix Link Preview (OG Image) When Sharing
 
 ## Problem
 
-When you add a staff member, the system only saves their details in a database record. It does not create an actual login account, so there are no login credentials to display.
+When sharing the link to `orionlabslesotho.com`, social platforms show the old logo because:
 
-## Solution
+1. The `og:image` meta tag uses a relative path (`/og-image.png`) -- social media crawlers require a full absolute URL to fetch the image correctly.
+2. The `og-image.png` file itself in the `public/` folder may still contain the old branding.
 
-Create a backend function that generates a real user account with a temporary password when a staff member is added. After creation, display the login credentials (email + temporary password) in a dialog so you can share them with the staff member.
+## Fix
 
----
+### 1. Update `index.html` -- Use absolute URL for OG image
 
-## Technical Details
+Change the `og:image` and `twitter:image` meta tags from relative to absolute paths using the custom domain:
 
-### 1. New Edge Function: `create-staff-account`
+| Tag | Current | Updated |
+|-----|---------|---------|
+| `og:image` | `/og-image.png` | `https://orionlabslesotho.com/og-image.png` |
+| `twitter:image` | `/og-image.png` | `https://orionlabslesotho.com/og-image.png` |
 
-A backend function that:
-- Receives staff member details (name, email) and the staff record ID
-- Creates an auth user via the admin API with a generated temporary password (8-char alphanumeric)
-- Links the new auth user ID back to the `staff_members.user_id` column
-- Sets the staff status to `active`
-- Returns the temporary password to the caller
-- Requires authentication and verifies the caller owns the staff record
-
-### 2. Update `AddStaffDialog.tsx`
-
-After successfully creating the staff record:
-- Call the `create-staff-account` edge function
-- On success, show a **"Login Credentials"** dialog displaying the email and temporary password
-- Include a "Copy" button for easy sharing
-- Warn that the password should be changed on first login
-
-### 3. Update `useStaff.tsx`
-
-- Add a `createStaffAccount` function that calls the edge function
-- Update the `createStaff` flow to return the temporary password from the edge function
-
-### 4. New Component: `StaffCredentialsDialog.tsx`
-
-A dialog that shows:
-- Staff member name
-- Login email
-- Temporary password (with copy button)
-- A note: "Please share these credentials securely. The staff member should change their password on first login."
-
----
-
-## Flow
-
-```text
-User clicks "Add Staff"
-  --> Fills form, clicks submit
-  --> Staff record created in database
-  --> Edge function called to create auth account
-  --> Temporary password generated
-  --> Credentials dialog shown with email + password
-  --> User copies/shares credentials with staff member
+Also add the missing `og:url` tag:
+```
+og:url = https://orionlabslesotho.com
 ```
 
-## Files
+### 2. Replace `public/og-image.png`
 
-| File | Action |
+The current `og-image.png` file needs to be replaced with an updated image featuring the current Orion Labs branding. You will need to provide the new OG image (recommended size: 1200 x 630 px).
+
+## Files Changed
+
+| File | Change |
 |------|--------|
-| `supabase/functions/create-staff-account/index.ts` | New -- edge function to create auth user |
-| `src/components/staff/StaffCredentialsDialog.tsx` | New -- dialog to display login details |
-| `src/components/staff/AddStaffDialog.tsx` | Update -- call edge function after creation, show credentials dialog |
-| `src/components/staff/index.ts` | Update -- export new component |
+| `index.html` | Update `og:image` and `twitter:image` to absolute URLs, add `og:url` |
+| `public/og-image.png` | Replace with updated branding image (user to provide) |
 
+## Note
+
+After publishing, social platforms cache old previews. You may need to clear the cache:
+- **Facebook**: Use the [Sharing Debugger](https://developers.facebook.com/tools/debug/) to scrape new info
+- **Twitter/X**: Use the [Card Validator](https://cards-dev.twitter.com/validator)
+- **WhatsApp**: Clear chat cache or wait for it to refresh (can take hours)
+- **LinkedIn**: Use the [Post Inspector](https://www.linkedin.com/post-inspector/)
