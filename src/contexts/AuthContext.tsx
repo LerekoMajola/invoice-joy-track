@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 type AuthContextValue = {
   user: User | null;
@@ -115,9 +116,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  };
+  }, []);
+
+  // Auto-logout after 5 minutes of inactivity
+  useInactivityLogout(user, signOut);
 
   const value = useMemo<AuthContextValue>(() => {
     return {
