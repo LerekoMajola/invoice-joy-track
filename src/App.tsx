@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
@@ -47,7 +49,33 @@ import GuestReviews from "./pages/GuestReviews";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Prevent crashes from unhandled promise rejections (e.g. stale token refresh on resume)
+  useEffect(() => {
+    const handleRejection = (e: PromiseRejectionEvent) => {
+      console.warn("[App] Unhandled rejection caught:", e.reason);
+      e.preventDefault();
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // Refresh session silently when app comes back to foreground
+        supabase.auth.getSession().catch((err) =>
+          console.warn("[App] Session refresh on resume failed:", err)
+        );
+      }
+    };
+
+    window.addEventListener("unhandledrejection", handleRejection);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("unhandledrejection", handleRejection);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TimerProvider>
@@ -99,6 +127,7 @@ const App = () => (
       </TimerProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
