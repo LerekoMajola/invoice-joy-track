@@ -12,7 +12,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2, CheckCircle, Truck, FileText } from 'lucide-react';
+import { Receipt, MoreHorizontal, Eye, Send, Download, Trash2, Loader2, CheckCircle, Truck, FileText, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,8 @@ import { RecordPaymentDialog } from '@/components/invoices/RecordPaymentDialog';
 import { ReceiptPreview } from '@/components/invoices/ReceiptPreview';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
 import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
+import { useRecurringDocuments } from '@/hooks/useRecurringDocuments';
+import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -51,7 +53,9 @@ function InvoiceCard({
   onGenerateDeliveryNote,
   onViewReceipt,
   onDelete,
+  onSetRecurring,
   hasDeliveryNote,
+  isRecurring,
 }: {
   invoice: Invoice;
   onView: () => void;
@@ -59,7 +63,9 @@ function InvoiceCard({
   onGenerateDeliveryNote: () => void;
   onViewReceipt: () => void;
   onDelete: () => void;
+  onSetRecurring: () => void;
   hasDeliveryNote: boolean;
+  isRecurring: boolean;
 }) {
   const formatDisplayDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -73,7 +79,10 @@ function InvoiceCard({
             <Receipt className="h-5 w-5 text-success" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-card-foreground">{invoice.invoiceNumber}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-medium text-card-foreground">{invoice.invoiceNumber}</p>
+              {isRecurring && <RefreshCw className="h-3.5 w-3.5 text-primary" />}
+            </div>
             <p className="text-sm text-muted-foreground truncate">{invoice.clientName}</p>
           </div>
         </div>
@@ -115,6 +124,10 @@ function InvoiceCard({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetRecurring(); }}>
+                <RefreshCw className="h-4 w-4 mr-2" />{isRecurring ? 'Manage Recurring' : 'Set as Recurring'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                 <Trash2 className="h-4 w-4 mr-2" />Delete
               </DropdownMenuItem>
@@ -140,12 +153,15 @@ export default function Invoices() {
   const { user } = useAuth();
   const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const { deliveryNotes } = useDeliveryNotes();
+  const { getRecurringBySource, setRecurring, stopRecurring } = useRecurringDocuments();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
   const [isCreatingFromQuote, setIsCreatingFromQuote] = useState(false);
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
+  const [recurringTargetInvoice, setRecurringTargetInvoice] = useState<Invoice | null>(null);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const invoicesWithDeliveryNotes = new Set(
@@ -363,7 +379,9 @@ export default function Invoices() {
                   onGenerateDeliveryNote={() => handleGenerateDeliveryNoteWithConfirm(invoice)}
                   onViewReceipt={() => handleViewReceipt(invoice)}
                   onDelete={() => handleDeleteInvoice(invoice.id, invoice.invoiceNumber)}
+                  onSetRecurring={() => { setRecurringTargetInvoice(invoice); setRecurringDialogOpen(true); }}
                   hasDeliveryNote={invoicesWithDeliveryNotes.has(invoice.id)}
+                  isRecurring={!!getRecurringBySource('invoice', invoice.id)?.isActive}
                 />
               ))}
             </div>
@@ -396,6 +414,7 @@ export default function Invoices() {
                             <Receipt className="h-5 w-5 text-success" />
                           </div>
                           <span className="font-medium">{invoice.invoiceNumber}</span>
+                          {getRecurringBySource('invoice', invoice.id)?.isActive && <RefreshCw className="h-3.5 w-3.5 text-primary" />}
                         </div>
                       </TableCell>
                       <TableCell>{invoice.clientName}</TableCell>
@@ -446,6 +465,10 @@ export default function Invoices() {
                                 <FileText className="h-4 w-4 mr-2" />View Receipt
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setRecurringTargetInvoice(invoice); setRecurringDialogOpen(true); }}>
+                              <RefreshCw className="h-4 w-4 mr-2" />{getRecurringBySource('invoice', invoice.id)?.isActive ? 'Manage Recurring' : 'Set as Recurring'}
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Download className="h-4 w-4 mr-2" />Download PDF
@@ -536,6 +559,20 @@ export default function Invoices() {
         variant={confirmDialog?.variant}
         confirmLabel={confirmDialog?.confirmLabel}
       />
+
+      {recurringTargetInvoice && (
+        <SetRecurringDialog
+          open={recurringDialogOpen}
+          onOpenChange={setRecurringDialogOpen}
+          documentNumber={recurringTargetInvoice.invoiceNumber}
+          existing={getRecurringBySource('invoice', recurringTargetInvoice.id)}
+          onSetRecurring={(freq) => setRecurring('invoice', recurringTargetInvoice.id, freq)}
+          onStopRecurring={() => {
+            const rec = getRecurringBySource('invoice', recurringTargetInvoice.id);
+            if (rec) stopRecurring(rec.id);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

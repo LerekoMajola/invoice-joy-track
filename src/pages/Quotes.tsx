@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +45,8 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuotes, Quote, LineItem } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useRecurringDocuments } from '@/hooks/useRecurringDocuments';
+import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
 import { toast } from 'sonner';
 
 const statusStyles = {
@@ -60,6 +62,7 @@ export default function Quotes() {
   const { quotes, isLoading, createQuote, updateQuote, deleteQuote } = useQuotes();
   const { clients } = useClients();
   const { invoices } = useInvoices();
+  const { getRecurringBySource, setRecurring, stopRecurring } = useRecurringDocuments();
 
   // Create a set of quote IDs that have been converted to invoices
   const convertedQuoteIds = new Set(
@@ -85,6 +88,8 @@ export default function Quotes() {
   ]);
   const [validityDays, setValidityDays] = useState(profile?.default_validity_days ?? 90);
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
+  const [recurringTargetQuote, setRecurringTargetQuote] = useState<Quote | null>(null);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
@@ -475,6 +480,8 @@ export default function Quotes() {
                   onConvert={handleConvertToInvoice}
                   onStatusChange={handleStatusChange}
                   onDelete={deleteQuote}
+                  onSetRecurring={(q) => { setRecurringTargetQuote(q); setRecurringDialogOpen(true); }}
+                  isRecurring={!!getRecurringBySource('quote', quote.id)?.isActive}
                 />
               ))}
             </div>
@@ -501,6 +508,7 @@ export default function Quotes() {
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
                         <span className="font-medium">{quote.quoteNumber}</span>
+                        {getRecurringBySource('quote', quote.id)?.isActive && <RefreshCw className="h-3.5 w-3.5 text-primary" />}
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{quote.clientName}</TableCell>
@@ -559,6 +567,9 @@ export default function Quotes() {
                           <DropdownMenuItem onClick={() => handleViewQuote(quote)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditQuote(quote)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
                           <DropdownMenuItem><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setRecurringTargetQuote(quote); setRecurringDialogOpen(true); }}>
+                            <RefreshCw className="h-4 w-4 mr-2" />{getRecurringBySource('quote', quote.id)?.isActive ? 'Manage Recurring' : 'Set as Recurring'}
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteQuote(quote.id, quote.quoteNumber)}>
                             <Trash2 className="h-4 w-4 mr-2" />Delete
@@ -869,6 +880,20 @@ export default function Quotes() {
         variant={confirmDialog?.variant}
         confirmLabel={confirmDialog?.confirmLabel}
       />
+
+      {recurringTargetQuote && (
+        <SetRecurringDialog
+          open={recurringDialogOpen}
+          onOpenChange={setRecurringDialogOpen}
+          documentNumber={recurringTargetQuote.quoteNumber}
+          existing={getRecurringBySource('quote', recurringTargetQuote.id)}
+          onSetRecurring={(freq) => setRecurring('quote', recurringTargetQuote.id, freq)}
+          onStopRecurring={() => {
+            const rec = getRecurringBySource('quote', recurringTargetQuote.id);
+            if (rec) stopRecurring(rec.id);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }
@@ -883,6 +908,8 @@ interface QuoteCardProps {
   onConvert: (quote: Quote) => void;
   onStatusChange: (quoteId: string, status: Quote['status']) => void;
   onDelete: (quoteId: string) => void;
+  onSetRecurring: (quote: Quote) => void;
+  isRecurring: boolean;
 }
 
 function QuoteCard({
@@ -894,6 +921,8 @@ function QuoteCard({
   onConvert,
   onStatusChange,
   onDelete,
+  onSetRecurring,
+  isRecurring,
 }: QuoteCardProps) {
   const formatDisplayDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -909,6 +938,7 @@ function QuoteCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-sm">{quote.quoteNumber}</span>
+              {isRecurring && <RefreshCw className="h-3.5 w-3.5 text-primary" />}
               <Badge variant="outline" className={cn('capitalize text-xs', statusStyles[quote.status])}>
                 {quote.status}
               </Badge>
@@ -937,6 +967,9 @@ function QuoteCard({
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Copy className="h-4 w-4 mr-2" />Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSetRecurring(quote)}>
+                <RefreshCw className="h-4 w-4 mr-2" />{isRecurring ? 'Manage Recurring' : 'Set as Recurring'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onStatusChange(quote.id, 'draft')} disabled={quote.status === 'draft'}>
