@@ -107,20 +107,18 @@ function InvoiceCard({
                 </DropdownMenuItem>
               )}
               {invoice.status === 'sent' && (
-                <>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange('paid'); }} className="text-success">
-                    <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
-                  </DropdownMenuItem>
-                  {!hasDeliveryNote && (
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onGenerateDeliveryNote(); }}>
-                      <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
-                    </DropdownMenuItem>
-                  )}
-                </>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStatusChange('paid'); }} className="text-success">
+                  <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
+                </DropdownMenuItem>
               )}
               {invoice.status === 'paid' && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewReceipt(); }}>
                   <FileText className="h-4 w-4 mr-2" />View Receipt
+                </DropdownMenuItem>
+              )}
+              {!hasDeliveryNote && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onGenerateDeliveryNote(); }}>
+                  <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -444,25 +442,18 @@ export default function Invoices() {
                               </DropdownMenuItem>
                             )}
                             {invoice.status === 'sent' && (
-                              <>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChangeWithConfirm(invoice.id, 'paid', invoice.invoiceNumber); }} className="text-success">
-                                  <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
-                                </DropdownMenuItem>
-                                {!invoicesWithDeliveryNotes.has(invoice.id) && (
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNoteWithConfirm(invoice); }}>
-                                    <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
-                                  </DropdownMenuItem>
-                                )}
-                              </>
-                            )}
-                            {invoice.status === 'paid' && !invoicesWithDeliveryNotes.has(invoice.id) && (
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNoteWithConfirm(invoice); }}>
-                                <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChangeWithConfirm(invoice.id, 'paid', invoice.invoiceNumber); }} className="text-success">
+                                <CheckCircle className="h-4 w-4 mr-2" />Mark as Paid
                               </DropdownMenuItem>
                             )}
                             {invoice.status === 'paid' && (
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewReceipt(invoice); }}>
                                 <FileText className="h-4 w-4 mr-2" />View Receipt
+                              </DropdownMenuItem>
+                            )}
+                            {!invoicesWithDeliveryNotes.has(invoice.id) && (
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleGenerateDeliveryNoteWithConfirm(invoice); }}>
+                                <Truck className="h-4 w-4 mr-2" />Generate Delivery Note
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
