@@ -17,9 +17,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Initialize from sessionStorage cache for instant rendering on reload
+  const cachedRole = (() => {
+    try {
+      const cached = sessionStorage.getItem('admin_role_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.userId) return parsed;
+      }
+    } catch {}
+    return null;
+  })();
+
+  const [isAdmin, setIsAdmin] = useState(cachedRole?.isAdmin ?? false);
 
   const [authLoading, setAuthLoading] = useState(true);
+  // If we have a cached role, skip blocking on role loading
   const [roleLoading, setRoleLoading] = useState(false);
 
   // 1) Auth state (MUST be sync inside onAuthStateChange callback)
@@ -111,8 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error("Error checking admin role:", error);
           setIsAdmin(false);
+          sessionStorage.removeItem('admin_role_cache');
         } else {
-          setIsAdmin(!!data);
+          const adminVal = !!data;
+          setIsAdmin(adminVal);
+          try {
+            sessionStorage.setItem('admin_role_cache', JSON.stringify({ userId: user.id, isAdmin: adminVal }));
+          } catch {}
         }
       } catch (err) {
         if (!cancelled) {
