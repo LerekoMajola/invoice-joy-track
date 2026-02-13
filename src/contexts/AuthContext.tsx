@@ -54,7 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only re-check role for identity-changing events, NOT background token refreshes
       if (event !== 'TOKEN_REFRESHED') {
         if (nextSession?.user) {
-          setRoleLoading(true);
+          // Only block on role loading if we don't have a cache for this user
+          const hasCachedRole = (() => {
+            try {
+              const c = sessionStorage.getItem('admin_role_cache');
+              if (c) { const p = JSON.parse(c); return p.userId === nextSession.user.id; }
+            } catch {}
+            return false;
+          })();
+          if (!hasCachedRole) setRoleLoading(true);
         } else {
           setRoleLoading(false);
           setIsAdmin(false);
@@ -79,7 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (initialSession?.user) {
-          setRoleLoading(true);
+          // Only block on role loading if we don't have a cache for this user
+          const hasCachedRole = (() => {
+            try {
+              const c = sessionStorage.getItem('admin_role_cache');
+              if (c) { const p = JSON.parse(c); return p.userId === initialSession.user.id; }
+            } catch {}
+            return false;
+          })();
+          if (!hasCachedRole) setRoleLoading(true);
         } else {
           setRoleLoading(false);
           setIsAdmin(false);
@@ -104,6 +120,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!user) {
       setIsAdmin(false);
+      setRoleLoading(false);
+      return;
+    }
+
+    // If we have a valid cache for this user, use it and skip the network call
+    const cachedForUser = (() => {
+      try {
+        const c = sessionStorage.getItem('admin_role_cache');
+        if (c) { const p = JSON.parse(c); if (p.userId === user.id) return p; }
+      } catch {}
+      return null;
+    })();
+
+    if (cachedForUser) {
+      setIsAdmin(cachedForUser.isAdmin);
       setRoleLoading(false);
       return;
     }
