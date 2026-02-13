@@ -1,21 +1,28 @@
 
-
-# Make "Generate Delivery Note" Available on All Invoices
+# Fix: Pause Inactivity Timer When Tab Is Hidden
 
 ## Problem
-The "Generate Delivery Note" button only appears in the dropdown menu for invoices with status "sent" or "paid". It's hidden for "draft" invoices, which is why you don't see it in the screenshot.
+The 5-minute inactivity timer keeps counting even when you switch to another browser tab. If you come back after 5 minutes, the app has already logged you out and done a hard page refresh (`window.location.href`), wiping any unsaved work. Additionally, the visibility-change session refresh can trigger unnecessary re-renders.
 
 ## Solution
-Move the "Generate Delivery Note" option outside the status-conditional blocks so it appears for every invoice regardless of status, as long as a delivery note hasn't already been generated for it.
+1. **Pause the timer when the tab is hidden** -- only count inactivity while the tab is actually visible and you're not interacting with it
+2. **Resume the timer (with remaining time) when you return** to the tab
+3. **Remove the aggressive session refresh** on tab return (Supabase handles token refresh automatically via its internal timer; the manual call causes unnecessary state churn)
 
 ## Technical Changes
 
-**File: `src/pages/Invoices.tsx`**
+**File: `src/hooks/useInactivityLogout.tsx`**
+- Add a `visibilitychange` listener inside the hook
+- When the tab becomes hidden: clear the timeout and save how much time was remaining
+- When the tab becomes visible again: restart the timeout with the remaining time
+- This means the 5-minute clock only ticks while you're actually on the tab but idle
 
-1. **Mobile dropdown (around lines 114-118)**: Move the "Generate Delivery Note" menu item out of the `invoice.status === 'sent'` block and place it as a standalone item available for all statuses.
+**File: `src/App.tsx`**
+- Remove the `visibilitychange` handler that calls `supabase.auth.getSession()` on every tab return
+- Keep the `unhandledrejection` handler for crash prevention
+- Supabase's built-in auto-refresh handles token renewal, so the manual call is redundant and causes the "refresh" feeling on tab switch
 
-2. **Desktop dropdown (around lines 451-462)**: Same change -- move the "Generate Delivery Note" item out of both the `sent` and `paid` conditional blocks and make it a single entry that shows for any status when no delivery note exists yet.
-
-Both views will still check `!hasDeliveryNote` / `!invoicesWithDeliveryNotes.has(invoice.id)` to hide the option once a delivery note has already been created.
-
-No database or backend changes needed.
+## Result
+- Auto-logout after 5 minutes of inactivity still works as expected
+- Switching tabs no longer counts as inactivity
+- Returning to the tab no longer triggers a session refresh that causes re-renders and lost state
