@@ -1,48 +1,24 @@
 
 
-# Fix: Stop Loading Spinner on Tab Return
+# Fix: Stop ProtectedRoute From Re-checking on Token Refresh
 
 ## Problem
-When you switch tabs and come back, Supabase's automatic token refresh fires an `onAuthStateChange` event with type `TOKEN_REFRESHED`. The current code treats every auth event the same -- it sets `roleLoading = true`, which makes `loading = true` in the auth context, which causes the ProtectedRoute to show a full-screen spinner and re-run subscription checks. This is why you see the app "reset" to a loading state.
+The `ProtectedRoute` component's `checkSubscription` function depends on the `user` object (`useCallback(..., [user])`). Every time a token refresh happens, `setUser()` in AuthContext creates a new user object reference (even though the user ID hasn't changed). This causes:
 
-## Root Cause
-In `AuthContext.tsx` line 36-37, every `onAuthStateChange` event (including `TOKEN_REFRESHED`) triggers `setRoleLoading(true)`, which cascades into the loading spinner across the entire app.
+1. `checkSubscription` to be recreated (new reference)
+2. The `useEffect` watching `checkSubscription` to re-run
+3. `setCheckingSubscription(true)` to trigger
+4. The full-screen loading spinner to appear
 
 ## Solution
-Only trigger the role-loading state for events that actually change the user identity (sign in, sign out, user updated). Skip it for token refreshes since the user hasn't changed.
+Change the dependency from `user` (object reference) to `user?.id` (stable string) so the subscription check only re-runs when the actual user identity changes, not on background token refreshes.
 
 ## Technical Changes
 
-**File: `src/contexts/AuthContext.tsx`**
+**File: `src/components/layout/ProtectedRoute.tsx`**
 
-In the `onAuthStateChange` callback, check the event type before setting `roleLoading`:
-- For `TOKEN_REFRESHED`: update the session/user references silently (no loading state) -- the user identity hasn't changed, so there's no need to re-check the admin role
-- For `SIGNED_IN`, `SIGNED_OUT`, `USER_UPDATED`, etc.: keep the current behavior of setting `roleLoading = true` to re-check the admin role
+1. Change `checkSubscription`'s `useCallback` dependency from `[user]` to `[user?.id]` (line 134)
+2. Inside `checkSubscription`, access `user` via a ref or restructure to use `user?.id` for the query and avoid stale closures -- or simply gate the function to only run when `user` exists at call time
+3. Add a `hasChecked` ref to prevent re-running the subscription check if it already succeeded for the same user, so returning from another tab never re-triggers it
 
-```text
-Before (simplified):
-  onAuthStateChange(event, session) => {
-    setUser(session?.user)    // always
-    setRoleLoading(true)      // always -- THIS causes the spinner
-  }
-
-After:
-  onAuthStateChange(event, session) => {
-    setSession(session)
-    setUser(session?.user)
-    if (event !== 'TOKEN_REFRESHED') {
-      // Only re-check role when user identity actually changes
-      if (session?.user) setRoleLoading(true)
-      else { setRoleLoading(false); setIsAdmin(false) }
-    }
-  }
-```
-
-No other files need changes. The inactivity logout and ProtectedRoute logic remain as-is.
-
-## Result
-- Returning to the tab after a token refresh will no longer show a loading spinner
-- The page content stays exactly where you left it
-- Admin role is still properly checked on initial login and user changes
-- Inactivity auto-logout continues to work as before
-
+These changes ensure that once the subscription is verified for a user, switching tabs and returning will never show the spinner again.
