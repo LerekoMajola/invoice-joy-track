@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,8 +16,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [needsPayment, setNeedsPayment] = useState(false);
   const [error, setError] = useState(false);
 
+  const hasCheckedRef = useRef<string | null>(null);
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const checkSubscription = useCallback(async () => {
-    if (!user) {
+    const currentUser = userRef.current;
+    if (!currentUser) {
+      setCheckingSubscription(false);
+      return;
+    }
+
+    // Skip if already checked for this user
+    if (hasCheckedRef.current === currentUser.id) {
       setCheckingSubscription(false);
       return;
     }
@@ -30,7 +41,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('id, status, trial_ends_at')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .maybeSingle();
 
       if (!subscription) {
@@ -39,10 +50,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
         // Read system_type from user_metadata (set during signup)
-        const systemType = user.user_metadata?.system_type || 'business';
+        const systemType = currentUser.user_metadata?.system_type || 'business';
 
         await supabase.from('subscriptions').insert({
-          user_id: user.id,
+          user_id: currentUser.id,
           plan: 'free_trial',
           status: 'trialing',
           trial_ends_at: trialEndsAt.toISOString(),
@@ -57,7 +68,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         periodEnd.setMonth(periodEnd.getMonth() + 1);
 
         await supabase.from('usage_tracking').insert({
-          user_id: user.id,
+          user_id: currentUser.id,
           period_start: periodStart.toISOString().split('T')[0],
           period_end: periodEnd.toISOString().split('T')[0],
           clients_count: 0,
@@ -81,11 +92,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const { data: userModules } = await supabase
         .from('user_modules')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .limit(1);
 
       if (!userModules || userModules.length === 0) {
-        const selectedKeys: string[] = user.user_metadata?.selected_module_keys;
+        const selectedKeys: string[] = currentUser.user_metadata?.selected_module_keys;
 
         if (selectedKeys && selectedKeys.length > 0) {
           // New user: assign only the modules they selected during signup + core modules
@@ -100,7 +111,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             );
             if (modulesToAssign.length > 0) {
               const rows = modulesToAssign.map((m) => ({
-                user_id: user.id,
+                user_id: currentUser.id,
                 module_id: m.id,
                 is_active: true,
               }));
@@ -116,7 +127,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
           if (allModules && allModules.length > 0) {
             const rows = allModules.map((m) => ({
-              user_id: user.id,
+              user_id: currentUser.id,
               module_id: m.id,
               is_active: true,
             }));
@@ -124,6 +135,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           }
         }
       }
+
+      hasCheckedRef.current = currentUser.id;
     } catch (err) {
       console.error('Error checking subscription:', err);
       // FAIL CLOSED: block access when we can't verify subscription status
@@ -131,7 +144,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     } finally {
       setCheckingSubscription(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!loading) {
