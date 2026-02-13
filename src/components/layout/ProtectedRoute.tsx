@@ -12,11 +12,18 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
+
+  // Check sessionStorage cache to skip spinner on reload/tab return
+  const cachedUserId = (() => {
+    try { return sessionStorage.getItem('subscription_checked_user'); } catch { return null; }
+  })();
+  const isCached = !!user && !!cachedUserId && cachedUserId === user.id;
+
+  const [checkingSubscription, setCheckingSubscription] = useState(!isCached);
   const [needsPayment, setNeedsPayment] = useState(false);
   const [error, setError] = useState(false);
 
-  const hasCheckedRef = useRef<string | null>(null);
+  const hasCheckedRef = useRef<string | null>(isCached ? user.id : null);
   const userRef = useRef(user);
   userRef.current = user;
 
@@ -137,6 +144,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
 
       hasCheckedRef.current = currentUser.id;
+      try { sessionStorage.setItem('subscription_checked_user', currentUser.id); } catch {}
     } catch (err) {
       console.error('Error checking subscription:', err);
       // FAIL CLOSED: block access when we can't verify subscription status
