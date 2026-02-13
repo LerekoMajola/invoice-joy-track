@@ -1,63 +1,43 @@
 
 
-# Fix: Prevent User Object Reference Changes on Token Refresh
+# Fix: Eliminate Loading Spinner on Page Reload / Tab Return
 
-## Root Cause
+## Problem
+When you switch tabs, the browser may fully unload the Lovable preview iframe. When you return, the app starts from scratch and must:
+1. Restore the auth session from localStorage (fast, but async)
+2. Check the admin role from the database (network call)
+3. Check the subscription status from the database (network call)
 
-In `AuthContext.tsx`, every `onAuthStateChange` event (including `TOKEN_REFRESHED`) calls:
-
-```
-setUser(nextSession?.user ?? null)
-```
-
-This creates a **new object reference** every time, even when the user hasn't changed. This new reference:
-
-1. Makes the `useMemo` for the context value recalculate (line 127-135, `user` is in the dependency array)
-2. All context consumers re-render (every `ProtectedRoute`, page component, etc.)
-3. Even though `ProtectedRoute` has guards (`hasCheckedRef`), the re-render cycle can cause visual flicker or interact badly with the preview environment
+All three block the UI with a full-screen spinner. Steps 2 and 3 are redundant for returning users whose status hasn't changed.
 
 ## Solution
+Cache the subscription/module check result in `sessionStorage` so returning users skip the spinner entirely.
+
+## Technical Changes
+
+**File: `src/components/layout/ProtectedRoute.tsx`**
+
+1. After a successful subscription check, store the user ID in `sessionStorage` (key: `subscription_checked_user`)
+2. On mount, if `sessionStorage` already has the current user's ID cached, initialize `checkingSubscription` to `false` and skip the check entirely
+3. Clear the cache on sign-out (already handled since sessionStorage clears on tab close, and we can clear explicitly too)
+
+Key changes:
+- Read from sessionStorage on mount to determine initial `checkingSubscription` state
+- After successful check, write to sessionStorage
+- The `hasCheckedRef` guard remains as a secondary in-memory guard
 
 **File: `src/contexts/AuthContext.tsx`**
 
-Replace direct `setUser(nextSession?.user ?? null)` calls with a functional update that preserves the existing object reference when the user ID hasn't changed:
+1. Cache the admin role result in `sessionStorage` after the role check completes
+2. On mount, initialize `isAdmin` from the cached value so `roleLoading` can start as `false` for returning users
+3. The role check still runs in the background to validate, but the UI isn't blocked
 
-```typescript
-// Instead of:
-setUser(nextSession?.user ?? null);
-
-// Use:
-setUser(prev => {
-  const nextUser = nextSession?.user ?? null;
-  // Keep the same reference if identity hasn't changed
-  if (prev?.id === nextUser?.id) return prev;
-  return nextUser;
-});
-```
-
-Apply this change in two places:
-1. Inside the `onAuthStateChange` callback (around line 32)
-2. Inside the `getSession().then()` handler (around line 52)
-
-Similarly, stabilize the session reference:
-```typescript
-setSession(prev => {
-  if (prev?.access_token === nextSession?.access_token) return prev;
-  return nextSession;
-});
-```
-
-This ensures that background token refreshes produce **zero re-renders** across the entire app, since neither `user` nor `session` references change when the identity is the same.
-
-## Why Previous Fixes Weren't Enough
-
-- The `roleLoading` skip for `TOKEN_REFRESHED` was correct but insufficient -- the user object reference change alone triggers full context propagation
-- The `hasCheckedRef` in `ProtectedRoute` correctly skips the subscription check, but the component still re-renders due to context changes
-- If the preview environment does a full iframe reload on tab switch (which appears to be happening), none of the React-level guards help -- but stabilizing the references prevents the cascade that makes it worse
+This means:
+- First login: spinner shows briefly (unavoidable -- need to verify subscription)
+- Returning to tab / page reload: content appears immediately, verification happens silently in background
+- Sign out + sign in as different user: cache is invalidated, spinner shows again
 
 ## Result
-
-- Token refreshes produce zero downstream re-renders
-- Tab switching with token refresh is completely invisible to the user
-- No spinner, no lost work, no page flash
-
+- No more losing your work when switching tabs
+- Page content appears instantly on return
+- Security checks still run, just non-blocking for cached users
