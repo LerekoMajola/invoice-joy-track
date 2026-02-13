@@ -1,24 +1,63 @@
 
 
-# Fix: Stop ProtectedRoute From Re-checking on Token Refresh
+# Fix: Prevent User Object Reference Changes on Token Refresh
 
-## Problem
-The `ProtectedRoute` component's `checkSubscription` function depends on the `user` object (`useCallback(..., [user])`). Every time a token refresh happens, `setUser()` in AuthContext creates a new user object reference (even though the user ID hasn't changed). This causes:
+## Root Cause
 
-1. `checkSubscription` to be recreated (new reference)
-2. The `useEffect` watching `checkSubscription` to re-run
-3. `setCheckingSubscription(true)` to trigger
-4. The full-screen loading spinner to appear
+In `AuthContext.tsx`, every `onAuthStateChange` event (including `TOKEN_REFRESHED`) calls:
+
+```
+setUser(nextSession?.user ?? null)
+```
+
+This creates a **new object reference** every time, even when the user hasn't changed. This new reference:
+
+1. Makes the `useMemo` for the context value recalculate (line 127-135, `user` is in the dependency array)
+2. All context consumers re-render (every `ProtectedRoute`, page component, etc.)
+3. Even though `ProtectedRoute` has guards (`hasCheckedRef`), the re-render cycle can cause visual flicker or interact badly with the preview environment
 
 ## Solution
-Change the dependency from `user` (object reference) to `user?.id` (stable string) so the subscription check only re-runs when the actual user identity changes, not on background token refreshes.
 
-## Technical Changes
+**File: `src/contexts/AuthContext.tsx`**
 
-**File: `src/components/layout/ProtectedRoute.tsx`**
+Replace direct `setUser(nextSession?.user ?? null)` calls with a functional update that preserves the existing object reference when the user ID hasn't changed:
 
-1. Change `checkSubscription`'s `useCallback` dependency from `[user]` to `[user?.id]` (line 134)
-2. Inside `checkSubscription`, access `user` via a ref or restructure to use `user?.id` for the query and avoid stale closures -- or simply gate the function to only run when `user` exists at call time
-3. Add a `hasChecked` ref to prevent re-running the subscription check if it already succeeded for the same user, so returning from another tab never re-triggers it
+```typescript
+// Instead of:
+setUser(nextSession?.user ?? null);
 
-These changes ensure that once the subscription is verified for a user, switching tabs and returning will never show the spinner again.
+// Use:
+setUser(prev => {
+  const nextUser = nextSession?.user ?? null;
+  // Keep the same reference if identity hasn't changed
+  if (prev?.id === nextUser?.id) return prev;
+  return nextUser;
+});
+```
+
+Apply this change in two places:
+1. Inside the `onAuthStateChange` callback (around line 32)
+2. Inside the `getSession().then()` handler (around line 52)
+
+Similarly, stabilize the session reference:
+```typescript
+setSession(prev => {
+  if (prev?.access_token === nextSession?.access_token) return prev;
+  return nextSession;
+});
+```
+
+This ensures that background token refreshes produce **zero re-renders** across the entire app, since neither `user` nor `session` references change when the identity is the same.
+
+## Why Previous Fixes Weren't Enough
+
+- The `roleLoading` skip for `TOKEN_REFRESHED` was correct but insufficient -- the user object reference change alone triggers full context propagation
+- The `hasCheckedRef` in `ProtectedRoute` correctly skips the subscription check, but the component still re-renders due to context changes
+- If the preview environment does a full iframe reload on tab switch (which appears to be happening), none of the React-level guards help -- but stabilizing the references prevents the cascade that makes it worse
+
+## Result
+
+- Token refreshes produce zero downstream re-renders
+- Tab switching with token refresh is completely invisible to the user
+- No spinner, no lost work, no page flash
+
