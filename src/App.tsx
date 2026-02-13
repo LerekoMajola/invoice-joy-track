@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/layout/AdminProtectedRoute";
 import { DynamicAppIcons } from "@/components/shared/DynamicAppIcons";
 import Landing from "./pages/Landing";
+import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -75,6 +76,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin" element={<AdminProtectedRoute><Admin /></AdminProtectedRoute>} />
