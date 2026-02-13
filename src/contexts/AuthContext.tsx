@@ -31,13 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
-      // IMPORTANT: prevent premature redirects by ensuring role state is considered "loading"
-      // as soon as we have a user (role effect runs after render).
-      if (nextSession?.user) {
-        setRoleLoading(true);
-      } else {
-        setRoleLoading(false);
-        setIsAdmin(false);
+      // Only re-check role for identity-changing events, NOT background token refreshes
+      if (event !== 'TOKEN_REFRESHED') {
+        if (nextSession?.user) {
+          setRoleLoading(true);
+        } else {
+          setRoleLoading(false);
+          setIsAdmin(false);
+        }
       }
 
       setAuthLoading(false);
