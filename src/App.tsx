@@ -57,21 +57,10 @@ const App = () => {
       e.preventDefault();
     };
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        // Refresh session silently when app comes back to foreground
-        supabase.auth.getSession().catch((err) =>
-          console.warn("[App] Session refresh on resume failed:", err)
-        );
-      }
-    };
-
     window.addEventListener("unhandledrejection", handleRejection);
-    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.removeEventListener("unhandledrejection", handleRejection);
-      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

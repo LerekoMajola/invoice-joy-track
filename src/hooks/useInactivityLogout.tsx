@@ -16,6 +16,8 @@ export function useInactivityLogout(
   signOut: () => Promise<void>,
 ) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remainingRef = useRef(INACTIVITY_TIMEOUT);
+  const lastActiveRef = useRef(Date.now());
 
   useEffect(() => {
     if (!user) return;
@@ -33,9 +35,31 @@ export function useInactivityLogout(
       window.location.href = "/auth";
     };
 
-    const resetTimer = () => {
+    const startTimer = (duration: number) => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(logout, INACTIVITY_TIMEOUT);
+      lastActiveRef.current = Date.now();
+      remainingRef.current = duration;
+      timerRef.current = setTimeout(logout, duration);
+    };
+
+    const resetTimer = () => {
+      startTimer(INACTIVITY_TIMEOUT);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // Pause: save remaining time
+        const elapsed = Date.now() - lastActiveRef.current;
+        remainingRef.current = Math.max(0, remainingRef.current - elapsed);
+        if (timerRef.current) clearTimeout(timerRef.current);
+      } else {
+        // Resume with remaining time
+        if (remainingRef.current <= 0) {
+          logout();
+        } else {
+          startTimer(remainingRef.current);
+        }
+      }
     };
 
     // Start initial timer
@@ -45,12 +69,14 @@ export function useInactivityLogout(
     ACTIVITY_EVENTS.forEach((evt) =>
       window.addEventListener(evt, resetTimer, { passive: true }),
     );
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       ACTIVITY_EVENTS.forEach((evt) =>
         window.removeEventListener(evt, resetTimer),
       );
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user, signOut]);
 }
