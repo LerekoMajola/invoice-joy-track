@@ -28,8 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) return;
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+      setSession(prev => {
+        if (prev?.access_token === nextSession?.access_token) return prev;
+        return nextSession ?? null;
+      });
+      setUser(prev => {
+        const nextUser = nextSession?.user ?? null;
+        if (prev?.id === nextUser?.id) return prev;
+        return nextUser;
+      });
 
       // Only re-check role for identity-changing events, NOT background token refreshes
       if (event !== 'TOKEN_REFRESHED') {
@@ -48,8 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (!isMounted) return;
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
+        setSession(prev => {
+          if (prev?.access_token === initialSession?.access_token) return prev;
+          return initialSession ?? null;
+        });
+        setUser(prev => {
+          const nextUser = initialSession?.user ?? null;
+          if (prev?.id === nextUser?.id) return prev;
+          return nextUser;
+        });
 
         if (initialSession?.user) {
           setRoleLoading(true);
