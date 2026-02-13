@@ -1,43 +1,54 @@
 
+# Add a Public "About" Page for Sharing
 
-# Fix: Eliminate Loading Spinner on Page Reload / Tab Return
+Create a dedicated `/about` page that presents the Orion Labs features and benefits in a professional, shareable format. You can send anyone the link (e.g. `https://orionlabslesotho.com/about`) and they'll see everything they need to know -- no login required.
 
-## Problem
-When you switch tabs, the browser may fully unload the Lovable preview iframe. When you return, the app starts from scratch and must:
-1. Restore the auth session from localStorage (fast, but async)
-2. Check the admin role from the database (network call)
-3. Check the subscription status from the database (network call)
+## What You'll Get
 
-All three block the UI with a full-screen spinner. Steps 2 and 3 are redundant for returning users whose status hasn't changed.
+A beautifully designed, single-page overview covering:
+- Platform introduction and value proposition
+- The six industry solutions with key features
+- Core platform capabilities (invoicing, staff management, accounting, etc.)
+- Technology highlights (PWA, cloud-based, secure)
+- Pricing summary with a clear call-to-action
+- A sticky header with navigation back to the main site and a "Start Free Trial" button
 
-## Solution
-Cache the subscription/module check result in `sessionStorage` so returning users skip the spinner entirely.
+The page will reuse the existing landing page styling (gradients, animations, cards) for a consistent, professional look.
 
-## Technical Changes
+## Link for Sharing
 
-**File: `src/components/layout/ProtectedRoute.tsx`**
+Once built, you can share: **orionlabslesotho.com/about**
 
-1. After a successful subscription check, store the user ID in `sessionStorage` (key: `subscription_checked_user`)
-2. On mount, if `sessionStorage` already has the current user's ID cached, initialize `checkingSubscription` to `false` and skip the check entirely
-3. Clear the cache on sign-out (already handled since sessionStorage clears on tab close, and we can clear explicitly too)
+## Navigation
 
-Key changes:
-- Read from sessionStorage on mount to determine initial `checkingSubscription` state
-- After successful check, write to sessionStorage
-- The `hasCheckedRef` guard remains as a secondary in-memory guard
+- A link to the About page will be added to the landing page header nav and footer
+- The About page itself will have a header linking back to home and to Sign In
 
-**File: `src/contexts/AuthContext.tsx`**
+---
 
-1. Cache the admin role result in `sessionStorage` after the role check completes
-2. On mount, initialize `isAdmin` from the cached value so `roleLoading` can start as `false` for returning users
-3. The role check still runs in the background to validate, but the UI isn't blocked
+## Technical Details
 
-This means:
-- First login: spinner shows briefly (unavoidable -- need to verify subscription)
-- Returning to tab / page reload: content appears immediately, verification happens silently in background
-- Sign out + sign in as different user: cache is invalidated, spinner shows again
+### New File: `src/pages/About.tsx`
 
-## Result
-- No more losing your work when switching tabs
-- Page content appears instantly on return
-- Security checks still run, just non-blocking for cached users
+A public page component containing:
+
+1. **Hero banner** -- "About Orion Labs" with a brief tagline
+2. **Platform Overview section** -- what the platform is, who it's for
+3. **Industry Solutions grid** -- reuses the same 6-industry data from the Solutions component, presented in detailed cards with expanded feature lists
+4. **Core Features section** -- shared capabilities across all industries (Invoicing, Staff/Payroll, Accounting, CRM, Task Management, Document Branding)
+5. **Technology and Security section** -- PWA, cloud, SSL encryption, role-based access
+6. **Pricing overview** -- summary table with "from" prices per industry and a CTA button
+7. **Footer** -- reuses the existing `Footer` component
+
+### Modified File: `src/App.tsx`
+
+- Import the new `About` page
+- Add route: `<Route path="/about" element={<About />} />`
+
+### Modified File: `src/components/landing/Hero.tsx`
+
+- Add "About" link to the header navigation (alongside Solutions, Features, Pricing)
+
+### Modified File: `src/components/landing/Footer.tsx`
+
+- Add "About" link under the Company column
