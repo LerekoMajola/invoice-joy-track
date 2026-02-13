@@ -41,6 +41,9 @@ export function Hero() {
             <a href="#pricing" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
               Pricing
             </a>
+            <Link to="/about" className="text-white/80 hover:text-white text-sm font-medium transition-colors">
+              About
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <Link to="/auth">
