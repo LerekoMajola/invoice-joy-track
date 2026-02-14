@@ -2459,6 +2459,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_credits: {
+        Row: {
+          created_at: string
+          credits_allocated: number
+          credits_used: number
+          id: string
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_allocated?: number
+          credits_used?: number
+          id?: string
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_allocated?: number
+          credits_used?: number
+          id?: string
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sms_log: {
+        Row: {
+          at_message_id: string | null
+          created_at: string
+          id: string
+          message: string
+          notification_id: string | null
+          phone_number: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          at_message_id?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          notification_id?: string | null
+          phone_number: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          at_message_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          notification_id?: string | null
+          phone_number?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_members: {
         Row: {
           address: string | null

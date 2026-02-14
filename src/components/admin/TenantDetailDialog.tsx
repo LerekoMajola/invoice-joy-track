@@ -8,6 +8,7 @@ import { Tenant } from '@/hooks/useAdminTenants';
 import { formatMaluti } from '@/lib/currency';
 import { TenantModuleManager } from './TenantModuleManager';
 import { TenantBusinessInsights } from './TenantBusinessInsights';
+import { TenantSmsCredits } from './TenantSmsCredits';
 
 interface TenantDetailDialogProps {
   tenant: Tenant | null;
@@ -166,6 +167,11 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                 systemType={tenant.subscription?.system_type || 'business'}
               />
             </div>
+
+            <Separator />
+
+            {/* SMS Credits */}
+            <TenantSmsCredits tenantUserId={tenant.user_id} />
 
             <Separator />
 

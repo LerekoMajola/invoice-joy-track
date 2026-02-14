@@ -9,9 +9,10 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useSmsCredits } from '@/hooks/useSmsCredits';
 import {
   Clock, AlertTriangle, Loader2, Smartphone, Building2,
-  CheckCircle2, ChevronDown, Copy
+  CheckCircle2, ChevronDown, Copy, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ export default function Billing() {
   const { user } = useAuth();
   const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference } = useSubscription();
   const { profile: companyProfile } = useCompanyProfile();
+  const { creditsRemaining, creditsUsed, creditsAllocated } = useSmsCredits();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
@@ -242,6 +244,35 @@ export default function Billing() {
             </Button>
           )}
         </div>
+
+        {/* SMS Credits */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              SMS Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <div className="text-2xl font-bold">{creditsAllocated}</div>
+                <div className="text-xs text-muted-foreground">Allocated</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{creditsUsed}</div>
+                <div className="text-xs text-muted-foreground">Sent</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-primary">{creditsRemaining}</div>
+                <div className="text-xs text-muted-foreground">Remaining</div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              SMS credits reset monthly. Contact support for additional credits.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
