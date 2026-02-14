@@ -1,54 +1,42 @@
 
-# Add a Public "About" Page for Sharing
 
-Create a dedicated `/about` page that presents the Orion Labs features and benefits in a professional, shareable format. You can send anyone the link (e.g. `https://orionlabslesotho.com/about`) and they'll see everything they need to know -- no login required.
+# Add Tenant Module Management to Admin Panel
 
-## What You'll Get
+## Overview
+Add the ability for super admins to view and toggle which modules are active for any tenant, directly from the Tenants tab in the admin panel.
 
-A beautifully designed, single-page overview covering:
-- Platform introduction and value proposition
-- The six industry solutions with key features
-- Core platform capabilities (invoicing, staff management, accounting, etc.)
-- Technology highlights (PWA, cloud-based, secure)
-- Pricing summary with a clear call-to-action
-- A sticky header with navigation back to the main site and a "Start Free Trial" button
+## How It Will Work
+When you click the "eye" icon to view a tenant's details, the detail dialog will include a new "Modules" section showing all available modules for that tenant's system type. You can toggle each module on/off with a switch. Changes save immediately.
 
-The page will reuse the existing landing page styling (gradients, animations, cards) for a consistent, professional look.
+## Technical Changes
 
-## Link for Sharing
+### 1. Database: Add missing RLS policies on `user_modules`
 
-Once built, you can share: **orionlabslesotho.com/about**
+Currently, super admins can SELECT and UPDATE user_modules but cannot INSERT or DELETE them. Two new policies are needed:
 
-## Navigation
+- **"Admins can insert user modules"** -- allows super_admin to INSERT rows for any user
+- **"Admins can delete user modules"** -- allows super_admin to DELETE rows for any user
 
-- A link to the About page will be added to the landing page header nav and footer
-- The About page itself will have a header linking back to home and to Sign In
+### 2. New Component: `src/components/admin/TenantModuleManager.tsx`
 
----
+A component that:
+- Accepts a tenant's `user_id` and `system_type`
+- Fetches all platform modules (filtered by system type + shared)
+- Fetches the tenant's current `user_modules` entries
+- Displays each module as a row with a toggle switch (on = subscribed, off = not)
+- On toggle ON: inserts a `user_modules` row for that tenant
+- On toggle OFF: deletes the `user_modules` row for that tenant
+- Shows the module name, description, and monthly price
 
-## Technical Details
+### 3. Modified File: `src/components/admin/TenantDetailDialog.tsx`
 
-### New File: `src/pages/About.tsx`
+- Import and embed the new `TenantModuleManager` component
+- Add a "Modules" section below the existing Usage section
+- Pass `tenant.user_id` and `tenant.subscription.system_type` to the component
 
-A public page component containing:
+### 4. Modified File: `src/hooks/useAdminTenants.tsx`
 
-1. **Hero banner** -- "About Orion Labs" with a brief tagline
-2. **Platform Overview section** -- what the platform is, who it's for
-3. **Industry Solutions grid** -- reuses the same 6-industry data from the Solutions component, presented in detailed cards with expanded feature lists
-4. **Core Features section** -- shared capabilities across all industries (Invoicing, Staff/Payroll, Accounting, CRM, Task Management, Document Branding)
-5. **Technology and Security section** -- PWA, cloud, SSL encryption, role-based access
-6. **Pricing overview** -- summary table with "from" prices per industry and a CTA button
-7. **Footer** -- reuses the existing `Footer` component
+No changes needed -- the `user_id` and `system_type` are already available on the tenant object.
 
-### Modified File: `src/App.tsx`
-
-- Import the new `About` page
-- Add route: `<Route path="/about" element={<About />} />`
-
-### Modified File: `src/components/landing/Hero.tsx`
-
-- Add "About" link to the header navigation (alongside Solutions, Features, Pricing)
-
-### Modified File: `src/components/landing/Footer.tsx`
-
-- Add "About" link under the Company column
+## Result
+From the Admin panel Tenants tab, clicking the eye icon on any tenant will show their details including a full list of modules with toggles to enable/disable each one instantly.
