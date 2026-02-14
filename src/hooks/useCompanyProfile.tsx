@@ -29,6 +29,7 @@ export interface CompanyProfile {
   default_validity_days: number | null;
   vat_enabled: boolean | null;
   signature_url: string | null;
+  contact_person: string | null;
   footer_text: string | null;
   template_primary_color: string | null;
   template_secondary_color: string | null;

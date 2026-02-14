@@ -39,6 +39,7 @@ export default function Settings() {
   
   const [formData, setFormData] = useState<Partial<CompanyProfileInput>>({
     company_name: '',
+    contact_person: '',
     logo_url: null,
     address_line_1: '',
     address_line_2: '',
@@ -87,6 +88,7 @@ export default function Settings() {
     if (profile) {
       setFormData({
         company_name: profile.company_name || '',
+        contact_person: (profile as any).contact_person || '',
         logo_url: profile.logo_url,
         address_line_1: profile.address_line_1 || '',
         address_line_2: profile.address_line_2 || '',
@@ -215,21 +217,27 @@ export default function Settings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="company_name">{companyLabel} *</Label>
                       <Input id="company_name" value={formData.company_name || ''} onChange={(e) => handleChange('company_name', e.target.value)} placeholder="Enter your company name" required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" value={formData.email || ''} onChange={(e) => handleChange('email', e.target.value)} placeholder="info@example.com" />
+                      <Label htmlFor="contact_person">Contact Person</Label>
+                      <Input id="contact_person" value={formData.contact_person || ''} onChange={(e) => handleChange('contact_person', e.target.value)} placeholder="Primary contact name" />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" value={formData.email || ''} onChange={(e) => handleChange('email', e.target.value)} placeholder="info@example.com" />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
                       <Input id="phone" value={formData.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+266 xxxx xxxx" />
                     </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="website">Website</Label>
                       <Input id="website" value={formData.website || ''} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://example.com" />

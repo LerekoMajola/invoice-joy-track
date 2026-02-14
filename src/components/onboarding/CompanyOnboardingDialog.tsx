@@ -25,6 +25,7 @@ import { useSubscription, type SystemType } from '@/hooks/useSubscription';
 
 const onboardingSchema = z.object({
   company_name: z.string().min(1, 'Company name is required').max(100),
+  contact_person: z.string().max(100).optional().or(z.literal('')),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   phone: z.string().max(20).optional().or(z.literal('')),
 });
@@ -56,11 +57,12 @@ export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardin
  
    const form = useForm<OnboardingFormData>({
      resolver: zodResolver(onboardingSchema),
-     defaultValues: {
-       company_name: '',
-       email: '',
-       phone: '',
-     },
+      defaultValues: {
+        company_name: '',
+        contact_person: '',
+        email: '',
+        phone: '',
+      },
    });
  
    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,11 +91,12 @@ export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardin
          logoUrl = await uploadAsset(logoFile, 'logo');
        }
  
-       saveProfile({
-         company_name: data.company_name,
-         email: data.email || null,
-         phone: data.phone || null,
-         logo_url: logoUrl,
+        saveProfile({
+          company_name: data.company_name,
+          contact_person: data.contact_person || null,
+          email: data.email || null,
+          phone: data.phone || null,
+          logo_url: logoUrl,
        }, {
          onSuccess: () => {
            onOpenChange(false);
@@ -155,15 +158,30 @@ export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardin
                <p className="text-xs text-muted-foreground">Optional - Add your company logo</p>
              </div>
  
-             {/* Company Name */}
+              {/* Company Name */}
+               <FormField
+                 control={form.control}
+                 name="company_name"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>{config.entityLabel} Name *</FormLabel>
+                     <FormControl>
+                       <Input placeholder={`Your ${config.entityLabel} Name`} {...field} />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+
+              {/* Contact Person */}
               <FormField
                 control={form.control}
-                name="company_name"
+                name="contact_person"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{config.entityLabel} Name *</FormLabel>
+                    <FormLabel>Contact Person</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Your ${config.entityLabel} Name`} {...field} />
+                      <Input placeholder="Primary contact name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
