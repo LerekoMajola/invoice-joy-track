@@ -1,65 +1,45 @@
 
 
-## Plan: SMS Credits, Pagination, and Dashboard Reorder
+## Add Contact Person to Company Profile
 
-### 1. Add SMS Credits
+### What changes
 
-Insert SMS credits for account `leekaygroupofcompanies@gmail.com` (user ID: `0ad03a1e-8e32-4f04-88ee-f3c4fde1a25d`) for the current month (February 2026). Trial tier = 10 credits allocated.
+Add a "Contact Person" field to the Company Profile form so businesses can specify who should be contacted on their behalf.
 
-### 2. Pagination (10 items per page) for All Document Lists
+### Database Change
 
-Add pagination with 10 items per page to these pages:
+Add a new column `contact_person` to the `company_profiles` table:
 
-- **Quotes** (`src/pages/Quotes.tsx`) -- both mobile card view and desktop table
-- **Invoices** (`src/pages/Invoices.tsx`) -- both mobile card view and desktop table
-- **Delivery Notes** (`src/pages/DeliveryNotes.tsx`) -- both views
-- **Workshop/Job Cards** (`src/pages/Workshop.tsx`) -- both views
+```sql
+ALTER TABLE public.company_profiles
+ADD COLUMN contact_person text;
+```
 
-Each page will get:
-- A `currentPage` state starting at 1
-- Slice the list to show items `(page-1)*10` through `page*10`
-- Previous/Next pagination buttons at the bottom with page indicator (e.g., "Page 1 of 3")
-- Reset to page 1 when filters change
+### Code Changes
 
-### 3. Dashboard Item Reorder (Industry Standard)
+**1. `src/hooks/useCompanyProfile.tsx`**
+- Add `contact_person: string | null` to the `CompanyProfile` interface
 
-Reorder the **Business Dashboard** (`src/pages/BusinessDashboard.tsx`) to follow standard business dashboard conventions:
+**2. `src/pages/Settings.tsx`** (Profile tab)
+- Add `contact_person` to `formData` initial state and the `useEffect` that loads profile data
+- Add a "Contact Person" input field in the profile form grid, placed alongside the company name field
 
-1. **Date Banner / Greeting** (current position -- keep)
-2. **KPI Stats Grid** (current position -- keep)
-3. **Quick Actions** (current position -- keep)
-4. **Revenue / Financial Summary** -- Recent Invoices card (move up for cash flow visibility)
-5. **Pipeline / Sales Activity** -- Recent Quotes card
-6. **Tender Source Links** (keep at bottom as reference)
+**3. `src/components/onboarding/CompanyOnboardingDialog.tsx`**
+- Add an optional "Contact Person" field to the onboarding form so new users can enter it during setup
 
-This swaps the order of Recent Quotes and Recent Invoices cards, placing invoices (revenue/cash flow) first, which is the standard priority in business dashboards.
+### Form Layout
 
----
+The Profile tab will show the contact person next to the company name:
+
+| Company Name * | Contact Person |
+| Email          | Phone          |
+| Website        | (existing)     |
+
+This keeps the most important identity fields grouped together at the top.
 
 ### Technical Details
 
-**Pagination pattern** (applied to each document page):
-
-```typescript
-const [currentPage, setCurrentPage] = useState(1);
-const ITEMS_PER_PAGE = 10;
-
-const paginatedItems = items.slice(
-  (currentPage - 1) * ITEMS_PER_PAGE,
-  currentPage * ITEMS_PER_PAGE
-);
-const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
-```
-
-Pagination controls will use the existing `Button` component with `ChevronLeft`/`ChevronRight` icons, placed below the table/card list.
-
-**Files to modify:**
-- `src/pages/Quotes.tsx` -- add pagination
-- `src/pages/Invoices.tsx` -- add pagination
-- `src/pages/DeliveryNotes.tsx` -- add pagination
-- `src/pages/Workshop.tsx` -- add pagination
-- `src/pages/BusinessDashboard.tsx` -- reorder Recent Invoices above Recent Quotes
-
-**Data operation:**
-- Insert SMS credits row for user `0ad03a1e-...` with 10 credits allocated for `2026-02-01`
+- The column is nullable with no default, so existing profiles are unaffected
+- No RLS changes needed -- existing policies already cover the `company_profiles` table
+- The `CompanyProfileInput` type auto-derives from `CompanyProfile` via `Omit`, so adding to the interface is sufficient
 
