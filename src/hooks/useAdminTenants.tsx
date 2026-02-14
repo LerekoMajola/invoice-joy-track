@@ -10,6 +10,7 @@ export interface Tenant {
   phone: string | null;
   created_at: string;
   subscription?: {
+    id: string;
     plan: string;
     status: string;
     trial_ends_at: string | null;
@@ -71,6 +72,7 @@ export function useAdminTenants() {
           phone: profile.phone,
           created_at: profile.created_at,
           subscription: subscription ? {
+            id: subscription.id,
             plan: subscription.plan,
             status: subscription.status,
             trial_ends_at: subscription.trial_ends_at,
