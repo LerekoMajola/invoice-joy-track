@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Shield, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AdminOverviewTab, TenantsTab, SubscriptionsTab, AdminSettingsTab, SignupsTab } from '@/components/admin';
+import { AdminOverviewTab, CustomersTab, BillingTab, AdminSettingsTab } from '@/components/admin';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export default function Admin() {
@@ -18,7 +17,6 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -46,14 +44,12 @@ export default function Admin() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="tenants">Tenants</TabsTrigger>
-            <TabsTrigger value="signups">Sign-ups</TabsTrigger>
-            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+            <TabsTrigger value="customers">Customers</TabsTrigger>
+            <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -61,16 +57,12 @@ export default function Admin() {
             <AdminOverviewTab />
           </TabsContent>
 
-          <TabsContent value="tenants">
-            <TenantsTab />
+          <TabsContent value="customers">
+            <CustomersTab />
           </TabsContent>
 
-          <TabsContent value="signups">
-            <SignupsTab />
-          </TabsContent>
-
-          <TabsContent value="subscriptions">
-            <SubscriptionsTab />
+          <TabsContent value="billing">
+            <BillingTab />
           </TabsContent>
 
           <TabsContent value="settings">
