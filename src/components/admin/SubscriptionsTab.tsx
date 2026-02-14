@@ -28,11 +28,11 @@ const PLAN_PRICES: Record<string, number> = {
 };
 
 const statusColors: Record<string, string> = {
-  trialing: 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
-  active: 'bg-green-600 text-white dark:bg-green-500 dark:text-white',
-  past_due: 'bg-yellow-500 text-white dark:bg-yellow-500 dark:text-white',
-  cancelled: 'bg-red-600 text-white dark:bg-red-500 dark:text-white',
-  expired: 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white',
+  trialing: 'bg-blue-900 text-white dark:bg-blue-800 dark:text-white',
+  active: 'bg-green-900 text-white dark:bg-green-800 dark:text-white',
+  past_due: 'bg-yellow-700 text-white dark:bg-yellow-700 dark:text-white',
+  cancelled: 'bg-red-900 text-white dark:bg-red-800 dark:text-white',
+  expired: 'bg-gray-900 text-white dark:bg-gray-800 dark:text-white',
 };
 
 const planLabels: Record<string, string> = {
