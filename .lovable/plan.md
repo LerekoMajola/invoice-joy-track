@@ -1,33 +1,26 @@
 
+# Full-Page Tenant Detail View
 
-# Admin Preview: Payment Required Page
+## What Changes
+Replace the current side-panel Sheet with a full-page overlay using a React Portal. When you click the eye icon on a tenant, the detail view will take over the entire screen instead of sliding in from the right as a narrow panel.
 
-## What This Does
-Adds a "Preview Payment Page" button to the Admin panel that opens the Payment Required screen in a full-page overlay. This lets you see exactly what a tenant experiences when their trial expires, without needing to actually have an expired trial.
-
-## What You Will See
-- A new button in the Admin Subscriptions tab (or a global admin action) labeled "Preview Payment Page"
-- Clicking it opens a full-screen overlay showing the Payment Required page design
-- The overlay renders a demo version of the page with sample data (sample module badges, sample amount, sample reference)
-- A close button in the top corner to dismiss the preview
+## Design
+- Full-screen white overlay rendered via React Portal (same pattern used for document previews)
+- Fixed header bar with the tenant name, a back/close button, and key action buttons
+- Content area uses a two-column layout on desktop for better use of space:
+  - Left column: Company info, Subscription details, Usage stats
+  - Right column: Modules manager, Business Insights
+- On mobile, it stacks into a single scrollable column
+- Smooth entry with a simple fade-in
 
 ## Technical Details
 
-### 1. New Component: `src/components/admin/PaymentPagePreview.tsx`
-- A full-screen overlay (using React Portal to render into document.body, following the project's existing overlay pattern)
-- Renders the same UI as `PaymentRequired.tsx` but with mock/demo data instead of live subscription data
-- Uses sample values: a demo reference number, sample module list, sample monthly total
-- All interactive elements (copy buttons, tabs) work normally for realistic preview
-- "I've Made Payment" button is disabled with a "(Preview only)" label
-- Close button (X) in the top-right corner to dismiss
+### File Modified: `src/components/admin/TenantDetailDialog.tsx`
+- Remove the Sheet/SheetContent wrapper
+- Replace with a full-screen fixed-position div rendered via `ReactDOM.createPortal`
+- Add a top header bar with close (X) button and tenant company name
+- Reorganize content into a responsive two-column grid (`grid-cols-1 lg:grid-cols-2`)
+- All existing sections (Company Info, Subscription, Usage, Modules, Business Insights) remain unchanged in content, just laid out with more space
 
-### 2. Modified: `src/components/admin/SubscriptionsTab.tsx`
-- Add a "Preview Payment Page" button near the top of the tab
-- Opens the `PaymentPagePreview` overlay when clicked
-
-### Files to Create
-- `src/components/admin/PaymentPagePreview.tsx`
-
-### Files to Modify
-- `src/components/admin/SubscriptionsTab.tsx` -- add preview button
-
+### No other files need changes
+- `TenantsTab.tsx` already passes `open`, `onOpenChange`, and `tenant` props -- no changes needed there
