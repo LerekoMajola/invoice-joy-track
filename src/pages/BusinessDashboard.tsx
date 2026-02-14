@@ -73,11 +73,19 @@ export default function BusinessDashboard() {
       .slice(0, 5);
   }, [quotes]);
 
+  const recentInvoices = useMemo(() => {
+    return [...invoices]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  }, [invoices]);
+
   const statusStyles: Record<string, string> = {
     draft: 'bg-muted text-muted-foreground',
     sent: 'bg-info/10 text-info',
     accepted: 'bg-success/10 text-success',
     rejected: 'bg-destructive/10 text-destructive',
+    paid: 'bg-success/10 text-success',
+    overdue: 'bg-destructive/10 text-destructive',
   };
 
   return (
@@ -143,43 +151,82 @@ export default function BusinessDashboard() {
           </Button>
         </div>
 
-        {/* Recent Quotes */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Recent Quotes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : recentQuotes.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No quotes yet. Create your first quote to get started.</p>
-            ) : (
-              <div className="space-y-3">
-                {recentQuotes.map((quote) => (
-                  <div
-                    key={quote.id}
-                    className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => navigate('/quotes')}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-muted-foreground">{quote.quoteNumber}</span>
-                        <Badge variant="secondary" className={cn('text-xs', statusStyles[quote.status])}>
-                          {quote.status}
-                        </Badge>
+        {/* Recent Quotes & Invoices */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Recent Quotes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : recentQuotes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No quotes yet. Create your first quote to get started.</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentQuotes.map((quote) => (
+                    <div
+                      key={quote.id}
+                      className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => navigate('/quotes')}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">{quote.quoteNumber}</span>
+                          <Badge variant="secondary" className={cn('text-xs', statusStyles[quote.status])}>
+                            {quote.status}
+                          </Badge>
+                        </div>
+                        <p className="font-medium text-sm mt-1 truncate">{quote.clientName}</p>
                       </div>
-                      <p className="font-medium text-sm mt-1 truncate">{quote.clientName}</p>
+                      <span className="text-sm font-semibold ml-3">{formatMaluti(quote.total || 0)}</span>
                     </div>
-                    <span className="text-sm font-semibold ml-3">{formatMaluti(quote.total || 0)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-primary" />
+                Recent Invoices
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : recentInvoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No invoices yet. Create your first invoice to get started.</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentInvoices.map((invoice) => (
+                    <div
+                      key={invoice.id}
+                      className="flex items-center justify-between p-3 rounded-xl border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => navigate('/invoices')}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">{invoice.invoiceNumber}</span>
+                          <Badge variant="secondary" className={cn('text-xs', statusStyles[invoice.status])}>
+                            {invoice.status}
+                          </Badge>
+                        </div>
+                        <p className="font-medium text-sm mt-1 truncate">{invoice.clientName}</p>
+                      </div>
+                      <span className="text-sm font-semibold ml-3">{formatMaluti(invoice.total || 0)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Tender Source Links */}
         <TenderSourceLinks />
