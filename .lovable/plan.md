@@ -1,39 +1,75 @@
 
 
-# Convert Admin Dialogs to Full-Page Panels
+# Read-Only Tenant Business Insights for Admin
 
 ## Overview
-Replace the scrollable popup dialogs in the admin panel with full-page sliding panels. This eliminates scrolling within small modals and gives you a spacious, clean workspace for viewing and managing tenant details.
+Add a "Business Insights" section to the Tenant Detail panel that lets you view a tenant's clients, invoices, quotes, and key metrics in read-only mode. This helps you advise tenants on growth and improve the platform based on real usage patterns.
 
-## What Changes
+## What You Will See
 
-The following dialogs will be converted from small centered popups to full-screen slide-over panels:
+When you open a tenant's detail panel, there will be new expandable sections showing:
 
-1. **Tenant Detail Dialog** -- the main one you mentioned
-2. **Edit Subscription Dialog** -- also a popup today
+- **Clients** -- list of their clients with contact info and revenue
+- **Recent Invoices** -- their latest invoices with status, amounts, and dates
+- **Recent Quotes** -- their latest quotes with status and values
+- **Business Summary** -- total revenue, average invoice value, conversion rates
 
-Each will slide in from the right as a full-height panel, using the existing `Sheet` component (already installed). The content will have room to breathe with no cramped scrolling.
+All data is read-only with no edit or delete actions.
 
-## Visual Behavior
-- Panel slides in from the right, covering the full viewport height
-- A close button (X) in the top-right corner
-- Content laid out spaciously with sections clearly separated
-- On mobile, it takes the full screen; on desktop, it takes a wide side panel
+## How It Works
+
+A secure backend function fetches tenant data using elevated permissions, but only when requested by a verified super admin. The admin role is checked server-side before any data is returned.
 
 ---
 
 ## Technical Details
 
-### Modified: `src/components/admin/TenantDetailDialog.tsx`
-- Replace `Dialog`/`DialogContent` with `Sheet`/`SheetContent` from `@/components/ui/sheet`
-- Use `side="right"` with `className="w-full sm:max-w-xl"` for a wide right-side panel
-- Replace `DialogHeader`/`DialogTitle` with `SheetHeader`/`SheetTitle`
-- Content stays the same but now has full-page height to display without scrolling
+### 1. New Backend Function: `admin-get-tenant-data`
 
-### Modified: `src/components/admin/EditSubscriptionDialog.tsx`
-- Same conversion: `Dialog` to `Sheet` with right-side full-height panel
-- `DialogFooter` becomes `SheetFooter`
+File: `supabase/functions/admin-get-tenant-data/index.ts`
 
-### No changes needed to `TenantsTab.tsx`
-- The props (`open`, `onOpenChange`, `tenant`) remain identical, so the parent component works as-is
+- Accepts `{ tenant_user_id: string }` via POST
+- Verifies the calling user has the `super_admin` role (server-side check using service role key)
+- Uses service role to bypass RLS and fetch the tenant's:
+  - Clients (last 50, ordered by revenue)
+  - Invoices (last 50, ordered by date)
+  - Quotes (last 50, ordered by date)
+  - Summary stats (totals, averages)
+- Returns all data as a read-only payload
+- Strips sensitive fields (bank details, passwords) from the response
+
+### 2. New Hook: `src/hooks/useAdminTenantData.tsx`
+
+- Calls the `admin-get-tenant-data` edge function
+- Takes `tenant_user_id` as parameter
+- Returns `{ clients, invoices, quotes, summary }` with loading/error states
+- Only enabled when a tenant is selected for viewing
+
+### 3. New Component: `src/components/admin/TenantBusinessInsights.tsx`
+
+- Accordion-style sections for Clients, Invoices, Quotes
+- Each section shows a compact read-only table
+- Business Summary card at the top with key metrics:
+  - Total clients, total revenue, active invoices, quote conversion rate
+- No edit/delete buttons anywhere -- purely read-only
+
+### 4. Modified: `src/components/admin/TenantDetailDialog.tsx`
+
+- Add the `TenantBusinessInsights` component below the existing Modules section
+- Passes the tenant's `user_id` to the insights component
+- Wrapped in a collapsible section labeled "Business Insights"
+
+### Files to Create
+- `supabase/functions/admin-get-tenant-data/index.ts`
+- `src/hooks/useAdminTenantData.tsx`
+- `src/components/admin/TenantBusinessInsights.tsx`
+
+### Files to Modify
+- `src/components/admin/TenantDetailDialog.tsx` -- add insights section
+
+### Security
+- Admin role verified server-side before any data is returned
+- Service role key used only in the backend function (never exposed to the client)
+- No write operations -- strictly SELECT queries
+- Sensitive financial fields (bank account numbers, etc.) are excluded from the response
 
