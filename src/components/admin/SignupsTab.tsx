@@ -49,7 +49,8 @@ export function SignupsTab() {
   });
 
   const filtered = (signups || []).filter((s) => {
-    if (search && !s.email.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = search.toLowerCase();
+    if (search && !s.email.toLowerCase().includes(q) && !(s.first_name || '').toLowerCase().includes(q) && !(s.surname || '').toLowerCase().includes(q) && !(s.phone || '').toLowerCase().includes(q)) return false;
     if (onboardFilter === 'yes' && !s.onboarded) return false;
     if (onboardFilter === 'no' && s.onboarded) return false;
     if (systemFilter !== 'all' && s.system_type !== systemFilter) return false;
@@ -103,7 +104,9 @@ export function SignupsTab() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead>Phone</TableHead>
             <TableHead>System</TableHead>
             <TableHead>Onboarded</TableHead>
             <TableHead>Subscription</TableHead>
@@ -114,14 +117,22 @@ export function SignupsTab() {
         <TableBody>
           {filtered.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 No sign-ups found
               </TableCell>
             </TableRow>
           ) : (
             filtered.map((signup) => (
               <TableRow key={signup.id}>
-                <TableCell className="font-medium">{signup.email}</TableCell>
+                <TableCell className="font-medium whitespace-nowrap">
+                  {signup.first_name || signup.surname
+                    ? `${signup.first_name || ''} ${signup.surname || ''}`.trim()
+                    : <span className="text-muted-foreground text-sm">—</span>}
+                </TableCell>
+                <TableCell>{signup.email}</TableCell>
+                <TableCell>
+                  {signup.phone || <span className="text-muted-foreground text-sm">—</span>}
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={systemColors[signup.system_type] || ''}>
                     {signup.system_type}

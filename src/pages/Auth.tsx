@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Scale, Edit, Hammer, Hotel } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Scale, Edit, Hammer, Hotel, User, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
@@ -20,7 +20,10 @@ type SignupStep = 'system' | 'package' | 'review' | 'credentials' | 'custom-modu
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>('system');
@@ -54,6 +57,10 @@ export default function Auth() {
   }, [user, isAdmin, loading, navigate, isLogin]);
 
   const validateForm = () => {
+    if (!isLogin && (!firstName.trim() || !surname.trim())) {
+      toast.error('Please enter your first name and surname');
+      return false;
+    }
     if (!email || !email.includes('@')) {
       toast.error('Please enter a valid email address');
       return false;
@@ -107,6 +114,9 @@ export default function Auth() {
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
+              first_name: firstName.trim(),
+              surname: surname.trim(),
+              phone: phone.trim() || null,
               system_type: selectedSystem,
               selected_tier: selectedTier,
               selected_module_keys: selectedModuleKeys,
@@ -417,6 +427,39 @@ export default function Auth() {
               </div>
 
               <form onSubmit={handleAuth} className="space-y-5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2 group">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 group">
+                    <Label htmlFor="surname">Surname</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <Input
+                        id="surname"
+                        type="text"
+                        placeholder="Doe"
+                        value={surname}
+                        onChange={(e) => setSurname(e.target.value)}
+                        className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2 group">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -429,6 +472,21 @@ export default function Auth() {
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
                       required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <Label htmlFor="phone">Phone Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+27 81 234 5678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
                 </div>

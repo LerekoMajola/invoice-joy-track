@@ -137,6 +137,9 @@ Deno.serve(async (req) => {
         return {
           id: user.id,
           email: user.email || "",
+          first_name: (meta.first_name as string) || null,
+          surname: (meta.surname as string) || null,
+          phone: (meta.phone as string) || null,
           system_type: (meta.system_type as string) || sub?.system_type || "unknown",
           onboarded: !!profile,
           company_name: profile?.company_name || null,

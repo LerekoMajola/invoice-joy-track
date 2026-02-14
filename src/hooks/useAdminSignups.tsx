@@ -6,6 +6,9 @@ import { useAdminRole } from './useAdminRole';
 export interface AdminSignup {
   id: string;
   email: string;
+  first_name: string | null;
+  surname: string | null;
+  phone: string | null;
   system_type: string;
   onboarded: boolean;
   company_name: string | null;
