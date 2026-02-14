@@ -1,57 +1,33 @@
 
 
-# Redesign: Payment Required Screen
+# Admin Preview: Payment Required Page
 
-## Overview
-Redesign the payment-required page to be more visually appealing, persuasive, and user-friendly. The current page works but feels plain. The new design will feel premium and motivate users to complete payment quickly.
+## What This Does
+Adds a "Preview Payment Page" button to the Admin panel that opens the Payment Required screen in a full-page overlay. This lets you see exactly what a tenant experiences when their trial expires, without needing to actually have an expired trial.
 
-## Design Changes
-
-### 1. Hero Section with Gradient Background
-- Replace the plain white background with a subtle gradient (matching the brand)
-- Add a lock/shield icon instead of the warning triangle -- less alarming, more professional
-- Include a brief reminder of what they're missing: "Your data is safe and waiting for you"
-
-### 2. Active Modules Summary
-- Show which modules the user had active during their trial as small badges/chips
-- This reminds them of the value they were getting and creates urgency to re-activate
-
-### 3. Improved Amount Card
-- Add a subtle gradient border to the amount card
-- Show a breakdown: number of active modules and per-module pricing hint
-- Add "per month" more prominently
-
-### 4. Streamlined Payment Methods
-- Use tabs (M-Pesa | Bank Transfer) instead of collapsible sections to make both options equally visible
-- Cleaner step-by-step layout with better spacing
-- Add a "Copy" button next to each key detail (reference, amount, account number)
-
-### 5. Trust & Urgency Elements
-- Add a small "Your data is preserved" reassurance message
-- Add a "Need help?" link with a WhatsApp or email contact option
-- Show "Activate instantly after payment confirmation" messaging
-
-### 6. Better Post-Payment State
-- After clicking "I've Made Payment", show a more prominent confirmation with estimated activation time
-- Add a "Check activation status" button that refreshes the subscription check
+## What You Will See
+- A new button in the Admin Subscriptions tab (or a global admin action) labeled "Preview Payment Page"
+- Clicking it opens a full-screen overlay showing the Payment Required page design
+- The overlay renders a demo version of the page with sample data (sample module badges, sample amount, sample reference)
+- A close button in the top corner to dismiss the preview
 
 ## Technical Details
 
-### File Modified
-- `src/pages/PaymentRequired.tsx` -- Complete redesign of the component
+### 1. New Component: `src/components/admin/PaymentPagePreview.tsx`
+- A full-screen overlay (using React Portal to render into document.body, following the project's existing overlay pattern)
+- Renders the same UI as `PaymentRequired.tsx` but with mock/demo data instead of live subscription data
+- Uses sample values: a demo reference number, sample module list, sample monthly total
+- All interactive elements (copy buttons, tabs) work normally for realistic preview
+- "I've Made Payment" button is disabled with a "(Preview only)" label
+- Close button (X) in the top-right corner to dismiss
 
-### What stays the same
-- All existing logic: payment notification to admin, reference generation, redirect logic
-- The M-Pesa and bank transfer payment details
-- Sign out button at the bottom
+### 2. Modified: `src/components/admin/SubscriptionsTab.tsx`
+- Add a "Preview Payment Page" button near the top of the tab
+- Opens the `PaymentPagePreview` overlay when clicked
 
-### New UI Elements
-- Tabs component for payment methods (using existing Radix Tabs)
-- Module badges showing active modules (from `useModules` hook, already imported)
-- Copy buttons for account number and reference
-- "Check status" button that invalidates the subscription query to re-check
-- Contact/help link at the bottom
-- Subtle animations for the amount card (CSS only)
+### Files to Create
+- `src/components/admin/PaymentPagePreview.tsx`
 
-### No new dependencies needed
-All UI components (Tabs, Badge, Button, Card) already exist in the project.
+### Files to Modify
+- `src/components/admin/SubscriptionsTab.tsx` -- add preview button
+
