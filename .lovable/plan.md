@@ -1,23 +1,29 @@
 
 
-## Update Africa's Talking Credentials
+## Fix Africa's Talking SMS Authentication
 
-### What will happen
-Both the API Key and Username for your SMS provider will be updated with fresh values you provide.
+### Problem
+The `AT_API_KEY` and `AT_USERNAME` secrets are still returning a 401 "authentication is invalid" error from Africa's Talking. The credentials need to be re-entered with correct values.
 
 ### Steps
-1. You'll be prompted to enter your new **AT_API_KEY** (from your Africa's Talking dashboard under Settings)
-2. You'll be prompted to enter your new **AT_USERNAME** (your Africa's Talking app/account name)
-3. The SMS backend function will be redeployed to pick up the new credentials
-4. A test SMS will be triggered to verify everything works
+1. **Re-enter both secrets** (`AT_API_KEY` and `AT_USERNAME`) with freshly copied values from the Africa's Talking dashboard
+2. **Redeploy** the `send-sms` backend function to pick up the new values
+3. **Test** the SMS delivery with a real phone number
 
-### Where to find your credentials
-- Log in at [account.africastalking.com](https://account.africastalking.com/)
-- **Username**: Shown at the top of your dashboard (your app name)
-- **API Key**: Go to **Settings** and generate/copy your API key
+### How to get correct credentials
+1. Log in to [account.africastalking.com](https://account.africastalking.com/)
+2. Make sure you are in the **Live** environment (not Sandbox)
+3. Your **Username** is shown at the top -- copy it exactly (case-sensitive)
+4. Go to **Settings** and generate/copy a fresh **API Key**
+
+### Tips to avoid errors
+- No leading or trailing spaces when pasting
+- Username is case-sensitive
+- API Key should be the full string (typically 64 characters)
+- Make sure you're copying from the Live app, not Sandbox
 
 ### Technical details
 - Secrets to update: `AT_API_KEY`, `AT_USERNAME`
 - Edge function to redeploy: `send-sms`
-- Test call to `/send-sms` to confirm authentication passes
+- Verification: POST test to `/send-sms` endpoint
 
