@@ -97,10 +97,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("AT API response:", JSON.stringify(atResult));
     const recipients = atResult?.SMSMessageData?.Recipients || [];
     const firstRecipient = recipients[0];
-    console.log("First recipient:", JSON.stringify(firstRecipient));
     const status = firstRecipient?.statusCode === 101 ? "sent" : "failed";
     const atMessageId = firstRecipient?.messageId || null;
 
