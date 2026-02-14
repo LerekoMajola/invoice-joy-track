@@ -1,0 +1,1 @@
+ALTER TABLE public.company_profiles ADD COLUMN contact_person text;

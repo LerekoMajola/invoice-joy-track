@@ -379,6 +379,7 @@ export type Database = {
           city: string | null
           company_name: string
           company_profile_doc_url: string | null
+          contact_person: string | null
           country: string | null
           created_at: string
           default_tax_rate: number | null
@@ -420,6 +421,7 @@ export type Database = {
           city?: string | null
           company_name: string
           company_profile_doc_url?: string | null
+          contact_person?: string | null
           country?: string | null
           created_at?: string
           default_tax_rate?: number | null
@@ -461,6 +463,7 @@ export type Database = {
           city?: string | null
           company_name?: string
           company_profile_doc_url?: string | null
+          contact_person?: string | null
           country?: string | null
           created_at?: string
           default_tax_rate?: number | null
