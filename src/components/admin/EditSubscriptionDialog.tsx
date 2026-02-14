@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -76,13 +76,13 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Subscription</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Edit Subscription</SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-6">
           <div className="text-sm text-muted-foreground mb-4">
             Editing subscription for <strong>{tenant.company_name}</strong>
           </div>
@@ -119,7 +119,7 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
           </div>
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -127,8 +127,8 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
             {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save Changes
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
