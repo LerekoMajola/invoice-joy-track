@@ -18,11 +18,17 @@ export function useInactivityLogout(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remainingRef = useRef(INACTIVITY_TIMEOUT);
   const lastActiveRef = useRef(Date.now());
+  const loggingOutRef = useRef(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      loggingOutRef.current = false;
+      return;
+    }
 
     const logout = async () => {
+      if (loggingOutRef.current) return;
+      loggingOutRef.current = true;
       try {
         await signOut();
       } catch {
