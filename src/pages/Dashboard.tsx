@@ -4,6 +4,7 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const SchoolDashboard = lazy(() => import('@/pages/SchoolDashboard'));
@@ -15,9 +16,8 @@ const GuestHouseDashboard = lazy(() => import('@/pages/GuestHouseDashboard'));
 
 export default function Dashboard() {
   const { hasProfile, isLoading: profileLoading } = useCompanyProfile();
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading: authLoading } = useAuth();
   const { systemType } = useSubscription();
-
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -28,6 +28,11 @@ export default function Dashboard() {
       }
     }
   }, [profileLoading, hasProfile, isAdmin]);
+
+  // Redirect super_admin users to the admin dashboard
+  if (!authLoading && isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const handleOnboardingClose = (open: boolean) => {
     if (!open) {
