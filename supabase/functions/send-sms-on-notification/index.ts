@@ -14,6 +14,16 @@ const PLAN_DEFAULTS: Record<string, number> = {
   pro: 500,
 };
 
+// Map notification type to preference category
+const TYPE_TO_CATEGORY: Record<string, string> = {
+  task: "task",
+  invoice: "invoice",
+  quote: "quote",
+  lead: "lead",
+  tender: "tender",
+  system: "system",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -33,6 +43,43 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Check user's notification preferences
+    const { data: prefs } = await supabaseAdmin
+      .from("notification_preferences")
+      .select("sms_enabled, category_preferences")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    // If SMS is globally disabled, skip
+    if (prefs && !prefs.sms_enabled) {
+      console.log("SMS disabled for user", user_id);
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "sms_disabled" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check per-category preference if notification has a type
+    if (prefs && notification_id) {
+      const { data: notification } = await supabaseAdmin
+        .from("notifications")
+        .select("type")
+        .eq("id", notification_id)
+        .maybeSingle();
+
+      if (notification?.type) {
+        const category = TYPE_TO_CATEGORY[notification.type] || notification.type;
+        const catPrefs = (prefs.category_preferences as Record<string, any>)?.[category];
+        if (catPrefs && catPrefs.sms === false) {
+          console.log(`SMS disabled for category ${category}, user ${user_id}`);
+          return new Response(
+            JSON.stringify({ skipped: true, reason: "category_sms_disabled" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
 
     // Get user's phone from company_profiles
     const { data: profile } = await supabaseAdmin

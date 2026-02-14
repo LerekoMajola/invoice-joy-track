@@ -10,12 +10,50 @@ import { Switch } from '@/components/ui/switch';
 import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/useCompanyProfile';
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
-import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database } from 'lucide-react';
+import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 import { useSubscription } from '@/hooks/useSubscription';
+
+function CollapsibleCard({ 
+  defaultOpen = false, 
+  icon: Icon, 
+  title, 
+  description, 
+  children 
+}: { 
+  defaultOpen?: boolean; 
+  icon: React.ElementType; 
+  title: string; 
+  description: string; 
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer select-none">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Icon className="h-5 w-5 text-primary" />
+                {title}
+              </CardTitle>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+            </div>
+            <CardDescription>{description}</CardDescription>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>{children}</CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
@@ -129,24 +167,18 @@ export default function Settings() {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsUploadingLogo(true);
     const url = await uploadAsset(file, 'logo');
-    if (url) {
-      setFormData(prev => ({ ...prev, logo_url: url }));
-    }
+    if (url) setFormData(prev => ({ ...prev, logo_url: url }));
     setIsUploadingLogo(false);
   };
 
   const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsUploadingSignature(true);
     const url = await uploadAsset(file, 'signature');
-    if (url) {
-      setFormData(prev => ({ ...prev, signature_url: url }));
-    }
+    if (url) setFormData(prev => ({ ...prev, signature_url: url }));
     setIsUploadingSignature(false);
   };
 
@@ -158,12 +190,9 @@ export default function Settings() {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     const url = await uploadAsset(file, type);
-    if (url) {
-      setFormData(prev => ({ ...prev, [urlField]: url }));
-    }
+    if (url) setFormData(prev => ({ ...prev, [urlField]: url }));
     setUploading(false);
   };
 
@@ -195,17 +224,8 @@ export default function Settings() {
       
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-4xl pb-safe">
         {/* Company Profile */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              Company Profile
-            </CardTitle>
-            <CardDescription>
-              Your business identity — this information is required for full platform access
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard defaultOpen icon={Building2} title={systemType === 'legal' ? 'Firm Profile' : systemType === 'school' ? 'School Profile' : systemType === 'workshop' ? 'Workshop Profile' : systemType === 'hire' ? 'Business Profile' : 'Company Profile'} description="Your business identity — this information is required for full platform access">
+            <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="company_name">
@@ -319,24 +339,15 @@ export default function Settings() {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Account Security */}
         <ChangePasswordCard />
 
         {/* Document Header */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Document Header
-            </CardTitle>
-            <CardDescription>
-              This information appears at the top of all your documents (quotes, invoices, delivery notes)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <CollapsibleCard icon={FileText} title="Document Header" description="This information appears at the top of all your documents (quotes, invoices, delivery notes)">
+            <div className="space-y-6">
             {/* Top Information & Logo Row */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 space-y-2">
@@ -411,37 +422,16 @@ export default function Settings() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              Notifications
-            </CardTitle>
-            <CardDescription>
-              Configure how you receive reminders and alerts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PushNotificationToggle />
-          </CardContent>
-        </Card>
+        <CollapsibleCard defaultOpen icon={Bell} title="Notifications" description="Configure how you receive reminders and alerts">
+          <NotificationPreferences />
+        </CollapsibleCard>
 
         {/* Data Backup */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              Data Backup
-            </CardTitle>
-            <CardDescription>
-              Your data is automatically backed up and emailed to you every Sunday. You can also trigger a manual backup at any time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <CollapsibleCard icon={Database} title="Data Backup" description="Your data is automatically backed up and emailed to you every Sunday. You can also trigger a manual backup at any time.">
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">Send Backup Now</p>
@@ -467,21 +457,11 @@ export default function Settings() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
 
         {/* VAT Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              VAT Settings
-            </CardTitle>
-            <CardDescription>
-              Configure VAT calculations for your documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard icon={Building2} title="VAT Settings" description="Configure VAT calculations for your documents">
+            <div className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="vat_enabled" className="text-base">Enable VAT</Label>
@@ -511,8 +491,8 @@ export default function Settings() {
                 />
               </div>
             )}
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Document Template */}
         <TemplateEditor
@@ -529,17 +509,8 @@ export default function Settings() {
         />
 
         {/* Banking Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Banking Details
-            </CardTitle>
-            <CardDescription>
-              Bank account information for invoices and payment instructions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard icon={CreditCard} title="Banking Details" description="Bank account information for invoices and payment instructions">
+            <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="bank_name">Bank Name</Label>
@@ -589,21 +560,12 @@ export default function Settings() {
                 placeholder="SWIFT/BIC code for international transfers"
               />
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Document Defaults */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Document Defaults
-            </CardTitle>
-            <CardDescription>
-              Default settings applied to new quotes, invoices, and delivery notes
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard icon={FileText} title="Document Defaults" description="Default settings applied to new quotes, invoices, and delivery notes">
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="default_validity_days">Default Quote Validity (days)</Label>
               <Input
@@ -640,21 +602,12 @@ export default function Settings() {
                 rows={2}
               />
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Signature */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Signature
-            </CardTitle>
-            <CardDescription>
-              Upload a signature image to display on documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <CollapsibleCard icon={FileText} title="Signature" description="Upload a signature image to display on documents">
+            <div className="space-y-4">
             <div className="flex items-center gap-4">
               {formData.signature_url ? (
                 <div className="relative">
@@ -708,21 +661,12 @@ export default function Settings() {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Company Documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-primary" />
-              Company Documents
-            </CardTitle>
-            <CardDescription>
-              Upload and manage your important company documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <CollapsibleCard icon={FileCheck} title="Company Documents" description="Upload and manage your important company documents">
+            <div className="space-y-6">
             {/* Tax Clearance Certificates */}
             <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4">
               <div className="flex items-center gap-2">
@@ -850,8 +794,8 @@ export default function Settings() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </div>
+        </CollapsibleCard>
 
         {/* Save Button */}
         <div className="flex justify-end pb-6">
