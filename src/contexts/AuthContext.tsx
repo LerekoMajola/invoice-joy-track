@@ -181,7 +181,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("[AuthContext] signOut failed, forcing local cleanup:", err);
+    }
+    // Always clear local state regardless of server response
+    try {
+      // Remove Supabase session from localStorage
+      const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if (storageKey) localStorage.removeItem(storageKey);
+      sessionStorage.removeItem('admin_role_cache');
+    } catch {}
+    setUser(null);
+    setSession(null);
+    setIsAdmin(false);
   }, []);
 
   // Auto-logout after 5 minutes of inactivity
