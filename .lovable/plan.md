@@ -1,16 +1,36 @@
 
-# Upgrade Owner Account to Permanent Pro
+# Settings Page: Replace Collapsibles with Tabs
 
-## What Will Change
-Update the subscription for user `89710bb3-dff7-4e5e-9af0-7ef7f3ad105d` (the Orion Labs owner/admin) to a permanent Pro plan.
+## What Changes
+Replace all the collapsible cards in the Settings page with a horizontal tab bar at the top. Each tab shows its section content below when selected.
 
-## Database Update
-Run a single SQL update on the `subscriptions` table:
-- **plan**: `free_trial` --> `pro`
-- **status**: `trialing` --> `active`
-- **trial_ends_at**: cleared (set to NULL -- no trial)
-- **current_period_end**: set to `2099-12-31` (effectively forever)
-- **payment_method**: `owner`
-- **payment_reference**: `OWNER-PERPETUAL`
+## Tabs
+The following tabs will appear in a scrollable tab bar at the top:
 
-No code changes, no schema changes. Just a one-time data update to your existing subscription row.
+1. **Profile** -- Company Profile fields (default/active tab)
+2. **Security** -- Change Password card
+3. **Document Header** -- Header info, logo upload
+4. **Notifications** -- NotificationPreferences component
+5. **Backup** -- Data backup section
+6. **VAT** -- VAT toggle and rate
+7. **Template** -- TemplateEditor component
+8. **Banking** -- Banking details fields
+9. **Defaults** -- Document defaults (validity, terms, footer)
+10. **Signature** -- Signature upload
+11. **Documents** -- Tax clearances, business ID, company profile doc
+
+## Layout
+- The `TabsList` will use `overflow-x-auto` for mobile scrollability
+- Only the active tab's content is rendered below
+- The "Save All Changes" button stays at the bottom, outside the tabs (visible on all tabs)
+
+## Technical Details
+
+**File modified:** `src/pages/Settings.tsx`
+
+- Remove the `CollapsibleCard` component and `Collapsible` imports
+- Import `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs`
+- Wrap all sections in a `Tabs` component with `defaultValue="profile"`
+- Each former collapsible card becomes a `TabsContent` with a simple `Card` wrapping its content
+- The `TabsList` will have compact trigger labels with icons on desktop, icons-only on mobile
+- No new files, no database changes
