@@ -12,7 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, phone, message, notification_id } = await req.json();
+    const { user_id, phone: rawPhone, message, notification_id } = await req.json();
+    const phone = rawPhone?.replace(/\s+/g, '');
 
     if (!user_id || !phone || !message) {
       return new Response(
