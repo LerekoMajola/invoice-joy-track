@@ -51,10 +51,10 @@ const systemLabels: Record<string, string> = {
 };
 
 const systemColors: Record<string, string> = {
-  business: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  workshop: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  school: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
-  legal: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  business: 'bg-blue-900 text-white dark:bg-blue-800 dark:text-white',
+  workshop: 'bg-orange-900 text-white dark:bg-orange-800 dark:text-white',
+  school: 'bg-emerald-900 text-white dark:bg-emerald-800 dark:text-white',
+  legal: 'bg-purple-900 text-white dark:bg-purple-800 dark:text-white',
 };
 
 interface UnifiedCustomer {
@@ -279,7 +279,7 @@ export function CustomersTab() {
                     </TableCell>
                     <TableCell>
                       {customer.onboarded ? (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        <Badge className="bg-green-900 text-white dark:bg-green-800 dark:text-white">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Onboarded
                         </Badge>
