@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AddDeliveryNoteDialog } from '@/components/delivery-notes/AddDeliveryNoteDialog';
 import { Header } from '@/components/layout/Header';
@@ -26,6 +26,9 @@ import { useDeliveryNotes, DeliveryNote, DeliveryNoteItem } from '@/hooks/useDel
 import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
 import { DeliveryNotePreview } from '@/components/delivery-notes/DeliveryNotePreview';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+
+const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
   pending: 'bg-warning/10 text-warning border-warning/20',
@@ -109,6 +112,10 @@ export default function DeliveryNotes() {
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(deliveryNotes.length / ITEMS_PER_PAGE);
+  const paginatedNotes = useMemo(() => deliveryNotes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [deliveryNotes, currentPage]);
 
   const handleUpdateNote = async (data: {
     id: string;
@@ -256,7 +263,7 @@ export default function DeliveryNotes() {
           <>
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">
-              {deliveryNotes.map((note) => (
+              {paginatedNotes.map((note) => (
                 <DeliveryNoteCard
                   key={note.id}
                   note={note}
@@ -282,7 +289,7 @@ export default function DeliveryNotes() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {deliveryNotes.map((note, index) => (
+                  {paginatedNotes.map((note, index) => (
                     <TableRow 
                       key={note.id}
                       className="animate-slide-up"
@@ -339,6 +346,7 @@ export default function DeliveryNotes() {
                 </TableBody>
               </Table>
             </div>
+            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </>
         )}
       </div>

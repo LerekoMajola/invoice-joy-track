@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -24,6 +24,9 @@ import { useJobCards, type JobCard, type JobCardStatus } from '@/hooks/useJobCar
 import { CreateJobCardDialog } from '@/components/workshop/CreateJobCardDialog';
 import { JobCardDetailDialog } from '@/components/workshop/JobCardDetailDialog';
 import { toast } from 'sonner';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+
+const ITEMS_PER_PAGE = 10;
 
 const statusStyles: Record<string, string> = {
   received: 'bg-muted text-muted-foreground border-border',
@@ -109,6 +112,7 @@ export default function Workshop() {
   const [selectedJobCard, setSelectedJobCard] = useState<JobCard | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const filtered = jobCards.filter((jc) => {
@@ -120,6 +124,14 @@ export default function Workshop() {
       (jc.vehicleMake || '').toLowerCase().includes(q)
     );
   });
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedFiltered = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleView = (jc: JobCard) => {
     setSelectedJobCard(jc);
@@ -222,7 +234,7 @@ export default function Workshop() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by job #, client, registration..."
             className="pl-9"
           />
@@ -244,7 +256,7 @@ export default function Workshop() {
           <>
             {/* Mobile */}
             <div className="md:hidden space-y-3">
-              {filtered.map((jc) => (
+              {paginatedFiltered.map((jc) => (
                 <JobCardCard
                   key={jc.id}
                   jobCard={jc}
@@ -269,7 +281,7 @@ export default function Workshop() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((jc, index) => (
+                  {paginatedFiltered.map((jc, index) => (
                     <TableRow
                       key={jc.id}
                       className="animate-slide-up cursor-pointer hover:bg-muted/50"
@@ -330,6 +342,7 @@ export default function Workshop() {
                 </TableBody>
               </Table>
             </div>
+            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -47,7 +47,10 @@ import { useClients } from '@/hooks/useClients';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useRecurringDocuments } from '@/hooks/useRecurringDocuments';
 import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 import { toast } from 'sonner';
+
+const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground border-border',
@@ -91,6 +94,10 @@ export default function Quotes() {
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
   const [recurringTargetQuote, setRecurringTargetQuote] = useState<Quote | null>(null);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(quotes.length / ITEMS_PER_PAGE);
+  const paginatedQuotes = useMemo(() => quotes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [quotes, currentPage]);
 
   const defaultTaxRate = profile?.vat_enabled ? (profile.default_tax_rate || 15) : 0;
   const defaultTerms = profile?.default_terms || 'Payment is due within 30 days of invoice date.';
@@ -469,7 +476,7 @@ export default function Quotes() {
             <>
             {/* Mobile Card View */}
             <div className="block md:hidden divide-y divide-border">
-              {quotes.map((quote) => (
+              {paginatedQuotes.map((quote) => (
                 <QuoteCard
                   key={quote.id}
                   quote={quote}
@@ -500,7 +507,7 @@ export default function Quotes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quotes.map((quote, index) => (
+              {paginatedQuotes.map((quote, index) => (
                   <TableRow key={quote.id} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -582,6 +589,7 @@ export default function Quotes() {
               </TableBody>
             </Table>
             </div>
+            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </>
           )}
         </div>

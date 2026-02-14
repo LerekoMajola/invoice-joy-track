@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -36,7 +36,10 @@ import { useDeliveryNotes } from '@/hooks/useDeliveryNotes';
 import { useRecurringDocuments } from '@/hooks/useRecurringDocuments';
 import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 import { toast } from 'sonner';
+
+const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
   draft: 'bg-muted text-muted-foreground border-border',
@@ -161,6 +164,10 @@ export default function Invoices() {
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
   const [recurringTargetInvoice, setRecurringTargetInvoice] = useState<Invoice | null>(null);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
+  const paginatedInvoices = useMemo(() => invoices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [invoices, currentPage]);
 
   const invoicesWithDeliveryNotes = new Set(
     deliveryNotes.filter(dn => dn.invoiceId).map(dn => dn.invoiceId)
@@ -368,7 +375,7 @@ export default function Invoices() {
           <>
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">
-              {invoices.map((invoice) => (
+              {paginatedInvoices.map((invoice) => (
                 <InvoiceCard
                   key={invoice.id}
                   invoice={invoice}
@@ -399,7 +406,7 @@ export default function Invoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice, index) => (
+                  {paginatedInvoices.map((invoice, index) => (
                     <TableRow 
                       key={invoice.id}
                       className="animate-slide-up cursor-pointer hover:bg-muted/50"
@@ -475,6 +482,7 @@ export default function Invoices() {
                 </TableBody>
               </Table>
             </div>
+            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </>
         )}
       </div>
