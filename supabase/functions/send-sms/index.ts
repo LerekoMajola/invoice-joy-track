@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     }
 
     // Call Africa's Talking API
-    const atApiKey = Deno.env.get("AT_API_KEY")!;
+    const atApiKey = (Deno.env.get("AT_API_KEY_1") || "") + (Deno.env.get("AT_API_KEY_2") || "");
     const atUsername = Deno.env.get("AT_USERNAME")!;
     console.log("KEY_CHECK length:", atApiKey?.length, "prefix:", atApiKey?.substring(0, 6), "username:", atUsername);
     
