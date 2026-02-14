@@ -1,36 +1,57 @@
 
-# Fix: Logout Loop When Session Expires
 
-## Problem
-You're stuck on the dashboard and can't log out. The auth logs show dozens of repeated "Session not found" (403) errors. Here's what's happening:
+# Redesign: Payment Required Screen
 
-1. The 5-minute inactivity timer fires and tries to sign you out
-2. The server session is already gone, so the sign-out call fails with 403
-3. But locally the app still thinks you're logged in (stale session in memory)
-4. The inactivity hook and any manual logout keep retrying -- all failing
-5. You're stuck in a loop and never get redirected to the login page
+## Overview
+Redesign the payment-required page to be more visually appealing, persuasive, and user-friendly. The current page works but feels plain. The new design will feel premium and motivate users to complete payment quickly.
 
-## Solution
-Force-clear the local session data when sign-out fails, so the app always redirects to the login page regardless of server response.
+## Design Changes
 
-## Changes
+### 1. Hero Section with Gradient Background
+- Replace the plain white background with a subtle gradient (matching the brand)
+- Add a lock/shield icon instead of the warning triangle -- less alarming, more professional
+- Include a brief reminder of what they're missing: "Your data is safe and waiting for you"
 
-### 1. Fix `src/contexts/AuthContext.tsx` -- Make `signOut` resilient
-Update the `signOut` function to forcefully clear local storage and reset state even if the server call fails:
+### 2. Active Modules Summary
+- Show which modules the user had active during their trial as small badges/chips
+- This reminds them of the value they were getting and creates urgency to re-activate
 
-- Wrap `supabase.auth.signOut()` in a try/catch
-- On failure, manually remove the Supabase session from `localStorage`
-- Clear the `sessionStorage` admin role cache
-- Reset `user`, `session`, and `isAdmin` state to null/false
-- This ensures the app always transitions to a logged-out state
+### 3. Improved Amount Card
+- Add a subtle gradient border to the amount card
+- Show a breakdown: number of active modules and per-module pricing hint
+- Add "per month" more prominently
 
-### 2. Fix `src/hooks/useInactivityLogout.tsx` -- Prevent duplicate logout calls
-Add a guard to prevent the logout function from being called multiple times:
+### 4. Streamlined Payment Methods
+- Use tabs (M-Pesa | Bank Transfer) instead of collapsible sections to make both options equally visible
+- Cleaner step-by-step layout with better spacing
+- Add a "Copy" button next to each key detail (reference, amount, account number)
 
-- Add a `loggingOutRef` flag that's set to `true` when logout starts
-- Skip subsequent calls if already logging out
-- This stops the rapid-fire 403 loop in the auth logs
+### 5. Trust & Urgency Elements
+- Add a small "Your data is preserved" reassurance message
+- Add a "Need help?" link with a WhatsApp or email contact option
+- Show "Activate instantly after payment confirmation" messaging
 
-### Files Modified
-- `src/contexts/AuthContext.tsx` -- resilient signOut with local cleanup
-- `src/hooks/useInactivityLogout.tsx` -- guard against duplicate logout calls
+### 6. Better Post-Payment State
+- After clicking "I've Made Payment", show a more prominent confirmation with estimated activation time
+- Add a "Check activation status" button that refreshes the subscription check
+
+## Technical Details
+
+### File Modified
+- `src/pages/PaymentRequired.tsx` -- Complete redesign of the component
+
+### What stays the same
+- All existing logic: payment notification to admin, reference generation, redirect logic
+- The M-Pesa and bank transfer payment details
+- Sign out button at the bottom
+
+### New UI Elements
+- Tabs component for payment methods (using existing Radix Tabs)
+- Module badges showing active modules (from `useModules` hook, already imported)
+- Copy buttons for account number and reference
+- "Check status" button that invalidates the subscription query to re-check
+- Contact/help link at the bottom
+- Subtle animations for the amount card (CSS only)
+
+### No new dependencies needed
+All UI components (Tabs, Badge, Button, Card) already exist in the project.
