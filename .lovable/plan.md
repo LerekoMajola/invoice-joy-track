@@ -1,42 +1,39 @@
 
 
-# Add Tenant Module Management to Admin Panel
+# Convert Admin Dialogs to Full-Page Panels
 
 ## Overview
-Add the ability for super admins to view and toggle which modules are active for any tenant, directly from the Tenants tab in the admin panel.
+Replace the scrollable popup dialogs in the admin panel with full-page sliding panels. This eliminates scrolling within small modals and gives you a spacious, clean workspace for viewing and managing tenant details.
 
-## How It Will Work
-When you click the "eye" icon to view a tenant's details, the detail dialog will include a new "Modules" section showing all available modules for that tenant's system type. You can toggle each module on/off with a switch. Changes save immediately.
+## What Changes
 
-## Technical Changes
+The following dialogs will be converted from small centered popups to full-screen slide-over panels:
 
-### 1. Database: Add missing RLS policies on `user_modules`
+1. **Tenant Detail Dialog** -- the main one you mentioned
+2. **Edit Subscription Dialog** -- also a popup today
 
-Currently, super admins can SELECT and UPDATE user_modules but cannot INSERT or DELETE them. Two new policies are needed:
+Each will slide in from the right as a full-height panel, using the existing `Sheet` component (already installed). The content will have room to breathe with no cramped scrolling.
 
-- **"Admins can insert user modules"** -- allows super_admin to INSERT rows for any user
-- **"Admins can delete user modules"** -- allows super_admin to DELETE rows for any user
+## Visual Behavior
+- Panel slides in from the right, covering the full viewport height
+- A close button (X) in the top-right corner
+- Content laid out spaciously with sections clearly separated
+- On mobile, it takes the full screen; on desktop, it takes a wide side panel
 
-### 2. New Component: `src/components/admin/TenantModuleManager.tsx`
+---
 
-A component that:
-- Accepts a tenant's `user_id` and `system_type`
-- Fetches all platform modules (filtered by system type + shared)
-- Fetches the tenant's current `user_modules` entries
-- Displays each module as a row with a toggle switch (on = subscribed, off = not)
-- On toggle ON: inserts a `user_modules` row for that tenant
-- On toggle OFF: deletes the `user_modules` row for that tenant
-- Shows the module name, description, and monthly price
+## Technical Details
 
-### 3. Modified File: `src/components/admin/TenantDetailDialog.tsx`
+### Modified: `src/components/admin/TenantDetailDialog.tsx`
+- Replace `Dialog`/`DialogContent` with `Sheet`/`SheetContent` from `@/components/ui/sheet`
+- Use `side="right"` with `className="w-full sm:max-w-xl"` for a wide right-side panel
+- Replace `DialogHeader`/`DialogTitle` with `SheetHeader`/`SheetTitle`
+- Content stays the same but now has full-page height to display without scrolling
 
-- Import and embed the new `TenantModuleManager` component
-- Add a "Modules" section below the existing Usage section
-- Pass `tenant.user_id` and `tenant.subscription.system_type` to the component
+### Modified: `src/components/admin/EditSubscriptionDialog.tsx`
+- Same conversion: `Dialog` to `Sheet` with right-side full-height panel
+- `DialogFooter` becomes `SheetFooter`
 
-### 4. Modified File: `src/hooks/useAdminTenants.tsx`
+### No changes needed to `TenantsTab.tsx`
+- The props (`open`, `onOpenChange`, `tenant`) remain identical, so the parent component works as-is
 
-No changes needed -- the `user_id` and `system_type` are already available on the tenant object.
-
-## Result
-From the Admin panel Tenants tab, clicking the eye icon on any tenant will show their details including a full list of modules with toggles to enable/disable each one instantly.
