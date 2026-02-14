@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap } from 'lucide-react';
+import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap, Puzzle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tenant } from '@/hooks/useAdminTenants';
 import { formatMaluti } from '@/lib/currency';
+import { TenantModuleManager } from './TenantModuleManager';
 
 interface TenantDetailDialogProps {
   tenant: Tenant | null;
@@ -142,6 +143,20 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                 <div className="text-xs text-muted-foreground">Invoices</div>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Modules */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Puzzle className="h-4 w-4" />
+              <h4 className="font-medium">Modules</h4>
+            </div>
+            <TenantModuleManager
+              userId={tenant.user_id}
+              systemType={tenant.subscription?.system_type || 'business'}
+            />
           </div>
         </div>
       </DialogContent>
