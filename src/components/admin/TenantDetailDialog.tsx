@@ -1,11 +1,11 @@
 import { format } from 'date-fns';
 import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap, Puzzle } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tenant } from '@/hooks/useAdminTenants';
@@ -37,16 +37,16 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
   if (!tenant) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Tenant Details
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 mt-6">
           {/* Company Info */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg">{tenant.company_name}</h3>
@@ -159,7 +159,7 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
             />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
