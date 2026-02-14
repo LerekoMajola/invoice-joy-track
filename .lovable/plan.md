@@ -1,46 +1,42 @@
 
 
-# Reorganize Admin Tabs into Clear Industry-Standard Groups
+# Fix Admin Revenue: Show Platform Revenue, Not Tenant Revenue
 
 ## The Problem
-The current tabs -- Tenants, Sign-ups, Subscriptions -- are three separate views of the same user base, making it confusing to navigate. Where do you go to find a customer? All three places show overlapping data.
+The "Total Revenue" card and "Revenue Trend" chart on the admin Overview are currently pulling from the `invoices` table -- which contains tenants' business invoices to their own clients. This is misleading because it shows what tenants earned, not what the platform (Orion) earned from subscription fees.
 
-## New Tab Structure
+## The Fix
+Calculate platform revenue from **subscription data** instead of tenant invoices. Since subscriptions have plan types with known prices and period dates, we can derive:
+- **Total Platform Revenue**: Sum of subscription plan prices for all active/past-active billing periods
+- **Revenue Trend**: Monthly platform income based on subscriptions that were active in each month
 
-```text
-Before:  Overview | Tenants | Sign-ups | Subscriptions | Settings
-After:   Overview | Customers | Billing | Settings
-```
+## What Changes
 
-### 1. "Customers" Tab (merges Tenants + Sign-ups)
-- A single unified table showing ALL users in one place
-- Toggle filter at the top: **All** | **Onboarded** | **Not Onboarded**
-- Keeps all existing columns: company name, email, system type, status, usage, joined date
-- Keeps all existing actions: view detail, edit subscription, delete
-- Sign-ups that haven't onboarded show as rows with "Not Onboarded" badge and no company name
-- This eliminates the confusion of "is this person a tenant or a sign-up?"
+### Stats Card Updates
+- **"Total Revenue"** becomes **"Platform Revenue"** -- calculated from subscription plan prices multiplied by the number of billing months each active subscription has been running
+- **Description** changes from "From X invoices" to "From X subscriptions" 
+- **Remove** the `invoices` query entirely from admin stats (it was fetching ALL tenant invoices across the platform which is also a performance concern)
 
-### 2. "Billing" Tab (replaces Subscriptions)
-- Renamed to the industry-standard term "Billing"
-- Same subscription management table with plan, price, status, trial/period dates
-- Keeps the edit subscription action and payment page preview button
+### Revenue Chart Update
+- **"Revenue Trend"** recalculated using subscription data: for each month, sum the plan prices of all subscriptions that were active during that month
+- Same visual chart, just sourced from the correct data
 
-## Technical Changes
+## Technical Details
 
-### File: `src/pages/Admin.tsx`
-- Change tabs from 5 to 4: Overview, Customers, Billing, Settings
-- Remove the "tenants" and "signups" TabsTrigger/TabsContent
-- Add "customers" and "billing" TabsTrigger/TabsContent
+### File: `src/hooks/useAdminStats.tsx`
+- Remove the `invoices` query (no longer needed)
+- Replace `totalRevenue` calculation: iterate subscriptions, for each active/cancelled subscription calculate months active multiplied by plan price
+- Replace `totalInvoices` with `totalSubscriptions` (count of non-trial subscriptions)
+- Update `revenueByMonth`: for each of the last 6 months, sum plan prices of subscriptions that were active in that month
+- Update the `AdminStats` interface: rename `totalInvoices` to `totalSubscriptions`
 
-### New File: `src/components/admin/CustomersTab.tsx`
-- Combines data from both `useAdminTenants()` and `useAdminSignups()`
-- Unified table with a toggle to filter between All / Onboarded / Not Onboarded
-- Onboarded rows show the full tenant experience (company name, usage, view/edit/delete)
-- Non-onboarded rows show email, system type, signup date, and delete action
-- Keeps all existing filters: search, status, system type
+### File: `src/components/admin/PlatformStatsCards.tsx`
+- Rename the card from "Total Revenue" to "Platform Revenue"
+- Update description from "From X invoices" to "From X subscriptions"
 
-### File: `src/components/admin/SubscriptionsTab.tsx`
-- No logic changes, just rename to `BillingTab`
+### File: `src/components/admin/RevenueChart.tsx`
+- Update subtitle from "Monthly paid invoice totals" to "Monthly subscription revenue"
 
-### File: `src/components/admin/index.ts`
-- Export `CustomersTab` and `BillingTab` instead of `TenantsTab`, `SignupsTab`, `SubscriptionsTab`
+### File: `src/components/admin/AdminOverviewTab.tsx`
+- No changes needed (passes data through)
+
