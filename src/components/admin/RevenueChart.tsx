@@ -11,7 +11,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Revenue Trend</CardTitle>
-        <CardDescription>Monthly paid invoice totals</CardDescription>
+        <CardDescription>Monthly subscription revenue</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">

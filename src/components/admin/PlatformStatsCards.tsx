@@ -28,9 +28,9 @@ export function PlatformStatsCards({ stats }: PlatformStatsCardsProps) {
       icon: Clock,
     },
     {
-      title: 'Total Revenue',
+      title: 'Platform Revenue',
       value: formatMaluti(stats.totalRevenue),
-      description: `From ${stats.totalInvoices} invoices`,
+      description: `From ${stats.totalSubscriptions} subscriptions`,
       icon: TrendingUp,
     },
   ];
