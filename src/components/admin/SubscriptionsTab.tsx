@@ -5,24 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
 import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
+import { PaymentTracker } from './PaymentTracker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaluti } from '@/lib/currency';
+import { Separator } from '@/components/ui/separator';
 
 const PLAN_PRICES: Record<string, number> = {
   free_trial: 0,
@@ -51,6 +47,7 @@ export function SubscriptionsTab() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
 
   if (isLoading) {
@@ -66,17 +63,14 @@ export function SubscriptionsTab() {
     );
   }
 
-  // Only show tenants with subscriptions
   const tenantsWithSubs = tenants?.filter(t => t.subscription) || [];
 
   const filteredTenants = tenantsWithSubs.filter((tenant) => {
     const matchesSearch = 
       tenant.company_name.toLowerCase().includes(search.toLowerCase()) ||
       tenant.email?.toLowerCase().includes(search.toLowerCase());
-    
     const matchesStatus = statusFilter === 'all' || tenant.subscription?.status === statusFilter;
     const matchesPlan = planFilter === 'all' || tenant.subscription?.plan === planFilter;
-
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
@@ -141,7 +135,11 @@ export function SubscriptionsTab() {
               </TableRow>
             ) : (
               filteredTenants.map((tenant) => (
-                <TableRow key={tenant.id}>
+                <TableRow 
+                  key={tenant.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSelectedTenant(tenant)}
+                >
                   <TableCell className="font-medium">{tenant.company_name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
@@ -170,7 +168,10 @@ export function SubscriptionsTab() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setEditingTenant(tenant)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTenant(tenant);
+                      }}
                     >
                       <Settings className="h-4 w-4" />
                     </Button>
@@ -181,6 +182,49 @@ export function SubscriptionsTab() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!selectedTenant} onOpenChange={(open) => !open && setSelectedTenant(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{selectedTenant?.company_name}</SheetTitle>
+          </SheetHeader>
+          {selectedTenant?.subscription && (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline">{planLabels[selectedTenant.subscription.plan]}</Badge>
+                <Badge className={statusColors[selectedTenant.subscription.status]}>
+                  {selectedTenant.subscription.status}
+                </Badge>
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {formatMaluti(PLAN_PRICES[selectedTenant.subscription.plan])}/mo
+                </span>
+              </div>
+
+              <Separator />
+
+              <PaymentTracker
+                subscriptionId={selectedTenant.subscription.id}
+                userId={selectedTenant.user_id}
+                planPrice={PLAN_PRICES[selectedTenant.subscription.plan]}
+              />
+
+              <Separator />
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setEditingTenant(selectedTenant);
+                }}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Subscription
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <EditSubscriptionDialog
         tenant={editingTenant}
