@@ -1,26 +1,46 @@
 
-# Full-Page Tenant Detail View
 
-## What Changes
-Replace the current side-panel Sheet with a full-page overlay using a React Portal. When you click the eye icon on a tenant, the detail view will take over the entire screen instead of sliding in from the right as a narrow panel.
+# Reorganize Admin Tabs into Clear Industry-Standard Groups
 
-## Design
-- Full-screen white overlay rendered via React Portal (same pattern used for document previews)
-- Fixed header bar with the tenant name, a back/close button, and key action buttons
-- Content area uses a two-column layout on desktop for better use of space:
-  - Left column: Company info, Subscription details, Usage stats
-  - Right column: Modules manager, Business Insights
-- On mobile, it stacks into a single scrollable column
-- Smooth entry with a simple fade-in
+## The Problem
+The current tabs -- Tenants, Sign-ups, Subscriptions -- are three separate views of the same user base, making it confusing to navigate. Where do you go to find a customer? All three places show overlapping data.
 
-## Technical Details
+## New Tab Structure
 
-### File Modified: `src/components/admin/TenantDetailDialog.tsx`
-- Remove the Sheet/SheetContent wrapper
-- Replace with a full-screen fixed-position div rendered via `ReactDOM.createPortal`
-- Add a top header bar with close (X) button and tenant company name
-- Reorganize content into a responsive two-column grid (`grid-cols-1 lg:grid-cols-2`)
-- All existing sections (Company Info, Subscription, Usage, Modules, Business Insights) remain unchanged in content, just laid out with more space
+```text
+Before:  Overview | Tenants | Sign-ups | Subscriptions | Settings
+After:   Overview | Customers | Billing | Settings
+```
 
-### No other files need changes
-- `TenantsTab.tsx` already passes `open`, `onOpenChange`, and `tenant` props -- no changes needed there
+### 1. "Customers" Tab (merges Tenants + Sign-ups)
+- A single unified table showing ALL users in one place
+- Toggle filter at the top: **All** | **Onboarded** | **Not Onboarded**
+- Keeps all existing columns: company name, email, system type, status, usage, joined date
+- Keeps all existing actions: view detail, edit subscription, delete
+- Sign-ups that haven't onboarded show as rows with "Not Onboarded" badge and no company name
+- This eliminates the confusion of "is this person a tenant or a sign-up?"
+
+### 2. "Billing" Tab (replaces Subscriptions)
+- Renamed to the industry-standard term "Billing"
+- Same subscription management table with plan, price, status, trial/period dates
+- Keeps the edit subscription action and payment page preview button
+
+## Technical Changes
+
+### File: `src/pages/Admin.tsx`
+- Change tabs from 5 to 4: Overview, Customers, Billing, Settings
+- Remove the "tenants" and "signups" TabsTrigger/TabsContent
+- Add "customers" and "billing" TabsTrigger/TabsContent
+
+### New File: `src/components/admin/CustomersTab.tsx`
+- Combines data from both `useAdminTenants()` and `useAdminSignups()`
+- Unified table with a toggle to filter between All / Onboarded / Not Onboarded
+- Onboarded rows show the full tenant experience (company name, usage, view/edit/delete)
+- Non-onboarded rows show email, system type, signup date, and delete action
+- Keeps all existing filters: search, status, system type
+
+### File: `src/components/admin/SubscriptionsTab.tsx`
+- No logic changes, just rename to `BillingTab`
+
+### File: `src/components/admin/index.ts`
+- Export `CustomersTab` and `BillingTab` instead of `TenantsTab`, `SignupsTab`, `SubscriptionsTab`
