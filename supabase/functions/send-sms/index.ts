@@ -76,7 +76,27 @@ Deno.serve(async (req) => {
       }
     );
 
-    const atResult = await atResponse.json();
+    const atResponseText = await atResponse.text();
+    let atResult;
+    try {
+      atResult = JSON.parse(atResponseText);
+    } catch {
+      console.error("AT API non-JSON response:", atResponse.status, atResponseText);
+
+      await supabaseAdmin.from("sms_log").insert({
+        user_id,
+        phone_number: phone,
+        message,
+        status: "failed",
+        notification_id,
+      });
+
+      return new Response(
+        JSON.stringify({ error: "SMS provider error", details: atResponseText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const recipients = atResult?.SMSMessageData?.Recipients || [];
     const firstRecipient = recipients[0];
     const status = firstRecipient?.statusCode === 101 ? "sent" : "failed";
