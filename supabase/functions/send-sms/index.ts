@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
     // Call Africa's Talking API
     const atApiKey = Deno.env.get("AT_API_KEY")!;
     const atUsername = Deno.env.get("AT_USERNAME")!;
+    
+    console.log("AT_USERNAME value:", JSON.stringify(atUsername));
+    console.log("AT_API_KEY length:", atApiKey?.length, "first 4 chars:", atApiKey?.slice(0, 4));
 
     const formBody = new URLSearchParams({
       username: atUsername,
