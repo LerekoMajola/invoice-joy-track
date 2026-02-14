@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tenant } from '@/hooks/useAdminTenants';
 import { formatMaluti } from '@/lib/currency';
 import { TenantModuleManager } from './TenantModuleManager';
+import { TenantBusinessInsights } from './TenantBusinessInsights';
 
 interface TenantDetailDialogProps {
   tenant: Tenant | null;
@@ -157,6 +158,17 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
               userId={tenant.user_id}
               systemType={tenant.subscription?.system_type || 'business'}
             />
+          </div>
+
+          <Separator />
+
+          {/* Business Insights */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <h4 className="font-medium">Business Insights</h4>
+            </div>
+            <TenantBusinessInsights tenantUserId={tenant.user_id} />
           </div>
         </div>
       </SheetContent>
