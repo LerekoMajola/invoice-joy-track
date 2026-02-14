@@ -1,43 +1,102 @@
 
-# Add Name, Surname, and Phone to Signup Form
+# Integrate Africa's Talking SMS Notifications
 
-## What Changes
-The signup credentials step (the final step before account creation) will be updated to collect the user's **first name**, **surname**, **email**, and **phone number**. This information will be stored in the user's metadata so you can use it for follow-up marketing.
+## Overview
+Add SMS notifications via Africa's Talking to the platform. Every in-app notification will also be sent as an SMS to users who have a phone number on file. Each tenant gets a monthly SMS credit allowance based on their subscription, with the option for admins to allocate extra credits.
 
-## How It Works
-- Two new fields (First Name, Surname) appear above the email field
-- A Phone Number field appears below the email field
-- All four fields plus password are submitted together when creating the account
-- The name, surname, and phone are saved to the user's `user_metadata` in the authentication system
-- The admin Sign-ups tab will be updated to display these fields so you can see contact details at a glance
+## What Will Change
 
-## Changes
+### 1. Store the API Key Securely
+- Save the Africa's Talking API key as a backend secret (`AT_API_KEY`)
+- Save the username as a secret (`AT_USERNAME` = "Lereko Majola")
 
-### 1. Auth Page - Credentials Step
-**File: `src/pages/Auth.tsx`**
-- Add state variables: `firstName`, `surname`, `phone`
-- Add First Name and Surname input fields (both required) above the email field
-- Add Phone Number input field (optional) below email
-- Include `first_name`, `surname`, and `phone` in the `user_metadata` when calling signup
-- Add a User icon for name fields and Phone icon for the phone field
+### 2. New Database Table: `sms_credits`
+Tracks SMS credit allocations and usage per tenant per month:
+- `user_id` - the tenant
+- `month` - e.g. "2026-02-01"
+- `credits_allocated` - how many SMS the tenant can send this month
+- `credits_used` - how many have been sent
+- RLS policies so users see their own credits, admins can manage all
 
-### 2. Admin Sign-ups Edge Function
-**File: `supabase/functions/admin-get-signups/index.ts`**
-- Extract `first_name`, `surname`, and `phone` from `user_metadata` in the response
-- Return these fields alongside existing signup data
+### 3. New Edge Function: `send-sms`
+A backend function that:
+- Accepts `user_id`, `phone`, `message` parameters
+- Checks the user has remaining SMS credits for the current month
+- Calls the Africa's Talking SMS API (`https://api.africastalking.com/version1/messaging`)
+- Decrements the user's credits on success
+- Logs the SMS in an `sms_log` table for audit
 
-### 3. Admin Sign-ups Hook & Tab
-**Files: `src/hooks/useAdminSignups.tsx`, `src/components/admin/SignupsTab.tsx`**
-- Add `first_name`, `surname`, `phone` to the `AdminSignup` interface
-- Display name and phone columns in the sign-ups table so you can see contact info for marketing follow-up
+### 4. New Database Table: `sms_log`
+Audit trail of all SMS sent:
+- `user_id`, `phone_number`, `message`, `status`, `at_message_id`, `created_at`
+
+### 5. Hook Into Existing Notification System
+Modify the database triggers that create notifications (invoice status, quote status, lead status) and the edge functions (task reminders, payment reminders, tender link reminders) to also call `send-sms` when the user has a phone number and available credits.
+
+The approach: Create a new database trigger on the `notifications` table (AFTER INSERT) that automatically calls the `send-sms` edge function. This way every notification -- regardless of source -- gets an SMS copy without modifying each individual trigger.
+
+### 6. Admin SMS Credit Management
+Add a section in the Admin dashboard (Tenants tab) where you can:
+- See each tenant's SMS usage for the current month
+- Allocate/adjust monthly credits per tenant
+- View SMS sending history
+
+### 7. Billing Page SMS Section
+Add a small card on the tenant's Billing page showing:
+- SMS credits remaining this month
+- SMS sent this month
+
+## File Changes
+
+| File | Change |
+|------|--------|
+| `supabase/functions/send-sms/index.ts` | New edge function for Africa's Talking SMS API |
+| `supabase/functions/send-sms-on-notification/index.ts` | New edge function triggered by notification insert |
+| Database migration | Create `sms_credits` and `sms_log` tables with RLS |
+| Database migration | Create trigger on `notifications` table to fire SMS |
+| `src/hooks/useSmsCredits.tsx` | New hook to fetch SMS credit balance |
+| `src/components/admin/TenantDetailDialog.tsx` | Add SMS credits management section |
+| `src/pages/Billing.tsx` | Add SMS usage card |
 
 ## Technical Details
 
-### Data Storage
-No new database tables needed. The name, surname, and phone are stored in the authentication system's `user_metadata` object, which is already accessible via the admin edge function.
+### Africa's Talking API Call
+```text
+POST https://api.africastalking.com/version1/messaging
+Content-Type: application/x-www-form-urlencoded
+apiKey: {AT_API_KEY}
 
-### Files Modified
-- `src/pages/Auth.tsx` - Add name/surname/phone fields to credentials step
-- `supabase/functions/admin-get-signups/index.ts` - Return name/surname/phone from user metadata
-- `src/hooks/useAdminSignups.tsx` - Update interface with new fields
-- `src/components/admin/SignupsTab.tsx` - Show name and phone in the table
+username=Lereko+Majola&to={phone}&message={message}
+```
+
+### SMS Credit Flow
+```text
+Notification inserted
+       |
+       v
+  AFTER INSERT trigger on notifications table
+       |
+       v
+  Calls send-sms-on-notification edge function
+       |
+       v
+  Looks up user's phone from company_profiles
+       |
+       v
+  Checks sms_credits for remaining balance
+       |
+       v
+  Calls send-sms (Africa's Talking API)
+       |
+       v
+  Logs result in sms_log, decrements credits_used
+```
+
+### Default Credit Allocation
+Each subscription tier gets a default monthly SMS allocation:
+- Free Trial: 10 SMS/month
+- Basic: 50 SMS/month
+- Standard: 200 SMS/month
+- Pro: 500 SMS/month
+
+Admins can override these defaults per tenant from the admin panel.
