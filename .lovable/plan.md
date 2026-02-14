@@ -1,86 +1,43 @@
 
+# Add Name, Surname, and Phone to Signup Form
 
-# 12-Month Payment Tracker with Automated Reminders
+## What Changes
+The signup credentials step (the final step before account creation) will be updated to collect the user's **first name**, **surname**, **email**, and **phone number**. This information will be stored in the user's metadata so you can use it for follow-up marketing.
 
-## What You Get
-When you click a tenant in the Billing tab, you'll see a 12-month payment calendar with colored indicator lights under each month:
-- **Green** = Payment received
-- **Red** = Payment overdue (past the due date with no payment)
-- **Amber** = Payment due soon (current month, not yet paid)
-- **Gray** = Future month (not yet due)
-
-You'll also be able to manually record a payment for any month by clicking on it. Automated reminders will notify both you and the client when payments are late.
+## How It Works
+- Two new fields (First Name, Surname) appear above the email field
+- A Phone Number field appears below the email field
+- All four fields plus password are submitted together when creating the account
+- The name, surname, and phone are saved to the user's `user_metadata` in the authentication system
+- The admin Sign-ups tab will be updated to display these fields so you can see contact details at a glance
 
 ## Changes
 
-### 1. New Database Table: `subscription_payments`
-Tracks individual monthly payments per subscription:
-- `id`, `user_id` (the tenant), `subscription_id`
-- `month` (date, first of the month e.g. 2026-01-01)
-- `amount`, `payment_date`, `payment_method`, `payment_reference`
-- `status` (paid, pending, overdue)
-- `created_at`
+### 1. Auth Page - Credentials Step
+**File: `src/pages/Auth.tsx`**
+- Add state variables: `firstName`, `surname`, `phone`
+- Add First Name and Surname input fields (both required) above the email field
+- Add Phone Number input field (optional) below email
+- Include `first_name`, `surname`, and `phone` in the `user_metadata` when calling signup
+- Add a User icon for name fields and Phone icon for the phone field
 
-RLS: Admin can read/write all; users can read their own.
+### 2. Admin Sign-ups Edge Function
+**File: `supabase/functions/admin-get-signups/index.ts`**
+- Extract `first_name`, `surname`, and `phone` from `user_metadata` in the response
+- Return these fields alongside existing signup data
 
-### 2. Billing Tab Gets a Detail View
-**File: `src/components/admin/SubscriptionsTab.tsx`**
-- Clicking a tenant row opens a detail panel (Sheet) showing:
-  - Company name, plan, current status at the top
-  - A 12-month grid (current year) with colored dot indicators under each month label (Jan, Feb, Mar...)
-  - Click any month to record/edit a payment (amount, date, reference, method)
-  - The existing edit subscription controls (plan/status) move into this same panel
-
-### 3. New Component: `PaymentTracker.tsx`
-**File: `src/components/admin/PaymentTracker.tsx`**
-- Renders the 12-month grid with indicator lights
-- Each month shows: short name (Jan, Feb...), a colored circle indicator, and the amount if paid
-- Clicking a month opens a small form to record payment
-- Fetches from `subscription_payments` table for the selected tenant
-
-### 4. New Edge Function: `check-payment-reminders`
-**File: `supabase/functions/check-payment-reminders/index.ts`**
-- Runs daily via cron job
-- For each active/past_due subscription:
-  - Check if the current month has a payment record
-  - If no payment and we're past the 5th of the month: send reminder notifications
-  - Notify the **admin** (you) with "Payment outstanding from [Company Name] for [Month]"
-  - Notify the **client** (the tenant's user_id) with "Your subscription payment for [Month] is outstanding"
-- Updates subscription status to `past_due` if payment is more than 7 days late
-- Creates both in-app notifications (via the existing `notifications` table)
-
-### 5. Cron Job Setup
-- Schedule `check-payment-reminders` to run daily at 8 AM
+### 3. Admin Sign-ups Hook & Tab
+**Files: `src/hooks/useAdminSignups.tsx`, `src/components/admin/SignupsTab.tsx`**
+- Add `first_name`, `surname`, `phone` to the `AdminSignup` interface
+- Display name and phone columns in the sign-ups table so you can see contact info for marketing follow-up
 
 ## Technical Details
 
-### Database Migration
-```sql
-CREATE TABLE subscription_payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  subscription_id uuid NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
-  month date NOT NULL,
-  amount numeric NOT NULL DEFAULT 0,
-  payment_date date,
-  payment_method text,
-  payment_reference text,
-  status text NOT NULL DEFAULT 'pending',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(subscription_id, month)
-);
-
-ALTER TABLE subscription_payments ENABLE ROW LEVEL SECURITY;
--- Admin can manage all
--- Users can view their own
-```
-
-### Files Created
-- `src/components/admin/PaymentTracker.tsx` -- 12-month grid with indicator lights and record payment form
-- `supabase/functions/check-payment-reminders/index.ts` -- daily reminder logic
+### Data Storage
+No new database tables needed. The name, surname, and phone are stored in the authentication system's `user_metadata` object, which is already accessible via the admin edge function.
 
 ### Files Modified
-- `src/components/admin/SubscriptionsTab.tsx` -- add click-to-expand detail view with payment tracker
-- `src/components/admin/EditSubscriptionDialog.tsx` -- integrate payment tracker into the dialog
-- `supabase/config.toml` -- add the new edge function config
-
+- `src/pages/Auth.tsx` - Add name/surname/phone fields to credentials step
+- `supabase/functions/admin-get-signups/index.ts` - Return name/surname/phone from user metadata
+- `src/hooks/useAdminSignups.tsx` - Update interface with new fields
+- `src/components/admin/SignupsTab.tsx` - Show name and phone in the table
