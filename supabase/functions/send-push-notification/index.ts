@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!;
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!;
@@ -28,6 +29,28 @@ Deno.serve(async (req) => {
     if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
       throw new Error('VAPID keys not configured');
     }
+
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const callerUserId = claimsData.claims.sub;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -39,6 +62,24 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Missing required fields: user_id, title, body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Only allow sending notifications to yourself (or admin)
+    if (callerUserId !== user_id) {
+      // Check if caller is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerUserId)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+      
+      if (!roleData) {
+        return new Response(
+          JSON.stringify({ error: 'Forbidden: cannot send notifications to other users' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Fetch user's push subscription
