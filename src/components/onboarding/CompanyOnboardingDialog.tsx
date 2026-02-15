@@ -39,6 +39,7 @@ const SYSTEM_CONFIG: Record<SystemType, { icon: React.ElementType; title: string
   legal: { icon: Scale, title: "Let's set up your practice", entityLabel: 'Firm' },
   hire: { icon: Hammer, title: "Let's set up your rental business", entityLabel: 'Business' },
   guesthouse: { icon: Hotel, title: "Let's set up your guest house", entityLabel: 'Guest House' },
+  fleet: { icon: Building2, title: "Let's set up your fleet operations", entityLabel: 'Company' },
 };
 
 interface CompanyOnboardingDialogProps {
