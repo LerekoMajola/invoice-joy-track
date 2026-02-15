@@ -276,13 +276,13 @@ export default function Auth() {
 
     if (signupStep === 'review' && selectedTier) {
       const SYSTEM_META: Record<SystemType, { label: string; icon: React.ReactNode; gradient: string }> = {
-        business: { label: 'Business Management', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
-        workshop: { label: 'Workshop Management', icon: <Wrench className="h-6 w-6" />, gradient: 'from-coral to-warning' },
-        school: { label: 'School Management', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-info to-cyan' },
-        legal: { label: 'Legal Practice', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
-        hire: { label: 'Tool Hire', icon: <Hammer className="h-6 w-6" />, gradient: 'from-amber-500 to-orange-500' },
-        guesthouse: { label: 'Guest House', icon: <Hotel className="h-6 w-6" />, gradient: 'from-rose-500 to-pink-500' },
-        fleet: { label: 'Fleet Management', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-slate-600 to-zinc-800' },
+        business: { label: 'BizPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
+        workshop: { label: 'ShopPro', icon: <Wrench className="h-6 w-6" />, gradient: 'from-coral to-warning' },
+        school: { label: 'EduPro', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-info to-cyan' },
+        legal: { label: 'LawPro', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
+        hire: { label: 'HirePro', icon: <Hammer className="h-6 w-6" />, gradient: 'from-amber-500 to-orange-500' },
+        guesthouse: { label: 'StayPro', icon: <Hotel className="h-6 w-6" />, gradient: 'from-rose-500 to-pink-500' },
+        fleet: { label: 'FleetPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-slate-600 to-zinc-800' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
 

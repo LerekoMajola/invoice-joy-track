@@ -412,13 +412,13 @@ const fleetTiers: PackageTier[] = [
 ];
 
 const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
-  business: { label: 'Business Management', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
-  workshop: { label: 'Workshop Management', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
-  school: { label: 'School Management', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
-  legal: { label: 'Legal Practice', subtitle: 'For law firms & practitioners', gradient: 'from-emerald-500 to-teal-500', tiers: legalTiers },
-  hire: { label: 'Tool Hire', subtitle: 'For equipment rental companies', gradient: 'from-amber-500 to-orange-500', tiers: hireTiers },
-  guesthouse: { label: 'Guest House', subtitle: 'For lodges & hospitality', gradient: 'from-rose-500 to-pink-500', tiers: guesthouseTiers },
-  fleet: { label: 'Fleet Management', subtitle: 'For vehicle fleets & logistics', gradient: 'from-slate-600 to-zinc-800', tiers: fleetTiers },
+  business: { label: 'BizPro', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
+  workshop: { label: 'ShopPro', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
+  school: { label: 'EduPro', subtitle: 'For private schools & academies', gradient: 'from-info to-cyan', tiers: schoolTiers },
+  legal: { label: 'LawPro', subtitle: 'For law firms & practitioners', gradient: 'from-emerald-500 to-teal-500', tiers: legalTiers },
+  hire: { label: 'HirePro', subtitle: 'For equipment rental companies', gradient: 'from-amber-500 to-orange-500', tiers: hireTiers },
+  guesthouse: { label: 'StayPro', subtitle: 'For lodges & hospitality', gradient: 'from-rose-500 to-pink-500', tiers: guesthouseTiers },
+  fleet: { label: 'FleetPro', subtitle: 'For vehicle fleets & logistics', gradient: 'from-slate-600 to-zinc-800', tiers: fleetTiers },
 };
 
 interface PackageTierSelectorProps {

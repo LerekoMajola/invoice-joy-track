@@ -28,7 +28,7 @@ export default function Fleet() {
   return (
     <DashboardLayout>
       <Header
-        title="Fleet Management"
+        title="FleetPro"
         subtitle="Vehicle registry, maintenance, and cost intelligence"
       />
 

@@ -15,7 +15,7 @@ import {
 const industries = [
   {
     icon: Briefcase,
-    name: 'Business',
+    name: 'BizPro',
     system: 'business',
     gradient: 'from-primary to-violet',
     features: ['Quotes & Invoices', 'Client CRM & Pipeline', 'Delivery Notes', 'Profitability Tracking'],
@@ -23,7 +23,7 @@ const industries = [
   },
   {
     icon: Wrench,
-    name: 'Workshop',
+    name: 'ShopPro',
     system: 'workshop',
     gradient: 'from-coral to-warning',
     features: ['Job Cards & Tracking', 'Parts & Labour Costing', 'Vehicle History', 'Technician Assignment'],
@@ -31,7 +31,7 @@ const industries = [
   },
   {
     icon: GraduationCap,
-    name: 'School',
+    name: 'EduPro',
     system: 'school',
     gradient: 'from-info to-cyan',
     features: ['Student Records', 'Fee Tracking & Invoicing', 'Class Management', 'Announcements'],
@@ -39,7 +39,7 @@ const industries = [
   },
   {
     icon: Scale,
-    name: 'Legal',
+    name: 'LawPro',
     system: 'legal',
     gradient: 'from-violet to-primary',
     features: ['Case Management', 'Time & Billing', 'Court Calendar', 'Legal Documents'],
@@ -47,7 +47,7 @@ const industries = [
   },
   {
     icon: Hammer,
-    name: 'Tool Hire',
+    name: 'HirePro',
     system: 'hire',
     gradient: 'from-success to-info',
     features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage Tracking'],
@@ -55,7 +55,7 @@ const industries = [
   },
   {
     icon: Hotel,
-    name: 'Guest House',
+    name: 'StayPro',
     system: 'guesthouse',
     gradient: 'from-rose-500 to-pink-500',
     features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings'],
@@ -63,7 +63,7 @@ const industries = [
   },
   {
     icon: Car,
-    name: 'Fleet',
+    name: 'FleetPro',
     system: 'fleet',
     gradient: 'from-slate-600 to-zinc-800',
     features: ['Vehicle Registry & Health', 'Maintenance Tracking', 'Cost Intelligence', 'Replace-or-Keep Advisor'],
