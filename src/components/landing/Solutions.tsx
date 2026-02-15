@@ -8,6 +8,7 @@ import {
   Scale, 
   Hammer,
   Hotel,
+  Car,
   CheckCircle2
 } from 'lucide-react';
 
@@ -60,6 +61,14 @@ const industries = [
     features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings'],
     price: 'M650/mo',
   },
+  {
+    icon: Car,
+    name: 'Fleet',
+    system: 'fleet',
+    gradient: 'from-slate-600 to-zinc-800',
+    features: ['Vehicle Registry & Health', 'Maintenance Tracking', 'Cost Intelligence', 'Replace-or-Keep Advisor'],
+    price: 'M500/mo',
+  },
 ];
 
 export function Solutions() {
@@ -68,7 +77,7 @@ export function Solutions() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-            6 Industries, 1 Platform
+            7 Industries, 1 Platform
           </div>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Solutions for Every Industry

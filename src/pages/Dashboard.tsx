@@ -13,6 +13,7 @@ const WorkshopDashboard = lazy(() => import('@/pages/WorkshopDashboard'));
 const LegalDashboard = lazy(() => import('@/pages/LegalDashboard'));
 const HireDashboard = lazy(() => import('@/pages/HireDashboard'));
 const GuestHouseDashboard = lazy(() => import('@/pages/GuestHouseDashboard'));
+const FleetDashboard = lazy(() => import('@/pages/FleetDashboard'));
 
 export default function Dashboard() {
   const { hasProfile, isLoading: profileLoading } = useCompanyProfile();
@@ -53,6 +54,8 @@ export default function Dashboard() {
         return <HireDashboard />;
       case 'guesthouse':
         return <GuestHouseDashboard />;
+      case 'fleet':
+        return <FleetDashboard />;
       case 'business':
       default:
         return <BusinessDashboard />;

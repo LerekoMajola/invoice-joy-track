@@ -1,8 +1,8 @@
-import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, ArrowRight } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse';
+export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet';
 
 interface SystemOption {
   type: SystemType;
@@ -68,6 +68,15 @@ const systems: SystemOption[] = [
     icon: Hotel,
     gradient: 'from-rose-500 to-pink-500',
     iconBg: 'bg-rose-500/10 text-rose-600',
+  },
+  {
+    type: 'fleet',
+    label: 'Fleet',
+    description: 'Vehicle management, maintenance tracking, cost intelligence & health scoring for fleets',
+    startingPrice: 'M500',
+    icon: Car,
+    gradient: 'from-slate-600 to-zinc-800',
+    iconBg: 'bg-slate-600/10 text-slate-700',
   },
 ];
 

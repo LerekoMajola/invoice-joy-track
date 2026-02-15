@@ -38,7 +38,7 @@ export default function Auth() {
   // Pre-select system from URL query param (e.g. /auth?system=business)
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
-    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep('package');
       setIsLogin(false);
@@ -281,6 +281,7 @@ export default function Auth() {
         legal: { label: 'Legal Practice', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
         hire: { label: 'Tool Hire', icon: <Hammer className="h-6 w-6" />, gradient: 'from-amber-500 to-orange-500' },
         guesthouse: { label: 'Guest House', icon: <Hotel className="h-6 w-6" />, gradient: 'from-rose-500 to-pink-500' },
+        fleet: { label: 'Fleet Management', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-slate-600 to-zinc-800' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
 
