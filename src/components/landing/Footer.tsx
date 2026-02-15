@@ -18,12 +18,13 @@ export function Footer() {
           <div>
             <h4 className="font-display font-semibold mb-4">Solutions</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><Link to="/auth?system=business" className="hover:text-primary-foreground transition-colors">Business Management</Link></li>
-              <li><Link to="/auth?system=workshop" className="hover:text-primary-foreground transition-colors">Workshop & Repairs</Link></li>
-              <li><Link to="/auth?system=school" className="hover:text-primary-foreground transition-colors">School Admin</Link></li>
-              <li><Link to="/auth?system=legal" className="hover:text-primary-foreground transition-colors">Legal Practice</Link></li>
-              <li><Link to="/auth?system=hire" className="hover:text-primary-foreground transition-colors">Tool & Equipment Hire</Link></li>
-              <li><Link to="/auth?system=guesthouse" className="hover:text-primary-foreground transition-colors">Guest House</Link></li>
+              <li><Link to="/auth?system=business" className="hover:text-primary-foreground transition-colors">BizPro</Link></li>
+              <li><Link to="/auth?system=workshop" className="hover:text-primary-foreground transition-colors">ShopPro</Link></li>
+              <li><Link to="/auth?system=school" className="hover:text-primary-foreground transition-colors">EduPro</Link></li>
+              <li><Link to="/auth?system=legal" className="hover:text-primary-foreground transition-colors">LawPro</Link></li>
+              <li><Link to="/auth?system=hire" className="hover:text-primary-foreground transition-colors">HirePro</Link></li>
+              <li><Link to="/auth?system=guesthouse" className="hover:text-primary-foreground transition-colors">StayPro</Link></li>
+              <li><Link to="/auth?system=fleet" className="hover:text-primary-foreground transition-colors">FleetPro</Link></li>
             </ul>
           </div>
 

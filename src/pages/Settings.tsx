@@ -177,7 +177,7 @@ export default function Settings() {
     );
   }
 
-  const profileLabel = systemType === 'legal' ? 'Firm Profile' : systemType === 'school' ? 'School Profile' : systemType === 'workshop' ? 'Workshop Profile' : systemType === 'hire' ? 'Business Profile' : 'Company Profile';
+  const profileLabel = systemType === 'legal' ? 'LawPro Profile' : systemType === 'school' ? 'EduPro Profile' : systemType === 'workshop' ? 'ShopPro Profile' : systemType === 'hire' ? 'HirePro Profile' : systemType === 'guesthouse' ? 'StayPro Profile' : systemType === 'fleet' ? 'FleetPro Profile' : 'BizPro Profile';
   const companyLabel = systemType === 'legal' ? 'Firm Name' : systemType === 'school' ? 'School Name' : systemType === 'workshop' ? 'Workshop Name' : systemType === 'hire' ? 'Business Name' : 'Company Name';
 
   return (

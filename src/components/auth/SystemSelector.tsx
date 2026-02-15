@@ -17,7 +17,7 @@ interface SystemOption {
 const systems: SystemOption[] = [
   {
     type: 'business',
-    label: 'Business',
+    label: 'BizPro',
     description: 'Quotes, invoices, CRM, tenders & accounting for service companies',
     startingPrice: 'M350',
     icon: Briefcase,
@@ -26,7 +26,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'workshop',
-    label: 'Workshop',
+    label: 'ShopPro',
     description: 'Job cards, repairs, parts tracking & invoicing for auto workshops',
     startingPrice: 'M450',
     icon: Wrench,
@@ -35,7 +35,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'school',
-    label: 'School',
+    label: 'EduPro',
     description: 'Students, fee collection, terms & class management for schools',
     startingPrice: 'M720',
     icon: GraduationCap,
@@ -44,7 +44,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'legal',
-    label: 'Legal',
+    label: 'LawPro',
     description: 'Case management, billable hours, court calendar & document management for law firms',
     startingPrice: 'M500',
     icon: Scale,
@@ -53,7 +53,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'hire',
-    label: 'Tool Hire',
+    label: 'HirePro',
     description: 'Equipment rental, hire orders, availability tracking & returns for rental companies',
     startingPrice: 'M400',
     icon: Hammer,
@@ -62,7 +62,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'guesthouse',
-    label: 'Guest House',
+    label: 'StayPro',
     description: 'Room management, bookings, housekeeping, meal plans & guest reviews for hospitality',
     startingPrice: 'M650',
     icon: Hotel,
@@ -71,7 +71,7 @@ const systems: SystemOption[] = [
   },
   {
     type: 'fleet',
-    label: 'Fleet',
+    label: 'FleetPro',
     description: 'Vehicle management, maintenance tracking, cost intelligence & health scoring for fleets',
     startingPrice: 'M500',
     icon: Car,

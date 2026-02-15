@@ -104,9 +104,9 @@ function btoa(str: string): string {
 }
 
 const SYSTEM_LABELS: Record<SystemType, string> = {
-  business: "Business",
-  workshop: "Workshop",
-  school: "School",
+  business: "BizPro",
+  workshop: "ShopPro",
+  school: "EduPro",
 };
 
 async function exportUserData(
