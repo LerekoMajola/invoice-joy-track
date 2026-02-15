@@ -966,6 +966,7 @@ export type Database = {
           reference: string | null
           user_id: string
           vehicle_id: string
+          vendor: string | null
         }
         Insert: {
           amount?: number
@@ -977,6 +978,7 @@ export type Database = {
           reference?: string | null
           user_id: string
           vehicle_id: string
+          vendor?: string | null
         }
         Update: {
           amount?: number
@@ -988,6 +990,7 @@ export type Database = {
           reference?: string | null
           user_id?: string
           vehicle_id?: string
+          vendor?: string | null
         }
         Relationships: [
           {
@@ -1043,6 +1046,48 @@ export type Database = {
           },
         ]
       }
+      fleet_drivers: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          license_expiry: string | null
+          license_number: string | null
+          license_type: string | null
+          notes: string | null
+          phone: string | null
+          risk_score: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          license_expiry?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          notes?: string | null
+          phone?: string | null
+          risk_score?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          license_expiry?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          notes?: string | null
+          phone?: string | null
+          risk_score?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fleet_fuel_logs: {
         Row: {
           cost: number
@@ -1096,6 +1141,9 @@ export type Database = {
           driver_name: string | null
           id: string
           incident_type: string
+          insurance_claim_ref: string | null
+          photo_urls: string[] | null
+          resolved: boolean | null
           severity: string | null
           user_id: string
           vehicle_id: string
@@ -1108,6 +1156,9 @@ export type Database = {
           driver_name?: string | null
           id?: string
           incident_type?: string
+          insurance_claim_ref?: string | null
+          photo_urls?: string[] | null
+          resolved?: boolean | null
           severity?: string | null
           user_id: string
           vehicle_id: string
@@ -1120,6 +1171,9 @@ export type Database = {
           driver_name?: string | null
           id?: string
           incident_type?: string
+          insurance_claim_ref?: string | null
+          photo_urls?: string[] | null
+          resolved?: boolean | null
           severity?: string | null
           user_id?: string
           vehicle_id?: string
@@ -1127,6 +1181,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fleet_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_maintenance_schedules: {
+        Row: {
+          created_at: string
+          id: string
+          interval_km: number | null
+          interval_months: number | null
+          is_active: boolean
+          last_completed_date: string | null
+          last_completed_odometer: number | null
+          next_due_date: string | null
+          next_due_odometer: number | null
+          notes: string | null
+          service_type: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interval_km?: number | null
+          interval_months?: number | null
+          is_active?: boolean
+          last_completed_date?: string | null
+          last_completed_odometer?: number | null
+          next_due_date?: string | null
+          next_due_odometer?: number | null
+          notes?: string | null
+          service_type?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interval_km?: number | null
+          interval_months?: number | null
+          is_active?: boolean
+          last_completed_date?: string | null
+          last_completed_odometer?: number | null
+          next_due_date?: string | null
+          next_due_odometer?: number | null
+          notes?: string | null
+          service_type?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_maintenance_schedules_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "fleet_vehicles"
@@ -1187,36 +1297,51 @@ export type Database = {
       fleet_tyres: {
         Row: {
           brand: string | null
+          cost: number | null
           created_at: string
           current_km: number | null
           date_fitted: string | null
           expected_km: number | null
           id: string
+          last_rotation_date: string | null
           position: string
+          replacement_date: string | null
+          rotation_count: number | null
+          size: string | null
           status: string | null
           user_id: string
           vehicle_id: string
         }
         Insert: {
           brand?: string | null
+          cost?: number | null
           created_at?: string
           current_km?: number | null
           date_fitted?: string | null
           expected_km?: number | null
           id?: string
+          last_rotation_date?: string | null
           position?: string
+          replacement_date?: string | null
+          rotation_count?: number | null
+          size?: string | null
           status?: string | null
           user_id: string
           vehicle_id: string
         }
         Update: {
           brand?: string | null
+          cost?: number | null
           created_at?: string
           current_km?: number | null
           date_fitted?: string | null
           expected_km?: number | null
           id?: string
+          last_rotation_date?: string | null
           position?: string
+          replacement_date?: string | null
+          rotation_count?: number | null
+          size?: string | null
           status?: string | null
           user_id?: string
           vehicle_id?: string
@@ -1234,8 +1359,12 @@ export type Database = {
       fleet_vehicles: {
         Row: {
           assigned_driver: string | null
+          color: string | null
           created_at: string
+          disposed_at: string | null
+          engine_size: string | null
           finance_details: string | null
+          fuel_type: string | null
           health_score: number | null
           id: string
           image_url: string | null
@@ -1251,12 +1380,17 @@ export type Database = {
           updated_at: string
           user_id: string
           vin: string | null
+          warranty_expiry: string | null
           year: number
         }
         Insert: {
           assigned_driver?: string | null
+          color?: string | null
           created_at?: string
+          disposed_at?: string | null
+          engine_size?: string | null
           finance_details?: string | null
+          fuel_type?: string | null
           health_score?: number | null
           id?: string
           image_url?: string | null
@@ -1272,12 +1406,17 @@ export type Database = {
           updated_at?: string
           user_id: string
           vin?: string | null
+          warranty_expiry?: string | null
           year: number
         }
         Update: {
           assigned_driver?: string | null
+          color?: string | null
           created_at?: string
+          disposed_at?: string | null
+          engine_size?: string | null
           finance_details?: string | null
+          fuel_type?: string | null
           health_score?: number | null
           id?: string
           image_url?: string | null
@@ -1293,6 +1432,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vin?: string | null
+          warranty_expiry?: string | null
           year?: number
         }
         Relationships: []
