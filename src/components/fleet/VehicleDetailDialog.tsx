@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VehicleHealthBadge } from './VehicleHealthBadge';
 import { FleetVehicle } from '@/hooks/useFleetVehicles';
 import { FleetCostSummary } from '@/hooks/useFleetCosts';
@@ -10,7 +9,8 @@ import { FleetFuelLog } from '@/hooks/useFleetFuelLogs';
 import { FleetIncident } from '@/hooks/useFleetIncidents';
 import { formatMaluti } from '@/lib/currency';
 import { format, parseISO } from 'date-fns';
-import { Trash2, Wrench, Fuel, AlertTriangle, FileText } from 'lucide-react';
+import { Trash2, Wrench, Fuel, AlertTriangle, Info } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface VehicleDetailDialogProps {
   vehicle: FleetVehicle;
@@ -24,6 +24,9 @@ interface VehicleDetailDialogProps {
 }
 
 export function VehicleDetailDialog({ vehicle, open, onOpenChange, costSummary, serviceLogs, fuelLogs, incidents, onDelete }: VehicleDetailDialogProps) {
+  const costPerKm = vehicle.odometer > 0 && costSummary ? costSummary.total / vehicle.odometer : 0;
+  const v = vehicle as any; // For new fields that may not be in TS types yet
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -48,6 +51,18 @@ export function VehicleDetailDialog({ vehicle, open, onOpenChange, costSummary, 
             <p className="font-semibold text-sm">{formatMaluti(costSummary?.total || 0)}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground">Cost/km</p>
+            <p className="font-semibold text-sm">{costPerKm > 0 ? `M${costPerKm.toFixed(2)}` : '—'}</p>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="font-semibold text-sm capitalize">{vehicle.status}</p>
+          </div>
+        </div>
+
+        {/* Extra details row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center p-3 rounded-lg bg-muted/50">
             <p className="text-xs text-muted-foreground">License Exp.</p>
             <p className="font-semibold text-sm">{vehicle.licenseExpiry ? format(parseISO(vehicle.licenseExpiry), 'dd MMM yyyy') : '—'}</p>
           </div>
@@ -55,20 +70,35 @@ export function VehicleDetailDialog({ vehicle, open, onOpenChange, costSummary, 
             <p className="text-xs text-muted-foreground">Insurance Exp.</p>
             <p className="font-semibold text-sm">{vehicle.insuranceExpiry ? format(parseISO(vehicle.insuranceExpiry), 'dd MMM yyyy') : '—'}</p>
           </div>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground">Driver</p>
+            <p className="font-semibold text-sm">{vehicle.assignedDriver || '—'}</p>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <p className="text-xs text-muted-foreground">VIN</p>
+            <p className="font-semibold text-sm text-xs">{vehicle.vin || '—'}</p>
+          </div>
         </div>
 
+        {/* Replace-or-Keep recommendation */}
         {vehicle.healthScore < 40 && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm">
-            <p className="font-medium text-red-600">⚠️ Replace-or-Keep Alert</p>
-            <p className="text-muted-foreground mt-1">This vehicle's health score suggests it may no longer be financially efficient to maintain. Consider replacement.</p>
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+            <p className="font-medium text-destructive">⚠️ Replace-or-Keep Recommendation</p>
+            <p className="text-muted-foreground mt-1">
+              Health score: {vehicle.healthScore}/100. Total spend: {formatMaluti(costSummary?.total || 0)} vs purchase price: {formatMaluti(vehicle.purchasePrice)}.
+              {costSummary && costSummary.total > vehicle.purchasePrice * 0.5 
+                ? ' Maintenance costs exceed 50% of purchase price — strongly consider replacement.'
+                : ' Monitor closely — rising costs may justify replacement soon.'}
+            </p>
           </div>
         )}
 
         <Tabs defaultValue="services" className="mt-2">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="services" className="gap-1.5 text-xs"><Wrench className="h-3.5 w-3.5" />Services ({serviceLogs.length})</TabsTrigger>
             <TabsTrigger value="fuel" className="gap-1.5 text-xs"><Fuel className="h-3.5 w-3.5" />Fuel ({fuelLogs.length})</TabsTrigger>
             <TabsTrigger value="incidents" className="gap-1.5 text-xs"><AlertTriangle className="h-3.5 w-3.5" />Incidents ({incidents.length})</TabsTrigger>
+            <TabsTrigger value="info" className="gap-1.5 text-xs"><Info className="h-3.5 w-3.5" />Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="services" className="max-h-48 overflow-y-auto space-y-2">
@@ -105,6 +135,23 @@ export function VehicleDetailDialog({ vehicle, open, onOpenChange, costSummary, 
                 <span className="font-medium">{formatMaluti(i.cost)}</span>
               </div>
             ))}
+          </TabsContent>
+
+          <TabsContent value="info" className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {vehicle.financeDetails && (
+                <div className="col-span-2 p-2 rounded border border-border">
+                  <p className="text-xs text-muted-foreground">Finance Details</p>
+                  <p>{vehicle.financeDetails}</p>
+                </div>
+              )}
+              {vehicle.notes && (
+                <div className="col-span-2 p-2 rounded border border-border">
+                  <p className="text-xs text-muted-foreground">Notes</p>
+                  <p>{vehicle.notes}</p>
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 
