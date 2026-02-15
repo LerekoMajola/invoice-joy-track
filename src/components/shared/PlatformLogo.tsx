@@ -23,6 +23,32 @@ export function PlatformLogo({ className = 'h-8 w-8 rounded-full p-1 bg-white sh
     return <>{fallbackIcon}</>;
   }
 
+  // Extract size/padding/bg classes for the wrapper vs image-only classes
+  const hasCircularPadding = className.includes('rounded-full') && className.includes('bg-');
+
+  if (hasCircularPadding) {
+    // Separate container styles from image styles
+    const containerClasses = className
+      .split(' ')
+      .filter(c => /^(h-|w-|rounded-|p-|bg-|shadow-)/.test(c))
+      .join(' ');
+    const imgClasses = className
+      .split(' ')
+      .filter(c => /^(object-)/.test(c))
+      .join(' ');
+
+    return (
+      <div className={`flex items-center justify-center ${containerClasses}`}>
+        <img
+          src={src}
+          alt={alt}
+          className={`h-full w-full ${imgClasses}`}
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <img
       src={src}
