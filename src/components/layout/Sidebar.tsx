@@ -44,9 +44,9 @@ const navigation = [
   { name: 'Clients', href: '/clients', icon: Users, moduleKey: 'core_crm', systemTypes: ['business', 'workshop', 'legal'] },
   { name: 'CRM', href: '/crm', icon: Kanban, moduleKey: 'core_crm', systemTypes: ['business'] },
   { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes', systemTypes: ['business', 'workshop'] },
-  { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'] },
+  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null },
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes', systemTypes: ['business'] },
-  { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
+  { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'] },
   // Workshop
   { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['workshop'] },
   // Legal
@@ -69,9 +69,9 @@ const navigation = [
   { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['school'] },
   { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['school'] },
   // Shared
-  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks', systemTypes: null },
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff', systemTypes: null },
+  { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
   { name: 'Accounting', href: '/accounting', icon: Calculator, moduleKey: 'accounting', systemTypes: null },
   { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null, systemTypes: null },
   { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null, systemTypes: null },

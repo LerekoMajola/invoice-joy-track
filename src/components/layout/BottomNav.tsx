@@ -31,7 +31,7 @@ const allNavItems = [
   // School
   { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'] },
   { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'] },
-  // Shared
+  // Shared (Invoices moved to after Quotes in Business section)
   { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null },
 ];
 
