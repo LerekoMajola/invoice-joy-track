@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
+import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 
@@ -26,7 +26,7 @@ interface SystemTab {
 const systems: SystemTab[] = [
   {
     key: 'business',
-    label: 'Business',
+    label: 'BizPro',
     icon: <Briefcase className="h-4 w-4" />,
     gradient: 'from-primary to-violet',
     subtitle: 'For companies & professionals',
@@ -74,7 +74,7 @@ const systems: SystemTab[] = [
   },
   {
     key: 'workshop',
-    label: 'Workshop',
+    label: 'ShopPro',
     icon: <Wrench className="h-4 w-4" />,
     gradient: 'from-coral to-warning',
     subtitle: 'For auto shops & service centres',
@@ -116,7 +116,7 @@ const systems: SystemTab[] = [
   },
   {
     key: 'school',
-    label: 'School',
+    label: 'EduPro',
     icon: <GraduationCap className="h-4 w-4" />,
     gradient: 'from-info to-cyan',
     subtitle: 'For private schools & academies',
@@ -161,7 +161,7 @@ const systems: SystemTab[] = [
   },
   {
     key: 'legal',
-    label: 'Legal',
+    label: 'LawPro',
     icon: <Scale className="h-4 w-4" />,
     gradient: 'from-emerald-500 to-teal-500',
     subtitle: 'For law firms & practitioners',
@@ -209,7 +209,7 @@ const systems: SystemTab[] = [
   },
   {
     key: 'hire',
-    label: 'Tool Hire',
+    label: 'HirePro',
     icon: <Hammer className="h-4 w-4" />,
     gradient: 'from-amber-500 to-orange-500',
     subtitle: 'For equipment rental companies',
@@ -257,7 +257,7 @@ const systems: SystemTab[] = [
   },
   {
     key: 'guesthouse',
-    label: 'Guest House',
+    label: 'StayPro',
     icon: <Hotel className="h-4 w-4" />,
     gradient: 'from-rose-500 to-pink-500',
     subtitle: 'For guest houses & lodges',
@@ -299,6 +299,60 @@ const systems: SystemTab[] = [
           { name: 'Housekeeping', included: true },
           { name: 'Accounting', included: true },
           { name: 'Guest Reviews', included: true },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'fleet',
+    label: 'FleetPro',
+    icon: <Truck className="h-4 w-4" />,
+    gradient: 'from-slate-600 to-zinc-800',
+    subtitle: 'For vehicle fleets & logistics',
+    tiers: [
+      {
+        name: 'Starter', price: 500, target: 'Small fleets (up to 15 vehicles)',
+        features: [
+          { name: 'Fleet Overview & Dashboard', included: true },
+          { name: 'Vehicle Registry', included: true },
+          { name: 'Service History & Logging', included: true },
+          { name: 'Fuel Cost Entry', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Maintenance Scheduling', included: false },
+          { name: 'Cost Intelligence', included: false },
+          { name: 'Tyre Management', included: false },
+          { name: 'Driver Risk Scoring', included: false },
+        ],
+      },
+      {
+        name: 'Professional', price: 700, target: 'Growing fleets', popular: true,
+        features: [
+          { name: 'Fleet Overview & Dashboard', included: true },
+          { name: 'Vehicle Registry', included: true },
+          { name: 'Service History & Logging', included: true },
+          { name: 'Fuel Cost Entry', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Maintenance Scheduling', included: true },
+          { name: 'Cost Intelligence', included: true },
+          { name: 'Tyre Management', included: false },
+          { name: 'Driver Risk Scoring', included: false },
+        ],
+      },
+      {
+        name: 'Enterprise', price: 950, target: 'Large fleets (50+ vehicles)',
+        features: [
+          { name: 'Fleet Overview & Dashboard', included: true },
+          { name: 'Vehicle Registry', included: true },
+          { name: 'Service History & Logging', included: true },
+          { name: 'Fuel Cost Entry', included: true },
+          { name: 'Invoices', included: true },
+          { name: 'Staff & HR', included: true },
+          { name: 'Maintenance Scheduling', included: true },
+          { name: 'Cost Intelligence', included: true },
+          { name: 'Tyre Management', included: true },
+          { name: 'Driver Risk Scoring', included: true },
         ],
       },
     ],
