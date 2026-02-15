@@ -47,6 +47,7 @@ import Rooms from "./pages/Rooms";
 import Bookings from "./pages/Bookings";
 import Housekeeping from "./pages/Housekeeping";
 import GuestReviews from "./pages/GuestReviews";
+import Fleet from "./pages/Fleet";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,7 @@ const App = () => {
             <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
             <Route path="/housekeeping" element={<ProtectedRoute><Housekeeping /></ProtectedRoute>} />
             <Route path="/guest-reviews" element={<ProtectedRoute><GuestReviews /></ProtectedRoute>} />
+            <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
