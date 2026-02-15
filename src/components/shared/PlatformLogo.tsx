@@ -8,7 +8,7 @@ interface PlatformLogoProps {
   fallbackIcon?: React.ReactNode;
 }
 
-export function PlatformLogo({ className = 'h-8 w-auto', alt = 'Platform Logo', fallbackIcon }: PlatformLogoProps) {
+export function PlatformLogo({ className = 'h-8 w-8 rounded-full p-1 bg-white shadow-sm object-contain', alt = 'Platform Logo', fallbackIcon }: PlatformLogoProps) {
   const { logoUrl, isLoading } = usePlatformSettings();
   const [imgError, setImgError] = useState(false);
 
