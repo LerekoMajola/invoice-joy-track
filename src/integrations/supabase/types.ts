@@ -955,6 +955,348 @@ export type Database = {
           },
         ]
       }
+      fleet_cost_entries: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          reference: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          reference?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          reference?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_cost_entries_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          expiry_date: string | null
+          file_name: string | null
+          file_url: string
+          id: string
+          notes: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          notes?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_fuel_logs: {
+        Row: {
+          cost: number
+          created_at: string
+          date: string
+          id: string
+          litres: number
+          odometer: number | null
+          station: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number
+          odometer?: number | null
+          station?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          date?: string
+          id?: string
+          litres?: number
+          odometer?: number | null
+          station?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_fuel_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_incidents: {
+        Row: {
+          cost: number | null
+          created_at: string
+          date: string
+          description: string | null
+          driver_name: string | null
+          id: string
+          incident_type: string
+          severity: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          driver_name?: string | null
+          id?: string
+          incident_type?: string
+          severity?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          driver_name?: string | null
+          id?: string
+          incident_type?: string
+          severity?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_service_logs: {
+        Row: {
+          cost: number
+          created_at: string
+          id: string
+          invoice_url: string | null
+          notes: string | null
+          parts_replaced: string | null
+          provider: string | null
+          service_date: string
+          service_type: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          id?: string
+          invoice_url?: string | null
+          notes?: string | null
+          parts_replaced?: string | null
+          provider?: string | null
+          service_date?: string
+          service_type?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          id?: string
+          invoice_url?: string | null
+          notes?: string | null
+          parts_replaced?: string | null
+          provider?: string | null
+          service_date?: string
+          service_type?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_service_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_tyres: {
+        Row: {
+          brand: string | null
+          created_at: string
+          current_km: number | null
+          date_fitted: string | null
+          expected_km: number | null
+          id: string
+          position: string
+          status: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          current_km?: number | null
+          date_fitted?: string | null
+          expected_km?: number | null
+          id?: string
+          position?: string
+          status?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          current_km?: number | null
+          date_fitted?: string | null
+          expected_km?: number | null
+          id?: string
+          position?: string
+          status?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_tyres_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_vehicles: {
+        Row: {
+          assigned_driver: string | null
+          created_at: string
+          finance_details: string | null
+          health_score: number | null
+          id: string
+          image_url: string | null
+          insurance_expiry: string | null
+          license_expiry: string | null
+          license_plate: string | null
+          make: string
+          model: string
+          notes: string | null
+          odometer: number | null
+          purchase_price: number | null
+          status: string
+          updated_at: string
+          user_id: string
+          vin: string | null
+          year: number
+        }
+        Insert: {
+          assigned_driver?: string | null
+          created_at?: string
+          finance_details?: string | null
+          health_score?: number | null
+          id?: string
+          image_url?: string | null
+          insurance_expiry?: string | null
+          license_expiry?: string | null
+          license_plate?: string | null
+          make: string
+          model: string
+          notes?: string | null
+          odometer?: number | null
+          purchase_price?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          vin?: string | null
+          year: number
+        }
+        Update: {
+          assigned_driver?: string | null
+          created_at?: string
+          finance_details?: string | null
+          health_score?: number | null
+          id?: string
+          image_url?: string | null
+          insurance_expiry?: string | null
+          license_expiry?: string | null
+          license_plate?: string | null
+          make?: string
+          model?: string
+          notes?: string | null
+          odometer?: number | null
+          purchase_price?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vin?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       guest_reviews: {
         Row: {
           booking_id: string
