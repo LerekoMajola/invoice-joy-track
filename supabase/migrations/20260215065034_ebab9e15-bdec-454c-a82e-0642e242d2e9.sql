@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trigger_sms_on_notification ON public.notifications;
