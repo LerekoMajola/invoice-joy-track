@@ -1,23 +1,31 @@
 
 
-## Fix: Duplicate SMS Notifications
+## Reorder Navigation Items
 
-### Problem
-There are two identical database triggers on the `notifications` table that both call `notify_sms_on_notification()`:
-- `on_notification_send_sms`
-- `trigger_sms_on_notification`
+Rearranging three navigation entries across the Sidebar, BottomNav, and MoreMenuSheet so the order becomes:
 
-Every time a notification is inserted, both triggers fire, sending two SMSes to the same number.
+**New order (relevant items):**
+1. Quotes
+2. Invoices (moved from Shared up to after Quotes)
+3. Delivery Notes (moved to after Invoices)
+4. ...
+5. Staff
+6. Profitability (moved from Business section to after Staff)
 
-### Solution
-Drop one of the duplicate triggers. We will keep `on_notification_send_sms` (consistent naming with the email trigger `on_notification_send_email`) and remove `trigger_sms_on_notification`.
+### Files to update
 
-### Technical Details
+**1. `src/components/layout/Sidebar.tsx`** -- Reorder the `navigation` array:
+- Move `Invoices` entry to right after `Quotes`
+- Move `Delivery Notes` to right after `Invoices`
+- Move `Profitability` to right after `Staff`
 
-A single database migration to drop the duplicate trigger:
+**2. `src/components/layout/BottomNav.tsx`** -- Reorder `allNavItems` to match (Invoices after Quotes in the shared section).
 
-```sql
-DROP TRIGGER IF EXISTS trigger_sms_on_notification ON public.notifications;
-```
+**3. `src/components/layout/MoreMenuSheet.tsx`** -- Reorder `allMenuItems`:
+- Move `Profitability` to after `Staff`
+- Move `Delivery Notes` to after any Invoices-related context (it's already in the More menu, just reposition)
 
-No code changes needed -- just this one-line migration.
+### Technical details
+
+Only the ordering of items in three static arrays changes. No logic, routing, or module-gating changes needed.
+
