@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { 
   Table, 
   TableBody, 
@@ -330,11 +331,9 @@ export default function Clients() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
+              <PhoneInput
                 value={newClient.phone}
-                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                placeholder="+266 2231 1234"
+                onChange={(val) => setNewClient({ ...newClient, phone: val })}
               />
             </div>
             <div className="grid gap-2">
@@ -395,11 +394,9 @@ export default function Clients() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-phone">Phone</Label>
-              <Input
-                id="edit-phone"
+              <PhoneInput
                 value={editFormData.phone}
-                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                placeholder="+266 2231 1234"
+                onChange={(val) => setEditFormData({ ...editFormData, phone: val })}
               />
             </div>
             <div className="grid gap-2">

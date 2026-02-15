@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -234,7 +235,7 @@ export default function Settings() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" value={formData.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+266 xxxx xxxx" />
+                      <PhoneInput value={formData.phone || ''} onChange={(val) => handleChange('phone', val)} />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">

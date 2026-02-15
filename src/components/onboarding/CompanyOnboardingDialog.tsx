@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Button } from '@/components/ui/button';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useSubscription, type SystemType } from '@/hooks/useSubscription';
@@ -212,7 +213,10 @@ export function CompanyOnboardingDialog({ open, onOpenChange }: CompanyOnboardin
                  <FormItem>
                    <FormLabel>Phone Number</FormLabel>
                    <FormControl>
-                     <Input type="tel" placeholder="+266 1234 5678" {...field} />
+                     <PhoneInput
+                       value={field.value || ''}
+                       onChange={field.onChange}
+                     />
                    </FormControl>
                    <FormMessage />
                  </FormItem>

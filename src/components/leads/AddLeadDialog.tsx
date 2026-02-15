@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLeads, LeadInsert, LEAD_PRIORITIES, LEAD_SOURCES } from '@/hooks/useLeads';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface AddLeadDialogProps {
   open: boolean;
@@ -104,11 +105,9 @@ export function AddLeadDialog({ open, onOpenChange }: AddLeadDialogProps) {
 
             <div>
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
+              <PhoneInput
                 value={formData.phone || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="+266 5xxx xxxx"
+                onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
               />
             </div>
 

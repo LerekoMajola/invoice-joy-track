@@ -15,6 +15,7 @@ import { AuthBrandingPanel } from '@/components/auth/AuthBrandingPanel';
 import { ModuleSelector } from '@/components/auth/ModuleSelector';
 import { PackageTierSelector } from '@/components/auth/PackageTierSelector';
 import { SystemSelector, type SystemType } from '@/components/auth/SystemSelector';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 type SignupStep = 'system' | 'package' | 'review' | 'credentials' | 'custom-modules';
 
@@ -479,17 +480,11 @@ export default function Auth() {
 
                 <div className="space-y-2 group">
                   <Label htmlFor="phone">Phone Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+27 81 234 5678"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="pl-10 h-12 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
+                  <PhoneInput
+                    value={phone}
+                    onChange={setPhone}
+                    defaultCountry="LS"
+                  />
                 </div>
 
                 <div className="space-y-2 group">

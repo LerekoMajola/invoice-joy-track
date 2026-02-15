@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useCRMClients, CLIENT_STATUSES } from '@/hooks/useCRMClients';
 import { LEAD_SOURCES } from '@/hooks/useLeads';
-import { MessageCircle } from 'lucide-react';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface AddClientDialogProps {
   open: boolean;
@@ -98,15 +98,10 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">Phone (WhatsApp)</Label>
-              <Input
-                id="phone"
+              <PhoneInput
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+266 2231 1234"
+                onChange={(val) => setFormData({ ...formData, phone: val })}
               />
-              <p className="text-[11px] text-green-600 flex items-center gap-1">
-                <MessageCircle size={11} /> Used for WhatsApp job updates
-              </p>
             </div>
           </div>
 
