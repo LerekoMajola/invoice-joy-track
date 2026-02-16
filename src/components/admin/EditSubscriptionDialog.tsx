@@ -106,9 +106,9 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="free_trial">Free Trial</SelectItem>
-                <SelectItem value="basic">Basic (M300/mo)</SelectItem>
-                <SelectItem value="standard">Standard (M500/mo)</SelectItem>
-                <SelectItem value="pro">Pro (M800/mo)</SelectItem>
+                <SelectItem value="basic">Basic</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
               </SelectContent>
             </Select>
           </div>
