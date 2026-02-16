@@ -5,14 +5,17 @@ import { useAdminStats, SystemBreakdown } from '@/hooks/useAdminStats';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Wrench, GraduationCap, Scale, Hammer } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
 
 const SYSTEM_CONFIG: Record<string, { label: string; icon: typeof Briefcase; color: string }> = {
   business: { label: 'Business', icon: Briefcase, color: 'text-primary' },
   workshop: { label: 'Workshop', icon: Wrench, color: 'text-warning' },
   school: { label: 'School', icon: GraduationCap, color: 'text-info' },
   legal: { label: 'Legal', icon: Scale, color: 'text-emerald-600' },
-  hire: { label: 'Tool Hire', icon: Hammer, color: 'text-amber-600' },
+  hire: { label: 'HirePro', icon: Hammer, color: 'text-amber-600' },
+  guesthouse: { label: 'StayPro', icon: Hotel, color: 'text-rose-600' },
+  fleet: { label: 'FleetPro', icon: Car, color: 'text-slate-600' },
+  gym: { label: 'GymPro', icon: Dumbbell, color: 'text-lime-600' },
 };
 
 function SystemBreakdownCards({ breakdown }: { breakdown: SystemBreakdown[] }) {
@@ -53,7 +56,7 @@ function SystemBreakdownCards({ breakdown }: { breakdown: SystemBreakdown[] }) {
           );
         })}
         {/* Show empty state for missing system types */}
-        {['business', 'workshop', 'school', 'legal', 'hire']
+        {['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym']
           .filter(st => !breakdown.some(b => b.system_type === st))
           .map(st => {
             const config = SYSTEM_CONFIG[st];

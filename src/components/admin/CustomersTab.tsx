@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, Settings, Briefcase, Wrench, GraduationCap, Scale, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Eye, Settings, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,6 +41,10 @@ const systemIcons: Record<string, typeof Briefcase> = {
   workshop: Wrench,
   school: GraduationCap,
   legal: Scale,
+  hire: Hammer,
+  guesthouse: Hotel,
+  fleet: Car,
+  gym: Dumbbell,
 };
 
 const systemLabels: Record<string, string> = {
@@ -48,6 +52,10 @@ const systemLabels: Record<string, string> = {
   workshop: 'Workshop',
   school: 'School',
   legal: 'Legal',
+  hire: 'HirePro',
+  guesthouse: 'StayPro',
+  fleet: 'FleetPro',
+  gym: 'GymPro',
 };
 
 const systemColors: Record<string, string> = {
@@ -55,6 +63,10 @@ const systemColors: Record<string, string> = {
   workshop: 'bg-orange-600 text-white dark:bg-orange-500 dark:text-white',
   school: 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
   legal: 'bg-purple-600 text-white dark:bg-purple-500 dark:text-white',
+  hire: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white',
+  guesthouse: 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white',
+  fleet: 'bg-slate-600 text-white dark:bg-slate-500 dark:text-white',
+  gym: 'bg-lime-600 text-white dark:bg-lime-500 dark:text-white',
 };
 
 interface UnifiedCustomer {
@@ -228,6 +240,10 @@ export function CustomersTab() {
             <SelectItem value="workshop">Workshop</SelectItem>
             <SelectItem value="school">School</SelectItem>
             <SelectItem value="legal">Legal</SelectItem>
+            <SelectItem value="hire">HirePro</SelectItem>
+            <SelectItem value="guesthouse">StayPro</SelectItem>
+            <SelectItem value="fleet">FleetPro</SelectItem>
+            <SelectItem value="gym">GymPro</SelectItem>
           </SelectContent>
         </Select>
       </div>

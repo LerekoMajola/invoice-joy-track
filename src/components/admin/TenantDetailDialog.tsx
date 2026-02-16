@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
-import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap, Puzzle, X, ArrowLeft } from 'lucide-react';
+import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, Puzzle, X, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -93,8 +93,10 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                     <span className="font-medium flex items-center gap-1.5">
                       {(() => {
                         const sys = tenant.subscription.system_type || 'business';
-                        const Icon = sys === 'workshop' ? Wrench : sys === 'school' ? GraduationCap : Briefcase;
-                        const label = sys === 'workshop' ? 'Workshop' : sys === 'school' ? 'School' : 'Business';
+                        const iconMap: Record<string, typeof Briefcase> = { business: Briefcase, workshop: Wrench, school: GraduationCap, legal: Scale, hire: Hammer, guesthouse: Hotel, fleet: Car, gym: Dumbbell };
+                        const labelMap: Record<string, string> = { business: 'Business', workshop: 'Workshop', school: 'School', legal: 'Legal', hire: 'HirePro', guesthouse: 'StayPro', fleet: 'FleetPro', gym: 'GymPro' };
+                        const Icon = iconMap[sys] || Briefcase;
+                        const label = labelMap[sys] || 'Business';
                         return (<><Icon className="h-4 w-4" />{label}</>);
                       })()}
                     </span>
