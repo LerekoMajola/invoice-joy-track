@@ -97,6 +97,10 @@ export function TenantModuleManager({ userId, systemType }: TenantModuleManagerP
     return <p className="text-sm text-muted-foreground">No modules available for this system type.</p>;
   }
 
+  const activeTotal = filteredModules
+    .filter((mod) => userModuleIds.includes(mod.id))
+    .reduce((sum, mod) => sum + mod.monthly_price, 0);
+
   return (
     <div className="space-y-2">
       {filteredModules.map((mod) => {
@@ -130,6 +134,11 @@ export function TenantModuleManager({ userId, systemType }: TenantModuleManagerP
           </div>
         );
       })}
+
+      <div className="flex items-center justify-between pt-3 border-t mt-3">
+        <span className="text-sm font-medium">Monthly Total</span>
+        <span className="text-sm font-bold">{formatMaluti(activeTotal)}/mo</span>
+      </div>
     </div>
   );
 }
