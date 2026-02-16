@@ -207,6 +207,7 @@ export function SubscriptionsTab() {
                 subscriptionId={selectedTenant.subscription.id}
                 userId={selectedTenant.user_id}
                 planPrice={PLAN_PRICES[selectedTenant.subscription.plan]}
+                trialEndsAt={selectedTenant.subscription.trial_ends_at}
               />
 
               <Separator />

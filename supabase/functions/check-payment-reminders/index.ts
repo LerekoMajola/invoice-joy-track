@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // Get all active/past_due subscriptions
     const { data: subscriptions, error: subsError } = await supabase
       .from('subscriptions')
-      .select('id, user_id, plan, status')
+      .select('id, user_id, plan, status, trial_ends_at')
       .in('status', ['active', 'past_due']);
 
     if (subsError) throw subsError;
@@ -53,8 +53,18 @@ Deno.serve(async (req) => {
       (payments || []).filter(p => p.status === 'paid').map(p => p.subscription_id)
     );
 
-    // Get company names for unpaid subscriptions
-    const unpaidSubs = subscriptions.filter(s => !paidSubIds.has(s.id));
+    // Filter unpaid subs, but skip those whose anniversary month hasn't arrived yet
+    const unpaidSubs = subscriptions.filter(s => {
+      if (paidSubIds.has(s.id)) return false;
+      // If trial_ends_at exists, only expect payment from that month onward
+      if (s.trial_ends_at) {
+        const trialEnd = new Date(s.trial_ends_at);
+        const anniversaryMonthStart = new Date(trialEnd.getFullYear(), trialEnd.getMonth(), 1);
+        const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (currentMonthDate < anniversaryMonthStart) return false;
+      }
+      return true;
+    });
     if (unpaidSubs.length === 0) {
       return new Response(JSON.stringify({ message: 'All payments received' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

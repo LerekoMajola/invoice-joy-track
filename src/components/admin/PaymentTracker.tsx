@@ -14,6 +14,7 @@ interface PaymentTrackerProps {
   subscriptionId: string;
   userId: string;
   planPrice: number;
+  trialEndsAt?: string | null;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -28,7 +29,7 @@ type PaymentRecord = {
   status: string;
 };
 
-export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTrackerProps) {
+export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt }: PaymentTrackerProps) {
   const queryClient = useQueryClient();
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [paymentForm, setPaymentForm] = useState({
@@ -101,7 +102,17 @@ export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTra
     },
   });
 
-  const getMonthStatus = (monthIndex: number): 'paid' | 'overdue' | 'due' | 'future' => {
+  // Determine the anniversary month (when trial ends and real subscription starts)
+  const anniversaryDate = trialEndsAt ? new Date(trialEndsAt) : null;
+
+  const getMonthStatus = (monthIndex: number): 'paid' | 'overdue' | 'due' | 'future' | 'na' => {
+    // If we have an anniversary date, months before that month are N/A
+    if (anniversaryDate) {
+      const monthStart = new Date(currentYear, monthIndex, 1);
+      const anniversaryMonthStart = new Date(anniversaryDate.getFullYear(), anniversaryDate.getMonth(), 1);
+      if (isBefore(monthStart, anniversaryMonthStart)) return 'na';
+    }
+
     const monthDate = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}-01`;
     const payment = payments?.find(p => p.month === monthDate);
     if (payment?.status === 'paid') return 'paid';
@@ -117,13 +128,14 @@ export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTra
       case 'paid': return 'bg-green-500';
       case 'overdue': return 'bg-red-500';
       case 'due': return 'bg-amber-500';
+      case 'na': return 'bg-muted/50';
       default: return 'bg-muted-foreground/30';
     }
   };
 
   const handleMonthClick = (monthIndex: number) => {
     const status = getMonthStatus(monthIndex);
-    if (status === 'future') return;
+    if (status === 'future' || status === 'na') return;
     setSelectedMonth(monthIndex);
     const monthDate = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}-01`;
     const existing = payments?.find(p => p.month === monthDate);
@@ -148,18 +160,18 @@ export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTra
           const status = getMonthStatus(i);
           const monthDate = `${currentYear}-${String(i + 1).padStart(2, '0')}-01`;
           const payment = payments?.find(p => p.month === monthDate);
-          const isFuture = status === 'future';
+          const isDisabled = status === 'future' || status === 'na';
 
           return (
             <button
               key={i}
               onClick={() => handleMonthClick(i)}
-              disabled={isFuture}
+              disabled={isDisabled}
               className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-colors ${
                 selectedMonth === i
                   ? 'border-primary bg-primary/5'
-                  : isFuture
-                  ? 'border-transparent opacity-50 cursor-default'
+                  : isDisabled
+                  ? 'border-transparent opacity-40 cursor-default'
                   : 'border-transparent hover:bg-muted cursor-pointer'
               }`}
             >
@@ -167,6 +179,9 @@ export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTra
               <div className={`h-3 w-3 rounded-full ${getIndicatorColor(status)} ${status === 'paid' ? 'ring-2 ring-green-200' : ''}`}>
                 {status === 'paid' && <Check className="h-3 w-3 text-white" />}
               </div>
+              {status === 'na' && (
+                <span className="text-[10px] text-muted-foreground">N/A</span>
+              )}
               {payment?.status === 'paid' && (
                 <span className="text-[10px] text-muted-foreground">{formatMaluti(payment.amount)}</span>
               )}
@@ -181,6 +196,7 @@ export function PaymentTracker({ subscriptionId, userId, planPrice }: PaymentTra
         <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500" /> Overdue</div>
         <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-amber-500" /> Due</div>
         <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-muted-foreground/30" /> Future</div>
+        <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-muted/50" /> N/A</div>
       </div>
 
       {/* Record Payment Form */}
