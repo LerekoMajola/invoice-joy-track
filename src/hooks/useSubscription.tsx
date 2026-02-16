@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-export type SubscriptionPlan = 'free_trial' | 'basic' | 'standard' | 'pro';
+export type SubscriptionPlan = 'free_trial' | 'basic' | 'standard' | 'pro' | 'custom';
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
 
 interface Subscription {
@@ -50,6 +50,11 @@ const PLAN_LIMITS = {
     invoices_per_month: Infinity,
   },
   pro: {
+    clients: Infinity,
+    quotes_per_month: Infinity,
+    invoices_per_month: Infinity,
+  },
+  custom: {
     clients: Infinity,
     quotes_per_month: Infinity,
     invoices_per_month: Infinity,
