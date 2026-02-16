@@ -1,37 +1,29 @@
 
-# Add Missing System Types to Admin Dashboard
+# Update Auth Branding Panel -- Add GymPro and Make Pills Colourful
 
 ## Problem
-The admin dashboard components were only configured with the original system types (business, workshop, school, legal, and partially hire/guesthouse). The newer verticals -- **GymPro**, **FleetPro**, **StayPro (Guesthouse)**, and **HirePro** -- are missing from filter dropdowns, icon maps, color maps, and breakdown cards across the admin interface. This means you can't see or manage subscribers using those systems properly.
+1. The industry pills on the auth branding panel are missing **GymPro**.
+2. The heading says "Seven Industries" but there are now eight.
+3. The pills are plain white/transparent -- need to be colourful with icons to match the rest of the platform's vibrant style.
 
-## Files to Update
+## Changes (1 file)
 
-### 1. AdminOverviewTab.tsx
-- Add `Hotel`, `Car`, `Dumbbell`, `Hammer` icons to imports
-- Add `guesthouse`, `fleet`, `gym` entries to `SYSTEM_CONFIG` (labels: StayPro, FleetPro, GymPro)
-- Update the empty-state list from `['business', 'workshop', 'school', 'legal', 'hire']` to include `guesthouse`, `fleet`, `gym`
+### `src/components/auth/AuthBrandingPanel.tsx`
 
-### 2. CustomersTab.tsx
-- Add `Hotel`, `Car`, `Dumbbell`, `Hammer` icons to imports
-- Add `hire`, `guesthouse`, `fleet`, `gym` to `systemIcons`, `systemLabels`, `systemColors`
-- Add corresponding `SelectItem` entries in the system filter dropdown
+- Import icons from lucide-react: `Briefcase`, `Wrench`, `GraduationCap`, `Scale`, `Hammer`, `Hotel`, `Car`, `Dumbbell`
+- Replace the plain `industries` string array with a structured array containing label, icon, and a unique gradient/colour for each pill:
 
-### 3. SignupsTab.tsx
-- Add `hire`, `guesthouse`, `fleet`, `gym` to `systemColors`
-- Add corresponding `SelectItem` entries in the system filter dropdown
+| Label | Icon | Pill Colour |
+|-------|------|-------------|
+| BizPro | Briefcase | `bg-indigo-500/80` |
+| ShopPro | Wrench | `bg-orange-500/80` |
+| EduPro | GraduationCap | `bg-cyan-500/80` |
+| LawPro | Scale | `bg-emerald-500/80` |
+| HirePro | Hammer | `bg-amber-500/80` |
+| StayPro | Hotel | `bg-rose-500/80` |
+| FleetPro | Car | `bg-slate-500/80` |
+| GymPro | Dumbbell | `bg-lime-500/80` |
 
-### 4. TenantDetailDialog.tsx
-- Expand the inline system icon/label logic to handle all 8 system types instead of just business/workshop/school
-
-### 5. ModuleManagement.tsx
-- Add `gym` entry to `systemGroups` array with Dumbbell icon and lime gradient
-- Also add `fleet` entry if missing (Car icon, slate gradient)
-
-### 6. EditSubscriptionDialog.tsx (optional)
-- No system type selector needed here (it edits plan/status only), so no changes required
-
-## Technical Details
-
-Each file has hardcoded lookup maps (`Record<string, ...>`) that need the new keys added. The pattern is consistent: add the key, label, icon, and color for each missing system type. Filter dropdowns need matching `SelectItem` entries.
-
-No database changes needed -- the constraint already includes `gym` from the previous migration.
+- Each pill will render as a colourful rounded badge with its icon + label (white text, backdrop blur)
+- Update heading from "Seven Industries" to "Eight Industries"
+- Update subtitle text to include GymPro in the list
