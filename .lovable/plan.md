@@ -1,104 +1,42 @@
 
-# Isolate All Data Per Active Company
+# Add "Create Client" Button to New Quote Form
 
-## Problem
-When switching between companies (e.g., Leekay vs Optimum Resources), most data hooks still show data from ALL companies instead of only the active one. Only 6 out of ~25+ hooks currently filter by `activeCompanyId`.
+## Overview
+Add a quick-action button next to the client selector in the quote creation form, allowing users to create a new client inline without leaving the form.
 
-## What Will Change
+## Changes
 
-### 1. Fix `useCompanyProfile` to return the active company's profile
-Currently it fetches with `.maybeSingle()` which returns the first profile. It needs to use the `activeCompanyId` from `ActiveCompanyContext` to return the correct company profile when viewing settings, invoice previews, quote previews, etc.
+### File: `src/pages/Quotes.tsx`
 
-### 2. Add `activeCompanyId` filtering to ALL remaining data hooks
-Each of these hooks will be updated to:
-- Import `useActiveCompany` from the context
-- Add `activeCompanyId` to the query key (for react-query hooks) or dependency array
-- Filter SELECT queries with `.eq('company_profile_id', activeCompanyId)` when `activeCompanyId` is set
-- Include `company_profile_id: activeCompanyId` in INSERT operations
+1. **Import the `AddClientDialog` component** and add the `UserPlus` icon from lucide-react.
 
-**Hooks that need updating:**
+2. **Add state** for controlling the inline client dialog:
+   - `showAddClientDialog` (boolean)
 
-| Hook | Table(s) |
-|------|----------|
-| `useDeliveryNotes` | delivery_notes, delivery_note_items |
-| `useTenderSourceLinks` | tender_source_links |
-| `useAccountingTransactions` | accounting_transactions |
-| `useBankAccounts` | bank_accounts |
-| `useExpenses` | expenses |
-| `useExpenseCategories` | expense_categories |
-| `useAccountingStats` | invoices, payslips (via sub-queries) |
-| `useStaff` | staff_members |
-| `useJobCards` | job_cards |
-| `useBookings` | bookings |
-| `useRooms` | rooms |
-| `useFleetVehicles` | fleet_vehicles |
-| `useFleetDrivers` | fleet_drivers |
-| `useHireOrders` | hire_orders |
-| `useEquipment` | equipment_items |
-| `useNotifications` | notifications |
-| `useContacts` | contacts |
-| `useStudents` | students |
-| `useSchoolClasses` | school_classes |
-| `useRecurringDocuments` | recurring_documents |
-| `usePayslips` | payslips (if company-scoped) |
-| `useCRMClients` | (if separate from useClients) |
+3. **Add a "+" button** next to the "Select Client Organisation" dropdown (when not in `fromJobCard` mode). The button will sit beside the `Select` component in a flex row.
 
-### 3. Fix `useCompanyProfile` specifically
-Replace the current `.maybeSingle()` approach with a lookup by `activeCompanyId`:
-- When `activeCompanyId` is available, fetch that specific profile by ID
-- This ensures Settings, invoice previews, and all other profile-dependent components show the correct company's branding, logo, and details
+4. **Render the `AddClientDialog`** component, controlled by the new state.
+
+5. **Auto-select the newly created client**: After the dialog closes, refetch clients and auto-select the latest one. This will be done by:
+   - Importing `useClients` refetch (already available via the `clients` hook used in Quotes)
+   - Watching for the dialog close and comparing the client list to detect the new entry
 
 ## Technical Details
 
-**Pattern for each hook update (react-query style):**
-```typescript
-import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+The client selector section (around line 616-636) will change from:
 
-// Add to hook:
-const { activeCompanyId } = useActiveCompany();
-
-// Query key includes activeCompanyId:
-queryKey: ['table-name', user?.id, activeCompanyId],
-
-// SELECT filter:
-let query = supabase.from('table').select('*');
-if (activeCompanyId) {
-  query = query.eq('company_profile_id', activeCompanyId);
-}
-
-// INSERT includes:
-company_profile_id: activeCompanyId || null,
+```text
+Label: "Select Client Organisation"
+[Select dropdown]
 ```
 
-**Pattern for useState-based hooks (e.g., useDeliveryNotes):**
-```typescript
-// Add activeCompanyId to useEffect dependency
-useEffect(() => { fetchData(); }, [user, activeCompanyId]);
+To:
 
-// Filter in fetch
-if (activeCompanyId) {
-  query = query.eq('company_profile_id', activeCompanyId);
-}
+```text
+Label: "Select Client Organisation"
+[Select dropdown] [+ New Client button]
 ```
 
-**useCompanyProfile fix:**
-```typescript
-const { activeCompanyId } = useActiveCompany();
+The `AddClientDialog` is already built and used in the CRM module -- it will be reused here. After a client is created, the `useClients` hook will be refetched and the new client auto-selected via `setSelectedClientId`.
 
-const { data: profile } = useQuery({
-  queryKey: ['company-profile', activeCompanyId],
-  queryFn: async () => {
-    if (!activeCompanyId) return null;
-    const { data } = await supabase
-      .from('company_profiles')
-      .select('*')
-      .eq('id', activeCompanyId)
-      .single();
-    return data;
-  },
-  enabled: !!activeCompanyId,
-});
-```
-
-## Outcome
-After this change, switching companies in the header will immediately show only that company's data across every module -- accounting, delivery notes, tenders, fleet, staff, workshop, and all others will be fully isolated.
+**Files to modify:** `src/pages/Quotes.tsx` (1 file)
