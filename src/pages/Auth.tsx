@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Scale, Edit, Hammer, Hotel, User, Phone } from 'lucide-react';
+import { Mail, Lock, Loader2, Shield, ArrowLeft, Check, Briefcase, Wrench, GraduationCap, Scale, Edit, Hammer, Hotel, Dumbbell, User, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
@@ -39,7 +39,7 @@ export default function Auth() {
   // Pre-select system from URL query param (e.g. /auth?system=business)
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
-    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep('package');
       setIsLogin(false);
@@ -283,6 +283,7 @@ export default function Auth() {
         hire: { label: 'HirePro', icon: <Hammer className="h-6 w-6" />, gradient: 'from-amber-500 to-orange-500' },
         guesthouse: { label: 'StayPro', icon: <Hotel className="h-6 w-6" />, gradient: 'from-rose-500 to-pink-500' },
         fleet: { label: 'FleetPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-slate-600 to-zinc-800' },
+        gym: { label: 'GymPro', icon: <Dumbbell className="h-6 w-6" />, gradient: 'from-lime-500 to-green-600' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
 

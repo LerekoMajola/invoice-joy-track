@@ -25,6 +25,7 @@ export function Footer() {
               <li><Link to="/auth?system=hire" className="hover:text-primary-foreground transition-colors">HirePro</Link></li>
               <li><Link to="/auth?system=guesthouse" className="hover:text-primary-foreground transition-colors">StayPro</Link></li>
               <li><Link to="/auth?system=fleet" className="hover:text-primary-foreground transition-colors">FleetPro</Link></li>
+              <li><Link to="/auth?system=gym" className="hover:text-primary-foreground transition-colors">GymPro</Link></li>
             </ul>
           </div>
 

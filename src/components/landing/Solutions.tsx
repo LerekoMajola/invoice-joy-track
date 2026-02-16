@@ -9,6 +9,7 @@ import {
   Hammer,
   Hotel,
   Car,
+  Dumbbell,
   CheckCircle2
 } from 'lucide-react';
 
@@ -69,6 +70,14 @@ const industries = [
     features: ['Vehicle Registry & Health', 'Maintenance Tracking', 'Cost Intelligence', 'Replace-or-Keep Advisor'],
     price: 'M500/mo',
   },
+  {
+    icon: Dumbbell,
+    name: 'GymPro',
+    system: 'gym',
+    gradient: 'from-lime-500 to-green-600',
+    features: ['Member Management', 'Class Scheduling', 'Attendance Tracking', 'Payment & Billing'],
+    price: 'M500/mo',
+  },
 ];
 
 export function Solutions() {
@@ -77,7 +86,7 @@ export function Solutions() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-            7 Industries, 1 Platform
+            8 Industries, 1 Platform
           </div>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Solutions for Every Industry

@@ -1,8 +1,8 @@
-import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, ArrowRight } from 'lucide-react';
+import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet';
+export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet' | 'gym';
 
 interface SystemOption {
   type: SystemType;
@@ -77,6 +77,15 @@ const systems: SystemOption[] = [
     icon: Car,
     gradient: 'from-slate-600 to-zinc-800',
     iconBg: 'bg-slate-600/10 text-slate-700',
+  },
+  {
+    type: 'gym',
+    label: 'GymPro',
+    description: 'Member management, class scheduling, attendance tracking & billing for gyms',
+    startingPrice: 'M500',
+    icon: Dumbbell,
+    gradient: 'from-lime-500 to-green-600',
+    iconBg: 'bg-lime-500/10 text-lime-600',
   },
 ];
 
