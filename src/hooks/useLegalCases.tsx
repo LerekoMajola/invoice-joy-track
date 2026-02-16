@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface LegalCase {
@@ -28,16 +29,21 @@ export interface LegalCase {
 
 export function useLegalCases() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [cases, setCases] = useState<LegalCase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchCases = async () => {
     if (!user) { setCases([]); setIsLoading(false); return; }
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('legal_cases')
         .select('*')
         .order('updated_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setCases((data || []).map(c => ({
         id: c.id,
@@ -69,7 +75,7 @@ export function useLegalCases() {
     }
   };
 
-  useEffect(() => { fetchCases(); }, [user]);
+  useEffect(() => { fetchCases(); }, [user, activeCompanyId]);
 
   return { cases, isLoading, refetch: fetchCases };
 }

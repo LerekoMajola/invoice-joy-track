@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
+import { ActiveCompanyProvider } from "@/contexts/ActiveCompanyContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/layout/AdminProtectedRoute";
 import { DynamicAppIcons } from "@/components/shared/DynamicAppIcons";
@@ -69,6 +70,7 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <ActiveCompanyProvider>
       <TimerProvider>
       <TooltipProvider>
         <Toaster />
@@ -118,6 +120,7 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
       </TimerProvider>
+      </ActiveCompanyProvider>
     </AuthProvider>
   </QueryClientProvider>
   );

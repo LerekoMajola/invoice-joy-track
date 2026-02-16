@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface LineItem {
@@ -46,6 +47,7 @@ interface QuoteInsert {
 
 export function useQuotes() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -57,10 +59,14 @@ export function useQuotes() {
     }
 
     try {
-      const { data: quotesData, error: quotesError } = await supabase
+      let query = supabase
         .from('quotes')
         .select('*')
         .order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data: quotesData, error: quotesError } = await query;
 
       if (quotesError) throw quotesError;
 
@@ -118,7 +124,7 @@ export function useQuotes() {
 
   useEffect(() => {
     fetchQuotes();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const generateQuoteNumber = async (): Promise<string> => {
     const { data } = await supabase
@@ -152,6 +158,7 @@ export function useQuotes() {
         .from('quotes')
         .insert({
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           quote_number: quoteNumber,
           client_id: quote.clientId || null,
           client_name: quote.clientName,

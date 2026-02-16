@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from '@/hooks/use-toast';
 
 export interface ExpenseCategory {
@@ -65,6 +66,7 @@ const DEFAULT_CATEGORIES = [
 
 export function useExpenseCategories() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: categories = [], isLoading } = useQuery({
