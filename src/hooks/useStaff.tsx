@@ -116,6 +116,16 @@ export function useStaff() {
   const createStaff = async (data: CreateStaffData): Promise<StaffMember | null> => {
     if (!user) return null;
 
+    // Enforce staff limit of 5
+    if (staff.length >= 5) {
+      toast({
+        title: 'Staff limit reached',
+        description: 'Maximum 5 staff members allowed.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
     try {
       // Create staff member
       const { data: staffData, error: staffError } = await supabase

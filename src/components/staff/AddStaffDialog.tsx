@@ -80,7 +80,8 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
   const [credentialsData, setCredentialsData] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
-  const { createStaff } = useStaff();
+  const { createStaff, staff } = useStaff();
+  const isAtLimit = staff.length >= 5;
   const { userModules } = useModules();
   const { saveModuleAccess } = useStaffModuleAccess();
 
@@ -344,6 +345,12 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
               )}
             />
 
+            {isAtLimit && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                Staff limit reached. Maximum 5 staff members allowed.
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
@@ -353,7 +360,7 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isAtLimit}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Add Staff Member
               </Button>
