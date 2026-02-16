@@ -44,7 +44,7 @@ export function CompanySwitcher() {
   // If user has only one company, show simple display (no dropdown)
   if (companies.length <= 1) {
     return (
-      <div className="hidden sm:flex items-center">
+      <div className="flex items-center">
         <div className="bg-card border border-border rounded-xl px-3 py-1.5 shadow-card">
           {activeCompany?.logo_url ? (
             <img
@@ -69,7 +69,7 @@ export function CompanySwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="hidden sm:flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5 shadow-card h-auto hover:bg-accent/50">
+          <Button variant="ghost" className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5 shadow-card h-auto hover:bg-accent/50">
             {activeCompany?.logo_url ? (
               <img
                 src={activeCompany.logo_url}
