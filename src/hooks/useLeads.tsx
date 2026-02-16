@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from './use-toast';
 
 export interface Lead {
@@ -67,6 +68,7 @@ export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const { toast } = useToast();
 
   const checkForDuplicate = async (lead: LeadInsert, excludeId?: string) => {
@@ -109,10 +111,14 @@ export function useLeads() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
       setLeads(data || []);
@@ -129,7 +135,7 @@ export function useLeads() {
 
   useEffect(() => {
     fetchLeads();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const createLead = async (lead: LeadInsert) => {
     if (!user) return null;

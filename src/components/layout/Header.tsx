@@ -1,15 +1,14 @@
-import { Search, Plus, Settings, Menu, Building2, Clock } from 'lucide-react';
+import { Search, Plus, Settings, Menu, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
- import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
- import { NotificationPanel } from '@/components/notifications';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { NotificationPanel } from '@/components/notifications';
 import { useSidebarControl } from './DashboardLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { Skeleton } from '@/components/ui/skeleton';
- import { useScrollDirection } from '@/hooks/useScrollDirection';
- import { cn } from '@/lib/utils';
+import { CompanySwitcher } from './CompanySwitcher';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { cn } from '@/lib/utils';
 import { useTimer } from '@/contexts/TimerContext';
 
 interface HeaderProps {
@@ -25,7 +24,7 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   const navigate = useNavigate();
   const { openSidebar } = useSidebarControl();
   const isMobile = useIsMobile();
-  const { profile, isLoading } = useCompanyProfile();
+  // Company branding now handled by CompanySwitcher
    const { scrollDirection, isAtTop } = useScrollDirection();
    const { isRunning, formatElapsed } = useTimer();
  
@@ -102,27 +101,8 @@ export function Header({ title, subtitle, action }: HeaderProps) {
           <TooltipContent>Company Settings</TooltipContent>
         </Tooltip>
 
-        {/* Company Logo */}
-        <div className="hidden sm:flex items-center">
-          <div className="bg-card border border-border rounded-xl px-3 py-1.5 shadow-card">
-            {isLoading ? (
-              <Skeleton className="h-7 w-24" />
-            ) : profile?.logo_url ? (
-              <img 
-                src={profile.logo_url} 
-                alt={profile.company_name || 'Company'} 
-                className="h-7 w-auto max-w-[120px] object-contain" 
-              />
-            ) : (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-xs truncate text-foreground max-w-[80px]">
-                  {profile?.company_name || 'My Business'}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Company Switcher */}
+        <CompanySwitcher />
 
         {/* Action Button */}
         {action && (

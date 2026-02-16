@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface LineItem {
@@ -53,6 +54,7 @@ interface InvoiceInsert {
 
 export function useInvoices() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -79,10 +81,14 @@ export function useInvoices() {
     }
 
     try {
-      const { data: invoicesData, error: invoicesError } = await supabase
+      let query = supabase
         .from('invoices')
         .select('*')
         .order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data: invoicesData, error: invoicesError } = await query;
 
       if (invoicesError) throw invoicesError;
 
@@ -143,7 +149,7 @@ export function useInvoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const generateInvoiceNumber = async (): Promise<string> => {
     const { data } = await supabase
@@ -178,6 +184,7 @@ export function useInvoices() {
         .from('invoices')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,
           client_id: invoice.clientId || null,

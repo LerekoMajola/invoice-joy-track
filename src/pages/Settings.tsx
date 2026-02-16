@@ -13,7 +13,9 @@ import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/us
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, Lock, Palette, Settings2, PenTool } from 'lucide-react';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, Lock, Palette, Settings2, PenTool, Globe } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
@@ -74,6 +76,13 @@ export default function Settings() {
     business_id_url: null,
     company_profile_doc_url: null,
   });
+
+  // Sync currency from profile
+  useEffect(() => {
+    if (profile && (profile as any).currency) {
+      setFormData(prev => ({ ...prev, currency: (profile as any).currency }));
+    }
+  }, [profile]);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
@@ -463,6 +472,25 @@ export default function Settings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={(formData as any).currency || 'LSL'} onValueChange={(val) => handleChange('currency' as any, val)}>
+                      <SelectTrigger className="max-w-[240px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUPPORTED_CURRENCIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            <span className="flex items-center gap-2">
+                              <span className="font-mono font-semibold w-8">{c.symbol}</span>
+                              <span>{c.name} ({c.code})</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Currency used for all monetary values in this company</p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="default_validity_days">Default Quote Validity (days)</Label>
                     <Input id="default_validity_days" type="number" min="1" max="365" value={formData.default_validity_days || 90} onChange={(e) => handleChange('default_validity_days', parseInt(e.target.value) || 90)} placeholder="90" className="max-w-[120px]" />

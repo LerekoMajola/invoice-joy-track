@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 
 export interface CompanyProfile {
   id: string;
@@ -45,6 +45,7 @@ export interface CompanyProfile {
   company_profile_doc_url: string | null;
   created_at: string;
   updated_at: string;
+  currency: string;
 }
 
 export type CompanyProfileInput = Omit<CompanyProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>;

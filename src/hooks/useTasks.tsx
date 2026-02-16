@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
@@ -45,19 +46,26 @@ export interface UpdateTaskInput {
 
 export function useTasks() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: tasks = [], isLoading, error } = useQuery({
-    queryKey: ['tasks', user?.id],
+    queryKey: ['tasks', user?.id, activeCompanyId],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
+      
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Task[];
