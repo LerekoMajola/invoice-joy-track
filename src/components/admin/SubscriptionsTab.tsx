@@ -20,12 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaluti } from '@/lib/currency';
 import { Separator } from '@/components/ui/separator';
 
-const PLAN_PRICES: Record<string, number> = {
-  free_trial: 0,
-  basic: 300,
-  standard: 500,
-  pro: 800,
-};
 
 const statusColors: Record<string, string> = {
   trialing: 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
@@ -147,7 +141,7 @@ export function SubscriptionsTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {formatMaluti(PLAN_PRICES[tenant.subscription?.plan || 'free_trial'])}/mo
+                    {formatMaluti(tenant.module_total)}/mo
                   </TableCell>
                   <TableCell>
                     <Badge className={statusColors[tenant.subscription?.status || 'expired']}>
@@ -197,7 +191,7 @@ export function SubscriptionsTab() {
                   {selectedTenant.subscription.status}
                 </Badge>
                 <span className="text-sm text-muted-foreground ml-auto">
-                  {formatMaluti(PLAN_PRICES[selectedTenant.subscription.plan])}/mo
+                  {formatMaluti(selectedTenant.module_total)}/mo
                 </span>
               </div>
 
@@ -206,7 +200,7 @@ export function SubscriptionsTab() {
               <PaymentTracker
                 subscriptionId={selectedTenant.subscription.id}
                 userId={selectedTenant.user_id}
-                planPrice={PLAN_PRICES[selectedTenant.subscription.plan]}
+                planPrice={selectedTenant.module_total}
                 trialEndsAt={selectedTenant.subscription.trial_ends_at}
               />
 

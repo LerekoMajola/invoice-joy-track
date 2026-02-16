@@ -10,9 +10,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useSmsCredits } from '@/hooks/useSmsCredits';
+import { useModules } from '@/hooks/useModules';
+import { formatMaluti } from '@/lib/currency';
 import {
   Clock, AlertTriangle, Loader2, Smartphone, Building2,
-  CheckCircle2, ChevronDown, Copy, MessageSquare
+  CheckCircle2, ChevronDown, Copy, MessageSquare, Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -24,6 +26,8 @@ export default function Billing() {
   const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference } = useSubscription();
   const { profile: companyProfile } = useCompanyProfile();
   const { creditsRemaining, creditsUsed, creditsAllocated } = useSmsCredits();
+  const { userModules, getMonthlyTotal } = useModules();
+  const monthlyTotal = getMonthlyTotal();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
@@ -121,6 +125,32 @@ export default function Billing() {
             </CardContent>
           </Card>
         )}
+
+        {/* Your Package */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Package className="h-5 w-5 text-primary" />
+              Your Package
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            {userModules.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No modules selected.</p>
+            ) : (
+              userModules.map((um) => (
+                <div key={um.id} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{um.module?.name}</span>
+                  <span className="font-medium">{formatMaluti(um.module?.monthly_price || 0)}</span>
+                </div>
+              ))
+            )}
+            <div className="border-t pt-2 mt-2 flex items-center justify-between">
+              <span className="font-semibold">Monthly Total</span>
+              <span className="font-bold text-lg">{formatMaluti(monthlyTotal)}/mo</span>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Payment Section */}
         <div>

@@ -34,13 +34,24 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
 
   const updateMutation = useMutation({
     mutationFn: async ({ userId, newPlan, newStatus }: { userId: string; newPlan: string; newStatus: string }) => {
+      const updateData: Record<string, any> = { 
+        plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro',
+        status: newStatus as 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired',
+        updated_at: new Date().toISOString(),
+      };
+
+      // When activating from trial, set period dates
+      if (newStatus === 'active') {
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setDate(periodEnd.getDate() + 30);
+        updateData.current_period_start = now.toISOString();
+        updateData.current_period_end = periodEnd.toISOString();
+      }
+
       const { error } = await supabase
         .from('subscriptions')
-        .update({ 
-          plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro',
-          status: newStatus as 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired',
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('user_id', userId);
 
       if (error) throw error;
