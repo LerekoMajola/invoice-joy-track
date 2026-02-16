@@ -1,0 +1,1 @@
+ALTER TABLE public.company_profiles DROP CONSTRAINT company_profiles_user_id_key;
