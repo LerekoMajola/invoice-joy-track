@@ -41,27 +41,84 @@ export function CompanySwitcher() {
     return <Skeleton className="h-9 w-32" />;
   }
 
-  // If user has only one company, show simple display (no dropdown)
+  // If user has only one company, show dropdown with option to add more
   if (companies.length <= 1) {
     return (
-      <div className="flex items-center">
-        <div className="bg-card border border-border rounded-xl px-3 py-1.5 shadow-card">
-          {activeCompany?.logo_url ? (
-            <img
-              src={activeCompany.logo_url}
-              alt={activeCompany.company_name || 'Company'}
-              className="h-7 w-auto max-w-[120px] object-contain"
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-xs truncate text-foreground max-w-[80px]">
-                {activeCompany?.company_name || 'My Business'}
-              </span>
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5 shadow-card h-auto hover:bg-accent/50">
+              {activeCompany?.logo_url ? (
+                <img
+                  src={activeCompany.logo_url}
+                  alt={activeCompany.company_name || 'Company'}
+                  className="h-7 w-auto max-w-[100px] object-contain"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-xs truncate max-w-[80px]">
+                    {activeCompany?.company_name || 'My Business'}
+                  </span>
+                </div>
+              )}
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {activeCompany && (
+              <DropdownMenuItem className="flex items-center gap-2" disabled>
+                {activeCompany.logo_url ? (
+                  <img src={activeCompany.logo_url} alt="" className="h-5 w-5 object-contain rounded" />
+                ) : (
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="flex-1 truncate text-sm">{activeCompany.company_name}</span>
+                <Check className="h-4 w-4 text-primary" />
+              </DropdownMenuItem>
+            )}
+            {canAddMore && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowAddDialog(true)} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm">Add Company</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{companies.length}/5</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Company</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-company-name-single">Company Name</Label>
+                <Input
+                  id="new-company-name-single"
+                  placeholder="Enter company name"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCompany()}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You can manage up to 5 companies under one subscription. Each company has its own branding, clients, and financial data.
+              </p>
             </div>
-          )}
-        </div>
-      </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button onClick={handleAddCompany} disabled={isAdding || !newCompanyName.trim()}>
+                {isAdding ? 'Creating...' : 'Create Company'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
