@@ -1,80 +1,37 @@
 
-# Add GymPro -- New Industry Vertical
+# Add Missing System Types to Admin Dashboard
 
-## Overview
-Add "GymPro" as the 8th system type in the platform suite, covering gym and fitness centre management with modules for members, class scheduling, attendance tracking, and payment/billing. Starting price: M500/mo.
+## Problem
+The admin dashboard components were only configured with the original system types (business, workshop, school, legal, and partially hire/guesthouse). The newer verticals -- **GymPro**, **FleetPro**, **StayPro (Guesthouse)**, and **HirePro** -- are missing from filter dropdowns, icon maps, color maps, and breakdown cards across the admin interface. This means you can't see or manage subscribers using those systems properly.
 
-## 1. Database Migration
+## Files to Update
 
-Update the `subscriptions_system_type_check` constraint to allow `'gym'`:
+### 1. AdminOverviewTab.tsx
+- Add `Hotel`, `Car`, `Dumbbell`, `Hammer` icons to imports
+- Add `guesthouse`, `fleet`, `gym` entries to `SYSTEM_CONFIG` (labels: StayPro, FleetPro, GymPro)
+- Update the empty-state list from `['business', 'workshop', 'school', 'legal', 'hire']` to include `guesthouse`, `fleet`, `gym`
 
-```sql
-ALTER TABLE public.subscriptions DROP CONSTRAINT IF EXISTS subscriptions_system_type_check;
-ALTER TABLE public.subscriptions ADD CONSTRAINT subscriptions_system_type_check
-  CHECK (system_type IN ('business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym'));
-```
+### 2. CustomersTab.tsx
+- Add `Hotel`, `Car`, `Dumbbell`, `Hammer` icons to imports
+- Add `hire`, `guesthouse`, `fleet`, `gym` to `systemIcons`, `systemLabels`, `systemColors`
+- Add corresponding `SelectItem` entries in the system filter dropdown
 
-Insert GymPro-specific platform modules into `platform_modules`:
+### 3. SignupsTab.tsx
+- Add `hire`, `guesthouse`, `fleet`, `gym` to `systemColors`
+- Add corresponding `SelectItem` entries in the system filter dropdown
 
-| key | name | system_type | monthly_price |
-|-----|------|-------------|---------------|
-| gym_members | Members & Subscriptions | gym | 150 |
-| gym_classes | Class Scheduling | gym | 100 |
-| gym_attendance | Attendance Tracking | gym | 100 |
-| gym_billing | Payment & Billing | gym | 150 |
+### 4. TenantDetailDialog.tsx
+- Expand the inline system icon/label logic to handle all 8 system types instead of just business/workshop/school
 
-## 2. Frontend Changes (10 files)
+### 5. ModuleManagement.tsx
+- Add `gym` entry to `systemGroups` array with Dumbbell icon and lime gradient
+- Also add `fleet` entry if missing (Car icon, slate gradient)
 
-### A. Type Definitions
-**`src/hooks/useSubscription.tsx`** -- Add `'gym'` to the `SystemType` union type.
+### 6. EditSubscriptionDialog.tsx (optional)
+- No system type selector needed here (it edits plan/status only), so no changes required
 
-### B. System Selector (Signup Flow)
-**`src/components/auth/SystemSelector.tsx`** -- Add GymPro card with `Dumbbell` icon, gradient `from-lime-500 to-green-600`, description "Member management, class scheduling, attendance tracking & billing for gyms", starting price M500.
+## Technical Details
 
-### C. Package Tiers (Signup Flow)
-**`src/components/auth/PackageTierSelector.tsx`** -- Add `gymTiers` array (Starter M500, Professional M700, Enterprise M950) and register in `SYSTEM_CONFIG` as `gym: { label: 'GymPro', ... }`.
+Each file has hardcoded lookup maps (`Record<string, ...>`) that need the new keys added. The pattern is consistent: add the key, label, icon, and color for each missing system type. Filter dropdowns need matching `SelectItem` entries.
 
-### D. Auth Page
-**`src/pages/Auth.tsx`** -- Add `'gym'` to the URL param whitelist array and add GymPro entry to the `SYSTEM_META` record (review step).
-
-### E. Dashboard Router
-**`src/pages/Dashboard.tsx`** -- Lazy-import a new `GymDashboard` page and add `case 'gym'` to `renderDashboard()`.
-
-### F. New Dashboard Page
-**`src/pages/GymDashboard.tsx`** -- Create a simple executive dashboard showing placeholder stat cards (Total Members, Active Classes, Check-ins Today, Revenue This Month) using `DashboardLayout`. This will be expanded later with real data.
-
-### G. Sidebar Navigation
-**`src/components/layout/Sidebar.tsx`** -- Add GymPro nav items:
-- Members (`/gym-members`, moduleKey `gym_members`, systemTypes `['gym']`)
-- Classes (`/gym-classes`, moduleKey `gym_classes`, systemTypes `['gym']`)
-- Attendance (`/gym-attendance`, moduleKey `gym_attendance`, systemTypes `['gym']`)
-
-### H. Bottom Navigation (Mobile)
-**`src/components/layout/BottomNav.tsx`** -- Add GymPro bottom nav items for Members and Classes. Add `/gym-members`, `/gym-classes`, `/gym-attendance` to the `moreRoutes` array.
-
-### I. App Router
-**`src/App.tsx`** -- Add protected routes for `/gym-members`, `/gym-classes`, `/gym-attendance` pointing to placeholder pages.
-
-### J. Landing Page
-**`src/components/landing/Solutions.tsx`** -- Add GymPro card with features list.
-**`src/components/landing/Footer.tsx`** -- Add GymPro link under Solutions.
-
-### K. Placeholder Pages
-Create 3 minimal placeholder pages (`GymMembers.tsx`, `GymClasses.tsx`, `GymAttendance.tsx`) that render a `DashboardLayout` with a "Coming Soon" or empty-state card. These will be fleshed out with full CRUD in follow-up work.
-
-## 3. Order of Operations
-
-1. Run database migration (constraint + module inserts)
-2. Update type definition in `useSubscription.tsx`
-3. Create placeholder pages and dashboard
-4. Update SystemSelector, PackageTierSelector, Auth page
-5. Update Sidebar, BottomNav, App router
-6. Update Landing page (Solutions + Footer)
-
-## Technical Notes
-
-- Internal database value: `'gym'` (lowercase, matching existing pattern)
-- Brand name: **GymPro**
-- Icon: `Dumbbell` from lucide-react
-- Gradient: `from-lime-500 to-green-600`
-- The `ModuleSelector` (custom build flow) and `TenantModuleManager` (admin) already dynamically filter by `system_type` from the database, so they will automatically pick up the new gym modules without code changes.
+No database changes needed -- the constraint already includes `gym` from the previous migration.
