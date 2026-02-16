@@ -21,6 +21,7 @@ const planLabels: Record<string, string> = {
   basic: 'Basic',
   standard: 'Standard',
   pro: 'Pro',
+  custom: 'Custom',
 };
 
 const statusColors: Record<string, string> = {

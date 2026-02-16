@@ -35,7 +35,7 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
   const updateMutation = useMutation({
     mutationFn: async ({ userId, newPlan, newStatus }: { userId: string; newPlan: string; newStatus: string }) => {
       const updateData: Record<string, any> = { 
-        plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro',
+        plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro' | 'custom',
         status: newStatus as 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired',
         updated_at: new Date().toISOString(),
       };
@@ -109,6 +109,7 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
                 <SelectItem value="basic">Basic</SelectItem>
                 <SelectItem value="standard">Standard</SelectItem>
                 <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="custom">Custom (Module-based)</SelectItem>
               </SelectContent>
             </Select>
           </div>

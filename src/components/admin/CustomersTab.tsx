@@ -34,6 +34,7 @@ const planLabels: Record<string, string> = {
   basic: 'Basic',
   standard: 'Standard',
   pro: 'Pro',
+  custom: 'Custom',
 };
 
 const systemIcons: Record<string, typeof Briefcase> = {
