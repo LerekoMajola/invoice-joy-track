@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
+import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 const industries = [
@@ -10,6 +10,8 @@ const industries = [
   { icon: Scale, label: 'LawPro', gradient: 'from-violet to-primary' },
   { icon: Hammer, label: 'HirePro', gradient: 'from-success to-info' },
   { icon: Hotel, label: 'StayPro', gradient: 'from-rose-500 to-pink-500' },
+  { icon: Car, label: 'FleetPro', gradient: 'from-slate-500 to-zinc-700' },
+  { icon: Dumbbell, label: 'GymPro', gradient: 'from-lime-500 to-green-600' },
 ];
 
 export function Hero() {
@@ -81,7 +83,7 @@ export function Hero() {
             <span className="bg-gradient-to-r from-cyan via-accent to-coral bg-clip-text text-transparent">Every Industry</span>
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro &amp; FleetPro — all powered by one modular platform.
+            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro, FleetPro &amp; GymPro — all powered by one modular platform.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.3s' }}>
