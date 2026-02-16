@@ -56,7 +56,51 @@ const WORKSHOP_TABLES = [
   { name: "quote_line_items", userIdCol: null, joinTable: "quotes", joinCol: "quote_id" },
 ];
 
-type SystemType = "business" | "workshop" | "school";
+// Legal-specific tables
+const LEGAL_TABLES = [
+  { name: "clients", userIdCol: "user_id" },
+  { name: "legal_cases", userIdCol: "user_id" },
+  { name: "legal_time_entries", userIdCol: "user_id" },
+  { name: "legal_case_expenses", userIdCol: "user_id" },
+  { name: "legal_case_notes", userIdCol: "user_id" },
+  { name: "legal_calendar_events", userIdCol: "user_id" },
+];
+
+// Hire-specific tables
+const HIRE_TABLES = [
+  { name: "equipment_items", userIdCol: "user_id" },
+  { name: "hire_orders", userIdCol: "user_id" },
+];
+
+// Guesthouse-specific tables
+const GUESTHOUSE_TABLES = [
+  { name: "rooms", userIdCol: "user_id" },
+  { name: "bookings", userIdCol: "user_id" },
+  { name: "housekeeping_tasks", userIdCol: "user_id" },
+  { name: "guest_reviews", userIdCol: "user_id" },
+];
+
+// Fleet-specific tables
+const FLEET_TABLES = [
+  { name: "fleet_vehicles", userIdCol: "user_id" },
+  { name: "fleet_drivers", userIdCol: "user_id" },
+  { name: "fleet_fuel_logs", userIdCol: "user_id" },
+  { name: "fleet_service_logs", userIdCol: "user_id" },
+  { name: "fleet_tyres", userIdCol: "user_id" },
+  { name: "fleet_cost_entries", userIdCol: "user_id" },
+  { name: "fleet_documents", userIdCol: "user_id" },
+  { name: "fleet_incidents", userIdCol: "user_id" },
+  { name: "fleet_maintenance_schedules", userIdCol: "user_id" },
+];
+
+// Gym-specific tables
+const GYM_TABLES = [
+  { name: "gym_members", userIdCol: "user_id" },
+  { name: "gym_classes", userIdCol: "user_id" },
+  { name: "gym_attendance", userIdCol: "user_id" },
+];
+
+type SystemType = "business" | "workshop" | "school" | "legal" | "hire" | "guesthouse" | "fleet" | "gym";
 
 interface TableConfig {
   name: string;
@@ -70,6 +114,11 @@ function getTablesForSystem(systemType: SystemType): TableConfig[] {
     school: SCHOOL_TABLES,
     business: BUSINESS_TABLES,
     workshop: WORKSHOP_TABLES,
+    legal: LEGAL_TABLES,
+    hire: HIRE_TABLES,
+    guesthouse: GUESTHOUSE_TABLES,
+    fleet: FLEET_TABLES,
+    gym: GYM_TABLES,
   };
   return [...SHARED_TABLES, ...(systemTables[systemType] || systemTables.business)];
 }
@@ -107,6 +156,11 @@ const SYSTEM_LABELS: Record<SystemType, string> = {
   business: "BizPro",
   workshop: "ShopPro",
   school: "EduPro",
+  legal: "LawPro",
+  hire: "HirePro",
+  guesthouse: "StayPro",
+  fleet: "FleetPro",
+  gym: "GymPro",
 };
 
 async function exportUserData(
