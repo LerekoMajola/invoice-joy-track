@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from '@/hooks/use-toast';
 
 export interface BankAccount {
@@ -33,20 +34,26 @@ export interface CreateBankAccountData {
 
 export function useBankAccounts() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: accounts = [], isLoading } = useQuery({
-    queryKey: ['bank-accounts', user?.id],
+    queryKey: ['bank-accounts', user?.id, activeCompanyId],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('bank_accounts')
         .select('*')
         .eq('user_id', user.id)
         .order('is_primary', { ascending: false })
         .order('account_name');
+
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
       
+      const { data, error } = await query;
       if (error) throw error;
       return data as BankAccount[];
     },
@@ -70,6 +77,7 @@ export function useBankAccounts() {
         .insert({
           ...data,
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           current_balance: data.opening_balance || 0,
         })
         .select()

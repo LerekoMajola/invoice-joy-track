@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface SchoolClass {
@@ -27,6 +28,7 @@ export interface AcademicTerm {
 
 export function useSchoolClasses() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,10 +53,13 @@ export function useSchoolClasses() {
     }
 
     try {
-      const [classRes, termRes] = await Promise.all([
-        supabase.from('school_classes').select('*').order('sort_order', { ascending: true }),
-        supabase.from('academic_terms').select('*').order('start_date', { ascending: false }),
-      ]);
+      let classQuery = supabase.from('school_classes').select('*').order('sort_order', { ascending: true });
+      let termQuery = supabase.from('academic_terms').select('*').order('start_date', { ascending: false });
+      if (activeCompanyId) {
+        classQuery = classQuery.eq('company_profile_id', activeCompanyId);
+        termQuery = termQuery.eq('company_profile_id', activeCompanyId);
+      }
+      const [classRes, termRes] = await Promise.all([classQuery, termQuery]);
 
       if (classRes.error) throw classRes.error;
       if (termRes.error) throw termRes.error;
@@ -94,7 +99,7 @@ export function useSchoolClasses() {
 
   useEffect(() => {
     fetchAll();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   // ===== Classes CRUD =====
   const createClass = async (data: { name: string; gradeLevel?: string; classTeacherId?: string; capacity?: number }) => {
@@ -106,6 +111,7 @@ export function useSchoolClasses() {
         .from('school_classes')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           name: data.name,
           grade_level: data.gradeLevel || null,
           class_teacher_id: data.classTeacherId || null,
@@ -181,6 +187,7 @@ export function useSchoolClasses() {
         .from('academic_terms')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           name: data.name,
           start_date: data.startDate,
           end_date: data.endDate,

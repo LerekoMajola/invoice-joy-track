@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useExpenses } from './useExpenses';
 import { useBankAccounts } from './useBankAccounts';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
@@ -17,6 +18,7 @@ export interface AccountingStats {
 
 export function useAccountingStats(startDate?: Date, endDate?: Date) {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const { paidExpenses, totalPaid: expensesPaid } = useExpenses();
   const { totalBalance } = useBankAccounts();
 
@@ -28,14 +30,17 @@ export function useAccountingStats(startDate?: Date, endDate?: Date) {
 
   // Fetch paid invoices for the period
   const { data: invoices = [] } = useQuery({
-    queryKey: ['invoices-for-stats', user?.id, startStr, endStr],
+    queryKey: ['invoices-for-stats', user?.id, activeCompanyId, startStr, endStr],
     queryFn: async () => {
       if (!user?.id) return [];
       
+      const filters: Record<string, string> = { user_id: user.id };
+      if (activeCompanyId) filters.company_profile_id = activeCompanyId;
+
       const { data, error } = await supabase
         .from('invoices')
         .select('id, total, status, date')
-        .eq('user_id', user.id)
+        .match(filters)
         .gte('date', startStr)
         .lte('date', endStr);
       
@@ -47,14 +52,17 @@ export function useAccountingStats(startDate?: Date, endDate?: Date) {
 
   // Fetch paid payslips for the period
   const { data: payslips = [] } = useQuery({
-    queryKey: ['payslips-for-stats', user?.id, startStr, endStr],
+    queryKey: ['payslips-for-stats', user?.id, activeCompanyId, startStr, endStr],
     queryFn: async () => {
       if (!user?.id) return [];
       
+      const filters: Record<string, string> = { owner_user_id: user.id };
+      if (activeCompanyId) filters.company_profile_id = activeCompanyId;
+
       const { data, error } = await supabase
         .from('payslips')
         .select('id, net_pay, status, payment_date')
-        .eq('owner_user_id', user.id)
+        .match(filters)
         .gte('payment_date', startStr)
         .lte('payment_date', endStr);
       

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface Booking {
@@ -30,15 +31,20 @@ export interface Booking {
 
 export function useBookings() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ['bookings', user?.id],
+    queryKey: ['bookings', user?.id, activeCompanyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select('*, rooms(room_number, name)')
         .order('check_in', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as Booking[];
     },
@@ -49,7 +55,7 @@ export function useBookings() {
     mutationFn: async (booking: Omit<Booking, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'rooms'>) => {
       const { error } = await supabase
         .from('bookings')
-        .insert({ ...booking, user_id: user!.id });
+        .insert({ ...booking, user_id: user!.id, company_profile_id: activeCompanyId || null });
       if (error) throw error;
     },
     onSuccess: () => {

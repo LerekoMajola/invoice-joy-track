@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface EquipmentItem {
@@ -42,16 +43,17 @@ export interface CreateEquipmentInput {
 
 export function useEquipment() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: equipment = [], isLoading } = useQuery({
-    queryKey: ['equipment', user?.id],
+    queryKey: ['equipment', user?.id, activeCompanyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('equipment_items')
-        .select('*')
-        .order('name');
-      if (error) throw error;
+      let query = supabase.from('equipment_items').select('*').order('name');
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
 
       // Fetch on-hire counts
       const { data: hireCounts, error: hireError } = await supabase
@@ -89,6 +91,7 @@ export function useEquipment() {
       const { error } = await supabase.from('equipment_items').insert({
         ...input,
         user_id: user.id,
+        company_profile_id: activeCompanyId || null,
       });
       if (error) throw error;
     },
