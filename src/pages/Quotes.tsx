@@ -28,7 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown, RefreshCw, UserPlus } from 'lucide-react';
+import { AddClientDialog } from '@/components/crm/AddClientDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +64,17 @@ export default function Quotes() {
   const navigate = useNavigate();
   const { profile } = useCompanyProfile();
   const { quotes, isLoading, createQuote, updateQuote, deleteQuote } = useQuotes();
-  const { clients } = useClients();
+  const { clients, refetch: refetchClients } = useClients();
+  const [showAddClientDialog, setShowAddClientDialog] = useState(false);
+  const [pendingAutoSelect, setPendingAutoSelect] = useState(false);
+
+  // Auto-select newest client after creating one inline
+  useEffect(() => {
+    if (pendingAutoSelect && clients.length > 0) {
+      setSelectedClientId(clients[0].id);
+      setPendingAutoSelect(false);
+    }
+  }, [clients, pendingAutoSelect]);
   const { invoices } = useInvoices();
   const { getRecurringBySource, setRecurring, stopRecurring } = useRecurringDocuments();
 
@@ -620,21 +631,46 @@ export default function Quotes() {
                   {clients.find(c => c.id === selectedClientId)?.company || 'Client'}
                 </div>
               ) : (
-                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a client..." /></SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{client.company}</span>
-                          <span className="text-xs text-muted-foreground">{client.contactPerson}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2 items-end mt-1">
+                  <div className="flex-1">
+                    <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                      <SelectTrigger><SelectValue placeholder="Choose a client..." /></SelectTrigger>
+                      <SelectContent>
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{client.company}</span>
+                              <span className="text-xs text-muted-foreground">{client.contactPerson}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setShowAddClientDialog(true);
+                    }}
+                    title="Create new client"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             </div>
+            <AddClientDialog
+              open={showAddClientDialog}
+              onOpenChange={async (open) => {
+                if (!open && showAddClientDialog) {
+                  setPendingAutoSelect(true);
+                  await refetchClients();
+                }
+                setShowAddClientDialog(open);
+              }}
+            />
             <div>
               <Label htmlFor="description">Quote Description</Label>
               <Input 
