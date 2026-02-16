@@ -17,6 +17,10 @@ const systemColors: Record<string, string> = {
   workshop: 'bg-accent/50 text-accent-foreground',
   school: 'bg-secondary text-secondary-foreground',
   legal: 'bg-muted text-muted-foreground',
+  hire: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
+  guesthouse: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
+  fleet: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300',
+  gym: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300',
 };
 
 export function SignupsTab() {
@@ -94,6 +98,10 @@ export function SignupsTab() {
             <SelectItem value="workshop">Workshop</SelectItem>
             <SelectItem value="school">School</SelectItem>
             <SelectItem value="legal">Legal</SelectItem>
+            <SelectItem value="hire">HirePro</SelectItem>
+            <SelectItem value="guesthouse">StayPro</SelectItem>
+            <SelectItem value="fleet">FleetPro</SelectItem>
+            <SelectItem value="gym">GymPro</SelectItem>
           </SelectContent>
         </Select>
       </div>

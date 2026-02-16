@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel } from 'lucide-react';
+import { Loader2, Package, Pencil, Plus, Trash2, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMaluti } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -92,6 +92,20 @@ const systemGroups: SystemGroup[] = [
     icon: Hotel,
     gradient: 'from-rose-500 to-pink-500',
     borderColor: 'border-rose-500/30',
+  },
+  {
+    id: 'fleet',
+    label: 'FleetPro',
+    icon: Car,
+    gradient: 'from-slate-500 to-gray-600',
+    borderColor: 'border-slate-500/30',
+  },
+  {
+    id: 'gym',
+    label: 'GymPro',
+    icon: Dumbbell,
+    gradient: 'from-lime-500 to-green-600',
+    borderColor: 'border-lime-500/30',
   },
 ];
 
