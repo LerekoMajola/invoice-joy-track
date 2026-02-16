@@ -49,6 +49,9 @@ import Bookings from "./pages/Bookings";
 import Housekeeping from "./pages/Housekeeping";
 import GuestReviews from "./pages/GuestReviews";
 import Fleet from "./pages/Fleet";
+import GymMembers from "./pages/GymMembers";
+import GymClasses from "./pages/GymClasses";
+import GymAttendance from "./pages/GymAttendance";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +118,9 @@ const App = () => {
             <Route path="/housekeeping" element={<ProtectedRoute><Housekeeping /></ProtectedRoute>} />
             <Route path="/guest-reviews" element={<ProtectedRoute><GuestReviews /></ProtectedRoute>} />
             <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
+            <Route path="/gym-members" element={<ProtectedRoute><GymMembers /></ProtectedRoute>} />
+            <Route path="/gym-classes" element={<ProtectedRoute><GymClasses /></ProtectedRoute>} />
+            <Route path="/gym-attendance" element={<ProtectedRoute><GymAttendance /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

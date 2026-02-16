@@ -411,6 +411,58 @@ const fleetTiers: PackageTier[] = [
   },
 ];
 
+const gymTiers: PackageTier[] = [
+  {
+    name: 'Starter',
+    price: 500,
+    target: 'Small gyms & studios',
+    moduleKeys: ['gym_members', 'gym_billing', 'invoices', 'tasks', 'staff'],
+    features: [
+      { name: 'Members & Subscriptions', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Payment & Billing', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Class Scheduling', included: false },
+      { name: 'Attendance Tracking', included: false },
+      { name: 'Accounting', included: false },
+    ],
+  },
+  {
+    name: 'Professional',
+    price: 700,
+    target: 'Growing fitness centres',
+    popular: true,
+    moduleKeys: ['gym_members', 'gym_classes', 'gym_attendance', 'gym_billing', 'invoices', 'tasks', 'staff', 'accounting'],
+    features: [
+      { name: 'Members & Subscriptions', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Payment & Billing', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Class Scheduling', included: true },
+      { name: 'Attendance Tracking', included: true },
+      { name: 'Accounting', included: true },
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price: 950,
+    target: 'Large gyms & chains',
+    moduleKeys: ['gym_members', 'gym_classes', 'gym_attendance', 'gym_billing', 'invoices', 'tasks', 'staff', 'accounting', 'core_crm'],
+    features: [
+      { name: 'Members & Subscriptions', included: true },
+      { name: 'Invoices', included: true },
+      { name: 'Payment & Billing', included: true },
+      { name: 'Task Management', included: true },
+      { name: 'Staff & HR', included: true },
+      { name: 'Class Scheduling', included: true },
+      { name: 'Attendance Tracking', included: true },
+      { name: 'Accounting', included: true },
+    ],
+  },
+];
+
 const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient: string; tiers: PackageTier[] }> = {
   business: { label: 'BizPro', subtitle: 'For companies & professionals', gradient: 'from-primary to-violet', tiers: businessTiers },
   workshop: { label: 'ShopPro', subtitle: 'For auto shops & service centres', gradient: 'from-coral to-warning', tiers: workshopTiers },
@@ -419,6 +471,7 @@ const SYSTEM_CONFIG: Record<string, { label: string; subtitle: string; gradient:
   hire: { label: 'HirePro', subtitle: 'For equipment rental companies', gradient: 'from-amber-500 to-orange-500', tiers: hireTiers },
   guesthouse: { label: 'StayPro', subtitle: 'For lodges & hospitality', gradient: 'from-rose-500 to-pink-500', tiers: guesthouseTiers },
   fleet: { label: 'FleetPro', subtitle: 'For vehicle fleets & logistics', gradient: 'from-slate-600 to-zinc-800', tiers: fleetTiers },
+  gym: { label: 'GymPro', subtitle: 'For gyms & fitness centres', gradient: 'from-lime-500 to-green-600', tiers: gymTiers },
 };
 
 interface PackageTierSelectorProps {

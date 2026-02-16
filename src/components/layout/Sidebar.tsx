@@ -30,6 +30,8 @@ import {
   CalendarCheck,
   Star,
   Car,
+  Dumbbell,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,6 +73,10 @@ const navigation = [
   { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['school'] },
   // Fleet
   { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet', systemTypes: ['fleet'] },
+  // Gym
+  { name: 'Members', href: '/gym-members', icon: Users, moduleKey: 'gym_members', systemTypes: ['gym'] },
+  { name: 'Classes', href: '/gym-classes', icon: Dumbbell, moduleKey: 'gym_classes', systemTypes: ['gym'] },
+  { name: 'Attendance', href: '/gym-attendance', icon: UserCheck, moduleKey: 'gym_attendance', systemTypes: ['gym'] },
   // Shared
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks', systemTypes: null },
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff', systemTypes: null },

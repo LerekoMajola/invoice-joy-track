@@ -56,7 +56,7 @@ const PLAN_LIMITS = {
   },
 } as const;
 
-export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet';
+export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet' | 'gym';
 
 export function useSubscription() {
   const { user } = useAuth();
