@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface HireOrder {
@@ -69,15 +70,17 @@ export interface ProcessReturnInput {
 
 export function useHireOrders() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['hire-orders', user?.id],
+    queryKey: ['hire-orders', user?.id, activeCompanyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('hire_orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('hire_orders').select('*').order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as HireOrder[];
     },
@@ -117,6 +120,7 @@ export function useHireOrders() {
         .from('hire_orders')
         .insert({
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           order_number: orderNumber,
           client_name: input.client_name,
           client_id: input.client_id || null,

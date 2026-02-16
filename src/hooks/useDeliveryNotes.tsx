@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface DeliveryNoteItem {
@@ -36,18 +37,15 @@ interface DeliveryNoteInsert {
 
 export function useDeliveryNotes() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const getActiveUser = async (): Promise<User | null> => {
     if (user) return user;
-
-    // Prefer local session (no network) to avoid timing issues on first load
     const { data: sessionData } = await supabase.auth.getSession();
     const sessionUser = sessionData.session?.user ?? null;
     if (sessionUser) return sessionUser;
-
-    // Fallback to fetching the user from the API
     const { data, error } = await supabase.auth.getUser();
     if (error) return null;
     return data.user ?? null;
@@ -62,14 +60,18 @@ export function useDeliveryNotes() {
     }
 
     try {
-      const { data: notesData, error: notesError } = await supabase
+      let query = supabase
         .from('delivery_notes')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data: notesData, error: notesError } = await query;
       if (notesError) throw notesError;
 
-      // Fetch items for all delivery notes
       const noteIds = (notesData || []).map((n) => n.id);
       const { data: itemsData, error: itemsError } = await supabase
         .from('delivery_note_items')
@@ -78,7 +80,6 @@ export function useDeliveryNotes() {
 
       if (itemsError) throw itemsError;
 
-      // Group items by delivery_note_id
       const itemsByNote: Record<string, DeliveryNoteItem[]> = {};
       (itemsData || []).forEach((item) => {
         if (!itemsByNote[item.delivery_note_id]) {
@@ -116,7 +117,7 @@ export function useDeliveryNotes() {
 
   useEffect(() => {
     fetchDeliveryNotes();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const generateNoteNumber = async (): Promise<string> => {
     const { data } = await supabase
@@ -149,6 +150,7 @@ export function useDeliveryNotes() {
         .from('delivery_notes')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           note_number: noteNumber,
           client_id: note.clientId || null,
           invoice_id: note.invoiceId || null,
@@ -162,7 +164,6 @@ export function useDeliveryNotes() {
 
       if (noteError) throw noteError;
 
-      // Insert items
       const itemsToInsert = note.items.map((item) => ({
         delivery_note_id: noteData.id,
         description: item.description,
@@ -222,22 +223,16 @@ export function useDeliveryNotes() {
 
       if (noteError) throw noteError;
 
-      // Update items if provided
       if (updates.items) {
-        // Delete existing items
         await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
-
-        // Insert new items
         const itemsToInsert = updates.items.map((item) => ({
           delivery_note_id: id,
           description: item.description,
           quantity: item.quantity,
         }));
-
         await supabase.from('delivery_note_items').insert(itemsToInsert);
       }
 
-      // Refetch to get updated data
       await fetchDeliveryNotes();
       toast.success('Delivery note updated successfully');
       return true;
@@ -251,9 +246,7 @@ export function useDeliveryNotes() {
   const deleteDeliveryNote = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase.from('delivery_notes').delete().eq('id', id);
-
       if (error) throw error;
-
       setDeliveryNotes((prev) => prev.filter((n) => n.id !== id));
       toast.success('Delivery note deleted successfully');
       return true;

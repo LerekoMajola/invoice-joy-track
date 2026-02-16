@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { useCallback, useContext } from 'react';
+import { useCallback } from 'react';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
 export interface CompanyProfile {
   id: string;
@@ -55,22 +56,23 @@ export function useCompanyProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { activeCompanyId } = useActiveCompany();
 
   const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['company-profile', user?.id],
+    queryKey: ['company-profile', activeCompanyId],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!activeCompanyId) return null;
       
       const { data, error } = await supabase
         .from('company_profiles')
         .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('id', activeCompanyId)
+        .single();
       
       if (error) throw error;
       return data as CompanyProfile | null;
     },
-    enabled: !!user?.id,
+    enabled: !!activeCompanyId,
   });
 
   const saveProfile = useMutation({
@@ -83,7 +85,7 @@ export function useCompanyProfile() {
         const { data, error } = await supabase
           .from('company_profiles')
           .update(profileData)
-          .eq('user_id', user.id)
+          .eq('id', activeCompanyId)
           .select()
           .single();
         
@@ -105,7 +107,7 @@ export function useCompanyProfile() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['company-profile', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['company-profile', activeCompanyId] });
       toast({
         title: 'Success',
         description: 'Company profile saved successfully.',

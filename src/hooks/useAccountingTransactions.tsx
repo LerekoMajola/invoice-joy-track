@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from '@/hooks/use-toast';
 import { useMemo, useState } from 'react';
 
@@ -46,15 +47,16 @@ export interface TransactionFilters {
 
 export function useAccountingTransactions() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<TransactionFilters>({});
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['accounting-transactions', user?.id],
+    queryKey: ['accounting-transactions', user?.id, activeCompanyId],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('accounting_transactions')
         .select(`
           *,
@@ -63,6 +65,12 @@ export function useAccountingTransactions() {
         .eq('user_id', user.id)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
+
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return (data || []).map((t) => ({
@@ -113,7 +121,7 @@ export function useAccountingTransactions() {
 
       const { data: txn, error } = await supabase
         .from('accounting_transactions')
-        .insert({ ...data, user_id: user.id })
+        .insert({ ...data, user_id: user.id, company_profile_id: activeCompanyId || null })
         .select()
         .single();
 

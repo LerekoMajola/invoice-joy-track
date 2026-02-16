@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface FleetDriver {
@@ -36,13 +37,18 @@ function mapRow(row: any): FleetDriver {
 
 export function useFleetDrivers() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDrivers = async () => {
     if (!user) { setDrivers([]); setIsLoading(false); return; }
     try {
-      const { data, error } = await supabase.from('fleet_drivers').select('*').order('full_name');
+      let query = supabase.from('fleet_drivers').select('*').order('full_name');
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setDrivers((data || []).map(mapRow));
     } catch (e) {
@@ -50,13 +56,14 @@ export function useFleetDrivers() {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchDrivers(); }, [user]);
+  useEffect(() => { fetchDrivers(); }, [user, activeCompanyId]);
 
   const createDriver = async (d: FleetDriverInsert): Promise<boolean> => {
     if (!user) return false;
     try {
       const { error } = await supabase.from('fleet_drivers').insert({
-        user_id: user.id, full_name: d.fullName, phone: d.phone || null,
+        user_id: user.id, company_profile_id: activeCompanyId || null,
+        full_name: d.fullName, phone: d.phone || null,
         license_number: d.licenseNumber || null, license_expiry: d.licenseExpiry || null,
         license_type: d.licenseType || 'B', notes: d.notes || null,
       });

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface TenderSourceLink {
@@ -22,20 +23,25 @@ export interface TenderSourceLinkInput {
 
 export function useTenderSourceLinks() {
   const { user, session } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: links = [], isLoading } = useQuery({
-    queryKey: ['tender-source-links', user?.id],
+    queryKey: ['tender-source-links', user?.id, activeCompanyId],
     queryFn: async () => {
-      // Verify session is valid before querying
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) throw new Error('Session expired');
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('tender_source_links')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as TenderSourceLink[];
     },
@@ -54,6 +60,7 @@ export function useTenderSourceLinks() {
         .from('tender_source_links')
         .insert({
           user_id: currentSession.user.id,
+          company_profile_id: activeCompanyId || null,
           name: input.name,
           url: input.url,
           description: input.description || null,

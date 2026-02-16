@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface FleetVehicle {
@@ -90,16 +91,18 @@ function mapRow(row: any): FleetVehicle {
 
 export function useFleetVehicles() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [vehicles, setVehicles] = useState<FleetVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchVehicles = async () => {
     if (!user) { setVehicles([]); setIsLoading(false); return; }
     try {
-      const { data, error } = await supabase
-        .from('fleet_vehicles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('fleet_vehicles').select('*').order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setVehicles((data || []).map(mapRow));
     } catch (e) {
@@ -110,7 +113,7 @@ export function useFleetVehicles() {
     }
   };
 
-  useEffect(() => { fetchVehicles(); }, [user]);
+  useEffect(() => { fetchVehicles(); }, [user, activeCompanyId]);
 
   const createVehicle = async (v: FleetVehicleInsert): Promise<FleetVehicle | null> => {
     if (!user) { toast.error('You must be logged in'); return null; }
@@ -119,6 +122,7 @@ export function useFleetVehicles() {
         .from('fleet_vehicles')
         .insert({
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           make: v.make,
           model: v.model,
           year: v.year,

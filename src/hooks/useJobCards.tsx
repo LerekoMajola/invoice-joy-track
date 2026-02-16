@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface JobCardLineItem {
@@ -77,6 +78,7 @@ interface JobCardInsert {
 
 export function useJobCards() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -99,12 +101,16 @@ export function useJobCards() {
     }
 
     try {
-      const { data: jobCardsData, error: jobCardsError } = await supabase
+      let query = supabase
         .from('job_cards')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (jobCardsError) throw jobCardsError;
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data: jobCardsData, error: jobCardsError } = await query;
 
       const ids = (jobCardsData || []).map((jc) => jc.id);
       const { data: lineItemsData, error: lineItemsError } = await supabase
@@ -171,7 +177,7 @@ export function useJobCards() {
 
   useEffect(() => {
     fetchJobCards();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const generateJobCardNumber = async (): Promise<string> => {
     const { data } = await supabase
@@ -202,6 +208,7 @@ export function useJobCards() {
         .from('job_cards')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           job_card_number: jobCardNumber,
           client_id: jobCard.clientId || null,
           client_name: jobCard.clientName,

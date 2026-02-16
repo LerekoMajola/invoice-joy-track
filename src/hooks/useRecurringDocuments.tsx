@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface RecurringDocument {
@@ -31,6 +32,7 @@ function computeNextRunDate(frequency: Frequency, from?: Date): string {
 
 export function useRecurringDocuments() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [recurringDocs, setRecurringDocs] = useState<RecurringDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from './use-toast';
 
 export interface Contact {
@@ -37,6 +38,7 @@ export function useContacts(clientId?: string, leadId?: string) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const { toast } = useToast();
 
   const fetchContacts = async () => {
@@ -48,6 +50,9 @@ export function useContacts(clientId?: string, leadId?: string) {
     try {
       let query = supabase.from('contacts').select('*');
 
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
       if (clientId) {
         query = query.eq('client_id', clientId);
       } else if (leadId) {
@@ -71,7 +76,7 @@ export function useContacts(clientId?: string, leadId?: string) {
 
   useEffect(() => {
     fetchContacts();
-  }, [user, clientId, leadId]);
+  }, [user, clientId, leadId, activeCompanyId]);
 
   const createContact = async (contact: ContactInsert) => {
     if (!user) return null;
@@ -95,6 +100,7 @@ export function useContacts(clientId?: string, leadId?: string) {
         .insert({
           ...contact,
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
         })
         .select()
         .single();

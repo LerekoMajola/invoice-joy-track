@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from '@/hooks/use-toast';
 
 export type StaffRole = 'admin' | 'manager' | 'staff' | 'viewer';
@@ -44,6 +45,7 @@ export function useStaff() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const { toast } = useToast();
 
   const fetchStaff = useCallback(async () => {
@@ -55,13 +57,17 @@ export function useStaff() {
 
     setIsLoading(true);
     try {
-      // Fetch staff members with their roles
-      const { data: staffData, error: staffError } = await supabase
+      let query = supabase
         .from('staff_members')
         .select('*')
         .eq('owner_user_id', user.id)
         .order('created_at', { ascending: false });
 
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data: staffData, error: staffError } = await query;
       if (staffError) throw staffError;
 
       if (!staffData || staffData.length === 0) {
@@ -70,7 +76,6 @@ export function useStaff() {
         return;
       }
 
-      // Fetch roles for all staff members
       const staffIds = staffData.map(s => s.id);
       const { data: rolesData, error: rolesError } = await supabase
         .from('staff_roles')
@@ -79,7 +84,6 @@ export function useStaff() {
 
       if (rolesError) throw rolesError;
 
-      // Map roles to staff members
       const roleMap = new Map(rolesData?.map(r => [r.staff_member_id, r.role]) || []);
 
       const mappedStaff: StaffMember[] = staffData.map(s => ({
@@ -107,7 +111,7 @@ export function useStaff() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, activeCompanyId, toast]);
 
   useEffect(() => {
     fetchStaff();
@@ -116,22 +120,17 @@ export function useStaff() {
   const createStaff = async (data: CreateStaffData): Promise<StaffMember | null> => {
     if (!user) return null;
 
-    // Enforce staff limit of 5
     if (staff.length >= 5) {
-      toast({
-        title: 'Staff limit reached',
-        description: 'Maximum 5 staff members allowed.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Staff limit reached', description: 'Maximum 5 staff members allowed.', variant: 'destructive' });
       return null;
     }
 
     try {
-      // Create staff member
       const { data: staffData, error: staffError } = await supabase
         .from('staff_members')
         .insert({
           owner_user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           name: data.name,
           email: data.email,
           phone: data.phone || null,
@@ -145,52 +144,28 @@ export function useStaff() {
 
       if (staffError) throw staffError;
 
-      // Create role for staff member
       const { error: roleError } = await supabase
         .from('staff_roles')
-        .insert({
-          staff_member_id: staffData.id,
-          role: data.role,
-        });
+        .insert({ staff_member_id: staffData.id, role: data.role });
 
       if (roleError) throw roleError;
 
       const newStaff: StaffMember = {
-        id: staffData.id,
-        name: staffData.name,
-        email: staffData.email,
-        phone: staffData.phone,
-        jobTitle: staffData.job_title,
-        department: staffData.department,
-        status: staffData.status as StaffStatus,
-        role: data.role,
-        notes: staffData.notes,
-        invitedAt: staffData.invited_at || staffData.created_at,
-        joinedAt: staffData.joined_at,
+        id: staffData.id, name: staffData.name, email: staffData.email,
+        phone: staffData.phone, jobTitle: staffData.job_title, department: staffData.department,
+        status: staffData.status as StaffStatus, role: data.role, notes: staffData.notes,
+        invitedAt: staffData.invited_at || staffData.created_at, joinedAt: staffData.joined_at,
       };
 
       setStaff(prev => [newStaff, ...prev]);
-      toast({
-        title: 'Success',
-        description: 'Staff member added successfully',
-      });
-
+      toast({ title: 'Success', description: 'Staff member added successfully' });
       return newStaff;
     } catch (error: any) {
       console.error('Error creating staff:', error);
-      
       if (error.code === '23505') {
-        toast({
-          title: 'Error',
-          description: 'A staff member with this email already exists',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'A staff member with this email already exists', variant: 'destructive' });
       } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to add staff member',
-          variant: 'destructive',
-        });
+        toast({ title: 'Error', description: 'Failed to add staff member', variant: 'destructive' });
       }
       return null;
     }
@@ -198,7 +173,6 @@ export function useStaff() {
 
   const updateStaff = async (id: string, data: UpdateStaffData): Promise<boolean> => {
     if (!user) return false;
-
     try {
       const updateData: Record<string, any> = {};
       if (data.name !== undefined) updateData.name = data.name;
@@ -216,107 +190,47 @@ export function useStaff() {
         .eq('owner_user_id', user.id);
 
       if (error) throw error;
-
-      setStaff(prev => prev.map(s => 
-        s.id === id ? { ...s, ...data } : s
-      ));
-
-      toast({
-        title: 'Success',
-        description: 'Staff member updated successfully',
-      });
-
+      setStaff(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+      toast({ title: 'Success', description: 'Staff member updated successfully' });
       return true;
     } catch (error: any) {
       console.error('Error updating staff:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update staff member',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to update staff member', variant: 'destructive' });
       return false;
     }
   };
 
   const updateStaffRole = async (id: string, role: StaffRole): Promise<boolean> => {
     if (!user) return false;
-
     try {
-      // First delete existing role, then insert new one
-      const { error: deleteError } = await supabase
-        .from('staff_roles')
-        .delete()
-        .eq('staff_member_id', id);
-
+      const { error: deleteError } = await supabase.from('staff_roles').delete().eq('staff_member_id', id);
       if (deleteError) throw deleteError;
-
-      const { error: insertError } = await supabase
-        .from('staff_roles')
-        .insert({
-          staff_member_id: id,
-          role: role,
-        });
-
+      const { error: insertError } = await supabase.from('staff_roles').insert({ staff_member_id: id, role });
       if (insertError) throw insertError;
-
-      setStaff(prev => prev.map(s => 
-        s.id === id ? { ...s, role } : s
-      ));
-
-      toast({
-        title: 'Success',
-        description: 'Staff role updated successfully',
-      });
-
+      setStaff(prev => prev.map(s => s.id === id ? { ...s, role } : s));
+      toast({ title: 'Success', description: 'Staff role updated successfully' });
       return true;
     } catch (error: any) {
       console.error('Error updating staff role:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update staff role',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to update staff role', variant: 'destructive' });
       return false;
     }
   };
 
   const deleteStaff = async (id: string): Promise<boolean> => {
     if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('staff_members')
-        .delete()
-        .eq('id', id)
-        .eq('owner_user_id', user.id);
-
+      const { error } = await supabase.from('staff_members').delete().eq('id', id).eq('owner_user_id', user.id);
       if (error) throw error;
-
       setStaff(prev => prev.filter(s => s.id !== id));
-      toast({
-        title: 'Success',
-        description: 'Staff member removed successfully',
-      });
-
+      toast({ title: 'Success', description: 'Staff member removed successfully' });
       return true;
     } catch (error: any) {
       console.error('Error deleting staff:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to remove staff member',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to remove staff member', variant: 'destructive' });
       return false;
     }
   };
 
-  return {
-    staff,
-    isLoading,
-    createStaff,
-    updateStaff,
-    updateStaffRole,
-    deleteStaff,
-    refetch: fetchStaff,
-  };
+  return { staff, isLoading, createStaff, updateStaff, updateStaffRole, deleteStaff, refetch: fetchStaff };
 }

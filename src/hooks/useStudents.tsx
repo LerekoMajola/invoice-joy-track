@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface Student {
@@ -49,6 +50,7 @@ interface StudentInsert {
 
 export function useStudents() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -71,12 +73,11 @@ export function useStudents() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      let query = supabase.from('students').select('*').order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
 
       setStudents(
         (data || []).map((s: any) => ({
@@ -113,7 +114,7 @@ export function useStudents() {
 
   useEffect(() => {
     fetchStudents();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const generateAdmissionNumber = async (): Promise<string> => {
     const { data } = await supabase
@@ -143,6 +144,7 @@ export function useStudents() {
         .from('students')
         .insert({
           user_id: activeUser.id,
+          company_profile_id: activeCompanyId || null,
           admission_number: admissionNumber,
           first_name: student.firstName,
           last_name: student.lastName,

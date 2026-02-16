@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 
 export interface CRMClient {
@@ -42,6 +43,7 @@ export const CLIENT_STATUSES = [
 
 export function useCRMClients() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [clients, setClients] = useState<CRMClient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -53,10 +55,11 @@ export function useCRMClients() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('clients').select('*').order('created_at', { ascending: false });
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -87,7 +90,7 @@ export function useCRMClients() {
 
   useEffect(() => {
     fetchClients();
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const createClient = async (client: ClientInsert): Promise<CRMClient | null> => {
     if (!user) {
@@ -100,6 +103,7 @@ export function useCRMClients() {
         .from('clients')
         .insert({
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           company: client.company,
           contact_person: client.contactPerson || null,
           email: client.email || null,

@@ -70,15 +70,21 @@ export function useExpenseCategories() {
   const queryClient = useQueryClient();
 
   const { data: categories = [], isLoading } = useQuery({
-    queryKey: ['expense-categories', user?.id],
+    queryKey: ['expense-categories', user?.id, activeCompanyId],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('expense_categories')
         .select('*')
         .eq('user_id', user.id)
         .order('name');
+
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -86,6 +92,7 @@ export function useExpenseCategories() {
       if (data.length === 0) {
         const categoriesToInsert = DEFAULT_CATEGORIES.map(cat => ({
           user_id: user.id,
+          company_profile_id: activeCompanyId || null,
           name: cat.name,
           icon: cat.icon,
           color: cat.color,
@@ -112,7 +119,7 @@ export function useExpenseCategories() {
       
       const { data: category, error } = await supabase
         .from('expense_categories')
-        .insert({ ...data, user_id: user.id })
+        .insert({ ...data, user_id: user.id, company_profile_id: activeCompanyId || null })
         .select()
         .single();
       
@@ -133,14 +140,15 @@ export function useExpenseCategories() {
 
 export function useExpenses() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ['expenses', user?.id],
+    queryKey: ['expenses', user?.id, activeCompanyId],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('expenses')
         .select(`
           *,
@@ -148,6 +156,12 @@ export function useExpenses() {
         `)
         .eq('user_id', user.id)
         .order('date', { ascending: false });
+
+      if (activeCompanyId) {
+        query = query.eq('company_profile_id', activeCompanyId);
+      }
+
+      const { data, error } = await query;
       
       if (error) throw error;
       return data as Expense[];
@@ -161,7 +175,7 @@ export function useExpenses() {
       
       const { data: expense, error } = await supabase
         .from('expenses')
-        .insert({ ...data, user_id: user.id })
+        .insert({ ...data, user_id: user.id, company_profile_id: activeCompanyId || null })
         .select()
         .single();
       
