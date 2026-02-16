@@ -18,9 +18,9 @@ interface TenantDetailDialogProps {
 
 const planLabels: Record<string, string> = {
   free_trial: 'Free Trial',
-  basic: 'Basic (M300/mo)',
-  standard: 'Standard (M500/mo)',
-  pro: 'Pro (M800/mo)',
+  basic: 'Basic',
+  standard: 'Standard',
+  pro: 'Pro',
 };
 
 const statusColors: Record<string, string> = {
