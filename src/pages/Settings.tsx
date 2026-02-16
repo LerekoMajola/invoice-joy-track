@@ -20,10 +20,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
   const { systemType } = useSubscription();
+  const { refetchCompanies } = useActiveCompany();
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const handleSendBackup = async () => {
@@ -172,7 +174,7 @@ export default function Settings() {
   };
 
   const handleSave = () => {
-    saveProfile(formData);
+    saveProfile(formData, { onSuccess: () => refetchCompanies() });
   };
 
   if (isLoading) {
