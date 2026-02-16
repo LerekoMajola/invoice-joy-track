@@ -22,6 +22,7 @@ export interface Tenant {
     quotes_count: number;
     invoices_count: number;
   } | null;
+  module_total: number;
 }
 
 export function useAdminTenants() {
@@ -59,6 +60,23 @@ export function useAdminTenants() {
         console.error('Error fetching usage:', usageError);
       }
 
+      // Fetch all user modules with prices
+      const { data: userModulesData, error: modulesError } = await supabase
+        .from('user_modules')
+        .select('user_id, is_active, module:platform_modules(monthly_price)')
+        .eq('is_active', true);
+
+      if (modulesError) {
+        console.error('Error fetching user modules:', modulesError);
+      }
+
+      // Calculate module totals per user
+      const moduleTotals: Record<string, number> = {};
+      (userModulesData || []).forEach((um: any) => {
+        const price = um.module?.monthly_price || 0;
+        moduleTotals[um.user_id] = (moduleTotals[um.user_id] || 0) + price;
+      });
+
       // Map data together
       const tenants: Tenant[] = (profiles || []).map((profile) => {
         const subscription = subscriptions?.find(s => s.user_id === profile.user_id);
@@ -84,6 +102,7 @@ export function useAdminTenants() {
             quotes_count: usage.quotes_count || 0,
             invoices_count: usage.invoices_count || 0,
           } : null,
+          module_total: moduleTotals[profile.user_id] || 0,
         };
       });
 
