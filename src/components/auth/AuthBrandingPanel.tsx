@@ -1,7 +1,16 @@
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-import { Quote } from 'lucide-react';
+import { Quote, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
 
-const industries = ['BizPro', 'ShopPro', 'EduPro', 'LawPro', 'HirePro', 'StayPro', 'FleetPro'];
+const industries = [
+  { label: 'BizPro', icon: Briefcase, color: 'bg-indigo-500/80' },
+  { label: 'ShopPro', icon: Wrench, color: 'bg-orange-500/80' },
+  { label: 'EduPro', icon: GraduationCap, color: 'bg-cyan-500/80' },
+  { label: 'LawPro', icon: Scale, color: 'bg-emerald-500/80' },
+  { label: 'HirePro', icon: Hammer, color: 'bg-amber-500/80' },
+  { label: 'StayPro', icon: Hotel, color: 'bg-rose-500/80' },
+  { label: 'FleetPro', icon: Car, color: 'bg-slate-500/80' },
+  { label: 'GymPro', icon: Dumbbell, color: 'bg-lime-500/80' },
+];
 
 export function AuthBrandingPanel() {
   return (
@@ -16,10 +25,10 @@ export function AuthBrandingPanel() {
           <PlatformLogo className="h-32 w-32 rounded-full p-6 bg-white shadow-sm object-contain" />
         </div>
           <h2 className="font-display text-3xl font-bold text-white mb-4">
-            One Platform, Seven Industries
+            One Platform, Eight Industries
           </h2>
           <p className="text-white/70 text-lg">
-            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro &amp; FleetPro — all powered by one modular platform.
+            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro, FleetPro &amp; GymPro — all powered by one modular platform.
           </p>
 
         {/* Testimonial */}
@@ -48,15 +57,19 @@ export function AuthBrandingPanel() {
 
         {/* Industry pills */}
         <div className="flex flex-wrap justify-center gap-2 mt-6">
-          {industries.map((ind, index) => (
-            <span
-              key={ind}
-              className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/80 text-sm font-medium animate-slide-up"
-              style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-            >
-              {ind}
-            </span>
-          ))}
+          {industries.map((ind, index) => {
+            const Icon = ind.icon;
+            return (
+              <span
+                key={ind.label}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 ${ind.color} backdrop-blur-sm rounded-full text-white text-sm font-medium animate-slide-up`}
+                style={{ animationDelay: `${0.4 + index * 0.08}s` }}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {ind.label}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>
