@@ -1,39 +1,52 @@
 
 
-# Drafts Folder
+# Upload Document to Auto-Fill Quote
 
-A new "Drafts" page that collects all your draft quotes and draft invoices in one place, so you can quickly find and resume unfinished work.
+Instead of typing everything manually, you'll be able to upload a PDF or Word document and have the system automatically extract the information and fill in the quote form fields.
 
-## What you'll get
+## How it will work
 
-- A new "Drafts" item in the sidebar navigation (with a folder icon), visible to all system types
-- A single page at `/drafts` showing two sections:
-  - **Draft Quotes** -- all quotes with status "draft", with options to view, edit, or delete
-  - **Draft Invoices** -- all invoices with status "draft", with options to view or delete
-- Each item shows the document number, client name, date, and amount
-- Clicking a draft takes you to the relevant Quotes or Invoices page with the document opened for editing
-- Empty state messages when there are no drafts in either category
+1. A new "Upload Document" button appears at the top of the quote creation form
+2. You select a PDF or Word file from your device
+3. The system reads the document, sends the text to AI, and extracts: client name, description, line items (with quantities and prices), lead time, and notes
+4. The form fields are automatically populated with the extracted data
+5. You review, adjust if needed, and save
 
-## Technical details
+## Technical approach
+
+### 1. New edge function: `extract-quote-from-document`
+- Receives the uploaded file's text content
+- Uses Lovable AI (Gemini) to intelligently parse the text and extract structured quote data
+- Returns: client name, description, lead time, notes, and line items (description, quantity, unit price, cost price)
+- Uses tool calling to ensure structured JSON output
+
+### 2. Client-side PDF/Word text extraction
+- For PDFs: use the already-installed `pdfjs-dist` library to extract text from all pages
+- For Word (.docx) files: add `mammoth` library to convert .docx to plain text
+- Text extraction happens in the browser before sending to the backend -- no file upload to storage needed
+
+### 3. Update the quote creation dialog (`src/pages/Quotes.tsx`)
+- Add an "Upload Document" button with a file input (accepts .pdf, .docx)
+- On file select: extract text client-side, call the edge function, populate the form fields
+- Show a loading spinner during processing
+- Show a toast confirming "Document parsed -- please review the extracted data"
+- Match extracted client name against existing clients to auto-select the right one
+
+## Files to create/modify
 
 | File | Action |
 |------|--------|
-| `src/pages/Drafts.tsx` | Create -- new page showing filtered draft quotes and invoices |
-| `src/App.tsx` | Update -- add `/drafts` route |
-| `src/components/layout/Sidebar.tsx` | Update -- add "Drafts" nav item between Quotes and Invoices |
-| `src/components/layout/BottomNav.tsx` | Update -- add Drafts to mobile nav if applicable |
+| `supabase/functions/extract-quote-from-document/index.ts` | Create -- AI-powered text-to-quote extraction |
+| `src/pages/Quotes.tsx` | Update -- add upload button, text extraction, form population |
+| `supabase/config.toml` | Update -- register new edge function |
 
-### New page: `src/pages/Drafts.tsx`
-- Uses existing `useQuotes` and `useInvoices` hooks
-- Filters each list to only show items where `status === 'draft'`
-- Displays a summary card showing total draft count
-- Shows mobile card view and desktop table view (matching existing patterns)
-- "Edit" on a draft quote navigates to `/quotes` with sessionStorage data to open that quote for editing
-- "View" on a draft invoice navigates to `/invoices` with sessionStorage data to open the preview
+## What gets extracted
 
-### Sidebar update
-- Add entry: `{ name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null }`
-- Position it after Quotes/before Invoices so it sits logically between the two document types
+The AI will look for and extract:
+- **Client/company name** -- matched against your existing client list
+- **Description** -- project or work description
+- **Line items** -- each with description, quantity, unit price, and cost price (if available)
+- **Lead time** -- delivery or turnaround time if mentioned
+- **Notes** -- any additional notes or special conditions
 
-### Route update
-- Add `<Route path="/drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />` in `App.tsx`
+If the AI cannot find a particular field, it simply leaves it blank for you to fill in manually.
