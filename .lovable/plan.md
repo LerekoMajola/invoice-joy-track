@@ -1,49 +1,39 @@
 
-# Prevent Quote Data Loss
 
-## What went wrong
-Your login session expired during the hour you spent typing. Network drops prevented the auto-refresh from working. When you hit save, the database rejected the insert because it no longer knew who you were -- and the form data was lost because nothing was saved locally.
+# Drafts Folder
 
-## Fix 1: Auto-save drafts to local storage
+A new "Drafts" page that collects all your draft quotes and draft invoices in one place, so you can quickly find and resume unfinished work.
 
-Create a new utility hook that periodically saves the quote form data to the browser's local storage. If the page reloads, the network drops, or a save fails, the data can be restored.
+## What you'll get
 
-### New file: `src/hooks/useAutoSaveDraft.ts`
-- Accept a key (e.g. `quote-draft`) and form data object
-- Every 10 seconds (and on every field change), write the current form state to `localStorage`
-- On mount, check if a saved draft exists and return it so the form can pre-populate
-- Provide a `clearDraft()` function to call after a successful save
-- Use `JSON.stringify` / `JSON.parse` with a timestamp so stale drafts (older than 7 days) auto-expire
+- A new "Drafts" item in the sidebar navigation (with a folder icon), visible to all system types
+- A single page at `/drafts` showing two sections:
+  - **Draft Quotes** -- all quotes with status "draft", with options to view, edit, or delete
+  - **Draft Invoices** -- all invoices with status "draft", with options to view or delete
+- Each item shows the document number, client name, date, and amount
+- Clicking a draft takes you to the relevant Quotes or Invoices page with the document opened for editing
+- Empty state messages when there are no drafts in either category
 
-### Update: `src/pages/Quotes.tsx` (or the quote creation dialog)
-- Integrate the `useAutoSaveDraft` hook into the quote creation form
-- On mount, if a draft exists, prompt the user: "You have an unsaved quote draft from [date]. Restore it?"
-- After a successful `createQuote()`, call `clearDraft()`
-
-## Fix 2: Session check before saving
-
-### Update: `src/hooks/useQuotes.tsx`
-- In `createQuote`, before attempting the insert, call `supabase.auth.getSession()` to verify the session is still valid
-- If the session is null or expired, attempt `supabase.auth.refreshSession()`
-- If refresh also fails, show a clear error: "Your session has expired. Your draft has been saved locally. Please log in again to continue." -- instead of the generic "Failed to create quote"
-- This ensures the user knows exactly what happened and that their data is safe
-
-## Fix 3: Retry with feedback on network issues
-
-### Update: `src/hooks/useQuotes.tsx`
-- Wrap the insert call in a simple retry (1 retry after 2-second delay) for transient network errors
-- If the final attempt fails, show a specific message distinguishing between auth errors and network errors
-
-## Summary of new/changed files
+## Technical details
 
 | File | Action |
 |------|--------|
-| `src/hooks/useAutoSaveDraft.ts` | Create -- generic local-storage auto-save hook |
-| `src/pages/Quotes.tsx` (or quote dialog) | Update -- integrate auto-save, add draft restore prompt |
-| `src/hooks/useQuotes.tsx` | Update -- session check before insert, retry logic, better error messages |
+| `src/pages/Drafts.tsx` | Create -- new page showing filtered draft quotes and invoices |
+| `src/App.tsx` | Update -- add `/drafts` route |
+| `src/components/layout/Sidebar.tsx` | Update -- add "Drafts" nav item between Quotes and Invoices |
+| `src/components/layout/BottomNav.tsx` | Update -- add Drafts to mobile nav if applicable |
 
-## Result
-- Your quote form data is always backed up locally every 10 seconds
-- If your session expires, the system tries to refresh it automatically
-- If it truly cannot save, you get a clear message and your draft remains safe in local storage
-- You will never lose an hour of work again
+### New page: `src/pages/Drafts.tsx`
+- Uses existing `useQuotes` and `useInvoices` hooks
+- Filters each list to only show items where `status === 'draft'`
+- Displays a summary card showing total draft count
+- Shows mobile card view and desktop table view (matching existing patterns)
+- "Edit" on a draft quote navigates to `/quotes` with sessionStorage data to open that quote for editing
+- "View" on a draft invoice navigates to `/invoices` with sessionStorage data to open the preview
+
+### Sidebar update
+- Add entry: `{ name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null }`
+- Position it after Quotes/before Invoices so it sits logically between the two document types
+
+### Route update
+- Add `<Route path="/drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />` in `App.tsx`
