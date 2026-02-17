@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown, RefreshCw, UserPlus } from 'lucide-react';
+import { FileText, MoreHorizontal, Eye, Send, Copy, Trash2, Plus, X, Receipt, Loader2, CheckCircle, XCircle, RotateCcw, ArrowRightLeft, Pencil, ChevronUp, ChevronDown, RefreshCw, UserPlus, Upload } from 'lucide-react';
 import { AddClientDialog } from '@/components/crm/AddClientDialog';
 import {
   DropdownMenu,
@@ -51,6 +51,16 @@ import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { toast } from 'sonner';
 import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+import { supabase } from '@/integrations/supabase/client';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/legacy/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
+
 const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
@@ -104,6 +114,10 @@ export default function Quotes() {
   const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
   const [recurringTargetQuote, setRecurringTargetQuote] = useState<Quote | null>(null);
+  const [isParsingDocument, setIsParsingDocument] = useState(false);
+  const fileInputRef = useCallback((node: HTMLInputElement | null) => { fileInputNodeRef.current = node; }, []);
+  const fileInputNodeRef = useRef<HTMLInputElement | null>(null);
+
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -334,6 +348,97 @@ export default function Quotes() {
 
   const calculateTotal = () => {
     return lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset file input so the same file can be re-selected
+    e.target.value = '';
+
+    setIsParsingDocument(true);
+    try {
+      let text = '';
+
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pages: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items.map((item: any) => item.str).join(' '));
+        }
+        text = pages.join('\n');
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      } else {
+        toast.error('Unsupported file type. Please upload a PDF or Word (.docx) file.');
+        setIsParsingDocument(false);
+        return;
+      }
+
+      if (!text.trim()) {
+        toast.error('Could not extract text from the document. It may be a scanned image.');
+        setIsParsingDocument(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('extract-quote-from-document', {
+        body: { text },
+      });
+
+      if (error) throw error;
+
+      // Populate form fields
+      if (data.description) setQuoteDescription(data.description);
+      if (data.leadTime) setLeadTime(data.leadTime);
+      if (data.notes) setNotes(data.notes);
+
+      // Match client name
+      if (data.clientName) {
+        const match = clients.find(
+          (c) => c.company.toLowerCase() === data.clientName.toLowerCase()
+        );
+        if (match) {
+          setSelectedClientId(match.id);
+        } else {
+          // Try partial match
+          const partial = clients.find((c) =>
+            c.company.toLowerCase().includes(data.clientName.toLowerCase()) ||
+            data.clientName.toLowerCase().includes(c.company.toLowerCase())
+          );
+          if (partial) setSelectedClientId(partial.id);
+        }
+      }
+
+      // Populate line items
+      if (data.lineItems && data.lineItems.length > 0) {
+        setLineItems(
+          data.lineItems.map((item: any, idx: number) => ({
+            id: String(idx + 1),
+            description: item.description || '',
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice || 0,
+            costPrice: item.costPrice || 0,
+            inputMode: 'price' as const,
+            marginPercent:
+              item.unitPrice > 0
+                ? ((item.unitPrice - (item.costPrice || 0)) / item.unitPrice) * 100
+                : 0,
+          }))
+        );
+      }
+
+      toast.success('Document parsed — please review the extracted data');
+    } catch (err: any) {
+      console.error('Document parsing error:', err);
+      toast.error(err?.message || 'Failed to parse document');
+    } finally {
+      setIsParsingDocument(false);
+    }
   };
 
   const resetForm = () => {
@@ -662,6 +767,37 @@ export default function Quotes() {
               {editingQuote ? `Edit Quote: ${editingQuote.quoteNumber}` : 'Create New Quote'}
             </DialogTitle>
           </DialogHeader>
+          
+          {/* Upload Document Button */}
+          {!editingQuote && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-primary/30 bg-primary/5">
+              <input
+                type="file"
+                accept=".pdf,.docx"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleDocumentUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputNodeRef.current?.click()}
+                disabled={isParsingDocument}
+                className="gap-2"
+              >
+                {isParsingDocument ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Parsing document...</>
+                ) : (
+                  <><Upload className="h-4 w-4" />Upload Document</>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Upload a PDF or Word file to auto-fill the quote fields
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-6 py-4">
             <div className="flex items-center gap-4">
               <div className="flex-1">
