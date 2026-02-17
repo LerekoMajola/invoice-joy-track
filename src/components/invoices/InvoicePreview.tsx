@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
+import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +67,19 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(invoice);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
 
+  // Auto-save invoice edits to localStorage
+  const draftData = useMemo(() => isEditing ? invoiceData : null, [isEditing, invoiceData]);
+  const { restoredDraft, clearDraft } = useAutoSaveDraft(`invoice-edit-${invoice.invoiceNumber}`, draftData);
+
   useEffect(() => { setInvoiceData(invoice); }, [invoice]);
+
+  // Restore unsaved edits
+  useEffect(() => {
+    if (restoredDraft?.data) {
+      setInvoiceData(restoredDraft.data);
+      setIsEditing(true);
+    }
+  }, [restoredDraft]);
 
   // Load custom font from profile
   useEffect(() => {
@@ -88,7 +101,7 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
     }
   }, [profile]);
 
-  const handleSave = () => { if (onUpdate) onUpdate(invoiceData); setIsEditing(false); };
+  const handleSave = () => { if (onUpdate) onUpdate(invoiceData); clearDraft(); setIsEditing(false); };
 
   const company = buildCompanyInfo(profile);
 
