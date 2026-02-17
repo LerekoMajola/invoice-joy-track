@@ -47,6 +47,7 @@ const navigation = [
   { name: 'Clients', href: '/clients', icon: Users, moduleKey: 'core_crm', systemTypes: ['business', 'workshop', 'legal'] },
   { name: 'CRM', href: '/crm', icon: Kanban, moduleKey: 'core_crm', systemTypes: ['business'] },
   { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes', systemTypes: ['business', 'workshop'] },
+  { name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null },
   { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null },
   { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes', systemTypes: ['business'] },
   { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'] },

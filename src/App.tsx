@@ -33,6 +33,7 @@ import Tenders from "./pages/Tenders";
 import DeliveryNotes from "./pages/DeliveryNotes";
 import Workshop from "./pages/Workshop";
 import Profitability from "./pages/Profitability";
+import Drafts from "./pages/Drafts";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentRequired from "./pages/PaymentRequired";
@@ -105,6 +106,7 @@ const App = () => {
             <Route path="/delivery-notes" element={<ProtectedRoute><DeliveryNotes /></ProtectedRoute>} />
             <Route path="/workshop" element={<ProtectedRoute><Workshop /></ProtectedRoute>} />
             <Route path="/profitability" element={<ProtectedRoute><Profitability /></ProtectedRoute>} />
+            <Route path="/drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />
             <Route path="/legal-cases" element={<ProtectedRoute><LegalCases /></ProtectedRoute>} />
             <Route path="/legal-cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
             <Route path="/legal-time-tracking" element={<ProtectedRoute><LegalTimeTracking /></ProtectedRoute>} />
