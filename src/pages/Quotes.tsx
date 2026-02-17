@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
@@ -50,7 +50,7 @@ import { useRecurringDocuments } from '@/hooks/useRecurringDocuments';
 import { SetRecurringDialog } from '@/components/shared/SetRecurringDialog';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { toast } from 'sonner';
-
+import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 const ITEMS_PER_PAGE = 10;
 
 const statusStyles = {
@@ -106,6 +106,53 @@ export default function Quotes() {
   const [recurringTargetQuote, setRecurringTargetQuote] = useState<Quote | null>(null);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Auto-save draft data
+  const draftData = useMemo(() => ({
+    selectedClientId,
+    quoteDescription,
+    leadTime,
+    notes,
+    lineItems,
+    validityDays,
+  }), [selectedClientId, quoteDescription, leadTime, notes, lineItems, validityDays]);
+
+  const { restoredDraft, clearDraft, dismissDraft } = useAutoSaveDraft('quote-draft', draftData);
+
+  // Show restore prompt when a draft is found and the form isn't already open
+  const [draftRestoreShown, setDraftRestoreShown] = useState(false);
+  useEffect(() => {
+    if (restoredDraft && !isOpen && !draftRestoreShown) {
+      setDraftRestoreShown(true);
+      const savedDate = restoredDraft.savedAt.toLocaleString();
+      toast(
+        `You have an unsaved quote draft from ${savedDate}. Restore it?`,
+        {
+          duration: 15000,
+          action: {
+            label: 'Restore',
+            onClick: () => {
+              const d = restoredDraft.data;
+              setSelectedClientId(d.selectedClientId || '');
+              setQuoteDescription(d.quoteDescription || '');
+              setLeadTime(d.leadTime || '');
+              setNotes(d.notes || '');
+              if (d.lineItems?.length) setLineItems(d.lineItems);
+              if (d.validityDays) setValidityDays(d.validityDays);
+              setIsOpen(true);
+            },
+          },
+          cancel: {
+            label: 'Discard',
+            onClick: () => {
+              clearDraft();
+              dismissDraft();
+            },
+          },
+        }
+      );
+    }
+  }, [restoredDraft, isOpen, draftRestoreShown]);
 
   const totalPages = Math.ceil(quotes.length / ITEMS_PER_PAGE);
   const paginatedQuotes = useMemo(() => quotes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [quotes, currentPage]);
@@ -365,7 +412,7 @@ export default function Quotes() {
       item.description.trim() !== '' || item.quantity > 0 || item.unitPrice > 0 || item.costPrice > 0
     );
 
-    await createQuote({
+    const result = await createQuote({
       clientId: client.id,
       clientName: client.company,
       date: today.toISOString().split('T')[0],
@@ -381,6 +428,7 @@ export default function Quotes() {
         : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }],
     });
 
+    if (result) clearDraft();
     toast.success('Quote saved as draft');
     resetForm();
   };
@@ -393,7 +441,7 @@ export default function Quotes() {
     const validUntil = new Date(today);
     validUntil.setDate(validUntil.getDate() + validityDays);
 
-    await createQuote({
+    const result = await createQuote({
       clientId: client.id,
       clientName: client.company,
       date: today.toISOString().split('T')[0],
@@ -407,6 +455,7 @@ export default function Quotes() {
       lineItems: lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice })),
     });
 
+    if (result) clearDraft();
     resetForm();
   };
 

@@ -143,39 +143,77 @@ export function useQuotes() {
     return `QT-${String(lastNum + 1).padStart(4, '0')}`;
   };
 
+  const ensureValidSession = async (): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) return true;
+
+    // Try to refresh
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData.session) {
+      toast.error(
+        'Your session has expired. Your draft has been saved locally. Please log in again to continue.',
+        { duration: 8000 }
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const retryWithDelay = async <T,>(fn: () => Promise<T>, retries = 1, delayMs = 2000): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error: any) {
+      // Don't retry auth errors
+      const code = error?.code || '';
+      if (code === '42501' || code === 'PGRST301' || code === '401') throw error;
+      if (retries <= 0) throw error;
+      await new Promise(r => setTimeout(r, delayMs));
+      return retryWithDelay(fn, retries - 1, delayMs);
+    }
+  };
+
   const createQuote = async (quote: QuoteInsert): Promise<Quote | null> => {
     if (!user) {
       toast.error('You must be logged in to create a quote');
       return null;
     }
 
+    // Verify session before attempting save
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid) return null;
+
     try {
       const quoteNumber = await generateQuoteNumber();
       const total = quote.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       const totalWithTax = total * (1 + (quote.taxRate || 0) / 100);
 
-      const { data: quoteData, error: quoteError } = await supabase
-        .from('quotes')
-        .insert({
-          user_id: user.id,
-          company_profile_id: activeCompanyId || null,
-          quote_number: quoteNumber,
-          client_id: quote.clientId || null,
-          client_name: quote.clientName,
-          date: quote.date,
-          valid_until: quote.validUntil,
-          total: totalWithTax,
-          status: quote.status || 'draft',
-          tax_rate: quote.taxRate || 0,
-          terms_and_conditions: quote.termsAndConditions || null,
-          description: quote.description || null,
-          lead_time: quote.leadTime || null,
-          notes: quote.notes || null,
-        })
-        .select()
-        .single();
+      const insertFn = async () => {
+        const { data: quoteData, error: quoteError } = await supabase
+          .from('quotes')
+          .insert({
+            user_id: user.id,
+            company_profile_id: activeCompanyId || null,
+            quote_number: quoteNumber,
+            client_id: quote.clientId || null,
+            client_name: quote.clientName,
+            date: quote.date,
+            valid_until: quote.validUntil,
+            total: totalWithTax,
+            status: quote.status || 'draft',
+            tax_rate: quote.taxRate || 0,
+            terms_and_conditions: quote.termsAndConditions || null,
+            description: quote.description || null,
+            lead_time: quote.leadTime || null,
+            notes: quote.notes || null,
+          })
+          .select()
+          .single();
 
-      if (quoteError) throw quoteError;
+        if (quoteError) throw quoteError;
+        return quoteData;
+      };
+
+      const quoteData = await retryWithDelay(insertFn);
 
       // Insert line items
       const lineItemsToInsert = quote.lineItems.map((item) => ({
@@ -222,9 +260,22 @@ export function useQuotes() {
       setQuotes((prev) => [newQuote, ...prev]);
       toast.success('Quote created successfully');
       return newQuote;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating quote:', error);
-      toast.error('Failed to create quote');
+      const code = error?.code || '';
+      if (code === '42501' || code === 'PGRST301') {
+        toast.error(
+          'Your session has expired. Your draft has been saved locally. Please log in again to continue.',
+          { duration: 8000 }
+        );
+      } else if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch')) {
+        toast.error(
+          'Network error — could not save your quote. Your draft is safe locally. Please check your connection and try again.',
+          { duration: 8000 }
+        );
+      } else {
+        toast.error('Failed to create quote. Your draft has been saved locally.');
+      }
       return null;
     }
   };
