@@ -65,8 +65,8 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               <table style={{ width: '100%' }}>
                 <tbody>
                   <tr>
-                    <td style={{ verticalAlign: 'middle', width: '48px' }}>
-                      <img src={orionLabsLogo} alt="Orion Labs" style={{ height: '40px', width: 'auto', objectFit: 'contain', background: 'white', borderRadius: '6px', padding: '4px' }} />
+                    <td style={{ verticalAlign: 'middle', width: '72px' }}>
+                      <img src={orionLabsLogo} alt="Orion Labs" style={{ height: '60px', width: 'auto', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '5px' }} />
                     </td>
                     <td style={{ verticalAlign: 'middle', paddingLeft: '12px' }}>
                       <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px' }}>ORION LABS</div>
