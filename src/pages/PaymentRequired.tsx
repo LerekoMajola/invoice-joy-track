@@ -30,7 +30,7 @@ import {
 const ADMIN_USER_ID = '89710bb3-dff7-4e5e-9af0-7ef7f3ad105d';
 
 export default function PaymentRequired() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { needsPayment, paymentReference, isLoading: subLoading } = useSubscription();
   const { getMonthlyTotal, userModules } = useModules();
   const { profile: companyProfile } = useCompanyProfile();
@@ -78,12 +78,17 @@ export default function PaymentRequired() {
     setTimeout(() => setChecking(false), 2000);
   };
 
-  if (subLoading) {
+
+  if (authLoading || subLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--gradient-hero)' }}>
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
   }
 
   if (!needsPayment) {
