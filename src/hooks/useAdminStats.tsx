@@ -2,13 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminRole } from './useAdminRole';
 
-const PLAN_PRICES: Record<string, number> = {
-  free_trial: 0,
-  basic: 300,
-  standard: 500,
-  pro: 800,
-};
-
 export interface SystemBreakdown {
   system_type: string;
   total: number;
@@ -37,69 +30,76 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ['admin-stats'],
     queryFn: async (): Promise<AdminStats> => {
-      // Fetch all company profiles for tenant count
-      const { data: profiles, error: profilesError } = await supabase
-        .from('company_profiles')
-        .select('id, created_at');
+      // Fetch all data in parallel
+      const [profilesRes, subsRes, userModulesRes] = await Promise.all([
+        supabase.from('company_profiles').select('id, created_at'),
+        supabase.from('subscriptions').select('*'),
+        supabase.from('user_modules')
+          .select('user_id, is_active, module:platform_modules(monthly_price)')
+          .eq('is_active', true),
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (profilesRes.error) throw profilesRes.error;
+      if (subsRes.error) throw subsRes.error;
+      if (userModulesRes.error) throw userModulesRes.error;
 
-      // Fetch all subscriptions
-      const { data: subscriptions, error: subsError } = await supabase
-        .from('subscriptions')
-        .select('*');
+      const profiles = profilesRes.data || [];
+      const subscriptions = subsRes.data || [];
+      const userModulesData = userModulesRes.data || [];
 
-      if (subsError) throw subsError;
+      // Build user_id -> monthly_total map from active modules
+      const moduleTotals: Record<string, number> = {};
+      for (const um of userModulesData) {
+        const price = (um.module as any)?.monthly_price || 0;
+        moduleTotals[um.user_id] = (moduleTotals[um.user_id] || 0) + price;
+      }
 
-      // Calculate stats
-      const totalTenants = profiles?.length || 0;
-      
-      const activeTrials = subscriptions?.filter(s => s.status === 'trialing').length || 0;
-      const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
-      
-      // Calculate MRR from active subscriptions
+      const totalTenants = profiles.length;
+      const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
+      const activeSubscriptions = subscriptions.filter(s => s.status === 'active').length;
+
+      // MRR: sum module totals for active subscriptions
       const mrr = subscriptions
-        ?.filter(s => s.status === 'active')
-        .reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0) || 0;
+        .filter(s => s.status === 'active')
+        .reduce((sum, s) => sum + (moduleTotals[s.user_id] || 0), 0);
 
-      // Trial conversion rate
-      const totalPastTrials = subscriptions?.filter(s => 
-        s.status === 'active' || s.status === 'cancelled' || s.status === 'expired'
-      ).length || 0;
-      const trialConversionRate = totalPastTrials > 0 
-        ? (activeSubscriptions / totalPastTrials) * 100 
+      // Trial conversion: of all subs whose trial has ended, how many are now active
+      const now = new Date();
+      const trialEnded = subscriptions.filter(s => 
+        s.trial_ends_at && new Date(s.trial_ends_at) < now
+      );
+      const convertedFromTrial = trialEnded.filter(s => s.status === 'active').length;
+      const trialConversionRate = trialEnded.length > 0 
+        ? (convertedFromTrial / trialEnded.length) * 100 
         : 0;
 
-      // Platform revenue: sum plan prices × months active for each paid subscription
-      const paidSubscriptions = subscriptions?.filter(s => s.status === 'active' || s.status === 'cancelled' || s.status === 'expired') || [];
-      const totalSubscriptions = paidSubscriptions.length;
-      
-      const now = new Date();
-      const totalRevenue = paidSubscriptions.reduce((sum, sub) => {
-        const price = PLAN_PRICES[sub.plan] || 0;
-        if (price === 0) return sum;
+      // Total revenue: each tenant's module total × months active
+      const paidSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'cancelled' || s.status === 'expired');
+      const totalSubscriptions = paidSubs.length;
+
+      const totalRevenue = paidSubs.reduce((sum, sub) => {
+        const monthlyPrice = moduleTotals[sub.user_id] || 0;
+        if (monthlyPrice === 0) return sum;
         const start = sub.current_period_start ? new Date(sub.current_period_start) : new Date(sub.created_at);
         const end = sub.status === 'active' ? now : (sub.current_period_end ? new Date(sub.current_period_end) : now);
         const monthsActive = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-        return sum + (price * monthsActive);
+        return sum + (monthlyPrice * monthsActive);
       }, 0);
 
       // Recent signups (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const recentSignups = profiles?.filter(p => 
-        new Date(p.created_at) >= thirtyDaysAgo
-      ).length || 0;
+      const recentSignups = profiles.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
 
       // Signups by month (last 6 months)
-      const signupsByMonth = getMonthlyData(profiles || [], 'created_at', 6);
+      const signupsByMonth = getMonthlyData(profiles, 6);
 
-      // Revenue by month (last 6 months) - from subscriptions active in each month
-      const revenueByMonth = getMonthlySubscriptionRevenue(subscriptions || [], 6);
+      // Revenue by month (last 6 months)
+      const revenueByMonth = getMonthlySubscriptionRevenue(subscriptions, moduleTotals, 6);
 
       // System type breakdown
       const systemMap = new Map<string, { total: number; active: number; trialing: number; expired: number }>();
-      for (const sub of subscriptions || []) {
+      for (const sub of subscriptions) {
         const st = (sub as any).system_type || 'business';
         if (!systemMap.has(st)) systemMap.set(st, { total: 0, active: 0, trialing: 0, expired: 0 });
         const entry = systemMap.get(st)!;
@@ -131,8 +131,7 @@ export function useAdminStats() {
 }
 
 function getMonthlyData(
-  items: { created_at: string }[], 
-  dateField: string, 
+  items: { created_at: string }[],
   months: number
 ): { month: string; count: number }[] {
   const result: { month: string; count: number }[] = [];
@@ -141,21 +140,18 @@ function getMonthlyData(
   for (let i = months - 1; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthStr = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    
     const count = items.filter(item => {
-      const itemDate = new Date(item.created_at);
-      return itemDate.getMonth() === date.getMonth() && 
-             itemDate.getFullYear() === date.getFullYear();
+      const d = new Date(item.created_at);
+      return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
     }).length;
-
     result.push({ month: monthStr, count });
   }
-
   return result;
 }
 
 function getMonthlySubscriptionRevenue(
-  subscriptions: any[], 
+  subscriptions: any[],
+  moduleTotals: Record<string, number>,
   months: number
 ): { month: string; revenue: number }[] {
   const result: { month: string; revenue: number }[] = [];
@@ -165,15 +161,12 @@ function getMonthlySubscriptionRevenue(
     const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
     const monthStr = monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    
+
     const revenue = subscriptions.reduce((sum, sub) => {
-      const price = PLAN_PRICES[sub.plan] || 0;
-      if (price === 0) return sum; // skip free trials
-      
+      const price = moduleTotals[sub.user_id] || 0;
+      if (price === 0) return sum;
       const subStart = sub.current_period_start ? new Date(sub.current_period_start) : new Date(sub.created_at);
       const subEnd = sub.status === 'active' ? now : (sub.current_period_end ? new Date(sub.current_period_end) : now);
-      
-      // Check if subscription was active during this month
       if (subStart <= monthEnd && subEnd >= monthStart) {
         return sum + price;
       }
@@ -182,6 +175,5 @@ function getMonthlySubscriptionRevenue(
 
     result.push({ month: monthStr, revenue });
   }
-
   return result;
 }
