@@ -67,14 +67,18 @@ export function GenerateAdminInvoiceDialog({ open, onOpenChange, preselectedTena
         .eq('is_active', true);
 
       if (data) {
-        const items: LineItem[] = data
-          .filter((d: any) => d.module)
-          .map((d: any) => ({
-            description: d.module.name,
-            quantity: 1,
-            unit_price: d.module.monthly_price || 0,
-          }));
-        setLineItems(items.length > 0 ? items : [{ description: '', quantity: 1, unit_price: 0 }]);
+        const modules = data.filter((d: any) => d.module);
+        if (modules.length > 0) {
+          const totalPrice = modules.reduce((sum: number, d: any) => sum + (d.module.monthly_price || 0), 0);
+          const moduleNames = modules.map((d: any) => d.module.name).join(', ');
+          // Summarise into a single line item with module count
+          const packageLabel = modules.length === 1
+            ? moduleNames
+            : `${selectedTenant.company_name} Package (${modules.length} modules)`;
+          setLineItems([{ description: packageLabel, quantity: 1, unit_price: totalPrice }]);
+        } else {
+          setLineItems([{ description: '', quantity: 1, unit_price: 0 }]);
+        }
       }
     };
     fetchModules();
