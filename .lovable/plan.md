@@ -1,123 +1,70 @@
 
-# Gym Members Management and Membership Subscriptions
+# Build Gym Attendance Module and Billing Subscribe Button
 
-Build a full-featured member management system for the GymPro vertical, following international fitness industry standards (IHRSA/EuropeActive patterns).
+## 1. Gym Attendance Module
 
-## What You'll Get
+Replace the placeholder attendance page with a fully functional check-in/check-out tracking system.
 
-- **Member Registry**: Full member profiles with personal details, emergency contacts, health declarations, and membership ID cards
-- **Membership Plans**: Define plans (Monthly, Quarterly, Annual, Day Pass, etc.) with pricing and benefits
-- **Member Subscriptions**: Track each member's active plan, start/end dates, auto-renewal, and payment status
-- **Freeze/Hold**: Members can freeze their membership (injury, travel) -- standard practice worldwide
-- **Status Lifecycle**: Prospect > Active > Frozen > Expired > Cancelled
-- **Dashboard Stats**: Live counters for total members, active, expiring soon, and revenue
+### Database
 
-## Database Tables
+Create a `gym_attendance` table to log every visit:
 
-### 1. `gym_membership_plans` -- The plans a gym offers
 | Column | Type | Purpose |
 |--------|------|---------|
 | id | uuid | Primary key |
 | user_id | uuid | Owner (gym operator) |
-| company_profile_id | uuid | Multi-company support |
-| name | text | e.g. "Monthly Unlimited" |
-| description | text | Plan details |
-| duration_days | int | 30, 90, 365, 1, etc. |
-| price | numeric | Cost per cycle |
-| category | text | monthly, quarterly, annual, day_pass, custom |
-| max_freezes | int | How many freezes allowed per cycle |
-| is_active | boolean | Whether plan is currently offered |
-| created_at / updated_at | timestamp | Audit trail |
-
-### 2. `gym_members` -- Member profiles
-| Column | Type | Purpose |
-|--------|------|---------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner (gym operator) |
-| company_profile_id | uuid | Multi-company |
-| member_number | text | Auto-generated MEM-0001 |
-| first_name, last_name | text | Identity |
-| email, phone | text | Contact |
-| date_of_birth | date | Age verification |
-| gender | text | Demographics |
-| address | text | Address |
-| emergency_contact_name | text | Required by industry standard |
-| emergency_contact_phone | text | Required by industry standard |
-| health_conditions | text | Medical disclosure |
-| photo_url | text | Member photo |
-| join_date | date | When they joined |
-| status | text | prospect, active, frozen, expired, cancelled |
-| notes | text | Internal notes |
-| created_at / updated_at | timestamp | Audit |
-
-### 3. `gym_member_subscriptions` -- Tracks which plan each member is on
-| Column | Type | Purpose |
-|--------|------|---------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner |
 | company_profile_id | uuid | Multi-company |
 | member_id | uuid FK | Links to gym_members |
-| plan_id | uuid FK | Links to gym_membership_plans |
-| start_date | date | When subscription begins |
-| end_date | date | When it expires |
-| status | text | active, frozen, expired, cancelled |
-| freeze_start | date | If currently frozen |
-| freeze_end | date | Expected unfreeze date |
-| freezes_used | int | Count of freezes used this cycle |
-| payment_status | text | paid, pending, overdue |
-| amount_paid | numeric | What was paid |
-| auto_renew | boolean | Auto-renewal flag |
-| notes | text | |
+| check_in | timestamptz | When member arrived |
+| check_out | timestamptz | When member left (nullable) |
+| notes | text | Optional notes |
 | created_at / updated_at | timestamp | Audit |
 
-### RLS Policies
-All three tables follow the standard owner pattern:
-- `auth.uid() = user_id` for SELECT, INSERT, UPDATE, DELETE
-- Staff access via `EXISTS (SELECT 1 FROM staff_members WHERE staff_members.user_id = auth.uid() AND staff_members.owner_user_id = gym_members.user_id)`
+RLS policies follow the standard owner + staff pattern.
 
-## Frontend Components
+### Hook: `useGymAttendance.tsx`
 
-### Files to Create
+- Fetch today's attendance log (default view) with member name joins
+- `checkIn(memberId)` -- inserts a new row with `check_in = now()`
+- `checkOut(id)` -- updates the row with `check_out = now()`
+- Stats: total check-ins today, currently in gym (checked in but not out), weekly/monthly totals
+
+### Page: `src/pages/GymAttendance.tsx`
+
+- **Stats row**: Today's Check-ins, Currently In Gym, This Week, This Month
+- **Quick Check-in**: Search box to find a member by name or member number, then one-tap check-in
+- **Today's Log**: Table/cards showing who checked in, when, and whether they've checked out
+- **Check-out button** on each active row
+- **Date picker** to view historical attendance for any day
+
+## 2. Billing Page -- Add "Subscribe Now" Button for Trial Users
+
+### Change to `src/pages/Billing.tsx`
+
+Inside the trial status hero card (lines 112-121), add a prominent "Subscribe Now" button that scrolls the user down to the payment section. This gives trial users a clear call-to-action to convert to paid without waiting for the trial to expire.
+
+The button will:
+- Only appear when user is on an active trial (not expired, not already active)
+- Sit inside the trial progress section as a clear CTA
+- Scroll smoothly to the payment section below
+
+## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/hooks/useGymMembers.tsx` | CRUD hook for gym_members (follows useStudents pattern) |
-| `src/hooks/useGymMembershipPlans.tsx` | CRUD hook for membership plans |
-| `src/hooks/useGymMemberSubscriptions.tsx` | CRUD hook for member subscriptions |
-| `src/components/gym/AddMemberDialog.tsx` | Form: personal info, emergency contact, health declaration |
-| `src/components/gym/MemberDetailDialog.tsx` | Full member view with subscription history, freeze controls |
-| `src/components/gym/AddMembershipPlanDialog.tsx` | Create/edit membership plan |
-| `src/components/gym/AssignPlanDialog.tsx` | Assign a plan to a member with payment recording |
-| `src/components/gym/MemberCard.tsx` | Mobile card view for member list |
+| Database migration (SQL) | Create `gym_attendance` table with RLS |
+| `src/hooks/useGymAttendance.tsx` | CRUD hook for attendance records |
+| `src/pages/GymAttendance.tsx` | Full attendance page (replaces placeholder) |
 
-### Files to Modify
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/pages/GymMembers.tsx` | Replace placeholder with full member list (search, filter, stats, table + mobile cards) |
-| `src/pages/GymDashboard.tsx` | Wire up live stats from gym_members and subscriptions |
-
-## Page Layout (GymMembers)
-
-- **Header**: "Members" with "Add Member" button
-- **Stats Row**: Total Members, Active, Expiring This Month, Frozen
-- **Tabs**: Members | Membership Plans
-- **Members Tab**: Search + status filter, desktop table + mobile cards, click to view detail
-- **Plans Tab**: List of available plans with add/edit/deactivate controls
-
-## Member Detail Dialog
-
-- **Profile Section**: Photo placeholder, name, member number, status badge, contact info
-- **Emergency Contact**: Name + phone (highlighted for safety)
-- **Health Declaration**: Any disclosed conditions
-- **Current Subscription**: Plan name, dates, payment status, days remaining progress bar
-- **Actions**: Assign Plan, Freeze Membership, Edit, Cancel Membership
-- **Subscription History**: Table of past and current subscriptions
+| `src/pages/Billing.tsx` | Add "Subscribe Now" CTA button in the trial card |
 
 ## Technical Notes
 
-- Member number auto-generation: `MEM-0001`, `MEM-0002`, etc. (same pattern as student admission numbers)
-- All queries scoped by `company_profile_id` via ActiveCompanyContext
-- Status transitions enforced in application logic (not database constraints, per project convention)
-- Currency formatting via `useCurrency()` hook
-- Responsive design: mobile cards + desktop table (same pattern as Students page)
+- Attendance queries default to today's date, with option to pick another date
+- The quick check-in uses a search that filters active members only
+- Check-out is optional (some gyms only track check-in)
+- The billing "Subscribe Now" button uses `scrollIntoView` to jump to the payment section with a `ref`
