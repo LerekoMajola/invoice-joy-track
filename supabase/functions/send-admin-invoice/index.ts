@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { invoiceId, recipientEmail } = await req.json();
+    const { invoiceId, recipientEmail, pdfBase64, pdfFilename } = await req.json();
     if (!invoiceId) {
       return new Response(JSON.stringify({ error: "Missing invoiceId" }), {
         status: 400,
@@ -171,18 +171,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    const emailPayload: any = {
+      from: "Orion Labs <updates@updates.orionlabslesotho.com>",
+      to: [sendTo],
+      subject: `Invoice ${invoice.invoice_number} from Orion Labs — M${invoice.total.toFixed(2)}`,
+      html,
+    };
+
+    if (pdfBase64 && pdfFilename) {
+      emailPayload.attachments = [
+        {
+          filename: pdfFilename,
+          content: pdfBase64,
+        },
+      ];
+    }
+
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "Orion Labs <updates@updates.orionlabslesotho.com>",
-        to: [sendTo],
-        subject: `Invoice ${invoice.invoice_number} from Orion Labs — M${invoice.total.toFixed(2)}`,
-        html,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     if (!emailRes.ok) {
