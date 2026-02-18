@@ -1604,6 +1604,122 @@ export type Database = {
           },
         ]
       }
+      gym_class_schedules: {
+        Row: {
+          class_id: string
+          company_profile_id: string | null
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          instructor_override: string | null
+          is_active: boolean
+          max_capacity_override: number | null
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          company_profile_id?: string | null
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          instructor_override?: string | null
+          is_active?: boolean
+          max_capacity_override?: number | null
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          company_profile_id?: string | null
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          instructor_override?: string | null
+          is_active?: boolean
+          max_capacity_override?: number | null
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_class_schedules_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "gym_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_class_schedules_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_classes: {
+        Row: {
+          category: string
+          color: string | null
+          company_profile_id: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          instructor: string | null
+          is_active: boolean
+          max_capacity: number
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          color?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          instructor?: string | null
+          is_active?: boolean
+          max_capacity?: number
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          instructor?: string | null
+          is_active?: boolean
+          max_capacity?: number
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_classes_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_member_subscriptions: {
         Row: {
           amount_paid: number
