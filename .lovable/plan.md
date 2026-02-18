@@ -1,57 +1,91 @@
 
 
-# Source Cost Prices from the Internet
+# Security Hardening: Lock Down All Database Tables
 
-After extracting line items from your uploaded document, the system will automatically search the internet for supplier/wholesale prices and fill in the cost price for each item.
+Your application has a solid architecture but critical security gaps that must be closed before commercial deployment. This plan fixes all 14 critical findings.
 
-## How it will work
+## The Problem
 
-1. You upload a document as before
-2. The AI extracts line items (descriptions, quantities, selling prices)
-3. For each line item, the system searches the web for supplier/trade/wholesale prices
-4. Cost prices are automatically filled in based on real market data
-5. You review and adjust before saving
+All 73 tables have RLS enabled, but many policies allow unauthenticated users to read data. Anyone with your project URL could query and download sensitive business data including employee salaries, client contacts, legal cases, and financial records.
 
-## Technical approach
+## What Will Change
 
-### 1. Connect Perplexity (AI-powered web search)
-- Perplexity's "sonar" model performs real-time web searches and returns grounded answers with citations
-- This gives actual current market pricing rather than guesses
+### 1. Fix RLS Policies on All Business Tables (~50 tables)
 
-### 2. New edge function: `search-cost-prices`
-- Receives an array of line item descriptions
-- For each item, queries Perplexity to find supplier/wholesale/trade prices in the relevant market (South Africa / user's region)
-- Returns an array of estimated cost prices with confidence notes
-- Handles rate limits and errors gracefully
+Every table that stores user/business data will get restrictive policies ensuring:
+- Only authenticated users can access data
+- Users can only see their own data (matched by `user_id`)
+- Staff members can access their employer's data (matched through `owner_user_id` relationship)
+- Child tables (e.g. `quote_line_items`) inherit access through their parent's `user_id`
 
-### 3. Update the quote upload flow (`src/pages/Quotes.tsx`)
-- After the document is parsed and line items are extracted, automatically call the new `search-cost-prices` function
-- Show a secondary loading state: "Searching for supplier prices..."
-- Fill in `costPrice` for each line item where a price was found
-- Show a toast: "Supplier prices found -- please verify before saving"
+Tables affected include: contacts, leads, clients, staff_members, students, bookings, invoices, quotes, expenses, bank_accounts, payslips, legal_cases, legal_documents, fleet_vehicles, company_profiles, and all related child/junction tables.
 
-## Files to create/modify
+### 2. Enable Leaked Password Protection
+
+Turn on the built-in check that prevents users from signing up with passwords known to be compromised in data breaches.
+
+### 3. Review Storage Bucket Policies
+
+The `company-assets` and `hire-assets` buckets are currently public. Evaluate whether they need to be, and add policies if appropriate.
+
+## Technical Details
+
+### Policy Pattern for Owner Tables
+```text
+-- Tables with user_id column:
+SELECT: auth.uid() = user_id
+INSERT: auth.uid() = user_id
+UPDATE: auth.uid() = user_id
+DELETE: auth.uid() = user_id
+```
+
+### Policy Pattern for Staff-Accessible Tables
+```text
+-- Staff can read their employer's data:
+SELECT: auth.uid() = user_id 
+   OR EXISTS (
+     SELECT 1 FROM staff_members 
+     WHERE staff_members.user_id = auth.uid() 
+     AND staff_members.owner_user_id = [table].user_id
+   )
+```
+
+### Policy Pattern for Child Tables (no user_id)
+```text
+-- e.g. quote_line_items joins through quotes:
+SELECT: EXISTS (
+  SELECT 1 FROM quotes 
+  WHERE quotes.id = quote_line_items.quote_id 
+  AND quotes.user_id = auth.uid()
+)
+```
+
+### Platform Tables (platform_settings, platform_modules)
+These intentionally remain publicly readable since they serve the landing/pricing page.
+
+## Migration Approach
+
+- Single database migration that drops overly permissive policies and replaces them with properly scoped ones
+- All existing application code already passes `user_id` on inserts, so no frontend changes needed
+- The migration is non-destructive -- no data is changed, only access rules
+
+## Files to Modify
 
 | File | Action |
 |------|--------|
-| `supabase/functions/search-cost-prices/index.ts` | Create -- web search for supplier pricing |
-| `src/pages/Quotes.tsx` | Update -- call price search after document parse, populate costPrice fields |
+| Database migration (SQL) | Create -- replace all permissive RLS policies with restrictive ones |
+| Auth configuration | Update -- enable leaked password protection |
 
-### Edge function: `search-cost-prices`
+## Risk Assessment
 
-- Accepts: `{ items: [{ description: string, unitPrice?: number }], region?: string }`
-- For each item, sends a Perplexity search query like: `"wholesale supplier price for [description] in South Africa"`
-- Parses the AI response to extract a numeric price
-- Returns: `{ prices: [{ description: string, costPrice: number | null, source: string, confidence: string }] }`
-- Batches items into a single Perplexity call where possible to reduce API usage
+- **Low risk**: All tables are currently empty in production, so no data access disruption
+- **No frontend changes**: The app already scopes queries by `user_id` and `company_profile_id`
+- **Reversible**: Policies can be adjusted if any legitimate access pattern is blocked
 
-### Quote page update
+## After This Fix
 
-- After `extract-quote-from-document` returns, automatically triggers `search-cost-prices` with the extracted line items
-- Updates each line item's `costPrice` with the result
-- Items where no price was found keep costPrice as 0 for manual entry
-
-## Prerequisites
-
-- Perplexity connector must be enabled (you'll be prompted to connect it)
+- No unauthenticated user can read any business data
+- Each user's data is completely isolated from other users
+- Staff members can only access data belonging to their employer
+- The system will be safe to deploy commercially and scale
 
