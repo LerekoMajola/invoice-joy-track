@@ -32,8 +32,8 @@ export function useAdminStats() {
     queryFn: async (): Promise<AdminStats> => {
       // Fetch all data in parallel
       const [profilesRes, subsRes, userModulesRes] = await Promise.all([
-        supabase.from('company_profiles').select('id, created_at'),
-        supabase.from('subscriptions').select('*'),
+        supabase.from('company_profiles').select('id, user_id, created_at').is('deleted_at', null),
+        supabase.from('subscriptions').select('*').is('deleted_at', null),
         supabase.from('user_modules')
           .select('user_id, is_active, module:platform_modules(monthly_price)')
           .eq('is_active', true),
@@ -47,6 +47,16 @@ export function useAdminStats() {
       const subscriptions = subsRes.data || [];
       const userModulesData = userModulesRes.data || [];
 
+      // Deduplicate profiles by user_id (keep earliest created_at per user)
+      const uniqueUserProfiles = new Map<string, { user_id: string; created_at: string }>();
+      for (const p of profiles) {
+        const existing = uniqueUserProfiles.get(p.user_id);
+        if (!existing || new Date(p.created_at) < new Date(existing.created_at)) {
+          uniqueUserProfiles.set(p.user_id, p);
+        }
+      }
+      const uniqueProfiles = Array.from(uniqueUserProfiles.values());
+
       // Build user_id -> monthly_total map from active modules
       const moduleTotals: Record<string, number> = {};
       for (const um of userModulesData) {
@@ -54,7 +64,7 @@ export function useAdminStats() {
         moduleTotals[um.user_id] = (moduleTotals[um.user_id] || 0) + price;
       }
 
-      const totalTenants = profiles.length;
+      const totalTenants = uniqueProfiles.length;
       const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
       const activeSubscriptions = subscriptions.filter(s => s.status === 'active').length;
 
@@ -89,10 +99,10 @@ export function useAdminStats() {
       // Recent signups (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const recentSignups = profiles.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
+      const recentSignups = uniqueProfiles.filter(p => new Date(p.created_at) >= thirtyDaysAgo).length;
 
-      // Signups by month (last 6 months)
-      const signupsByMonth = getMonthlyData(profiles, 6);
+      // Signups by month (last 6 months) — using deduplicated profiles
+      const signupsByMonth = getMonthlyData(uniqueProfiles, 6);
 
       // Revenue by month (last 6 months)
       const revenueByMonth = getMonthlySubscriptionRevenue(subscriptions, moduleTotals, 6);
