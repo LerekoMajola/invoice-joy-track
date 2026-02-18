@@ -77,34 +77,52 @@ export function useAdminTenants() {
         moduleTotals[um.user_id] = (moduleTotals[um.user_id] || 0) + price;
       });
 
-      // Map data together
-      const tenants: Tenant[] = (profiles || []).map((profile) => {
-        const subscription = subscriptions?.find(s => s.user_id === profile.user_id);
-        const usage = usageData?.find(u => u.user_id === profile.user_id);
-
-        return {
-          id: profile.id,
-          user_id: profile.user_id,
-          company_name: profile.company_name,
-          email: profile.email,
-          phone: profile.phone,
-          created_at: profile.created_at,
-          subscription: subscription ? {
-            id: subscription.id,
-            plan: subscription.plan,
-            status: subscription.status,
-            trial_ends_at: subscription.trial_ends_at,
-            current_period_end: subscription.current_period_end,
-            system_type: subscription.system_type || 'business',
-          } : null,
-          usage: usage ? {
-            clients_count: usage.clients_count || 0,
-            quotes_count: usage.quotes_count || 0,
-            invoices_count: usage.invoices_count || 0,
-          } : null,
-          module_total: moduleTotals[profile.user_id] || 0,
-        };
+      // Group profiles by user_id to deduplicate multi-company entries
+      const profilesByUser: Record<string, typeof profiles> = {};
+      (profiles || []).forEach((profile) => {
+        if (!profilesByUser[profile.user_id]) {
+          profilesByUser[profile.user_id] = [];
+        }
+        profilesByUser[profile.user_id].push(profile);
       });
+
+      // For each user_id, pick the primary/onboarded profile
+      const tenants: Tenant[] = Object.entries(profilesByUser)
+        .map(([userId, userProfiles]) => {
+          const subscription = subscriptions?.find(s => s.user_id === userId);
+          // Skip users without subscriptions — not billing customers
+          if (!subscription) return null;
+
+          // Pick the best profile: prefer one with a real name (not "My Company"), else earliest
+          const primaryProfile = userProfiles.find(p => p.company_name !== 'My Company') 
+            || userProfiles.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+
+          const usage = usageData?.find(u => u.user_id === userId);
+
+          return {
+            id: primaryProfile.id,
+            user_id: userId,
+            company_name: primaryProfile.company_name,
+            email: primaryProfile.email,
+            phone: primaryProfile.phone,
+            created_at: primaryProfile.created_at,
+            subscription: {
+              id: subscription.id,
+              plan: subscription.plan,
+              status: subscription.status,
+              trial_ends_at: subscription.trial_ends_at,
+              current_period_end: subscription.current_period_end,
+              system_type: subscription.system_type || 'business',
+            },
+            usage: usage ? {
+              clients_count: usage.clients_count || 0,
+              quotes_count: usage.quotes_count || 0,
+              invoices_count: usage.invoices_count || 0,
+            } : null,
+            module_total: moduleTotals[userId] || 0,
+          } as Tenant;
+        })
+        .filter((t): t is Tenant => t !== null);
 
       return tenants;
     },
