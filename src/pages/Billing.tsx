@@ -4,6 +4,8 @@ import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +16,8 @@ import { useModules } from '@/hooks/useModules';
 import { formatMaluti } from '@/lib/currency';
 import {
   Clock, AlertTriangle, Loader2, Smartphone, Building2,
-  CheckCircle2, ChevronDown, Copy, MessageSquare, Package
+  CheckCircle2, ChevronDown, Copy, MessageSquare, Package,
+  CreditCard, Shield, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -33,6 +36,7 @@ export default function Billing() {
   const [bankOpen, setBankOpen] = useState(false);
 
   const companyName = companyProfile?.company_name || 'your company';
+  const smsPercent = creditsAllocated > 0 ? Math.round((creditsUsed / creditsAllocated) * 100) : 0;
 
   const copyReference = () => {
     navigator.clipboard.writeText(paymentReference);
@@ -52,7 +56,6 @@ export default function Billing() {
         reference_type: 'subscription',
         link: '/admin',
       });
-
       if (error) throw error;
       setSent(true);
       toast.success('Payment notification sent! We will verify and activate your account.');
@@ -64,67 +67,60 @@ export default function Billing() {
     }
   };
 
-  const statusBadge = () => {
-    if (isActive) return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>;
-    if (isTrialExpired) return <Badge variant="destructive">Trial Expired</Badge>;
-    if (isTrialing) return <Badge className="bg-warning/10 text-warning border-warning/20">Trial</Badge>;
-    return <Badge variant="secondary">Inactive</Badge>;
-  };
-
   return (
     <DashboardLayout>
-      <Header 
-        title="Billing & Subscription" 
-        subtitle="Manage your subscription and payment details" 
-      />
-      
-      <div className="p-4 md:p-6 space-y-6 pb-safe">
-        {/* Subscription Status */}
-        <Card>
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Subscription status</p>
-              <div className="flex items-center gap-2 mt-1">
-                {statusBadge()}
-                {isTrialing && !isTrialExpired && (
-                  <span className="text-sm text-muted-foreground">
-                    {trialDaysRemaining} days remaining
-                  </span>
-                )}
+      <Header title="Billing & Subscription" subtitle="Manage your plan, payments and usage" />
+
+      <div className="p-4 md:p-6 space-y-6 pb-safe max-w-3xl">
+        {/* Status Hero */}
+        <Card className="overflow-hidden">
+          <div className={cn(
+            "h-1.5",
+            isActive ? "bg-green-500" : isTrialExpired ? "bg-destructive" : isTrialing ? "bg-amber-500" : "bg-muted"
+          )} />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  isActive ? "bg-green-100 dark:bg-green-900/30" : isTrialExpired ? "bg-destructive/10" : "bg-amber-100 dark:bg-amber-900/30"
+                )}>
+                  {isActive ? <Shield className="h-5 w-5 text-green-600 dark:text-green-400" /> :
+                   isTrialExpired ? <AlertTriangle className="h-5 w-5 text-destructive" /> :
+                   <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    {isActive ? 'Active Subscription' : isTrialExpired ? 'Trial Expired' : `Free Trial`}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isActive ? 'Your account is fully active' :
+                     isTrialExpired ? 'Make a payment to restore access' :
+                     `${trialDaysRemaining} days remaining`}
+                  </p>
+                </div>
               </div>
+              <Badge className={cn(
+                "text-xs font-medium",
+                isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                isTrialExpired ? "bg-destructive/10 text-destructive" :
+                "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+              )} variant="secondary">
+                {isActive ? 'Active' : isTrialExpired ? 'Expired' : 'Trial'}
+              </Badge>
             </div>
+
+            {isTrialing && !isTrialExpired && (
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Trial progress</span>
+                  <span>{14 - trialDaysRemaining}/14 days</span>
+                </div>
+                <Progress value={((14 - trialDaysRemaining) / 14) * 100} className="h-2" />
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Trial Warning */}
-        {isTrialing && (
-          <Card className={cn(
-            "border-2",
-            isTrialExpired ? "border-destructive bg-destructive/5" : "border-warning bg-warning/5"
-          )}>
-            <CardContent className="flex items-center gap-4 p-4">
-              {isTrialExpired ? (
-                <AlertTriangle className="h-6 w-6 text-destructive" />
-              ) : (
-                <Clock className="h-6 w-6 text-warning" />
-              )}
-              <div className="flex-1">
-                <p className="font-medium text-foreground">
-                  {isTrialExpired 
-                    ? 'Your free trial has expired' 
-                    : `Your free trial ends in ${trialDaysRemaining} days`
-                  }
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {isTrialExpired 
-                    ? 'Make a payment below to continue using the platform.' 
-                    : 'Enjoy full access during the trial.'
-                  }
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Your Package */}
         <Card>
@@ -134,90 +130,87 @@ export default function Billing() {
               Your Package
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 space-y-2">
+          <CardContent className="pt-0">
             {userModules.length === 0 ? (
               <p className="text-sm text-muted-foreground">No modules selected.</p>
             ) : (
-              userModules.map((um) => (
-                <div key={um.id} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{um.module?.name}</span>
-                  <span className="font-medium">{formatMaluti(um.module?.monthly_price || 0)}</span>
-                </div>
-              ))
+              <div className="space-y-2">
+                {userModules.map((um) => (
+                  <div key={um.id} className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-sm text-foreground">{um.module?.name}</span>
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">{formatMaluti(um.module?.monthly_price || 0)}</span>
+                  </div>
+                ))}
+              </div>
             )}
-            <div className="border-t pt-2 mt-2 flex items-center justify-between">
-              <span className="font-semibold">Monthly Total</span>
-              <span className="font-bold text-lg">{formatMaluti(monthlyTotal)}/mo</span>
+            <Separator className="my-3" />
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground">Monthly Total</span>
+              <span className="text-xl font-bold text-foreground">{formatMaluti(monthlyTotal)}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
             </div>
           </CardContent>
         </Card>
 
         {/* Payment Section */}
-        <div>
-          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" />
             Make a Payment
           </h2>
 
           {/* Payment Reference */}
-          <Card className="mb-3">
+          <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Your payment reference</p>
+              <p className="text-xs text-muted-foreground mb-1.5">Your payment reference</p>
               <div className="flex items-center justify-between">
-                <span className="text-lg font-mono font-bold text-foreground tracking-wider">
-                  {paymentReference}
-                </span>
-                <Button variant="ghost" size="sm" onClick={copyReference}>
-                  <Copy className="h-4 w-4" />
+                <span className="text-xl font-mono font-bold text-foreground tracking-wider">{paymentReference}</span>
+                <Button variant="outline" size="sm" onClick={copyReference} className="shrink-0">
+                  <Copy className="h-3.5 w-3.5 mr-1.5" />Copy
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Always include this reference when making payment
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">Always include this reference when making payment</p>
             </CardContent>
           </Card>
 
           {/* M-Pesa */}
-          <Card className="mb-3">
-            <CardHeader className="pb-3">
+          <Card>
+            <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Smartphone className="h-5 w-5 text-success" />
+                <Smartphone className="h-5 w-5 text-green-600" />
                 Pay via M-Pesa
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <ol className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</Badge>
-                  <span>Dial <strong className="text-foreground">*111#</strong> on your phone</span>
-                </li>
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</Badge>
-                  <span>Select <strong className="text-foreground">Pay Bill</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">3</Badge>
-                  <span>Enter business number: <strong className="text-foreground">123456</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">4</Badge>
-                  <span>Enter reference: <strong className="text-foreground">{paymentReference}</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] shrink-0 mt-0.5">5</Badge>
-                  <span>Enter your PIN and confirm</span>
-                </li>
-              </ol>
+            <CardContent className="pt-0">
+              <div className="space-y-2.5">
+                {[
+                  ['Dial', '*111#', 'on your phone'],
+                  ['Select', 'Pay Bill', ''],
+                  ['Enter business number:', '123456', ''],
+                  ['Enter reference:', paymentReference, ''],
+                  ['Enter your PIN and confirm', '', ''],
+                ].map(([pre, bold, post], i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm">
+                    <span className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
+                    <span className="text-muted-foreground">
+                      {pre} {bold && <strong className="text-foreground">{bold}</strong>} {post}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
           {/* Bank Transfer */}
           <Collapsible open={bankOpen} onOpenChange={setBankOpen}>
-            <Card className="mb-3">
+            <Card>
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer pb-3">
+                <CardHeader className="cursor-pointer pb-2 hover:bg-muted/30 transition-colors rounded-t-xl">
                   <CardTitle className="flex items-center justify-between text-base">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-info" />
+                      <Building2 className="h-5 w-5 text-blue-600" />
                       Pay via Bank Transfer
                     </div>
                     <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${bankOpen ? 'rotate-180' : ''}`} />
@@ -225,18 +218,20 @@ export default function Billing() {
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-0 space-y-2 text-sm">
-                  <div className="grid grid-cols-2 gap-y-2 text-muted-foreground">
-                    <span>Bank</span>
-                    <span className="text-foreground font-medium">FNB Lesotho</span>
-                    <span>Account Name</span>
-                    <span className="text-foreground font-medium">Orion Labs (Pty) Ltd</span>
-                    <span>Account Number</span>
-                    <span className="text-foreground font-medium">62012345678</span>
-                    <span>Branch Code</span>
-                    <span className="text-foreground font-medium">260001</span>
-                    <span>Reference</span>
-                    <span className="text-foreground font-medium font-mono">{paymentReference}</span>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+                    {[
+                      ['Bank', 'FNB Lesotho'],
+                      ['Account Name', 'Orion Labs (Pty) Ltd'],
+                      ['Account Number', '62012345678'],
+                      ['Branch Code', '260001'],
+                      ['Reference', paymentReference],
+                    ].map(([label, value]) => (
+                      <>
+                        <span key={`l-${label}`} className="text-muted-foreground">{label}</span>
+                        <span key={`v-${label}`} className="text-foreground font-medium font-mono">{value}</span>
+                      </>
+                    ))}
                   </div>
                 </CardContent>
               </CollapsibleContent>
@@ -245,32 +240,20 @@ export default function Billing() {
 
           {/* I've Made Payment */}
           {sent ? (
-            <Card className="border-success/30 bg-success/5">
+            <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20">
               <CardContent className="p-4 flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Payment notification sent</p>
-                  <p className="text-xs text-muted-foreground">
-                    We'll verify your payment and activate your account shortly.
-                  </p>
+                  <p className="text-xs text-muted-foreground">We'll verify your payment and activate your account shortly.</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Button
-              onClick={handlePaymentNotification}
-              disabled={sending}
-              className="w-full h-12 text-base"
-              size="lg"
-            >
-              {sending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "I've Made Payment"
-              )}
+            <Button onClick={handlePaymentNotification} disabled={sending} className="w-full h-12 text-base font-semibold" size="lg">
+              {sending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : "I've Made Payment"}
             </Button>
           )}
         </div>
@@ -280,27 +263,29 @@ export default function Billing() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <MessageSquare className="h-5 w-5 text-primary" />
-              SMS Notifications
+              SMS Credits
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-3 gap-3 text-center">
+          <CardContent className="pt-0 space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">{creditsAllocated}</div>
-                <div className="text-xs text-muted-foreground">Allocated</div>
+                <span className="text-3xl font-bold text-foreground">{creditsRemaining}</span>
+                <span className="text-sm text-muted-foreground ml-1">/ {creditsAllocated}</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold">{creditsUsed}</div>
+              <span className="text-xs text-muted-foreground">credits remaining</span>
+            </div>
+            <Progress value={smsPercent} className="h-2" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-lg font-bold text-foreground">{creditsUsed}</div>
                 <div className="text-xs text-muted-foreground">Sent</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-primary">{creditsRemaining}</div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-lg font-bold text-primary">{creditsRemaining}</div>
                 <div className="text-xs text-muted-foreground">Remaining</div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              SMS credits reset monthly. Contact support for additional credits.
-            </p>
+            <p className="text-xs text-muted-foreground">SMS credits reset monthly. Contact support for additional credits.</p>
           </CardContent>
         </Card>
       </div>
