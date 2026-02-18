@@ -1,91 +1,21 @@
 
 
-# Security Hardening: Lock Down All Database Tables
+# Add Spacing Between Sidebar and Content Area
 
-Your application has a solid architecture but critical security gaps that must be closed before commercial deployment. This plan fixes all 14 critical findings.
+## What changes
 
-## The Problem
+Add a visible gap between the purple sidebar and the white content area by introducing a left margin/padding on the main content area, and optionally rounding the right edge of the sidebar for a cleaner look.
 
-All 73 tables have RLS enabled, but many policies allow unauthenticated users to read data. Anyone with your project URL could query and download sensitive business data including employee salaries, client contacts, legal cases, and financial records.
+## Changes
 
-## What Will Change
+### File: `src/components/layout/DashboardLayout.tsx`
+- Change `pl-64` on the main element to `pl-[17.5rem]` (or similar) to create a small gap between the sidebar edge and the content start
 
-### 1. Fix RLS Policies on All Business Tables (~50 tables)
+### File: `src/components/layout/Sidebar.tsx`
+- Optionally add right-side border-radius or a subtle shadow to the sidebar to enhance the visual separation
 
-Every table that stores user/business data will get restrictive policies ensuring:
-- Only authenticated users can access data
-- Users can only see their own data (matched by `user_id`)
-- Staff members can access their employer's data (matched through `owner_user_id` relationship)
-- Child tables (e.g. `quote_line_items`) inherit access through their parent's `user_id`
+## Technical details
 
-Tables affected include: contacts, leads, clients, staff_members, students, bookings, invoices, quotes, expenses, bank_accounts, payslips, legal_cases, legal_documents, fleet_vehicles, company_profiles, and all related child/junction tables.
-
-### 2. Enable Leaked Password Protection
-
-Turn on the built-in check that prevents users from signing up with passwords known to be compromised in data breaches.
-
-### 3. Review Storage Bucket Policies
-
-The `company-assets` and `hire-assets` buckets are currently public. Evaluate whether they need to be, and add policies if appropriate.
-
-## Technical Details
-
-### Policy Pattern for Owner Tables
-```text
--- Tables with user_id column:
-SELECT: auth.uid() = user_id
-INSERT: auth.uid() = user_id
-UPDATE: auth.uid() = user_id
-DELETE: auth.uid() = user_id
-```
-
-### Policy Pattern for Staff-Accessible Tables
-```text
--- Staff can read their employer's data:
-SELECT: auth.uid() = user_id 
-   OR EXISTS (
-     SELECT 1 FROM staff_members 
-     WHERE staff_members.user_id = auth.uid() 
-     AND staff_members.owner_user_id = [table].user_id
-   )
-```
-
-### Policy Pattern for Child Tables (no user_id)
-```text
--- e.g. quote_line_items joins through quotes:
-SELECT: EXISTS (
-  SELECT 1 FROM quotes 
-  WHERE quotes.id = quote_line_items.quote_id 
-  AND quotes.user_id = auth.uid()
-)
-```
-
-### Platform Tables (platform_settings, platform_modules)
-These intentionally remain publicly readable since they serve the landing/pricing page.
-
-## Migration Approach
-
-- Single database migration that drops overly permissive policies and replaces them with properly scoped ones
-- All existing application code already passes `user_id` on inserts, so no frontend changes needed
-- The migration is non-destructive -- no data is changed, only access rules
-
-## Files to Modify
-
-| File | Action |
-|------|--------|
-| Database migration (SQL) | Create -- replace all permissive RLS policies with restrictive ones |
-| Auth configuration | Update -- enable leaked password protection |
-
-## Risk Assessment
-
-- **Low risk**: All tables are currently empty in production, so no data access disruption
-- **No frontend changes**: The app already scopes queries by `user_id` and `company_profile_id`
-- **Reversible**: Policies can be adjusted if any legitimate access pattern is blocked
-
-## After This Fix
-
-- No unauthenticated user can read any business data
-- Each user's data is completely isolated from other users
-- Staff members can only access data belonging to their employer
-- The system will be safe to deploy commercially and scale
+- In `DashboardLayout.tsx` line 55, change `pl-64` (256px) to something like `pl-[17.5rem]` or `pl-72` to add ~16-32px of breathing room between the sidebar and content
+- In `Sidebar.tsx` line 118, optionally add `shadow-xl` or a right border-radius to strengthen the visual boundary
 
