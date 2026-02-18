@@ -27,7 +27,7 @@
      // Get links that are stale (last_visited_at is null or older than 2 days)
      const { data: staleLinks, error: linksError } = await supabase
        .from("tender_source_links")
-       .select("id, user_id, name, last_visited_at")
+       .select("id, user_id, name, last_visited_at, company_profile_id")
        .or(`last_visited_at.is.null,last_visited_at.lt.${twoDaysAgoISO}`);
  
      if (linksError) {
@@ -70,8 +70,9 @@
        const { error: notifError } = await supabase
          .from("notifications")
          .insert({
-           user_id: link.user_id,
-           type: "system",
+            user_id: link.user_id,
+            company_profile_id: link.company_profile_id,
+            type: "system",
            title: "🔔 Tender Source Needs Attention",
            message,
            reference_id: link.id,
