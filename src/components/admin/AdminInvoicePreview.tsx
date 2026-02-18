@@ -39,7 +39,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
+      <SheetContent side="right" className="w-full sm:max-w-[680px] overflow-y-auto p-0">
         <SheetHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
           <SheetTitle>Invoice Preview</SheetTitle>
           <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
@@ -47,95 +47,104 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
           </Button>
         </SheetHeader>
 
-        <div className="p-4">
-          <div ref={contentRef} className="bg-white text-black rounded-lg overflow-hidden" style={{ minHeight: 600 }}>
-            
-            {/* Navy Header Bar */}
-            <div data-pdf-section style={{ background: NAVY }} className="px-8 py-6 text-white">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <img src={orionLabsLogo} alt="Orion Labs" className="h-12 w-auto object-contain bg-white rounded-lg p-1.5" />
-                  <div>
-                    <h1 className="text-xl font-bold tracking-wide">ORION LABS</h1>
-                    <p className="text-xs text-blue-200 mt-0.5">Business Management Platform</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-2xl font-bold tracking-widest opacity-90">INVOICE</h2>
-                  <p className="font-mono text-sm text-blue-200 mt-1">{invoice.invoice_number}</p>
-                </div>
-              </div>
+        <div className="p-4 flex justify-center">
+          {/* A4 proportioned container: 210:297 ratio */}
+          <div
+            ref={contentRef}
+            className="bg-white text-black overflow-hidden"
+            style={{
+              width: '595px',
+              minHeight: '842px',
+              fontFamily: 'Arial, Helvetica, sans-serif',
+              fontSize: '12px',
+              lineHeight: '1.4',
+            }}
+          >
+            {/* Navy Header */}
+            <div data-pdf-section style={{ background: NAVY, padding: '20px 28px' }}>
+              <table style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ verticalAlign: 'middle', width: '48px' }}>
+                      <img src={orionLabsLogo} alt="Orion Labs" style={{ height: '40px', width: 'auto', objectFit: 'contain', background: 'white', borderRadius: '6px', padding: '4px' }} />
+                    </td>
+                    <td style={{ verticalAlign: 'middle', paddingLeft: '12px' }}>
+                      <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px' }}>ORION LABS</div>
+                      <div style={{ color: '#93c5fd', fontSize: '10px', marginTop: '2px' }}>Pioneer Mall, Maseru, Lesotho</div>
+                      <div style={{ color: '#93c5fd', fontSize: '10px' }}>sales@orionlabslesotho.com</div>
+                    </td>
+                    <td style={{ verticalAlign: 'middle', textAlign: 'right' }}>
+                      <div style={{ color: 'white', fontSize: '22px', fontWeight: 'bold', letterSpacing: '3px', opacity: 0.9 }}>INVOICE</div>
+                      <div style={{ color: '#93c5fd', fontFamily: 'monospace', fontSize: '12px', marginTop: '4px' }}>{invoice.invoice_number}</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            {/* Status Strip */}
-            <div data-pdf-section className="px-8 py-3 flex justify-between items-center" style={{ background: '#f0f4ff' }}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white"
-                  style={{ background: statusColor }}
-                >
+            {/* Status & Terms Strip */}
+            <div data-pdf-section style={{ background: '#eef2ff', padding: '8px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ background: statusColor, color: 'white', padding: '3px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {invoice.status}
                 </span>
-                <span className="text-xs text-gray-500 font-medium">Payment Terms: Due on Receipt</span>
-              </div>
-              <div className="text-xs text-gray-500">
-                Issued {format(new Date(invoice.issue_date), 'MMM d, yyyy')}
+                <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Payment Terms: Due on Receipt</span>
               </div>
             </div>
 
-            {/* Body Content */}
-            <div className="px-8 py-6">
+            {/* Body */}
+            <div style={{ padding: '24px 28px' }}>
 
-              {/* Bill To & Dates Row */}
-              <div data-pdf-section className="grid grid-cols-2 gap-8 mb-8">
-                <div className="p-4 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Bill To</p>
-                  <p className="font-semibold text-gray-900 text-base">{invoice.company_name}</p>
-                  {invoice.tenant_email && <p className="text-sm text-gray-500 mt-0.5">{invoice.tenant_email}</p>}
+              {/* Bill To & Details */}
+              <div data-pdf-section style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Bill To</div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>{invoice.company_name}</div>
+                  {invoice.tenant_email && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{invoice.tenant_email}</div>}
                 </div>
-                <div className="p-4 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Invoice Details</p>
-                  <div className="text-sm space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Issue Date</span>
-                      <span className="font-medium">{format(new Date(invoice.issue_date), 'MMM d, yyyy')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Due Date</span>
-                      <span className="font-medium">{format(new Date(invoice.due_date), 'MMM d, yyyy')}</span>
-                    </div>
-                    {invoice.payment_date && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Paid</span>
-                        <span className="font-medium text-green-700">{format(new Date(invoice.payment_date), 'MMM d, yyyy')}</span>
-                      </div>
-                    )}
-                  </div>
+                <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Invoice Details</div>
+                  <table style={{ width: '100%', fontSize: '11px' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Issue Date</td>
+                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.issue_date), 'MMM d, yyyy')}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Due Date</td>
+                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.due_date), 'MMM d, yyyy')}</td>
+                      </tr>
+                      {invoice.payment_date && (
+                        <tr>
+                          <td style={{ color: '#9ca3af', padding: '1px 0' }}>Paid</td>
+                          <td style={{ textAlign: 'right', fontWeight: 500, color: '#16a34a' }}>{format(new Date(invoice.payment_date), 'MMM d, yyyy')}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              {/* Line Items Table */}
-              <div data-pdf-section className="mb-8 rounded-lg overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
-                <table className="w-full">
+              {/* Line Items */}
+              <div data-pdf-section style={{ marginBottom: '24px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: NAVY }}>
-                      <th className="text-left py-3 px-4 text-xs uppercase font-semibold text-blue-200 w-10">#</th>
-                      <th className="text-left py-3 px-4 text-xs uppercase font-semibold text-blue-200">Description</th>
-                      <th className="text-center py-3 px-4 text-xs uppercase font-semibold text-blue-200 w-16">Qty</th>
-                      <th className="text-right py-3 px-4 text-xs uppercase font-semibold text-blue-200 w-28">Unit Price</th>
-                      <th className="text-right py-3 px-4 text-xs uppercase font-semibold text-blue-200 w-28">Amount</th>
+                      <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600, color: '#93c5fd', width: '32px' }}>#</th>
+                      <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600, color: '#93c5fd' }}>Description</th>
+                      <th style={{ textAlign: 'center', padding: '8px 12px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600, color: '#93c5fd', width: '50px' }}>Qty</th>
+                      <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600, color: '#93c5fd', width: '80px' }}>Unit Price</th>
+                      <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600, color: '#93c5fd', width: '80px' }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lineItems.map((item: any, i: number) => (
-                      <tr key={i} className={i % 2 === 0 ? 'bg-white' : ''} style={i % 2 !== 0 ? { background: '#f8fafc' } : {}}>
-                        <td className="py-3 px-4 text-sm text-gray-400 font-mono">{i + 1}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800">{item.description}</td>
-                        <td className="py-3 px-4 text-sm text-center text-gray-600">{item.quantity}</td>
-                        <td className="py-3 px-4 text-sm text-right text-gray-600">M{Number(item.unit_price).toFixed(2)}</td>
-                        <td className="py-3 px-4 text-sm text-right font-semibold text-gray-900">
-                          M{(item.quantity * item.unit_price).toFixed(2)}
-                        </td>
+                      <tr key={i} style={{ background: i % 2 !== 0 ? '#f8fafc' : 'white' }}>
+                        <td style={{ padding: '8px 12px', fontSize: '11px', color: '#9ca3af', fontFamily: 'monospace' }}>{i + 1}</td>
+                        <td style={{ padding: '8px 12px', fontSize: '11px', color: '#1f2937' }}>{item.description}</td>
+                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'center', color: '#4b5563' }}>{item.quantity}</td>
+                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', color: '#4b5563' }}>M{Number(item.unit_price).toFixed(2)}</td>
+                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', fontWeight: 600, color: '#111827' }}>M{(item.quantity * item.unit_price).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -143,19 +152,19 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Totals */}
-              <div data-pdf-section className="flex justify-end mb-8">
-                <div className="w-72 rounded-lg overflow-hidden" style={{ border: '1px solid #e2e8f0' }}>
-                  <div className="px-4 py-2 flex justify-between text-sm" style={{ background: '#f8fafc' }}>
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-medium">M{invoice.subtotal.toFixed(2)}</span>
+              <div data-pdf-section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                <div style={{ width: '220px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: '#f8fafc' }}>
+                    <span style={{ color: '#6b7280' }}>Subtotal</span>
+                    <span style={{ fontWeight: 500 }}>M{invoice.subtotal.toFixed(2)}</span>
                   </div>
                   {invoice.tax_rate > 0 && (
-                    <div className="px-4 py-2 flex justify-between text-sm border-t" style={{ borderColor: '#e2e8f0' }}>
-                      <span className="text-gray-500">Tax ({invoice.tax_rate}%)</span>
-                      <span className="font-medium">M{taxAmount.toFixed(2)}</span>
+                    <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderTop: '1px solid #e2e8f0' }}>
+                      <span style={{ color: '#6b7280' }}>Tax ({invoice.tax_rate}%)</span>
+                      <span style={{ fontWeight: 500 }}>M{taxAmount.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="px-4 py-3 flex justify-between text-white font-bold text-lg" style={{ background: NAVY }}>
+                  <div style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 700, color: 'white', background: NAVY }}>
                     <span>Total Due</span>
                     <span>M{invoice.total.toFixed(2)}</span>
                   </div>
@@ -163,42 +172,46 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Banking Details */}
-              <div data-pdf-section className="mb-6 rounded-lg overflow-hidden" style={{ border: '1px solid #c7d2fe' }}>
-                <div className="px-4 py-2" style={{ background: '#eef2ff' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: NAVY }}>Banking Details</p>
+              <div data-pdf-section style={{ marginBottom: '16px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #c7d2fe' }}>
+                <div style={{ background: '#eef2ff', padding: '6px 12px' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: NAVY }}>Banking Details</div>
                 </div>
-                <div className="px-4 py-3 grid grid-cols-2 gap-x-8 gap-y-2 text-sm bg-white">
-                  <div><span className="text-gray-400">Bank:</span> <span className="font-semibold text-gray-800">First National Bank (FNB)</span></div>
-                  <div><span className="text-gray-400">Branch:</span> <span className="font-semibold text-gray-800">Pioneer Mall</span></div>
-                  <div><span className="text-gray-400">Account No:</span> <span className="font-semibold text-gray-800">63027317585</span></div>
-                  <div><span className="text-gray-400">Reference:</span> <span className="font-semibold" style={{ color: NAVY }}>{subscriptionRef}</span></div>
+                <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', fontSize: '11px', background: 'white' }}>
+                  <div><span style={{ color: '#9ca3af' }}>Bank: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>First National Bank (FNB)</span></div>
+                  <div><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>Pioneer Mall</span></div>
+                  <div><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>63027317585</span></div>
+                  <div><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></div>
                 </div>
+              </div>
+
+              {/* Send POP instruction */}
+              <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '11px', textAlign: 'center' }}>
+                <span style={{ color: '#1e40af', fontWeight: 600 }}>Please send Proof of Payment (POP) to </span>
+                <span style={{ color: NAVY, fontWeight: 700 }}>sales@orionlabslesotho.com</span>
               </div>
 
               {/* Notes */}
               {invoice.notes && (
-                <div data-pdf-section className="mb-6 p-4 rounded-lg" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-1">Notes</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{invoice.notes}</p>
+                <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#d97706', marginBottom: '4px' }}>Notes</div>
+                  <div style={{ fontSize: '11px', color: '#374151', whiteSpace: 'pre-wrap' }}>{invoice.notes}</div>
                 </div>
               )}
 
               {/* Payment confirmation */}
               {invoice.status === 'paid' && invoice.payment_method && (
-                <div data-pdf-section className="mb-6 p-4 rounded-lg" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                  <p className="text-sm">
-                    <span className="font-semibold text-green-800">✓ Payment Received</span>
-                    <span className="text-green-700"> via {invoice.payment_method}</span>
-                    {invoice.payment_reference && <span className="text-green-600"> (Ref: {invoice.payment_reference})</span>}
-                  </p>
+                <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '11px' }}>
+                  <span style={{ fontWeight: 600, color: '#166534' }}>✓ Payment Received</span>
+                  <span style={{ color: '#15803d' }}> via {invoice.payment_method}</span>
+                  {invoice.payment_reference && <span style={{ color: '#16a34a' }}> (Ref: {invoice.payment_reference})</span>}
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div data-pdf-section style={{ background: NAVY }} className="px-8 py-5 text-center">
-              <p className="text-sm font-medium text-white">Thank you for your business!</p>
-              <p className="text-xs text-blue-300 mt-1">Orion Labs · Pioneer Mall, Maseru, Lesotho · sales@orionlabslesotho.com</p>
+            <div data-pdf-section style={{ background: NAVY, padding: '14px 28px', textAlign: 'center', marginTop: 'auto' }}>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: 'white' }}>Thank you for your business!</div>
+              <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '4px' }}>Orion Labs · Pioneer Mall, Maseru, Lesotho · sales@orionlabslesotho.com</div>
             </div>
           </div>
         </div>

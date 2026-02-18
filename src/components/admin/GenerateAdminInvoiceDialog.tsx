@@ -103,7 +103,7 @@ export function GenerateAdminInvoiceDialog({ open, onOpenChange, preselectedTena
         tax_rate: taxRate,
         total,
         currency: 'LSL',
-        status: 'draft',
+        status: 'sent',
         issue_date: format(new Date(), 'yyyy-MM-dd'),
         due_date: dueDate,
         payment_date: null,
@@ -250,7 +250,7 @@ export function GenerateAdminInvoiceDialog({ open, onOpenChange, preselectedTena
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSave} disabled={loading || !selectedTenant || lineItems.length === 0}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Save as Draft
+            Create Invoice
           </Button>
         </SheetFooter>
       </SheetContent>

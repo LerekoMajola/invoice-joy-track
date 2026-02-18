@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-muted text-muted-foreground',
   sent: 'bg-blue-600 text-white',
   paid: 'bg-green-600 text-white',
   overdue: 'bg-red-600 text-white',
@@ -96,7 +95,6 @@ export function AdminInvoicesTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="sent">Sent</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
@@ -163,11 +161,9 @@ export function AdminInvoicesTab() {
                           </Button>
                         </>
                       )}
-                      {inv.status === 'draft' && (
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteId(inv.id)} title="Delete">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(inv.id)} title="Delete">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

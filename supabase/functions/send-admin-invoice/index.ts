@@ -150,6 +150,10 @@ Deno.serve(async (req) => {
             <tr><td style="color:#888;padding:2px 12px 2px 0">Reference:</td><td style="font-weight:600">${subscriptionRef}</td></tr>
           </table>
         </div>
+        <div style="background:#eff6ff;padding:12px;border-radius:8px;margin-bottom:24px;border:1px solid #bfdbfe;text-align:center;font-size:14px">
+          <span style="color:#1e40af;font-weight:600">Please send Proof of Payment (POP) to </span>
+          <span style="color:#1a1a2e;font-weight:700">sales@orionlabslesotho.com</span>
+        </div>
         ${invoice.notes ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;font-size:14px;margin-bottom:24px"><p style="color:#888;font-size:12px;margin:0 0 4px">Notes</p><p style="margin:0">${invoice.notes}</p></div>` : ""}
       </div>
       <div style="text-align:center;padding:20px;border:1px solid #eee;border-top:none;border-radius:0 0 8px 8px;background:#fafafa">
