@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { notification_id, user_id, title, message, type, link } = await req.json();
+    const { notification_id, user_id, title, message, type, link, company_profile_id } = await req.json();
 
     if (!user_id || !message) {
       return new Response(
@@ -47,7 +47,6 @@ Deno.serve(async (req) => {
       .eq("user_id", user_id)
       .maybeSingle();
 
-    // If email is globally disabled or no prefs (default is disabled), skip
     if (!prefs || !prefs.email_enabled) {
       console.log("Email disabled for user", user_id);
       return new Response(
@@ -70,20 +69,52 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get user's email from auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
-    if (authError || !authUser?.user?.email) {
-      console.log("No email for user", user_id);
-      return new Response(
-        JSON.stringify({ skipped: true, reason: "no_email" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Resolve recipient email with fallback chain:
+    // 1. Business email from the specific company_profile_id
+    // 2. Business email from the active company in user_preferences
+    // 3. Auth email (always available)
+    let recipientEmail: string | null = null;
+
+    if (company_profile_id) {
+      const { data: profile } = await supabaseAdmin
+        .from("company_profiles")
+        .select("email")
+        .eq("id", company_profile_id)
+        .maybeSingle();
+      recipientEmail = profile?.email || null;
     }
 
-    const recipientEmail = authUser.user.email;
+    if (!recipientEmail) {
+      const { data: userPrefs } = await supabaseAdmin
+        .from("user_preferences")
+        .select("active_company_id")
+        .eq("user_id", user_id)
+        .maybeSingle();
+
+      if (userPrefs?.active_company_id) {
+        const { data: activeProfile } = await supabaseAdmin
+          .from("company_profiles")
+          .select("email")
+          .eq("id", userPrefs.active_company_id)
+          .maybeSingle();
+        recipientEmail = activeProfile?.email || null;
+      }
+    }
+
+    if (!recipientEmail) {
+      // Final fallback: auth email
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      if (authError || !authUser?.user?.email) {
+        console.log("No email for user", user_id);
+        return new Response(
+          JSON.stringify({ skipped: true, reason: "no_email" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      recipientEmail = authUser.user.email;
+    }
 
     // Build email HTML
-    const appUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "").replace("https://", "") || "";
     const linkUrl = link ? `https://invoice-joy-track.lovable.app${link}` : "";
 
     const emailHtml = `
