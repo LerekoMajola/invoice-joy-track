@@ -20,6 +20,8 @@ export async function exportSectionBasedPDF(
   container: HTMLElement,
   filename: string,
 ) {
+  const SCALE = 3; // higher scale = sharper output
+
   const sections = Array.from(
     container.querySelectorAll('[data-pdf-section]'),
   ) as HTMLElement[];
@@ -27,10 +29,9 @@ export async function exportSectionBasedPDF(
   // Fallback: if no sections are marked, treat the whole container as one section
   const targets = sections.length > 0 ? sections : [container];
 
-  // Use the container's width as the consistent render width for all sections.
-  // This prevents text clipping caused by each section being rendered at
-  // a different windowWidth.
-  const containerWidth = container.scrollWidth;
+  // Use the container's offsetWidth (layout width) as the consistent render
+  // width. scrollWidth can include overflow that skews the capture.
+  const containerWidth = container.offsetWidth;
 
   const captured: { canvas: HTMLCanvasElement; heightMM: number }[] = [];
 
@@ -40,7 +41,7 @@ export async function exportSectionBasedPDF(
     section.style.overflow = 'visible';
 
     const canvas = await html2canvas(section, {
-      scale: 2,
+      scale: SCALE,
       useCORS: true,
       backgroundColor: '#ffffff',
       width: containerWidth,
@@ -48,12 +49,14 @@ export async function exportSectionBasedPDF(
       scrollX: 0,
       scrollY: -window.scrollY,
       height: section.scrollHeight + 10, // extra buffer to prevent clipping
+      imageTimeout: 15000,
+      logging: false,
     });
 
     section.style.overflow = prevOverflow;
 
-    const widthPx = canvas.width / 2; // scale factor = 2
-    const heightPx = canvas.height / 2;
+    const widthPx = canvas.width / SCALE;
+    const heightPx = canvas.height / SCALE;
     const scaleFactor = CONTENT_WIDTH_MM / widthPx;
     const heightMM = heightPx * scaleFactor;
 
@@ -80,14 +83,16 @@ export async function exportSectionBasedPDF(
 
     // If a single section is taller than a full page, it will overflow —
     // but at least it starts at the top of a fresh page.
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
     pdf.addImage(
       imgData,
-      'PNG',
+      'JPEG',
       MARGIN_MM,
       currentY,
       CONTENT_WIDTH_MM,
       heightMM,
+      undefined,
+      'NONE', // no additional compression — keeps sharpness
     );
 
     currentY += heightMM + SECTION_GAP_MM;
