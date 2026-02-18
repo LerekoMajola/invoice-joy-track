@@ -1,36 +1,28 @@
 
 
-## Fix: Payment Required Page Shows Blank White Screen
+## Fix: Payment Required Page Banking Details
 
-### Root Cause
-The `/payment-required` route is wrapped in `ProtectedRoute`. When a user's trial expires, `ProtectedRoute` detects `needsPayment=true` and renders `<Navigate to="/payment-required">`. But since PaymentRequired is *inside* ProtectedRoute, it triggers the same check again, creating a redirect loop. The beautiful PaymentRequired design never actually renders -- the user just sees a white screen.
+### The Problem
+The banking details on the Payment Required page don't match the actual details used on the admin invoices. The invoice uses the correct details, but the payment page has placeholder/wrong values.
+
+### What's Wrong (Payment Required page vs Invoice)
+
+| Field | Payment Page (wrong) | Invoice (correct) |
+|-------|---------------------|-------------------|
+| Bank | FNB Lesotho | First National Bank (FNB) |
+| Account Name | Orion Labs (Pty) Ltd | Orion Labs (Pty) Ltd |
+| Account Number | 62012345678 | 63027317585 |
+| Branch Code | 260001 | Pioneer Mall |
 
 ### The Fix
 
-**File: `src/App.tsx`**
-
-Remove the `ProtectedRoute` wrapper from the `/payment-required` route. PaymentRequired already has its own authentication guard via `useAuth` and its own subscription check via `useSubscription`, so it doesn't need ProtectedRoute.
-
-Change:
-```tsx
-<Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
-```
-To:
-```tsx
-<Route path="/payment-required" element={<PaymentRequired />} />
-```
-
 **File: `src/pages/PaymentRequired.tsx`**
 
-Add a minimal auth guard so unauthenticated users hitting `/payment-required` directly get redirected to `/auth`:
+Update the Bank Transfer tab (lines 215-234) to use the correct banking details from the invoice:
 
-- If `useAuth()` is still loading, show a branded loading state (with the gradient background, not a white page)
-- If no user, redirect to `/auth`
-- If user has no expired trial (`!needsPayment`), redirect to `/dashboard` (already implemented)
-
-This way:
-- Expired-trial users see the full payment page immediately
-- Unauthenticated users go to login
-- Active users go to dashboard
-- No redirect loop
+- Bank: "First National Bank (FNB)"
+- Account Name: "Orion Labs (Pty) Ltd" (already correct)
+- Account No: "63027317585"
+- Branch: "Pioneer Mall"
+- Reference: (already correct -- uses `paymentReference`)
 
