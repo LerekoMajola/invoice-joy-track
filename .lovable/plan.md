@@ -1,50 +1,46 @@
 
 
-# Enhance Admin Invoice with Logo, Banking Details & Professional Fields
+## Use Active Company Profile Data for Notifications
 
-## Overview
-Update both the invoice preview component and the email template with Orion Labs logo, FNB banking details, company contact info, payment terms ("Due on Receipt"), and a professional footer.
+### Problem
+When notifications are triggered (e.g., "Deal Won!"), the system looks up your phone number and email from **any** company profile you own, rather than the one you're actively working in. With multiple company profiles, this can send SMS to the wrong phone number or use the wrong contact details.
 
-## Changes to Both Files
+### Solution
+Thread the `company_profile_id` through the entire notification pipeline so that SMS and email always use the contact details from the correct company profile.
 
-### Header Enhancement
-- Add Orion Labs logo (imported from `src/assets/orion-labs-logo.png` in preview; hosted URL in email)
-- Full company details: Pioneer Mall, Maseru, Lesotho
-- Email: sales@orionlabslesotho.com
+### Changes
 
-### Line Items Table
-- Add item numbering (#) column
+#### 1. Update Database Trigger Functions
+Modify the three notification trigger functions to copy the `company_profile_id` from the source record (lead, invoice, quote) into the notification row:
 
-### Payment Terms
-- Display "Payment Terms: Due on Receipt" below dates
+- **`notify_lead_status_change()`** -- read `NEW.company_profile_id` and insert it into the notification
+- **`notify_invoice_status_change()`** -- same
+- **`notify_quote_status_change()`** -- same
 
-### Banking Details Section (after totals)
-A clearly styled block:
-```text
-Bank: First National Bank (FNB)
-Branch: Pioneer Mall
-Account Number: 63027317585
-Reference: [Invoice Number]
-```
+#### 2. Update SMS Trigger to Pass `company_profile_id`
+Modify **`notify_sms_on_notification()`** database trigger to include `company_profile_id` in the payload sent to the `send-sms-on-notification` edge function.
 
-### Footer
-- "Thank you for your business" message
-- Company contact: sales@orionlabslesotho.com
+#### 3. Update Email Trigger to Pass `company_profile_id`
+Modify **`notify_email_on_notification()`** database trigger to include `company_profile_id` in the payload sent to the `send-email-notification` edge function.
 
-### Email-Specific
-- Fix sender to `Orion Labs <updates@updates.orionlabslesotho.com>`
-- Add banking details HTML block
-- Add thank-you footer
+#### 4. Update `send-sms-on-notification` Edge Function
+Instead of querying for any company profile with a phone number, look up the **specific** profile by `company_profile_id` (falling back to the active company from `user_preferences`, then to any profile with a phone).
 
-## Technical Details
+#### 5. Update `send-email-notification` Edge Function
+Similarly, when building the email, optionally use the business email from the specific company profile rather than always using the auth email. This ensures the email is sent to the address registered on the active profile.
 
-### Files Modified
+### Technical Details
 
-| File | Changes |
-|------|---------|
-| `src/components/admin/AdminInvoicePreview.tsx` | Add logo import, company details, payment terms, # column, banking details section, thank-you footer |
-| `supabase/functions/send-admin-invoice/index.ts` | Add logo via hosted URL, company details, payment terms, # column, banking details block, thank-you footer, fix from address |
+**Database migration** (single SQL migration):
+- `CREATE OR REPLACE FUNCTION notify_lead_status_change()` -- adds `company_profile_id` to the INSERT into notifications
+- `CREATE OR REPLACE FUNCTION notify_invoice_status_change()` -- same
+- `CREATE OR REPLACE FUNCTION notify_quote_status_change()` -- same
+- `CREATE OR REPLACE FUNCTION notify_sms_on_notification()` -- adds `company_profile_id` to the JSON payload
+- `CREATE OR REPLACE FUNCTION notify_email_on_notification()` -- adds `company_profile_id` to the JSON payload
 
-### Logo in Email
-The email will reference the logo from the published app URL (`https://invoice-joy-track.lovable.app/pwa-192x192.png`) with a text fallback if the image fails to load.
+**Edge function updates:**
 
+- **`supabase/functions/send-sms-on-notification/index.ts`**: Accept `company_profile_id`, query `company_profiles` by ID first, fall back to `user_preferences.active_company_id`, then fall back to any profile with a phone
+- **`supabase/functions/send-email-notification/index.ts`**: Accept `company_profile_id`, query the specific profile's email, fall back to auth email
+
+This ensures that no matter how many companies you manage, notifications always use the contact details from the profile the event originated in.
