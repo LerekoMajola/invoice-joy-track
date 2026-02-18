@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/sheet';
 import { AdminInvoice } from '@/hooks/useAdminInvoices';
 import { exportSectionBasedPDF } from '@/lib/pdfExport';
-import orionLabsLogo from '@/assets/orion-labs-logo.png';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 interface AdminInvoicePreviewProps {
   invoice: AdminInvoice | null;
@@ -19,6 +19,7 @@ const NAVY = '#1a1a2e';
 
 export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoicePreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { logoUrl } = usePlatformSettings();
 
   if (!invoice) return null;
 
@@ -66,7 +67,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                 <tbody>
                   <tr>
                     <td style={{ verticalAlign: 'middle', width: '72px' }}>
-                      <img src={orionLabsLogo} alt="Orion Labs" style={{ height: '60px', width: 'auto', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '5px' }} />
+                      {logoUrl && <img src={logoUrl} alt="Orion Labs" style={{ height: '60px', width: 'auto', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '5px' }} crossOrigin="anonymous" />}
                     </td>
                     <td style={{ verticalAlign: 'middle', paddingLeft: '12px' }}>
                       <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px' }}>ORION LABS</div>
@@ -131,15 +132,20 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                     </tr>
                   </thead>
                   <tbody>
-                    {lineItems.map((item: any, i: number) => (
-                      <tr key={i} style={{ background: i % 2 !== 0 ? '#f8fafc' : 'white' }}>
-                        <td style={{ padding: '8px 12px', fontSize: '11px', color: '#9ca3af', fontFamily: 'monospace' }}>{i + 1}</td>
-                        <td style={{ padding: '8px 12px', fontSize: '11px', color: '#1f2937' }}>{item.description}</td>
-                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'center', color: '#4b5563' }}>{item.quantity}</td>
-                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', color: '#4b5563' }}>M{Number(item.unit_price).toFixed(2)}</td>
-                        <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', fontWeight: 600, color: '#111827' }}>M{(item.quantity * item.unit_price).toFixed(2)}</td>
-                      </tr>
-                    ))}
+                    {lineItems.map((item: any, i: number) => {
+                      const issueDate = new Date(invoice.issue_date);
+                      const endDate = addMonths(issueDate, item.quantity || 1);
+                      const dateRange = `${format(issueDate, 'MMM yyyy')} – ${format(endDate, 'MMM yyyy')}`;
+                      return (
+                        <tr key={i} style={{ background: i % 2 !== 0 ? '#f8fafc' : 'white' }}>
+                          <td style={{ padding: '8px 12px', fontSize: '11px', color: '#9ca3af', fontFamily: 'monospace' }}>{i + 1}</td>
+                          <td style={{ padding: '8px 12px', fontSize: '11px', color: '#1f2937' }}>{item.description} ({dateRange})</td>
+                          <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'center', color: '#4b5563' }}>{item.quantity}</td>
+                          <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', color: '#4b5563' }}>M{Number(item.unit_price).toFixed(2)}</td>
+                          <td style={{ padding: '8px 12px', fontSize: '11px', textAlign: 'right', fontWeight: 600, color: '#111827' }}>M{(item.quantity * item.unit_price).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
