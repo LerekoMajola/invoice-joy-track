@@ -131,6 +131,8 @@ export type Database = {
           created_at: string
           currency: string
           due_date: string
+          email_sent_at: string | null
+          email_sent_to: string | null
           id: string
           invoice_number: string
           issue_date: string
@@ -153,6 +155,8 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string
+          email_sent_at?: string | null
+          email_sent_to?: string | null
           id?: string
           invoice_number: string
           issue_date?: string
@@ -175,6 +179,8 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string
+          email_sent_at?: string | null
+          email_sent_to?: string | null
           id?: string
           invoice_number?: string
           issue_date?: string
