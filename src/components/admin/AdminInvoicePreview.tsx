@@ -82,14 +82,9 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </table>
             </div>
 
-            {/* Status & Terms Strip */}
+            {/* Terms Strip */}
             <div data-pdf-section style={{ background: '#eef2ff', padding: '8px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ background: statusColor, color: 'white', padding: '3px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {invoice.status}
-                </span>
-                <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Payment Terms: Due on Receipt</span>
-              </div>
+              <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Payment Terms: Due on Receipt</span>
             </div>
 
             {/* Body */}
