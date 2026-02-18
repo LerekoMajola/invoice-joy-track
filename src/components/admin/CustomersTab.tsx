@@ -252,8 +252,8 @@ export function CustomersTab() {
       <div className="text-sm text-muted-foreground">{filtered.length} customers</div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead>Company / Email</TableHead>
