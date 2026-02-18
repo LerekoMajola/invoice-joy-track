@@ -213,10 +213,10 @@ export default function PaymentRequired() {
               <TabsContent value="bank" className="mt-4 space-y-3">
                 <div className="space-y-2.5 text-sm">
                   {[
-                    { label: 'Bank', value: 'FNB Lesotho' },
+                    { label: 'Bank', value: 'First National Bank (FNB)' },
                     { label: 'Account Name', value: 'Orion Labs (Pty) Ltd' },
-                    { label: 'Account Number', value: '62012345678', copyable: true },
-                    { label: 'Branch Code', value: '260001', copyable: true },
+                    { label: 'Account No', value: '63027317585', copyable: true },
+                    { label: 'Branch', value: 'Pioneer Mall' },
                     { label: 'Reference', value: paymentReference, copyable: true },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
