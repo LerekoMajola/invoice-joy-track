@@ -95,9 +95,9 @@ export function useAdminTenants() {
           // Skip users without subscriptions — not billing customers
           if (!subscription) return null;
 
-          // Pick the best profile: prefer one with a real name (not "My Company"), else earliest
-          const primaryProfile = userProfiles.find(p => p.company_name !== 'My Company') 
-            || userProfiles.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+          // Pick the best profile: earliest created (the onboarded one), skipping "My Company" if possible
+          const sorted = [...userProfiles].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          const primaryProfile = sorted.find(p => p.company_name !== 'My Company') || sorted[0];
 
           const usage = usageData?.find(u => u.user_id === userId);
 
