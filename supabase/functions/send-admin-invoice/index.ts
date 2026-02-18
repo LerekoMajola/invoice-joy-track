@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
 
     const lineItems = Array.isArray(invoice.line_items) ? invoice.line_items : [];
     const taxAmount = invoice.subtotal * (invoice.tax_rate / 100);
+    const subscriptionRef = `REF-${invoice.tenant_user_id.slice(0, 8).toUpperCase()}`;
 
     const itemsHtml = lineItems
       .map(
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
             <tr><td style="color:#888;padding:2px 12px 2px 0">Bank:</td><td style="font-weight:600">First National Bank (FNB)</td></tr>
             <tr><td style="color:#888;padding:2px 12px 2px 0">Branch:</td><td style="font-weight:600">Pioneer Mall</td></tr>
             <tr><td style="color:#888;padding:2px 12px 2px 0">Account Number:</td><td style="font-weight:600">63027317585</td></tr>
-            <tr><td style="color:#888;padding:2px 12px 2px 0">Reference:</td><td style="font-weight:600">${invoice.invoice_number}</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Reference:</td><td style="font-weight:600">${subscriptionRef}</td></tr>
           </table>
         </div>
         ${invoice.notes ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;font-size:14px;margin-bottom:24px"><p style="color:#888;font-size:12px;margin:0 0 4px">Notes</p><p style="margin:0">${invoice.notes}</p></div>` : ""}

@@ -30,6 +30,8 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
     await exportSectionBasedPDF(contentRef.current, `${invoice.invoice_number}.pdf`);
   };
 
+  const subscriptionRef = `REF-${invoice.tenant_user_id.slice(0, 8).toUpperCase()}`;
+
   const statusColor =
     invoice.status === 'paid' ? '#16a34a' :
     invoice.status === 'sent' ? '#2563eb' :
@@ -169,7 +171,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                   <div><span className="text-gray-400">Bank:</span> <span className="font-semibold text-gray-800">First National Bank (FNB)</span></div>
                   <div><span className="text-gray-400">Branch:</span> <span className="font-semibold text-gray-800">Pioneer Mall</span></div>
                   <div><span className="text-gray-400">Account No:</span> <span className="font-semibold text-gray-800">63027317585</span></div>
-                  <div><span className="text-gray-400">Reference:</span> <span className="font-semibold" style={{ color: NAVY }}>{invoice.invoice_number}</span></div>
+                  <div><span className="text-gray-400">Reference:</span> <span className="font-semibold" style={{ color: NAVY }}>{subscriptionRef}</span></div>
                 </div>
               </div>
 
