@@ -81,12 +81,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get user's phone from company_profiles
-    const { data: profile } = await supabaseAdmin
+    // Get user's phone from company_profiles (prefer profile with a phone number)
+    const { data: profiles } = await supabaseAdmin
       .from("company_profiles")
       .select("phone")
       .eq("user_id", user_id)
-      .maybeSingle();
+      .not("phone", "is", null);
+
+    const profile = profiles?.[0] || null;
 
     if (!profile?.phone) {
       console.log("No phone number for user", user_id);
