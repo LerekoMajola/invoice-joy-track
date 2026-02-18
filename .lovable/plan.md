@@ -1,49 +1,35 @@
 
-## Safe Delete with Company Name Confirmation + 90-Day Recycle Bin
+## Fix: Admin Stats Counting Sub-Companies as Separate Tenants
 
-### What Changes
+### The Problem
+The admin stats hook (`useAdminStats.tsx`) counts every row in `company_profiles` as a separate tenant. Since tenants like "Leekay" can create additional companies (e.g., "Optimum Resources") under the same subscription, the "Total Tenants", "Recent Signups", and signup chart numbers are inflated. The MRR is correct since it's subscription-based, but the tenant counts are misleading.
 
-**1. Type-to-confirm delete dialog**
-Replace the current simple "Confirm" dialog for deleting tenants with a stricter dialog that requires you to type the exact company name before the Delete button becomes active. This prevents accidental deletions of paying customers.
+### The Fix
 
-**2. Soft-delete with recycle bin**
-Instead of permanently deleting tenant data, the system will soft-delete by marking records as deleted with a timestamp. A new "Recycle Bin" section appears in the Tenants tab showing recently deleted companies. You can restore them within 90 days. After 90 days they remain in the bin but are marked as expired (permanent cleanup can be added later if needed).
+**File: `src/hooks/useAdminStats.tsx`**
 
----
+1. Add `user_id` to the profiles query (currently only fetches `id, created_at`)
+2. Filter out soft-deleted profiles: `.is('deleted_at', null)`
+3. Filter out soft-deleted subscriptions: `.is('deleted_at', null)`
+4. Deduplicate profiles by `user_id` before counting -- only count unique users, not individual company profiles
+5. Use the deduplicated list for `totalTenants`, `recentSignups`, and `signupsByMonth`
 
-### Technical Details
+This ensures sub-companies are not counted as separate tenants in the overview dashboard. Revenue and MRR numbers remain unchanged since they already work off subscriptions (one per user).
 
-**Database Migration -- add soft-delete columns:**
-- Add `deleted_at` (timestamptz, nullable) to `company_profiles`
-- Add `deleted_at` (timestamptz, nullable) to `subscriptions`
-- Update RLS policies so deleted records are excluded from normal tenant queries
+### Technical Detail
 
-**File: `src/components/admin/TenantsTab.tsx`**
-- Replace the simple `ConfirmDialog` with a new `TypeToConfirmDeleteDialog` component
-- The dialog shows the company name and requires the user to type it exactly to enable the Delete button
-- Change `deleteMutation` from hard-delete to soft-delete: `UPDATE company_profiles SET deleted_at = now()` and `UPDATE subscriptions SET deleted_at = now()`
-- Add a "Recycle Bin" toggle/section at the bottom that shows soft-deleted tenants (where `deleted_at IS NOT NULL`)
-- Each recycled item shows: company name, deleted date, days remaining until 90-day expiry, and a "Restore" button
+```
+// Before (counts all profiles including sub-companies)
+const totalTenants = profiles.length;
 
-**File: `src/hooks/useAdminTenants.tsx`**
-- Add a `deleted_at` field to the `Tenant` interface
-- Update the query to filter: `is('deleted_at', null)` for the main list
-- Add a separate query key `admin-tenants-deleted` that fetches tenants where `deleted_at IS NOT NULL` for the recycle bin view
+// After (counts unique users only)
+const uniqueUserProfiles = new Map();
+profiles.forEach(p => {
+  if (!uniqueUserProfiles.has(p.user_id)) {
+    uniqueUserProfiles.set(p.user_id, p);
+  }
+});
+const totalTenants = uniqueUserProfiles.size;
+```
 
-**File: `src/components/admin/TypeToConfirmDeleteDialog.tsx`** (new file)
-- A dialog component with:
-  - Warning text explaining the action
-  - The company name displayed in bold
-  - An input field where the admin must type the exact company name
-  - The Delete button stays disabled until the typed text matches exactly (case-sensitive)
-  - Red/destructive styling to make it feel serious
-
-**File: `src/components/admin/RecycleBinSection.tsx`** (new file)
-- A collapsible section showing soft-deleted tenants
-- Each row displays: company name, deletion date, "X days remaining" badge
-- Restore button triggers: `UPDATE company_profiles SET deleted_at = null` and same for subscriptions
-- Items older than 90 days show an "Expired" badge instead of days remaining (data stays but is clearly marked)
-
-**Restore logic:**
-- Restoring sets `deleted_at = null` on both `company_profiles` and `subscriptions` for that `user_id`
-- Invalidates both `admin-tenants` and `admin-tenants-deleted` query keys
+The same deduplication applies to `recentSignups` and the `signupsByMonth` chart data, using the earliest `created_at` per `user_id` as the signup date.
