@@ -52,7 +52,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Sheet>
         )}
         
-         <main className={isMobile ? 'pb-20' : 'pl-64'}>
+         <main className={isMobile ? 'pb-20' : 'pl-[17.5rem]'}>
            <PageTransition>
              {children}
            </PageTransition>
