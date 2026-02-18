@@ -35,7 +35,7 @@ export function GenerateAdminInvoiceDialog({ open, onOpenChange, preselectedTena
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [taxRate, setTaxRate] = useState(0);
-  const [dueDate, setDueDate] = useState(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +44,7 @@ export function GenerateAdminInvoiceDialog({ open, onOpenChange, preselectedTena
   useEffect(() => {
     if (open) {
       generateNextNumber().then(setInvoiceNumber);
-      setDueDate(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
+      setDueDate(format(new Date(), 'yyyy-MM-dd'));
       if (preselectedTenant) {
         setSelectedTenantId(preselectedTenant.id);
       } else {
