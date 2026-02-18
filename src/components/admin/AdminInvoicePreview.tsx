@@ -24,7 +24,7 @@ const NAVY = '#1a1a2e';
 export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoicePreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const { logoUrl } = usePlatformSettings();
-  const [sendEmail, setSendEmail] = useState('');
+  const [sendEmail, setSendEmail] = useState(invoice?.tenant_email || '');
   const [sending, setSending] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
 
@@ -32,6 +32,40 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
 
   const lineItems = Array.isArray(invoice.line_items) ? invoice.line_items : [];
   const taxAmount = invoice.subtotal * (invoice.tax_rate / 100);
+
+  const generatePDFBase64 = async (): Promise<string | null> => {
+    const el = contentRef.current;
+    if (!el) return null;
+
+    const SCALE = 3;
+    const canvas = await html2canvas(el, {
+      scale: SCALE,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: el.offsetWidth,
+      windowWidth: el.offsetWidth,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pxW = canvas.width / SCALE;
+    const pxH = canvas.height / SCALE;
+
+    const A4_W = 210;
+    const MARGIN = 10;
+    const contentW = A4_W - MARGIN * 2;
+    const scaleFactor = contentW / pxW;
+    const contentH = pxH * scaleFactor;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'JPEG', MARGIN, MARGIN, contentW, contentH, undefined, 'NONE');
+    
+    // Return base64 string (strip the data:... prefix)
+    const pdfOutput = pdf.output('datauristring');
+    return pdfOutput.split(',')[1];
+  };
 
   const handleDownloadPDF = async () => {
     const el = contentRef.current;
@@ -53,9 +87,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
     const pxW = canvas.width / SCALE;
     const pxH = canvas.height / SCALE;
 
-    // A4 dimensions
     const A4_W = 210;
-    const A4_H = 297;
     const MARGIN = 10;
     const contentW = A4_W - MARGIN * 2;
     const scaleFactor = contentW / pxW;
@@ -70,13 +102,21 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
     if (!sendEmail.trim()) return;
     setSending(true);
     try {
+      toast.info('Generating PDF...');
+      const pdfBase64 = await generatePDFBase64();
+      if (!pdfBase64) throw new Error('Failed to generate PDF');
+
       const { data, error } = await supabase.functions.invoke('send-admin-invoice', {
-        body: { invoiceId: invoice.id, recipientEmail: sendEmail.trim() },
+        body: {
+          invoiceId: invoice.id,
+          recipientEmail: sendEmail.trim(),
+          pdfBase64,
+          pdfFilename: `${invoice.invoice_number}.pdf`,
+        },
       });
       if (error) throw error;
       toast.success(`Invoice sent to ${sendEmail.trim()}`);
       setShowEmailInput(false);
-      setSendEmail('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to send email');
     } finally {
