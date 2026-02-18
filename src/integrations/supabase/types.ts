@@ -1604,6 +1604,57 @@ export type Database = {
           },
         ]
       }
+      gym_attendance: {
+        Row: {
+          check_in: string
+          check_out: string | null
+          company_profile_id: string | null
+          created_at: string
+          id: string
+          member_id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_in?: string
+          check_out?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          id?: string
+          member_id: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_in?: string
+          check_out?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_attendance_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_class_schedules: {
         Row: {
           class_id: string

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,11 @@ export default function Billing() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
+  const paymentSectionRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollToPayment = () => {
+    paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const companyName = companyProfile?.company_name || 'your company';
   const smsPercent = creditsAllocated > 0 ? Math.round((creditsUsed / creditsAllocated) * 100) : 0;
@@ -111,12 +116,16 @@ export default function Billing() {
             </div>
 
             {isTrialing && !isTrialExpired && (
-              <div className="mt-4">
+              <div className="mt-4 space-y-3">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Trial progress</span>
                   <span>{14 - trialDaysRemaining}/14 days</span>
                 </div>
                 <Progress value={((14 - trialDaysRemaining) / 14) * 100} className="h-2" />
+                <Button onClick={scrollToPayment} className="w-full" size="sm">
+                  <Zap className="h-4 w-4 mr-1.5" />
+                  Subscribe Now
+                </Button>
               </div>
             )}
           </CardContent>
@@ -155,7 +164,7 @@ export default function Billing() {
         </Card>
 
         {/* Payment Section */}
-        <div className="space-y-3">
+        <div ref={paymentSectionRef} className="space-y-3">
           <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-primary" />
             Make a Payment
