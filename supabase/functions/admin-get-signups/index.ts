@@ -125,10 +125,22 @@ Deno.serve(async (req) => {
       .from("subscriptions")
       .select("user_id, plan, status, system_type");
 
+    // Get all staff member user_ids to exclude them
+    const { data: staffMembers } = await adminClient
+      .from("staff_members")
+      .select("user_id");
+
+    const staffUserIds = new Set(
+      (staffMembers || [])
+        .map((s) => s.user_id)
+        .filter(Boolean)
+    );
+
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
     const subMap = new Map((subscriptions || []).map((s) => [s.user_id, s]));
 
     const signups = usersData.users
+      .filter((user) => !staffUserIds.has(user.id)) // Exclude staff/workers
       .map((user) => {
         const profile = profileMap.get(user.id);
         const sub = subMap.get(user.id);

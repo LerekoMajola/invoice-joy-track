@@ -7,7 +7,7 @@ interface SignupsChartProps {
 
 export function SignupsChart({ data }: SignupsChartProps) {
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Signups Over Time</CardTitle>
         <CardDescription>New tenant registrations per month</CardDescription>
@@ -16,6 +16,12 @@ export function SignupsChart({ data }: SignupsChartProps) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
+              <defs>
+                <linearGradient id="signupBarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                </linearGradient>
+              </defs>
               <XAxis
                 dataKey="month"
                 stroke="hsl(var(--muted-foreground))"
@@ -40,8 +46,8 @@ export function SignupsChart({ data }: SignupsChartProps) {
               />
               <Bar
                 dataKey="count"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
+                fill="url(#signupBarGradient)"
+                radius={[6, 6, 0, 0]}
                 name="Signups"
               />
             </BarChart>
