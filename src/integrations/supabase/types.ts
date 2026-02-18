@@ -1604,6 +1604,218 @@ export type Database = {
           },
         ]
       }
+      gym_member_subscriptions: {
+        Row: {
+          amount_paid: number
+          auto_renew: boolean
+          company_profile_id: string | null
+          created_at: string
+          end_date: string
+          freeze_end: string | null
+          freeze_start: string | null
+          freezes_used: number
+          id: string
+          member_id: string
+          notes: string | null
+          payment_status: string
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          auto_renew?: boolean
+          company_profile_id?: string | null
+          created_at?: string
+          end_date: string
+          freeze_end?: string | null
+          freeze_start?: string | null
+          freezes_used?: number
+          id?: string
+          member_id: string
+          notes?: string | null
+          payment_status?: string
+          plan_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          auto_renew?: boolean
+          company_profile_id?: string | null
+          created_at?: string
+          end_date?: string
+          freeze_end?: string | null
+          freeze_start?: string | null
+          freezes_used?: number
+          id?: string
+          member_id?: string
+          notes?: string | null
+          payment_status?: string
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_member_subscriptions_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_member_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_member_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "gym_membership_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_members: {
+        Row: {
+          address: string | null
+          company_profile_id: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string
+          gender: string | null
+          health_conditions: string | null
+          id: string
+          join_date: string
+          last_name: string
+          member_number: string
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name: string
+          gender?: string | null
+          health_conditions?: string | null
+          id?: string
+          join_date?: string
+          last_name: string
+          member_number: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string
+          gender?: string | null
+          health_conditions?: string | null
+          id?: string
+          join_date?: string
+          last_name?: string
+          member_number?: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_members_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_membership_plans: {
+        Row: {
+          category: string
+          company_profile_id: string | null
+          created_at: string
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean
+          max_freezes: number
+          name: string
+          price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_freezes?: number
+          name: string
+          price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_freezes?: number
+          name?: string
+          price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_membership_plans_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hire_order_items: {
         Row: {
           condition_in: string | null
