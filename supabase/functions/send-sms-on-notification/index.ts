@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { notification_id, user_id, title, message } = await req.json();
+    const { notification_id, user_id, title, message, company_profile_id } = await req.json();
 
     if (!user_id || !message) {
       return new Response(
@@ -81,16 +81,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get user's phone from company_profiles (prefer profile with a phone number)
-    const { data: profiles } = await supabaseAdmin
-      .from("company_profiles")
-      .select("phone")
-      .eq("user_id", user_id)
-      .not("phone", "is", null);
+    // Resolve phone number with fallback chain:
+    // 1. Specific company_profile_id from the notification
+    // 2. Active company from user_preferences
+    // 3. Any profile with a phone number
+    let phone: string | null = null;
 
-    const profile = profiles?.[0] || null;
+    if (company_profile_id) {
+      const { data: profile } = await supabaseAdmin
+        .from("company_profiles")
+        .select("phone")
+        .eq("id", company_profile_id)
+        .maybeSingle();
+      phone = profile?.phone || null;
+    }
 
-    if (!profile?.phone) {
+    if (!phone) {
+      // Fallback: active company from user_preferences
+      const { data: userPrefs } = await supabaseAdmin
+        .from("user_preferences")
+        .select("active_company_id")
+        .eq("user_id", user_id)
+        .maybeSingle();
+
+      if (userPrefs?.active_company_id) {
+        const { data: activeProfile } = await supabaseAdmin
+          .from("company_profiles")
+          .select("phone")
+          .eq("id", userPrefs.active_company_id)
+          .maybeSingle();
+        phone = activeProfile?.phone || null;
+      }
+    }
+
+    if (!phone) {
+      // Final fallback: any profile with a phone
+      const { data: profiles } = await supabaseAdmin
+        .from("company_profiles")
+        .select("phone")
+        .eq("user_id", user_id)
+        .not("phone", "is", null);
+      phone = profiles?.[0]?.phone || null;
+    }
+
+    if (!phone) {
       console.log("No phone number for user", user_id);
       return new Response(
         JSON.stringify({ skipped: true, reason: "no_phone" }),
@@ -109,7 +143,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!existingCredits) {
-      // Look up subscription plan to determine default credits
       const { data: sub } = await supabaseAdmin
         .from("subscriptions")
         .select("plan")
@@ -141,7 +174,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           user_id,
-          phone: profile.phone,
+          phone,
           message: truncated,
           notification_id,
         }),
