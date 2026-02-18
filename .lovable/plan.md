@@ -1,21 +1,49 @@
 
-## Fix: Additional Company Profiles Appearing as Separate Billing Entries
+## Safe Delete with Company Name Confirmation + 90-Day Recycle Bin
 
-### The Problem
-The multi-company feature allows a single tenant to create up to 5 company profiles under one subscription. The `useAdminTenants` hook fetches every row from `company_profiles` and maps each one as a separate "tenant" in the Billing tab. This means one real customer with 3 company profiles shows up as 3 separate billing rows -- all called "My Company" with duplicate subscription data.
+### What Changes
 
-### The Fix
+**1. Type-to-confirm delete dialog**
+Replace the current simple "Confirm" dialog for deleting tenants with a stricter dialog that requires you to type the exact company name before the Delete button becomes active. This prevents accidental deletions of paying customers.
+
+**2. Soft-delete with recycle bin**
+Instead of permanently deleting tenant data, the system will soft-delete by marking records as deleted with a timestamp. A new "Recycle Bin" section appears in the Tenants tab showing recently deleted companies. You can restore them within 90 days. After 90 days they remain in the bin but are marked as expired (permanent cleanup can be added later if needed).
+
+---
+
+### Technical Details
+
+**Database Migration -- add soft-delete columns:**
+- Add `deleted_at` (timestamptz, nullable) to `company_profiles`
+- Add `deleted_at` (timestamptz, nullable) to `subscriptions`
+- Update RLS policies so deleted records are excluded from normal tenant queries
+
+**File: `src/components/admin/TenantsTab.tsx`**
+- Replace the simple `ConfirmDialog` with a new `TypeToConfirmDeleteDialog` component
+- The dialog shows the company name and requires the user to type it exactly to enable the Delete button
+- Change `deleteMutation` from hard-delete to soft-delete: `UPDATE company_profiles SET deleted_at = now()` and `UPDATE subscriptions SET deleted_at = now()`
+- Add a "Recycle Bin" toggle/section at the bottom that shows soft-deleted tenants (where `deleted_at IS NOT NULL`)
+- Each recycled item shows: company name, deleted date, days remaining until 90-day expiry, and a "Restore" button
 
 **File: `src/hooks/useAdminTenants.tsx`**
+- Add a `deleted_at` field to the `Tenant` interface
+- Update the query to filter: `is('deleted_at', null)` for the main list
+- Add a separate query key `admin-tenants-deleted` that fetches tenants where `deleted_at IS NOT NULL` for the recycle bin view
 
-After building the tenants array from all company profiles, deduplicate by `user_id` so each subscription holder appears only once. The logic:
+**File: `src/components/admin/TypeToConfirmDeleteDialog.tsx`** (new file)
+- A dialog component with:
+  - Warning text explaining the action
+  - The company name displayed in bold
+  - An input field where the admin must type the exact company name
+  - The Delete button stays disabled until the typed text matches exactly (case-sensitive)
+  - Red/destructive styling to make it feel serious
 
-1. Group all company profiles by `user_id`
-2. For each `user_id`, pick the **primary** company profile (the one that has been properly named/onboarded, or the earliest created one as fallback)
-3. Only include entries that have a matching subscription (no subscription = not a billing customer)
+**File: `src/components/admin/RecycleBinSection.tsx`** (new file)
+- A collapsible section showing soft-deleted tenants
+- Each row displays: company name, deletion date, "X days remaining" badge
+- Restore button triggers: `UPDATE company_profiles SET deleted_at = null` and same for subscriptions
+- Items older than 90 days show an "Expired" badge instead of days remaining (data stays but is clearly marked)
 
-This ensures:
-- Each real tenant appears exactly once in the Billing tab
-- The displayed company name is their primary/onboarded profile name
-- Additional company profiles they created for multi-company management are hidden from the admin billing view
-- Tenants without subscriptions don't appear in billing at all
+**Restore logic:**
+- Restoring sets `deleted_at = null` on both `company_profiles` and `subscriptions` for that `user_id`
+- Invalidates both `admin-tenants` and `admin-tenants-deleted` query keys
