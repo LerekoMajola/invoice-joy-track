@@ -6,7 +6,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
 import { AdminInvoice } from '@/hooks/useAdminInvoices';
-import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 interface AdminInvoicePreviewProps {
@@ -27,8 +28,36 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
   const taxAmount = invoice.subtotal * (invoice.tax_rate / 100);
 
   const handleDownloadPDF = async () => {
-    if (!contentRef.current) return;
-    await exportSectionBasedPDF(contentRef.current, `${invoice.invoice_number}.pdf`);
+    const el = contentRef.current;
+    if (!el) return;
+
+    const SCALE = 3;
+    const canvas = await html2canvas(el, {
+      scale: SCALE,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: el.offsetWidth,
+      windowWidth: el.offsetWidth,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pxW = canvas.width / SCALE;
+    const pxH = canvas.height / SCALE;
+
+    // A4 dimensions
+    const A4_W = 210;
+    const A4_H = 297;
+    const MARGIN = 10;
+    const contentW = A4_W - MARGIN * 2;
+    const scaleFactor = contentW / pxW;
+    const contentH = pxH * scaleFactor;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'JPEG', MARGIN, MARGIN, contentW, contentH, undefined, 'NONE');
+    pdf.save(`${invoice.invoice_number}.pdf`);
   };
 
   const subscriptionRef = `REF-${invoice.tenant_user_id.slice(0, 8).toUpperCase()}`;
@@ -62,7 +91,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             }}
           >
             {/* Navy Header */}
-            <div data-pdf-section style={{ background: NAVY, padding: '20px 28px' }}>
+            <div style={{ background: NAVY, padding: '20px 28px' }}>
               <table style={{ width: '100%' }}>
                 <tbody>
                   <tr>
@@ -90,7 +119,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             <div style={{ padding: '24px 28px' }}>
 
               {/* Bill To & Details */}
-              <div data-pdf-section style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Bill To</div>
                   <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>{invoice.company_name}</div>
@@ -120,7 +149,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Line Items */}
-              <div data-pdf-section style={{ marginBottom: '24px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <div style={{ marginBottom: '24px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: NAVY }}>
@@ -151,7 +180,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Totals */}
-              <div data-pdf-section style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
                 <div style={{ width: '220px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                   <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: '#f8fafc' }}>
                     <span style={{ color: '#6b7280' }}>Subtotal</span>
@@ -171,7 +200,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Banking Details */}
-              <div data-pdf-section style={{ marginBottom: '16px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #c7d2fe' }}>
+              <div style={{ marginBottom: '16px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #c7d2fe' }}>
                 <div style={{ background: '#eef2ff', padding: '6px 12px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: NAVY }}>Banking Details</div>
                 </div>
@@ -184,14 +213,14 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Send POP instruction */}
-              <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '11px', textAlign: 'center' }}>
+              <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '11px', textAlign: 'center' }}>
                 <span style={{ color: '#1e40af', fontWeight: 600 }}>Please send Proof of Payment (POP) to </span>
                 <span style={{ color: NAVY, fontWeight: 700 }}>sales@orionlabslesotho.com</span>
               </div>
 
               {/* Notes */}
               {invoice.notes && (
-                <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#fffbeb', border: '1px solid #fde68a' }}>
                   <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#d97706', marginBottom: '4px' }}>Notes</div>
                   <div style={{ fontSize: '11px', color: '#374151', whiteSpace: 'pre-wrap' }}>{invoice.notes}</div>
                 </div>
@@ -199,7 +228,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
 
               {/* Payment confirmation */}
               {invoice.status === 'paid' && invoice.payment_method && (
-                <div data-pdf-section style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '11px' }}>
+                <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '11px' }}>
                   <span style={{ fontWeight: 600, color: '#166534' }}>✓ Payment Received</span>
                   <span style={{ color: '#15803d' }}> via {invoice.payment_method}</span>
                   {invoice.payment_reference && <span style={{ color: '#16a34a' }}> (Ref: {invoice.payment_reference})</span>}
@@ -208,7 +237,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             </div>
 
             {/* Footer */}
-            <div data-pdf-section style={{ background: NAVY, padding: '14px 28px', textAlign: 'center', marginTop: 'auto' }}>
+            <div style={{ background: NAVY, padding: '14px 28px', textAlign: 'center', marginTop: 'auto' }}>
               <div style={{ fontSize: '12px', fontWeight: 500, color: 'white' }}>Thank you for your business!</div>
               <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '4px' }}>Orion Labs · Pioneer Mall, Maseru, Lesotho · sales@orionlabslesotho.com</div>
             </div>
