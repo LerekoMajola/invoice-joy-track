@@ -82,10 +82,8 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </table>
             </div>
 
-            {/* Terms Strip */}
-            <div data-pdf-section style={{ background: '#eef2ff', padding: '8px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: 500 }}>Payment Terms: Due on Receipt</span>
-            </div>
+
+
 
             {/* Body */}
             <div style={{ padding: '24px 28px' }}>
@@ -106,8 +104,8 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                         <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.issue_date), 'MMM d, yyyy')}</td>
                       </tr>
                       <tr>
-                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Due Date</td>
-                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.due_date), 'MMM d, yyyy')}</td>
+                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Payment Terms</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#1a1a2e' }}>Due on Receipt</td>
                       </tr>
                       {invoice.payment_date && (
                         <tr>
