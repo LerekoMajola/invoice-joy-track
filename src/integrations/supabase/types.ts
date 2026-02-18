@@ -521,6 +521,7 @@ export type Database = {
           default_tax_rate: number | null
           default_terms: string | null
           default_validity_days: number | null
+          deleted_at: string | null
           email: string | null
           footer_text: string | null
           header_info: string | null
@@ -564,6 +565,7 @@ export type Database = {
           default_tax_rate?: number | null
           default_terms?: string | null
           default_validity_days?: number | null
+          deleted_at?: string | null
           email?: string | null
           footer_text?: string | null
           header_info?: string | null
@@ -607,6 +609,7 @@ export type Database = {
           default_tax_rate?: number | null
           default_terms?: string | null
           default_validity_days?: number | null
+          deleted_at?: string | null
           email?: string | null
           footer_text?: string | null
           header_info?: string | null
@@ -4127,6 +4130,7 @@ export type Database = {
           created_at: string | null
           current_period_end: string | null
           current_period_start: string | null
+          deleted_at: string | null
           id: string
           payment_method: string | null
           payment_reference: string | null
@@ -4141,6 +4145,7 @@ export type Database = {
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          deleted_at?: string | null
           id?: string
           payment_method?: string | null
           payment_reference?: string | null
@@ -4155,6 +4160,7 @@ export type Database = {
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          deleted_at?: string | null
           id?: string
           payment_method?: string | null
           payment_reference?: string | null

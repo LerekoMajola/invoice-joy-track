@@ -35,6 +35,7 @@ export function useAdminTenants() {
       const { data: profiles, error: profilesError } = await supabase
         .from('company_profiles')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (profilesError) {
@@ -45,7 +46,8 @@ export function useAdminTenants() {
       // Fetch all subscriptions
       const { data: subscriptions, error: subsError } = await supabase
         .from('subscriptions')
-        .select('*');
+        .select('*')
+        .is('deleted_at', null);
 
       if (subsError) {
         console.error('Error fetching subscriptions:', subsError);

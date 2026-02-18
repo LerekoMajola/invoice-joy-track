@@ -26,7 +26,8 @@ import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { TenantDetailDialog } from './TenantDetailDialog';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { TypeToConfirmDeleteDialog } from './TypeToConfirmDeleteDialog';
+import { RecycleBinSection } from './RecycleBinSection';
 const statusColors: Record<string, string> = {
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
@@ -73,23 +74,24 @@ export function TenantsTab() {
 
   const deleteMutation = useMutation({
     mutationFn: async (tenant: Tenant) => {
-      // Delete subscription first (if exists), then company profile
+      // Soft-delete: mark with deleted_at timestamp
       const { error: subError } = await supabase
         .from('subscriptions')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() } as any)
         .eq('user_id', tenant.user_id);
       if (subError) throw subError;
 
       const { error: profileError } = await supabase
         .from('company_profiles')
-        .delete()
-        .eq('id', tenant.id);
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .eq('user_id', tenant.user_id);
       if (profileError) throw profileError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants-deleted'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success('Tenant deleted successfully');
+      toast.success('Tenant moved to recycle bin');
     },
     onError: (error) => {
       console.error('Delete tenant error:', error);
@@ -277,15 +279,19 @@ export function TenantsTab() {
         onOpenChange={(open) => !open && setEditingTenant(null)}
       />
 
-      <ConfirmDialog
+      <TypeToConfirmDeleteDialog
         open={!!deletingTenant}
         onOpenChange={(open) => !open && setDeletingTenant(null)}
-        title="Delete Tenant"
-        description={`This will permanently delete "${deletingTenant?.company_name}" and their subscription. This action cannot be undone.`}
-        onConfirm={() => deletingTenant && deleteMutation.mutate(deletingTenant)}
-        variant="destructive"
-        confirmLabel="Delete"
+        companyName={deletingTenant?.company_name || ''}
+        onConfirm={() => {
+          if (deletingTenant) {
+            deleteMutation.mutate(deletingTenant);
+            setDeletingTenant(null);
+          }
+        }}
       />
+
+      <RecycleBinSection />
     </div>
   );
 }
