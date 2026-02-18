@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +16,11 @@ import {
 import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
 import { PaymentTracker } from './PaymentTracker';
+import { GenerateAdminInvoiceDialog } from './GenerateAdminInvoiceDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaluti } from '@/lib/currency';
 import { Separator } from '@/components/ui/separator';
-
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const statusColors: Record<string, string> = {
   trialing: 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
@@ -43,7 +44,7 @@ export function SubscriptionsTab() {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
-
+  const [invoiceTenant, setInvoiceTenant] = useState<Tenant | null>(null);
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -159,16 +160,33 @@ export function SubscriptionsTab() {
                       : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTenant(tenant);
-                      }}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInvoiceTenant(tenant);
+                            }}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Generate Invoice</TooltipContent>
+                      </Tooltip>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTenant(tenant);
+                        }}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -225,6 +243,12 @@ export function SubscriptionsTab() {
         tenant={editingTenant}
         open={!!editingTenant}
         onOpenChange={(open) => !open && setEditingTenant(null)}
+      />
+
+      <GenerateAdminInvoiceDialog
+        open={!!invoiceTenant}
+        onOpenChange={(open) => !open && setInvoiceTenant(null)}
+        preselectedTenant={invoiceTenant}
       />
     </div>
   );

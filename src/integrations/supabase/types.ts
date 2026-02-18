@@ -124,6 +124,83 @@ export type Database = {
           },
         ]
       }
+      admin_invoices: {
+        Row: {
+          company_name: string
+          company_profile_id: string | null
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          line_items: Json
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          status: string
+          subtotal: number
+          tax_rate: number
+          tenant_email: string | null
+          tenant_user_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          company_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          line_items?: Json
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          subtotal?: number
+          tax_rate?: number
+          tenant_email?: string | null
+          tenant_user_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          company_profile_id?: string | null
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          line_items?: Json
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          subtotal?: number
+          tax_rate?: number
+          tenant_email?: string | null
+          tenant_user_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invoices_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_accounts: {
         Row: {
           account_name: string
