@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { format, addMonths } from 'date-fns';
-import { Download } from 'lucide-react';
+import { Download, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -9,6 +10,8 @@ import { AdminInvoice } from '@/hooks/useAdminInvoices';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AdminInvoicePreviewProps {
   invoice: AdminInvoice | null;
@@ -21,6 +24,9 @@ const NAVY = '#1a1a2e';
 export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoicePreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const { logoUrl } = usePlatformSettings();
+  const [sendEmail, setSendEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
 
   if (!invoice) return null;
 
@@ -60,6 +66,24 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
     pdf.save(`${invoice.invoice_number}.pdf`);
   };
 
+  const handleSendEmail = async () => {
+    if (!sendEmail.trim()) return;
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-admin-invoice', {
+        body: { invoiceId: invoice.id, recipientEmail: sendEmail.trim() },
+      });
+      if (error) throw error;
+      toast.success(`Invoice sent to ${sendEmail.trim()}`);
+      setShowEmailInput(false);
+      setSendEmail('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send email');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const subscriptionRef = `REF-${invoice.tenant_user_id.slice(0, 8).toUpperCase()}`;
 
   const statusColor =
@@ -72,10 +96,31 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
       <SheetContent side="right" className="w-full sm:max-w-[680px] overflow-y-auto p-0">
         <SheetHeader className="flex flex-row items-center justify-between px-6 py-4 border-b">
           <SheetTitle>Invoice Preview</SheetTitle>
-          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" /> Download PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowEmailInput(!showEmailInput)}>
+              <Send className="h-4 w-4 mr-2" /> Email
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="h-4 w-4 mr-2" /> PDF
+            </Button>
+          </div>
         </SheetHeader>
+
+        {showEmailInput && (
+          <div className="px-6 py-3 border-b bg-muted/30 flex gap-2 items-center">
+            <Input
+              type="email"
+              placeholder="Recipient email..."
+              value={sendEmail}
+              onChange={(e) => setSendEmail(e.target.value)}
+              className="flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleSendEmail()}
+            />
+            <Button size="sm" onClick={handleSendEmail} disabled={sending || !sendEmail.trim()}>
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
+            </Button>
+          </div>
+        )}
 
         <div className="p-4 flex justify-center">
           {/* A4 proportioned container: 210:297 ratio */}

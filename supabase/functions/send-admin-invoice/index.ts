@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { invoiceId } = await req.json();
+    const { invoiceId, recipientEmail } = await req.json();
     if (!invoiceId) {
       return new Response(JSON.stringify({ error: "Missing invoiceId" }), {
         status: 400,
@@ -56,8 +56,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!invoice.tenant_email) {
-      return new Response(JSON.stringify({ error: "No tenant email" }), {
+    const sendTo = recipientEmail || invoice.tenant_email;
+    if (!sendTo) {
+      return new Response(JSON.stringify({ error: "No recipient email" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -178,7 +179,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Orion Labs <updates@updates.orionlabslesotho.com>",
-        to: [invoice.tenant_email],
+        to: [sendTo],
         subject: `Invoice ${invoice.invoice_number} from Orion Labs — M${invoice.total.toFixed(2)}`,
         html,
       }),
