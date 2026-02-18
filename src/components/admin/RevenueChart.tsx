@@ -8,7 +8,7 @@ interface RevenueChartProps {
 
 export function RevenueChart({ data }: RevenueChartProps) {
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Revenue Trend</CardTitle>
         <CardDescription>Monthly subscription revenue</CardDescription>
@@ -19,8 +19,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -49,7 +49,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               <Area
                 type="monotone"
                 dataKey="revenue"
-                stroke="hsl(var(--primary))"
+                stroke="#10b981"
                 strokeWidth={2}
                 fill="url(#revenueGradient)"
               />
