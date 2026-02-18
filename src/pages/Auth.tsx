@@ -645,7 +645,7 @@ export default function Auth() {
 
           <TrustBadges />
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <button
               type="button"
               onClick={() => { setIsLogin(false); setSignupStep('system'); }}
@@ -653,6 +653,11 @@ export default function Auth() {
             >
               Don't have an account? Sign up
             </button>
+            <div>
+              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Back to home
+              </Link>
+            </div>
           </div>
 
           <div className="mt-6 text-center flex items-center justify-center gap-1.5">
