@@ -90,6 +90,16 @@ export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt 
           });
         if (error) throw error;
       }
+
+      // Auto-restore subscription status if payment is for current month
+      const paymentMonth = new Date(currentYear, monthIndex, 1);
+      if (isSameMonth(paymentMonth, now)) {
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'active' })
+          .eq('id', subscriptionId)
+          .eq('status', 'past_due');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-payments', subscriptionId] });
