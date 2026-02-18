@@ -1,32 +1,36 @@
 
-## Email Reminders for Stale Tender Source Links
 
-### Current State
-The system already has:
-- A `check-tender-links` function that runs daily at 8 AM via a cron job
-- It creates in-app notifications for links not visited in 2+ days
-- A database trigger (`notify_email_on_notification`) that automatically sends emails when notifications are inserted
+## Fix: Payment Required Page Shows Blank White Screen
 
-### The Problem
-The `check-tender-links` function is missing two things:
-1. It doesn't fetch `company_profile_id` from the tender source links
-2. It doesn't include `company_profile_id` when inserting the notification
-
-Without `company_profile_id`, the email function can't resolve the correct business email for the user, so emails may go to the wrong address or fail silently.
+### Root Cause
+The `/payment-required` route is wrapped in `ProtectedRoute`. When a user's trial expires, `ProtectedRoute` detects `needsPayment=true` and renders `<Navigate to="/payment-required">`. But since PaymentRequired is *inside* ProtectedRoute, it triggers the same check again, creating a redirect loop. The beautiful PaymentRequired design never actually renders -- the user just sees a white screen.
 
 ### The Fix
 
-**File: `supabase/functions/check-tender-links/index.ts`**
+**File: `src/App.tsx`**
 
-Two small changes:
+Remove the `ProtectedRoute` wrapper from the `/payment-required` route. PaymentRequired already has its own authentication guard via `useAuth` and its own subscription check via `useSubscription`, so it doesn't need ProtectedRoute.
 
-1. Add `company_profile_id` to the select query:
-   - Change: `.select("id, user_id, name, last_visited_at")`
-   - To: `.select("id, user_id, name, last_visited_at, company_profile_id")`
+Change:
+```tsx
+<Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
+```
+To:
+```tsx
+<Route path="/payment-required" element={<PaymentRequired />} />
+```
 
-2. Include `company_profile_id` in the notification insert:
-   - Add `company_profile_id: link.company_profile_id` to the insert object
+**File: `src/pages/PaymentRequired.tsx`**
 
-This ensures the existing email trigger pipeline has the company context it needs to deliver emails to the correct business email address.
+Add a minimal auth guard so unauthenticated users hitting `/payment-required` directly get redirected to `/auth`:
 
-No new functions, no new cron jobs, no database changes needed -- everything else is already wired up.
+- If `useAuth()` is still loading, show a branded loading state (with the gradient background, not a white page)
+- If no user, redirect to `/auth`
+- If user has no expired trial (`!needsPayment`), redirect to `/dashboard` (already implemented)
+
+This way:
+- Expired-trial users see the full payment page immediately
+- Unauthenticated users go to login
+- Active users go to dashboard
+- No redirect loop
+
