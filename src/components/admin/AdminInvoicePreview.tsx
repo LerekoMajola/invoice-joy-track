@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { format, addMonths } from 'date-fns';
-import { Download, Send, Loader2 } from 'lucide-react';
+import { Download, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,9 +25,12 @@ const NAVY = '#1a1a2e';
 export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoicePreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const { logoUrl } = usePlatformSettings();
+  const queryClient = useQueryClient();
   const [sendEmail, setSendEmail] = useState(invoice?.tenant_email || '');
   const [sending, setSending] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState(invoice?.email_sent_to || null);
+  const [emailSentAt, setEmailSentAt] = useState(invoice?.email_sent_at || null);
 
   if (!invoice) return null;
 
@@ -115,6 +119,18 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
         },
       });
       if (error) throw error;
+      
+      // Update email sent tracking
+      const now = new Date().toISOString();
+      await supabase
+        .from('admin_invoices')
+        .update({ email_sent_at: now, email_sent_to: sendEmail.trim() } as any)
+        .eq('id', invoice.id);
+      
+      setEmailSentTo(sendEmail.trim());
+      setEmailSentAt(now);
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
+      
       toast.success(`Invoice sent to ${sendEmail.trim()}`);
       setShowEmailInput(false);
     } catch (err: any) {
@@ -145,6 +161,15 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             </Button>
           </div>
         </SheetHeader>
+
+        {emailSentTo && emailSentAt && (
+          <div className="px-6 py-2 border-b bg-green-50 dark:bg-green-950/30 flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>
+              Emailed to <strong>{emailSentTo}</strong> on {format(new Date(emailSentAt), 'MMM d, yyyy \'at\' HH:mm')}
+            </span>
+          </div>
+        )}
 
         {showEmailInput && (
           <div className="px-6 py-3 border-b bg-muted/30 flex gap-2 items-center">
