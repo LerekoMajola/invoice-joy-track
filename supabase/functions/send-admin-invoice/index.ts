@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch invoice
     const { data: invoice, error: invError } = await supabase
       .from("admin_invoices")
       .select("*")
@@ -67,11 +66,11 @@ Deno.serve(async (req) => {
     const lineItems = Array.isArray(invoice.line_items) ? invoice.line_items : [];
     const taxAmount = invoice.subtotal * (invoice.tax_rate / 100);
 
-    // Build HTML email
     const itemsHtml = lineItems
       .map(
-        (item: any) => `
+        (item: any, i: number) => `
       <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee;color:#888;width:30px">${i + 1}</td>
         <td style="padding:8px;border-bottom:1px solid #eee">${item.description}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">M${Number(item.unit_price).toFixed(2)}</td>
@@ -91,11 +90,21 @@ Deno.serve(async (req) => {
       year: "numeric",
     });
 
+    const logoUrl = "https://invoice-joy-track.lovable.app/pwa-192x192.png";
+
     const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#333">
       <div style="background:#1a1a2e;color:white;padding:24px;border-radius:8px 8px 0 0">
-        <h1 style="margin:0;font-size:24px">Orion Labs</h1>
-        <p style="margin:4px 0 0;opacity:0.8;font-size:14px">Business Management Platform</p>
+        <table style="width:100%"><tr>
+          <td style="vertical-align:middle">
+            <img src="${logoUrl}" alt="Orion Labs" style="height:48px;width:48px;border-radius:8px;margin-right:12px" />
+          </td>
+          <td style="vertical-align:middle;width:100%">
+            <h1 style="margin:0;font-size:24px">Orion Labs</h1>
+            <p style="margin:4px 0 0;opacity:0.8;font-size:14px">Pioneer Mall, Maseru, Lesotho</p>
+            <p style="margin:2px 0 0;opacity:0.7;font-size:13px">sales@orionlabslesotho.com</p>
+          </td>
+        </tr></table>
       </div>
       <div style="padding:24px;border:1px solid #eee;border-top:none">
         <div style="display:flex;justify-content:space-between;margin-bottom:24px">
@@ -109,13 +118,15 @@ Deno.serve(async (req) => {
           <p style="font-weight:bold;margin:0">${invoice.company_name}</p>
           <p style="margin:2px 0;color:#666">${invoice.tenant_email}</p>
         </div>
-        <div style="margin-bottom:24px;font-size:14px">
+        <div style="margin-bottom:16px;font-size:14px">
           <p style="margin:2px 0"><strong>Issue Date:</strong> ${issueDate}</p>
           <p style="margin:2px 0"><strong>Due Date:</strong> ${dueDate}</p>
+          <p style="margin:6px 0 0;font-weight:bold;color:#1a1a2e">Payment Terms: Due on Receipt</p>
         </div>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
           <thead>
             <tr style="background:#f8f9fa">
+              <th style="padding:8px;text-align:left;font-size:12px;color:#888;width:30px">#</th>
               <th style="padding:8px;text-align:left;font-size:12px;color:#888">Description</th>
               <th style="padding:8px;text-align:center;font-size:12px;color:#888">Qty</th>
               <th style="padding:8px;text-align:right;font-size:12px;color:#888">Unit Price</th>
@@ -129,14 +140,23 @@ Deno.serve(async (req) => {
           ${invoice.tax_rate > 0 ? `<p style="margin:4px 0;font-size:14px"><span style="color:#888">Tax (${invoice.tax_rate}%):</span> M${taxAmount.toFixed(2)}</p>` : ""}
           <p style="margin:8px 0 0;font-size:20px;font-weight:bold">Total: M${invoice.total.toFixed(2)}</p>
         </div>
-        ${invoice.notes ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;font-size:14px"><p style="color:#888;font-size:12px;margin:0 0 4px">Notes</p><p style="margin:0">${invoice.notes}</p></div>` : ""}
+        <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:24px;border:1px solid #eee">
+          <p style="color:#888;font-size:12px;margin:0 0 8px;font-weight:bold;text-transform:uppercase">Banking Details</p>
+          <table style="font-size:14px">
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Bank:</td><td style="font-weight:600">First National Bank (FNB)</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Branch:</td><td style="font-weight:600">Pioneer Mall</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Account Number:</td><td style="font-weight:600">63027317585</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Reference:</td><td style="font-weight:600">${invoice.invoice_number}</td></tr>
+          </table>
+        </div>
+        ${invoice.notes ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;font-size:14px;margin-bottom:24px"><p style="color:#888;font-size:12px;margin:0 0 4px">Notes</p><p style="margin:0">${invoice.notes}</p></div>` : ""}
       </div>
-      <div style="text-align:center;padding:16px;color:#888;font-size:12px">
-        <p>Orion Labs &middot; Maseru, Lesotho</p>
+      <div style="text-align:center;padding:20px;border:1px solid #eee;border-top:none;border-radius:0 0 8px 8px;background:#fafafa">
+        <p style="margin:0;font-size:14px;font-weight:600;color:#333">Thank you for your business!</p>
+        <p style="margin:6px 0 0;color:#888;font-size:12px">Orion Labs &middot; Pioneer Mall, Maseru, Lesotho &middot; sales@orionlabslesotho.com</p>
       </div>
     </div>`;
 
-    // Send via Resend
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) {
       return new Response(JSON.stringify({ error: "Email not configured" }), {
@@ -152,7 +172,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Orion Labs <updates@orionlabslesotho.com>",
+        from: "Orion Labs <updates@updates.orionlabslesotho.com>",
         to: [invoice.tenant_email],
         subject: `Invoice ${invoice.invoice_number} from Orion Labs — M${invoice.total.toFixed(2)}`,
         html,
@@ -168,7 +188,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update status to sent
     const serviceClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
