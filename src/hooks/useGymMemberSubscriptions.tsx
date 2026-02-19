@@ -34,6 +34,7 @@ export interface GymMemberSubscriptionInsert {
   amountPaid?: number;
   autoRenew?: boolean;
   notes?: string;
+  planName?: string;
 }
 
 export function useGymMemberSubscriptions(memberId?: string) {
@@ -110,6 +111,7 @@ export function useGymMemberSubscriptions(memberId?: string) {
         company_profile_id: activeCompanyId || null,
         member_id: sub.memberId,
         plan_id: sub.planId,
+        plan_name: sub.planName || null,
         start_date: sub.startDate,
         end_date: sub.endDate,
         payment_status: sub.paymentStatus || 'pending',
