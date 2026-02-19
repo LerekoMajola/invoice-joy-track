@@ -7,6 +7,7 @@ import { Features } from '@/components/landing/Features';
 import { PricingTable } from '@/components/landing/PricingTable';
 import { Testimonials } from '@/components/landing/Testimonials';
 import { Footer } from '@/components/landing/Footer';
+import { Coverage } from '@/components/landing/Coverage';
 
 export default function Landing() {
   const { user, isAdmin, loading } = useAuth();
@@ -32,6 +33,7 @@ export default function Landing() {
       <Hero />
       <Solutions />
       <Features />
+      <Coverage />
       <Testimonials />
       <PricingTable />
       <Footer />
