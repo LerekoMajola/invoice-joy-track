@@ -1959,6 +1959,48 @@ export type Database = {
           },
         ]
       }
+      gym_class_bookings: {
+        Row: {
+          booked_at: string
+          id: string
+          member_id: string
+          schedule_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          booked_at?: string
+          id?: string
+          member_id: string
+          schedule_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          booked_at?: string
+          id?: string
+          member_id?: string
+          schedule_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_class_bookings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_class_bookings_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "gym_class_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_class_schedules: {
         Row: {
           class_id: string
