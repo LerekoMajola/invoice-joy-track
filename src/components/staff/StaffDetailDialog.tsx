@@ -73,12 +73,7 @@ const departments = [
   { value: 'other', label: 'Other' },
 ];
 
-const roles = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'staff', label: 'Staff' },
-  { value: 'viewer', label: 'Viewer' },
-];
+const defaultRoles = ['Admin', 'Manager', 'Staff', 'Viewer'];
 
 const getStatusBadge = (status: StaffStatus) => {
   switch (status) {
@@ -94,18 +89,7 @@ const getStatusBadge = (status: StaffStatus) => {
 };
 
 const getRoleBadge = (role: StaffRole) => {
-  switch (role) {
-    case 'admin':
-      return <Badge className="bg-red-500/10 text-red-600 border-red-200">Admin</Badge>;
-    case 'manager':
-      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200">Manager</Badge>;
-    case 'staff':
-      return <Badge className="bg-green-500/10 text-green-600 border-green-200">Staff</Badge>;
-    case 'viewer':
-      return <Badge variant="secondary">Viewer</Badge>;
-    default:
-      return <Badge variant="outline">{role}</Badge>;
-  }
+  return <Badge variant="outline" className="capitalize">{role}</Badge>;
 };
 
 export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDialogProps) {
@@ -115,7 +99,11 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   const [isResending, setIsResending] = useState(false);
   const [editModuleIds, setEditModuleIds] = useState<string[]>([]);
   const [isSavingModule, setIsSavingModule] = useState(false);
-  const { updateStaff, updateStaffRole, deleteStaff } = useStaff();
+  const { updateStaff, updateStaffRole, deleteStaff, staff: allStaff } = useStaff();
+  const [customRoleInput, setCustomRoleInput] = useState('');
+  const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
+  const existingRoles = Array.from(new Set(allStaff.map(s => s.role).filter(Boolean)));
+  const allRoleSuggestions = Array.from(new Set([...defaultRoles, ...existingRoles]));
   const { toast } = useToast();
   const { userModules } = useModules();
   const { moduleIds, saveModuleAccess, isLoading: moduleAccessLoading } = useStaffModuleAccess(staff?.id);
@@ -452,18 +440,53 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                 {/* Role Selector */}
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Role</p>
-                  <Select value={staff.role} onValueChange={(v) => handleRoleChange(v as StaffRole)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {allRoleSuggestions.map((role) => (
+                        <Badge
+                          key={role}
+                          variant={staff.role === role ? 'default' : 'outline'}
+                          className="cursor-pointer text-xs"
+                          onClick={() => {
+                            handleRoleChange(role);
+                            setShowCustomRoleInput(false);
+                          }}
+                        >
+                          {role}
+                        </Badge>
                       ))}
-                    </SelectContent>
-                  </Select>
+                      <Badge
+                        variant={showCustomRoleInput ? 'default' : 'outline'}
+                        className="cursor-pointer text-xs"
+                        onClick={() => setShowCustomRoleInput(true)}
+                      >
+                        + Custom
+                      </Badge>
+                    </div>
+                    {showCustomRoleInput && (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Type custom role..."
+                          value={customRoleInput}
+                          onChange={(e) => setCustomRoleInput(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (customRoleInput.trim()) {
+                              handleRoleChange(customRoleInput.trim());
+                              setShowCustomRoleInput(false);
+                              setCustomRoleInput('');
+                            }
+                          }}
+                        >
+                          Set
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Module Access (Inline Checkboxes) */}

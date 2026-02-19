@@ -65,7 +65,6 @@ export function PayslipPreview({ payslip, open, onOpenChange }: PayslipPreviewPr
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'secondary';
       case 'approved': return 'default';
       case 'paid': return 'default';
       default: return 'secondary';

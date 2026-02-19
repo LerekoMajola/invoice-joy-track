@@ -16,7 +16,7 @@ import { Plus, Search, MoreVertical, Eye, CheckCircle, DollarSign, Trash2, FileT
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function PayrollTab() {
-  const { payslips, isLoading, approvePayslip, markAsPaid, deletePayslip, createPayslip, refetch } = usePayslips();
+  const { payslips, isLoading, markAsPaid, deletePayslip, createPayslip, refetch } = usePayslips();
   const { staff } = useStaff();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -33,8 +33,6 @@ export function PayrollTab() {
 
   const getStatusBadge = (status: PayslipStatus) => {
     switch (status) {
-      case 'draft':
-        return <Badge variant="secondary">Draft</Badge>;
       case 'approved':
         return <Badge variant="default" className="bg-primary/80 hover:bg-primary">Approved</Badge>;
       case 'paid':
@@ -42,9 +40,15 @@ export function PayrollTab() {
     }
   };
 
+  const thisMonthPayslips = payslips.filter(p => {
+    const d = new Date(p.paymentDate);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+
   const stats = {
     total: payslips.length,
-    draft: payslips.filter(p => p.status === 'draft').length,
+    thisMonth: thisMonthPayslips.length,
     approved: payslips.filter(p => p.status === 'approved').length,
     paid: payslips.filter(p => p.status === 'paid').length,
     totalAmount: payslips.reduce((sum, p) => sum + p.netPay, 0),
@@ -78,11 +82,11 @@ export function PayrollTab() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft</CardTitle>
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.draft}</div>
+            <div className="text-2xl font-bold">{stats.thisMonth}</div>
           </CardContent>
         </Card>
         <Card>
@@ -123,7 +127,6 @@ export function PayrollTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
             </SelectContent>
@@ -198,25 +201,10 @@ export function PayrollTab() {
                           <Eye className="mr-2 h-4 w-4" />
                           View Payslip
                         </DropdownMenuItem>
-                        {payslip.status === 'draft' && (
-                          <DropdownMenuItem onClick={() => approvePayslip(payslip.id)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Approve
-                          </DropdownMenuItem>
-                        )}
                         {payslip.status === 'approved' && (
                           <DropdownMenuItem onClick={() => markAsPaid(payslip.id)}>
                             <DollarSign className="mr-2 h-4 w-4" />
                             Mark as Paid
-                          </DropdownMenuItem>
-                        )}
-                        {payslip.status === 'draft' && (
-                          <DropdownMenuItem 
-                            onClick={() => deletePayslip(payslip.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>

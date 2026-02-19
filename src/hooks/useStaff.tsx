@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type StaffRole = 'admin' | 'manager' | 'staff' | 'viewer';
+export type StaffRole = string;
 export type StaffStatus = 'invited' | 'active' | 'inactive';
 
 export interface StaffMember {
@@ -123,6 +123,21 @@ export function useStaff() {
     fetchStaff();
   }, [fetchStaff]);
 
+  const generateEmployeeNumber = async (): Promise<string> => {
+    const { data } = await supabase
+      .from('staff_members')
+      .select('employee_number')
+      .eq('owner_user_id', user!.id)
+      .not('employee_number', 'is', null);
+
+    let maxNum = 0;
+    (data || []).forEach(s => {
+      const match = (s.employee_number as string | null)?.match(/^EMP(\d+)$/);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
+    });
+    return `EMP${String(maxNum + 1).padStart(3, '0')}`;
+  };
+
   const createStaff = async (data: CreateStaffData): Promise<StaffMember | null> => {
     if (!user) return null;
 
@@ -132,6 +147,8 @@ export function useStaff() {
     }
 
     try {
+      const employeeNumber = await generateEmployeeNumber();
+
       const { data: staffData, error: staffError } = await supabase
         .from('staff_members')
         .insert({
@@ -143,7 +160,7 @@ export function useStaff() {
           job_title: data.jobTitle || null,
           department: data.department || null,
           notes: data.notes || null,
-          employee_number: data.employeeNumber || null,
+          employee_number: employeeNumber,
           status: 'invited',
         })
         .select()

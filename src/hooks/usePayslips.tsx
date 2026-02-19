@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
 
-export type PayslipStatus = 'draft' | 'approved' | 'paid';
+export type PayslipStatus = 'approved' | 'paid';
 
 export interface AllowanceDeduction {
   name: string;
@@ -185,7 +185,7 @@ export function usePayslips() {
           gross_pay: totals.grossPay,
           net_pay: totals.netPay,
           notes: data.notes || null,
-          status: 'draft',
+          status: 'approved',
         })
         .select()
         .single();
@@ -305,10 +305,6 @@ export function usePayslips() {
     }
   };
 
-  const approvePayslip = async (id: string): Promise<boolean> => {
-    return updatePayslip(id, { status: 'approved' });
-  };
-
   const markAsPaid = async (id: string): Promise<boolean> => {
     const payslip = payslips.find(p => p.id === id);
     const result = await updatePayslip(id, { status: 'paid' });
@@ -339,7 +335,6 @@ export function usePayslips() {
     createPayslip,
     updatePayslip,
     deletePayslip,
-    approvePayslip,
     markAsPaid,
     refetch: fetchPayslips,
   };
