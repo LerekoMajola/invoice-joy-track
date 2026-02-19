@@ -131,13 +131,16 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="trialing">Trialing</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="past_due">Past Due</SelectItem>
+                <SelectItem value="trialing">Trialing — on free trial, not yet paying</SelectItem>
+                <SelectItem value="active">Active — confirmed payment received</SelectItem>
+                <SelectItem value="past_due">Past Due — trial ended, awaiting payment</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Only set to <strong>Active</strong> once payment is confirmed. Use the Billing sheet to record payments — this updates status automatically.
+            </p>
           </div>
 
           <div className="space-y-2">
