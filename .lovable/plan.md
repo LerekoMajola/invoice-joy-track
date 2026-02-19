@@ -1,56 +1,83 @@
 
 
-## Turn Orion Labs into a Native Android App with Capacitor
+## Equipment Catalogue Enhancements
 
-### What This Does
-Wraps your existing Orion Labs web app inside a native Android shell so it can be installed from the Google Play Store -- just like any other app. All your current features (invoices, CRM, fleet, gym, school, etc.) will work exactly as they do now.
+### 1. Update Equipment Catalogue Module Price
+The "Equipment Catalogue" module subscription cost will be updated to **M140.00**/month in the database.
 
-### What Changes in the Code
+### 2. Add Equipment Service Logs
+A new database table `equipment_service_logs` will track maintenance and service history per item:
+- Service date, type (repair, calibration, inspection)
+- Provider name, cost, parts replaced, notes
 
-**1. Install Capacitor packages**
-- `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`
+### 3. Add Equipment Incidents
+A new database table `equipment_incidents` will log damage, breakdowns, and other events:
+- Incident date, type (damage, breakdown, theft, loss)
+- Severity (minor, moderate, major), description, cost
+- Resolution status and photo evidence
 
-**2. Create `capacitor.config.ts`**
-- App ID: `app.lovable.67587da810ad4273a0f2b7869f6664a3`
-- App Name: `Orion Labs`
-- Points to your live preview URL for hot-reload during development
-- Web directory set to `dist` (your build output)
+### 4. Equipment Detail Dialog
+Clicking an equipment card will open a detail dialog with three tabs:
+- **Overview**: Full equipment info
+- **Services**: Service log history with "Add Service" button
+- **Incidents**: Incident history with "Add Incident" button
 
-**3. Update `vite.config.ts`**
-- Add `/~oauth` to the PWA service worker's `navigateFallbackDenylist` to prevent caching issues with authentication redirects
+### 5. Currency Display Fix
+The Equipment page will use the dynamic currency hook (`useCurrency`) instead of `formatMaluti()` so it respects each company's chosen currency.
 
-### What You Do on Your Computer
+---
 
-After I make the code changes, you will need to:
+### Technical Details
 
-1. **Export to GitHub** -- Go to Settings and click "Export to GitHub"
-2. **Clone the repo** locally and run `npm install`
-3. **Add Android platform** -- Run `npx cap add android`
-4. **Build and sync** -- Run `npm run build && npx cap sync`
-5. **Open in Android Studio** -- Run `npx cap run android`
-   - Android Studio is free and includes a phone emulator, so no physical device needed
-6. **Test in the emulator** -- Your full Orion Labs app will launch just like on a real phone
+**Data update (module price):**
+```sql
+UPDATE platform_modules SET monthly_price = 140 WHERE key = 'hire_equipment';
+```
 
-### Publishing to Google Play Store
+**New database tables:**
 
-Once you are happy with testing:
+```sql
+-- equipment_service_logs
+CREATE TABLE public.equipment_service_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  equipment_item_id UUID NOT NULL REFERENCES equipment_items(id) ON DELETE CASCADE,
+  company_profile_id UUID REFERENCES company_profiles(id),
+  service_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  service_type TEXT NOT NULL DEFAULT 'repair',
+  provider TEXT,
+  cost NUMERIC NOT NULL DEFAULT 0,
+  parts_replaced TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-1. Create a Google Play Developer account ($25 USD one-time fee)
-2. In Android Studio: Build > Generate Signed Bundle (AAB)
-3. Upload the AAB to the Google Play Console
-4. Fill in your store listing (app description, screenshots, icon)
-5. Submit for review (typically approved within hours to a few days)
+-- equipment_incidents
+CREATE TABLE public.equipment_incidents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  equipment_item_id UUID NOT NULL REFERENCES equipment_items(id) ON DELETE CASCADE,
+  company_profile_id UUID REFERENCES company_profiles(id),
+  incident_type TEXT NOT NULL DEFAULT 'damage',
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  severity TEXT NOT NULL DEFAULT 'minor',
+  description TEXT,
+  cost NUMERIC NOT NULL DEFAULT 0,
+  resolved BOOLEAN NOT NULL DEFAULT false,
+  photo_urls TEXT[],
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
 
-### Ongoing Workflow
+Both tables get RLS policies restricting access to the owner (`user_id = auth.uid()`).
 
-Whenever you make changes in Lovable:
-1. Pull the latest code from GitHub
-2. Run `npm run build && npx cap sync`
-3. Rebuild in Android Studio and upload a new version to the Play Store
+**New files:**
+- `src/hooks/useEquipmentServices.tsx` -- CRUD hook for service logs
+- `src/hooks/useEquipmentIncidents.tsx` -- CRUD hook for incidents
+- `src/components/hire/EquipmentDetailDialog.tsx` -- tabbed detail view
+- `src/components/hire/AddEquipmentServiceDialog.tsx` -- add service form
+- `src/components/hire/AddEquipmentIncidentDialog.tsx` -- add incident form
 
-### Technical Notes
-
-- The existing PWA configuration, offline support, and push notifications all carry over
-- No existing features are modified -- Capacitor is purely additive
-- Adding iOS later is straightforward: just run `npx cap add ios` and open in Xcode (requires a Mac and a $99/year Apple Developer account)
+**Modified files:**
+- `src/pages/Equipment.tsx` -- use `useCurrency` instead of `formatMaluti`, open detail dialog on card click
 
