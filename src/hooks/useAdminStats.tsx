@@ -31,12 +31,14 @@ export function useAdminStats() {
     queryKey: ['admin-stats'],
     queryFn: async (): Promise<AdminStats> => {
       // Fetch all data in parallel
-      const [profilesRes, subsRes, userModulesRes] = await Promise.all([
+      const [profilesRes, subsRes, userModulesRes, subPaymentsRes, adminInvoicesRes] = await Promise.all([
         supabase.from('company_profiles').select('id, user_id, created_at').is('deleted_at', null),
         supabase.from('subscriptions').select('*').is('deleted_at', null),
         supabase.from('user_modules')
           .select('user_id, is_active, module:platform_modules(monthly_price)')
           .eq('is_active', true),
+        supabase.from('subscription_payments').select('amount, status, month'),
+        supabase.from('admin_invoices').select('total, status, payment_date').eq('status', 'paid'),
       ]);
 
       if (profilesRes.error) throw profilesRes.error;
@@ -46,6 +48,8 @@ export function useAdminStats() {
       const profiles = profilesRes.data || [];
       const subscriptions = subsRes.data || [];
       const userModulesData = userModulesRes.data || [];
+      const subPayments = subPaymentsRes.data || [];
+      const adminInvoices = adminInvoicesRes.data || [];
 
       // Deduplicate profiles by user_id (keep earliest created_at per user)
       const uniqueUserProfiles = new Map<string, { user_id: string; created_at: string }>();
@@ -68,33 +72,31 @@ export function useAdminStats() {
       const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
       const activeSubscriptions = subscriptions.filter(s => s.status === 'active').length;
 
-      // MRR: sum module totals for active subscriptions
-      const mrr = subscriptions
-        .filter(s => s.status === 'active')
-        .reduce((sum, s) => sum + (moduleTotals[s.user_id] || 0), 0);
+      // MRR: actual collected payments for the current month from subscription_payments
+      const now = new Date();
+      const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const mrr = subPayments
+        .filter(p => p.status === 'paid' && p.month === currentMonthStr)
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
 
       // Trial conversion: of all subs whose trial has ended, how many are now active
-      const now = new Date();
-      const trialEnded = subscriptions.filter(s => 
+      const trialEnded = subscriptions.filter(s =>
         s.trial_ends_at && new Date(s.trial_ends_at) < now
       );
       const convertedFromTrial = trialEnded.filter(s => s.status === 'active').length;
-      const trialConversionRate = trialEnded.length > 0 
-        ? (convertedFromTrial / trialEnded.length) * 100 
+      const trialConversionRate = trialEnded.length > 0
+        ? (convertedFromTrial / trialEnded.length) * 100
         : 0;
 
-      // Total revenue: each tenant's module total × months active
       const paidSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'cancelled' || s.status === 'expired');
       const totalSubscriptions = paidSubs.length;
 
-      const totalRevenue = paidSubs.reduce((sum, sub) => {
-        const monthlyPrice = moduleTotals[sub.user_id] || 0;
-        if (monthlyPrice === 0) return sum;
-        const start = sub.current_period_start ? new Date(sub.current_period_start) : new Date(sub.created_at);
-        const end = sub.status === 'active' ? now : (sub.current_period_end ? new Date(sub.current_period_end) : now);
-        const monthsActive = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-        return sum + (monthlyPrice * monthsActive);
-      }, 0);
+      // Total (Platform) Revenue: only actual confirmed payments from admin_invoices (paid) + subscription_payments (paid)
+      const adminInvoiceRevenue = adminInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      const subPaymentRevenue = subPayments
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalRevenue = adminInvoiceRevenue + subPaymentRevenue;
 
       // Recent signups (last 30 days)
       const thirtyDaysAgo = new Date();
@@ -104,8 +106,8 @@ export function useAdminStats() {
       // Signups by month (last 6 months) — using deduplicated profiles
       const signupsByMonth = getMonthlyData(uniqueProfiles, 6);
 
-      // Revenue by month (last 6 months)
-      const revenueByMonth = getMonthlySubscriptionRevenue(subscriptions, moduleTotals, 6);
+      // Revenue by month (last 6 months) — from actual payments only
+      const revenueByMonth = getMonthlyActualRevenue(subPayments, adminInvoices, 6);
 
       // System type breakdown
       const systemMap = new Map<string, { total: number; active: number; trialing: number; expired: number }>();
@@ -159,31 +161,34 @@ function getMonthlyData(
   return result;
 }
 
-function getMonthlySubscriptionRevenue(
-  subscriptions: any[],
-  moduleTotals: Record<string, number>,
+function getMonthlyActualRevenue(
+  subPayments: { amount: number; status: string; month: string }[],
+  adminInvoices: { total: number; status: string; payment_date: string | null }[],
   months: number
 ): { month: string; revenue: number }[] {
   const result: { month: string; revenue: number }[] = [];
   const now = new Date();
 
   for (let i = months - 1; i >= 0; i--) {
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-    const monthStr = monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStr = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 
-    const revenue = subscriptions.reduce((sum, sub) => {
-      const price = moduleTotals[sub.user_id] || 0;
-      if (price === 0) return sum;
-      const subStart = sub.current_period_start ? new Date(sub.current_period_start) : new Date(sub.created_at);
-      const subEnd = sub.status === 'active' ? now : (sub.current_period_end ? new Date(sub.current_period_end) : now);
-      if (subStart <= monthEnd && subEnd >= monthStart) {
-        return sum + price;
-      }
-      return sum;
-    }, 0);
+    // Confirmed subscription payments for this month
+    const subRev = subPayments
+      .filter(p => p.status === 'paid' && p.month === monthKey)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    result.push({ month: monthStr, revenue });
+    // Paid admin invoices for this month
+    const invRev = adminInvoices
+      .filter(inv => {
+        if (!inv.payment_date) return false;
+        const d = new Date(inv.payment_date);
+        return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+      })
+      .reduce((sum, inv) => sum + (inv.total || 0), 0);
+
+    result.push({ month: monthStr, revenue: subRev + invRev });
   }
   return result;
 }

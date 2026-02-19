@@ -21,7 +21,7 @@ const cards = [
     icon: DollarSign,
     gradient: 'from-emerald-500 to-teal-600',
     getValue: (s: AdminStats) => formatMaluti(s.mrr),
-    getDesc: (s: AdminStats) => `${s.activeSubscriptions} active subscriptions`,
+    getDesc: () => 'Confirmed payments this month',
   },
   {
     key: 'trials',
@@ -37,7 +37,7 @@ const cards = [
     icon: TrendingUp,
     gradient: 'from-rose-500 to-pink-600',
     getValue: (s: AdminStats) => formatMaluti(s.totalRevenue),
-    getDesc: (s: AdminStats) => `From ${s.totalSubscriptions} subscriptions`,
+    getDesc: () => 'Total confirmed & collected',
   },
 ];
 
