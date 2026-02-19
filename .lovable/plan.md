@@ -1,47 +1,56 @@
 
-## Auto-Detect Country and Show Local Currency on Pricing
 
-### Overview
-Detect the visitor's country using a free IP geolocation API, then display all pricing in their local currency. Since the base prices are in LSL (Lesotho Loti), which is pegged 1:1 to ZAR, the conversion is straightforward for most Southern African currencies.
+## Turn Orion Labs into a Native Android App with Capacitor
 
-### Currency Mapping
+### What This Does
+Wraps your existing Orion Labs web app inside a native Android shell so it can be installed from the Google Play Store -- just like any other app. All your current features (invoices, CRM, fleet, gym, school, etc.) will work exactly as they do now.
 
-| Country | Currency | Symbol | Rate vs LSL/ZAR |
-|---------|----------|--------|-----------------|
-| Lesotho | LSL | M | 1:1 |
-| South Africa | ZAR | R | 1:1 |
-| eSwatini | SZL | E | 1:1 |
-| Namibia | NAD | N$ | 1:1 |
-| Botswana | BWP | P | ~0.73 (fetched live) |
-| Rest of world | USD | $ | fetched live via ZAR/USD rate |
+### What Changes in the Code
 
-### Implementation
+**1. Install Capacitor packages**
+- `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`
 
-**1. New hook: `src/hooks/useGeoPricing.ts`**
-- On mount, call a free geolocation API (e.g., `https://ipapi.co/json/`) to get the visitor's country code.
-- Map country code to currency: LS->LSL, ZA->ZAR, BW->BWP, SZ->SZL, NA->NAD, else->USD.
-- For LSL/ZAR/SZL/NAD: rate = 1 (all pegged).
-- For BWP and USD: fetch a live exchange rate from a free API (e.g., `https://open.er-api.com/v6/latest/ZAR`) to get ZAR->BWP and ZAR->USD rates.
-- Cache the result in `sessionStorage` so repeat visits don't re-fetch.
-- Returns: `{ currency, symbol, rate, country, loading }`.
+**2. Create `capacitor.config.ts`**
+- App ID: `app.lovable.67587da810ad4273a0f2b7869f6664a3`
+- App Name: `Orion Labs`
+- Points to your live preview URL for hot-reload during development
+- Web directory set to `dist` (your build output)
 
-**2. Update `src/components/landing/PricingTable.tsx`**
-- Import and use `useGeoPricing`.
-- Replace `formatMaluti(tier.price)` with a local formatter that multiplies the base price by the exchange rate and prepends the detected currency symbol.
-- Show a small note under the price like "Prices shown in ZAR" with a subtle country flag indicator.
-- While loading, show a skeleton/spinner on the price area.
+**3. Update `vite.config.ts`**
+- Add `/~oauth` to the PWA service worker's `navigateFallbackDenylist` to prevent caching issues with authentication redirects
 
-**3. Update `src/pages/About.tsx`**
-- Same treatment for the pricing table in the About page (the `industries` array with hardcoded `price: 'M350'` etc.).
-- Use the same `useGeoPricing` hook to convert and display local currency.
+### What You Do on Your Computer
 
-**4. Update `src/components/landing/Coverage.tsx`**
-- No changes needed -- this is the country display section, not pricing.
+After I make the code changes, you will need to:
 
-### Technical Details
+1. **Export to GitHub** -- Go to Settings and click "Export to GitHub"
+2. **Clone the repo** locally and run `npm install`
+3. **Add Android platform** -- Run `npx cap add android`
+4. **Build and sync** -- Run `npm run build && npx cap sync`
+5. **Open in Android Studio** -- Run `npx cap run android`
+   - Android Studio is free and includes a phone emulator, so no physical device needed
+6. **Test in the emulator** -- Your full Orion Labs app will launch just like on a real phone
 
-- The geolocation call is fire-and-forget with a fallback to LSL if it fails.
-- Exchange rates are cached in `sessionStorage` for the browser session to avoid repeated API calls.
-- The base prices remain in LSL in the source code; conversion is display-only.
-- Pegged currencies (ZAR, SZL, NAD) use a hardcoded 1:1 rate -- no API call needed.
-- Only BWP and USD (fallback for rest-of-world) need a live rate lookup.
+### Publishing to Google Play Store
+
+Once you are happy with testing:
+
+1. Create a Google Play Developer account ($25 USD one-time fee)
+2. In Android Studio: Build > Generate Signed Bundle (AAB)
+3. Upload the AAB to the Google Play Console
+4. Fill in your store listing (app description, screenshots, icon)
+5. Submit for review (typically approved within hours to a few days)
+
+### Ongoing Workflow
+
+Whenever you make changes in Lovable:
+1. Pull the latest code from GitHub
+2. Run `npm run build && npx cap sync`
+3. Rebuild in Android Studio and upload a new version to the Play Store
+
+### Technical Notes
+
+- The existing PWA configuration, offline support, and push notifications all carry over
+- No existing features are modified -- Capacitor is purely additive
+- Adding iOS later is straightforward: just run `npx cap add ios` and open in Xcode (requires a Mac and a $99/year Apple Developer account)
+
