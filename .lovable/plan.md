@@ -1,37 +1,68 @@
 
-# Apply Blue-Purple Gradient Tabs to Staff Page
+# Add Billing Note to Subscription — Record "Leselihub pays M450/month"
 
-## What's changing
+## What's needed
 
-The Staff page (`/staff`) has Overview and Payroll tabs that currently use the default plain white selected style — matching the screenshot the user shared. The fix applies the exact same styled `TabsList` and `TabsTrigger` classes already used on the Gym Classes page.
+The `subscriptions` table has no notes field. We need a `billing_note` text column so admins can record custom billing context like "pays M450/month" against a tenant — visible in the tenant detail view and editable from the Edit Subscription sheet.
 
-## Change
+## Changes
 
-### `src/pages/Staff.tsx` — lines 36–45
+### 1. Database — add `billing_note` column to `subscriptions`
 
-Replace the bare `<TabsList>` and `<TabsTrigger>` elements with the same gradient styling:
-
-```tsx
-<TabsList className="bg-muted/60 border border-border p-1 rounded-lg h-auto">
-  <TabsTrigger
-    value="overview"
-    className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium"
-  >
-    <Users className="h-4 w-4" />
-    Overview
-  </TabsTrigger>
-  <TabsTrigger
-    value="payroll"
-    className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium"
-  >
-    <Receipt className="h-4 w-4" />
-    Payroll
-  </TabsTrigger>
-</TabsList>
+```sql
+ALTER TABLE public.subscriptions
+  ADD COLUMN IF NOT EXISTS billing_note text;
 ```
 
-## File to edit
+Nullable text, no default. No RLS changes needed (existing subscription RLS covers it).
 
-- `src/pages/Staff.tsx` — only the TabsList/TabsTrigger block (lines 36–45)
+### 2. `src/components/admin/EditSubscriptionDialog.tsx` — add Billing Note field
 
-No other files need to change. This is identical to the pattern already applied on the Gym Classes page.
+Add a textarea input for `billing_note` below the Status selector. On save, include the value in the `updateData` patch.
+
+```tsx
+// New state
+const [billingNote, setBillingNote] = useState(tenant?.subscription?.billing_note || '');
+
+// In the form JSX
+<div className="space-y-2">
+  <Label htmlFor="billing_note">Billing Note</Label>
+  <Textarea
+    id="billing_note"
+    placeholder="e.g. Pays M450/month via EFT"
+    value={billingNote}
+    onChange={(e) => setBillingNote(e.target.value)}
+    rows={3}
+  />
+</div>
+```
+
+And in `updateData`:
+```tsx
+billing_note: billingNote || null,
+```
+
+### 3. `src/components/admin/TenantDetailDialog.tsx` — display the note
+
+Show `billing_note` in the Subscription info block if it exists:
+
+```tsx
+{tenant.subscription.billing_note && (
+  <div className="mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
+    <span className="font-medium">Note:</span> {tenant.subscription.billing_note}
+  </div>
+)}
+```
+
+### 4. `src/hooks/useAdminTenants.tsx` — include `billing_note` in the subscription select
+
+Ensure the subscription query fetches the new field (it likely uses `select('*')` already, so this may be automatic — will verify).
+
+## Files to edit
+
+- Database migration (add column)
+- `src/components/admin/EditSubscriptionDialog.tsx`
+- `src/components/admin/TenantDetailDialog.tsx`
+- `src/hooks/useAdminTenants.tsx` (verify `billing_note` is fetched)
+
+After the change, open Leselihub's detail → Edit Subscription → type "Pays M450/month" in the Billing Note field and save.
