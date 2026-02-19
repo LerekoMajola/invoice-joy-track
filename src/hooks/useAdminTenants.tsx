@@ -16,6 +16,7 @@ export interface Tenant {
     trial_ends_at: string | null;
     current_period_end: string | null;
     system_type: string;
+    billing_note: string | null;
   } | null;
   usage?: {
     clients_count: number;
@@ -115,6 +116,7 @@ export function useAdminTenants() {
               trial_ends_at: subscription.trial_ends_at,
               current_period_end: subscription.current_period_end,
               system_type: subscription.system_type || 'business',
+              billing_note: (subscription as any).billing_note || null,
             },
             usage: usage ? {
               clients_count: usage.clients_count || 0,
