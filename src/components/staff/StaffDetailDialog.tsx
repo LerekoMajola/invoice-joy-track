@@ -42,6 +42,7 @@ import {
 import { useStaff, StaffMember, StaffRole, StaffStatus } from '@/hooks/useStaff';
 import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Loader2, Pencil, Trash2, UserCheck, UserX, Shield, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -65,7 +66,7 @@ interface StaffDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const departments = [
+const DEFAULT_DEPARTMENTS = [
   { value: 'operations', label: 'Operations' },
   { value: 'sales', label: 'Sales' },
   { value: 'finance', label: 'Finance' },
@@ -73,7 +74,29 @@ const departments = [
   { value: 'other', label: 'Other' },
 ];
 
-const defaultRoles = ['Admin', 'Manager', 'Staff', 'Viewer'];
+const GYM_DEPARTMENTS = [
+  { value: 'fitness', label: 'Fitness' },
+  { value: 'reception', label: 'Reception' },
+  { value: 'management', label: 'Management' },
+  { value: 'nutrition_wellness', label: 'Nutrition & Wellness' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'admin', label: 'Admin' },
+];
+
+const DEFAULT_ROLES = ['Admin', 'Manager', 'Staff', 'Viewer'];
+
+const GYM_ROLES = [
+  'Head Coach',
+  'Personal Trainer',
+  'Group Fitness Instructor',
+  'Receptionist',
+  'Membership Consultant',
+  'Facility Manager',
+  'Nutritionist',
+  'Physiotherapist',
+  'Admin',
+  'Viewer',
+];
 
 const getStatusBadge = (status: StaffStatus) => {
   switch (status) {
@@ -102,6 +125,10 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   const { updateStaff, updateStaffRole, deleteStaff, staff: allStaff } = useStaff();
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
+  const { systemType } = useSubscription();
+  const isGym = systemType === 'gym';
+  const departments = isGym ? GYM_DEPARTMENTS : DEFAULT_DEPARTMENTS;
+  const defaultRoles = isGym ? GYM_ROLES : DEFAULT_ROLES;
   const existingRoles = Array.from(new Set(allStaff.map(s => s.role).filter(Boolean)));
   const allRoleSuggestions = Array.from(new Set([...defaultRoles, ...existingRoles]));
   const { toast } = useToast();
