@@ -903,6 +903,66 @@ export type Database = {
           },
         ]
       }
+      equipment_incidents: {
+        Row: {
+          company_profile_id: string | null
+          cost: number
+          created_at: string
+          date: string
+          description: string | null
+          equipment_item_id: string
+          id: string
+          incident_type: string
+          photo_urls: string[] | null
+          resolved: boolean
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          company_profile_id?: string | null
+          cost?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          equipment_item_id: string
+          id?: string
+          incident_type?: string
+          photo_urls?: string[] | null
+          resolved?: boolean
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          company_profile_id?: string | null
+          cost?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          equipment_item_id?: string
+          id?: string
+          incident_type?: string
+          photo_urls?: string[] | null
+          resolved?: boolean
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_incidents_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_incidents_equipment_item_id_fkey"
+            columns: ["equipment_item_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_items: {
         Row: {
           category: string
@@ -970,6 +1030,63 @@ export type Database = {
             columns: ["company_profile_id"]
             isOneToOne: false
             referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_service_logs: {
+        Row: {
+          company_profile_id: string | null
+          cost: number
+          created_at: string
+          equipment_item_id: string
+          id: string
+          notes: string | null
+          parts_replaced: string | null
+          provider: string | null
+          service_date: string
+          service_type: string
+          user_id: string
+        }
+        Insert: {
+          company_profile_id?: string | null
+          cost?: number
+          created_at?: string
+          equipment_item_id: string
+          id?: string
+          notes?: string | null
+          parts_replaced?: string | null
+          provider?: string | null
+          service_date?: string
+          service_type?: string
+          user_id: string
+        }
+        Update: {
+          company_profile_id?: string | null
+          cost?: number
+          created_at?: string
+          equipment_item_id?: string
+          id?: string
+          notes?: string | null
+          parts_replaced?: string | null
+          provider?: string | null
+          service_date?: string
+          service_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_service_logs_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_service_logs_equipment_item_id_fkey"
+            columns: ["equipment_item_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_items"
             referencedColumns: ["id"]
           },
         ]
