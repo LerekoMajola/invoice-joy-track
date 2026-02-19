@@ -17,6 +17,7 @@ export interface Tenant {
     current_period_end: string | null;
     system_type: string;
     billing_note: string | null;
+    billing_override: number | null;
   } | null;
   usage?: {
     clients_count: number;
@@ -117,13 +118,14 @@ export function useAdminTenants() {
               current_period_end: subscription.current_period_end,
               system_type: subscription.system_type || 'business',
               billing_note: (subscription as any).billing_note || null,
+              billing_override: (subscription as any).billing_override ?? null,
             },
             usage: usage ? {
               clients_count: usage.clients_count || 0,
               quotes_count: usage.quotes_count || 0,
               invoices_count: usage.invoices_count || 0,
             } : null,
-            module_total: moduleTotals[userId] || 0,
+            module_total: (subscription as any).billing_override ?? moduleTotals[userId] ?? 0,
           } as Tenant;
         })
         .filter((t): t is Tenant => t !== null);
