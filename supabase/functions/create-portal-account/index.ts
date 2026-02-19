@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     if (portalType === 'gym' && memberId) {
       const { data: record, error } = await adminClient
         .from('gym_members')
-        .select('id, user_id, portal_user_id')
+        .select('id, owner_user_id, user_id, portal_user_id')
         .eq('id', memberId)
         .single()
 
@@ -169,8 +169,9 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      // user_id is still the gym owner's ID at this point (owner_user_id was backfilled from it)
-      if (record.user_id !== caller.id) {
+      // Use owner_user_id if available (backfilled), fall back to user_id for older records
+      const ownerId = record.owner_user_id || record.user_id
+      if (ownerId !== caller.id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -185,7 +186,7 @@ Deno.serve(async (req) => {
     } else if (portalType === 'school' && studentId) {
       const { data: record, error } = await adminClient
         .from('students')
-        .select('id, user_id, portal_user_id')
+        .select('id, owner_user_id, user_id, portal_user_id')
         .eq('id', studentId)
         .single()
 
@@ -195,8 +196,9 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      // user_id is still the school owner's ID at this point
-      if (record.user_id !== caller.id) {
+      // Use owner_user_id if available (backfilled), fall back to user_id for older records
+      const ownerId = record.owner_user_id || record.user_id
+      if (ownerId !== caller.id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -225,18 +227,59 @@ Deno.serve(async (req) => {
       user_metadata: { full_name: name, portal_type: portalType },
     })
 
+    let portalUserId: string
+
     if (createError) {
-      console.error('Error creating portal auth user:', createError)
-      const isConflict = createError.message?.toLowerCase().includes('already registered') ||
+      const isAlreadyRegistered = createError.message?.toLowerCase().includes('already registered') ||
         createError.message?.toLowerCase().includes('already exists')
-      return new Response(JSON.stringify({ error: isConflict ? 'An account with this email already exists' : createError.message }), {
-        status: isConflict ? 409 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+      if (!isAlreadyRegistered) {
+        console.error('Error creating portal auth user:', createError)
+        return new Response(JSON.stringify({ error: createError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Email already in auth — find existing user, reset password, and link them
+      console.log('User already registered, finding existing user by email:', email)
+      const { data: listData, error: listError } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+      if (listError || !listData) {
+        console.error('Error listing users:', listError)
+        return new Response(JSON.stringify({ error: 'Failed to find existing user' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const existingUser = listData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
+      if (!existingUser) {
+        return new Response(JSON.stringify({ error: 'Could not locate existing account' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(existingUser.id, {
+        password: tempPassword,
+        user_metadata: { full_name: name, portal_type: portalType },
       })
+      if (updateError) {
+        console.error('Error resetting password for existing user:', updateError)
+        return new Response(JSON.stringify({ error: 'Failed to reset credentials for existing account' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      portalUserId = existingUser.id
+      console.log('Reusing existing user and reset password:', portalUserId)
+    } else {
+      portalUserId = newUser!.user.id
     }
 
     // Link portal_user_id back to the record (NOT user_id — that stays as the owner's ID)
-    const newUserId = newUser.user.id
+    const newUserId = portalUserId
     if (portalType === 'gym' && memberId) {
       const { error: updateError } = await adminClient
         .from('gym_members')
