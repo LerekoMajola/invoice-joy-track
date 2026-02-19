@@ -1,46 +1,84 @@
 
-## Portal: Switch from Magic Links to Real Credentials + Fix Build Error
 
-### What the User Sees Right Now and Why
-- The portal login shows "Send me a link" (magic-link flow). The user wants real email+password credentials instead.
-- The URL shows `lovable.app` in the Lovable editor preview — this is only visible inside the Lovable development environment. The published URL is already `invoice-joy-track.lovable.app`. This can be connected to a custom domain in Settings → Domains to remove all Lovable references for end users.
-- **Build error**: The PWA is rejecting the production build because the JS bundle is 5.27 MB and the cache limit is exactly 5 MB — just barely over.
+## Security Audit: What Is Currently Broken and What Needs Fixing
 
----
+### Critical Finding: Two Columns Are Missing from the Database
 
-### Fix 1: Build Error (1 file)
+The entire portal system was built assuming two columns exist that do **not** exist in the live database:
 
-Raise `maximumFileSizeToCacheInBytes` in `vite.config.ts` from `5 * 1024 * 1024` (5 MB) to `6 * 1024 * 1024` (6 MB). The bundle is currently 5.27 MB so 6 MB gives comfortable headroom.
+- `gym_members.portal_user_id` — the auth ID of the gym member's portal account
+- `gym_members.owner_user_id` — the gym business owner's user ID (separate from the member's portal user ID)
+- `students.portal_user_id` — the auth ID of the guardian's portal account
+- `students.owner_user_id` — the school owner's user ID
 
-**File:** `vite.config.ts`
+**What is actually in the database right now:**
 
----
+| Table | `user_id` means |
+|---|---|
+| `gym_members` | The **gym owner's** auth ID |
+| `students` | The **school owner's** auth ID |
 
-### Fix 2: Replace Magic Links with Real Email + Password Credentials
-
-The same pattern already used for staff accounts will be replicated for portal users. When the gym owner clicks "Create Portal Access" on a member, or the school admin on a student/guardian:
-
-1. A new backend function generates a random temporary password.
-2. It creates a real auth account (email + password, pre-confirmed).
-3. It stores the new `user_id` back on the `gym_members.user_id` or `students.user_id` column (these columns already exist).
-4. It emails the member/guardian their login email + temporary password.
-5. The portal login screen becomes a standard email + password form.
+The `create-portal-account` edge function currently does:
+```sql
+UPDATE gym_members SET user_id = <portal_user_id> WHERE id = <member_id>
+```
+This would **overwrite the gym owner's user_id**, destroying their access to all their own members. This is a critical security and data integrity bug — the function correctly hasn't worked yet because it also references `owner_user_id` which doesn't exist on those tables, so it returns 404/error before reaching the update.
 
 ---
 
-### New Backend Function: `create-portal-account`
+### What the Fix Requires
 
-Similar in structure to the existing `create-staff-account` function. Accepts:
-- `memberId` (UUID) OR `studentId` (UUID)
-- `portalType`: `'gym'` | `'school'`
-- `name` (string)
-- `email` (string)
+Three things must happen together:
 
-Behaviour:
-- Validates the caller owns the record (`gym_members.user_id` / `students.user_id` matches caller)
-- If a portal auth account already exists for that email → returns an error with a toast "Account already exists"
-- Generates a temp password, creates auth user, links `user_id`, sends a branded credentials email pointing to `/portal?type=gym` or `/portal?type=school`
-- The email says "Your Gym Portal access" or "Your Parent Portal access" — no mention of Lovable anywhere
+**1. Database Schema (Migration)**
+
+Add the missing columns to both tables:
+- `gym_members.owner_user_id` — stores the gym owner's auth ID (populated from existing `user_id`)
+- `gym_members.portal_user_id` — stores the portal member's auth ID (nullable, null until "Create Portal Access" is clicked)
+- `students.owner_user_id` — stores the school owner's auth ID (populated from existing `user_id`)
+- `students.portal_user_id` — stores the guardian's portal auth ID (nullable)
+
+Then update existing rows to backfill `owner_user_id` from `user_id`.
+
+**2. RLS Policies (Migration)**
+
+Add read-only portal policies to all tables portal users need:
+
+```
+gym_members:            portal_user_id = auth.uid()  → can read own record
+gym_member_subscriptions: via gym_members.portal_user_id join
+gym_classes:            via gym_members.portal_user_id → owner_user_id join
+gym_class_schedules:    via gym_members.portal_user_id → owner_user_id join
+gym_membership_plans:   via gym_members.portal_user_id → owner_user_id join
+
+students:               portal_user_id = auth.uid()  → can read own child's record
+student_fee_payments:   via students.portal_user_id join
+academic_terms:         via students.portal_user_id → owner_user_id join
+school_classes:         via students.portal_user_id → owner_user_id join
+```
+
+**3. Code Fixes (3 files)**
+
+- **`supabase/functions/create-portal-account/index.ts`** — Change from updating `user_id` to updating `portal_user_id`. Change ownership check from `owner_user_id` to comparing against the `user_id` field (which is still the owner's ID at query time).
+- **`src/hooks/usePortalSession.tsx`** — Change queries from email `ilike` match to `portal_user_id = auth.uid()` match.
+- **`src/components/portal/gym/GymPortalSchedule.tsx`** and **`GymPortalMembership.tsx`** — These use `ownerId` from `gymMember.user_id`, which will need to come from `gymMember.owner_user_id` instead after the schema change.
+
+---
+
+### Security Analysis: Is Anything Compromised Right Now?
+
+**Currently (before fix):**
+- Portal login with email+password works (auth credentials are created correctly)
+- But portal users who log in see **nothing** — all RLS blocks them because no portal policies exist
+- The gym owner's data is **not exposed** to portal users — the database correctly rejects all queries
+- The `create-portal-account` function is broken (references non-existent `owner_user_id` column), so no portal accounts have been successfully linked to members yet
+- **No data leak is occurring** — the current state is broken but safe
+
+**After fix:**
+- Each portal user can only read their own single member/student record
+- They can read class schedules and plans for their gym/school (read-only, same data all members of that gym can see)
+- They absolutely cannot read other gyms' data, other members' data, invoices, accounting, CRM, or any business data
+- The business owner's full dashboard access is completely unchanged
 
 ---
 
@@ -48,25 +86,13 @@ Behaviour:
 
 | File | Change |
 |---|---|
-| `vite.config.ts` | Raise PWA cache limit to 6 MB |
-| `supabase/functions/create-portal-account/index.ts` | **New** — backend function to create email+password portal accounts |
-| `src/components/portal/PortalLogin.tsx` | Replace magic-link form with email + password sign-in form |
-| `src/components/gym/MemberDetailDialog.tsx` | Replace "Send Portal Invite" (OTP) with "Create Portal Access" (calls new function) |
-| `src/components/school/StudentDetailDialog.tsx` | Same — replace OTP invite with credential creation |
+| New migration | Add `owner_user_id` + `portal_user_id` to `gym_members` and `students`; backfill `owner_user_id`; add portal RLS policies to 9 tables |
+| `supabase/functions/create-portal-account/index.ts` | Fix ownership check to use `user_id` (current owner column); write to `portal_user_id` not `user_id` |
+| `src/hooks/usePortalSession.tsx` | Query by `portal_user_id = auth.uid()` instead of email match; expose `owner_user_id` in returned objects |
+| `src/components/portal/gym/GymPortalSchedule.tsx` | Use `member.owner_user_id` as the owner reference instead of `member.user_id` |
+| `src/components/portal/gym/GymPortalMembership.tsx` | Same — use `owner_user_id` for filtering subscriptions |
+| `src/components/portal/school/SchoolPortalFees.tsx` | Use `student.owner_user_id` for term filtering |
+| `src/components/portal/school/SchoolPortalTimetable.tsx` | Same |
 
----
+No data is at risk currently. The fix makes the portal functional while keeping all tenant data completely isolated.
 
-### What Portal Users Will Experience After the Fix
-
-1. Gym owner opens a member's detail → clicks **"Create Portal Access"** → system creates an account and emails the member their login and temporary password.
-2. Member opens `invoice-joy-track.lovable.app/portal` (or your custom domain `/portal`) — sees a clean **Email + Password** login form with the gym/school branding, zero Lovable references.
-3. They log in → see only their own membership, schedule, and messages. No other members' data is accessible (enforced by RLS on the backend).
-
----
-
-### Technical Details (Security)
-
-- The new function uses the **service role key on the server** — the client never touches admin APIs.
-- The `user_id` stored on `gym_members` and `students` is already used by existing RLS policies to restrict data access. Portal users can only read rows where `user_id = auth.uid()`.
-- The portal login uses `supabase.auth.signInWithPassword()` — standard, secure, no magic tokens in URLs.
-- If an account already exists for a member, the function returns a conflict response and the UI shows a toast.
