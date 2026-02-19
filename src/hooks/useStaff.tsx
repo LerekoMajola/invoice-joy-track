@@ -19,6 +19,7 @@ export interface StaffMember {
   notes: string | null;
   invitedAt: string;
   joinedAt: string | null;
+  userId: string | null;
 }
 
 export interface CreateStaffData {
@@ -98,6 +99,7 @@ export function useStaff() {
         notes: s.notes,
         invitedAt: s.invited_at || s.created_at,
         joinedAt: s.joined_at,
+        userId: s.user_id,
       }));
 
       setStaff(mappedStaff);
@@ -155,6 +157,7 @@ export function useStaff() {
         phone: staffData.phone, jobTitle: staffData.job_title, department: staffData.department,
         status: staffData.status as StaffStatus, role: data.role, notes: staffData.notes,
         invitedAt: staffData.invited_at || staffData.created_at, joinedAt: staffData.joined_at,
+        userId: staffData.user_id,
       };
 
       setStaff(prev => [newStaff, ...prev]);

@@ -31,7 +31,7 @@ function buildCredentialsEmail(name: string, email: string, tempPassword: string
         </td></tr>
         <tr><td style="padding:32px 24px;">
           <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hi <strong>${name}</strong>,</p>
-          <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">Your staff account has been created. Use the credentials below to log in.</p>
+          <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">Your login credentials have been updated. Use the details below to log in.</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:24px;">
             <tr><td style="padding:16px;">
               <p style="margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Email</p>
@@ -44,7 +44,7 @@ function buildCredentialsEmail(name: string, email: string, tempPassword: string
             <a href="${loginUrl}" style="display:inline-block;background:#1e293b;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:600;">Login Now</a>
           </td></tr></table>
           <div style="margin-top:24px;padding:12px 16px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;">
-            <p style="margin:0;color:#92400e;font-size:13px;">⚠️ Please change your password after your first login for security.</p>
+            <p style="margin:0;color:#92400e;font-size:13px;">⚠️ Please change your password after logging in for security.</p>
           </div>
         </td></tr>
         <tr><td style="padding:16px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
@@ -55,39 +55,6 @@ function buildCredentialsEmail(name: string, email: string, tempPassword: string
   </table>
 </body>
 </html>`
-}
-
-async function sendCredentialsEmail(name: string, email: string, tempPassword: string): Promise<void> {
-  const resendApiKey = Deno.env.get('RESEND_API_KEY')
-  if (!resendApiKey) {
-    console.warn('RESEND_API_KEY not set, skipping email')
-    return
-  }
-
-  const loginUrl = 'https://invoice-joy-track.lovable.app/auth'
-  const html = buildCredentialsEmail(name, email, tempPassword, loginUrl)
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${resendApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'Orion Labs <updates@updates.orionlabslesotho.com>',
-      to: [email],
-      subject: 'Your Staff Account Credentials — Orion Labs',
-      html,
-    }),
-  })
-
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error('Failed to send credentials email:', errText)
-  } else {
-    await res.text()
-    console.log('Credentials email sent to', email)
-  }
 }
 
 Deno.serve(async (req) => {
@@ -107,6 +74,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -120,10 +88,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { staffMemberId, name, email } = await req.json()
-
-    if (!staffMemberId || !email || !name) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    const { staffMemberId } = await req.json()
+    if (!staffMemberId) {
+      return new Response(JSON.stringify({ error: 'Missing staffMemberId' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -133,7 +100,7 @@ Deno.serve(async (req) => {
 
     const { data: staffRecord, error: staffError } = await adminClient
       .from('staff_members')
-      .select('id, owner_user_id, user_id')
+      .select('id, owner_user_id, user_id, name, email')
       .eq('id', staffMemberId)
       .single()
 
@@ -151,43 +118,59 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (staffRecord.user_id) {
-      return new Response(JSON.stringify({ error: 'Account already exists for this staff member' }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const tempPassword = generateTempPassword()
-
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { full_name: name },
-    })
-
-    if (createError) {
-      console.error('Error creating auth user:', createError)
-      return new Response(JSON.stringify({ error: createError.message }), {
+    if (!staffRecord.user_id) {
+      return new Response(JSON.stringify({ error: 'No account linked to this staff member' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { error: updateError } = await adminClient
-      .from('staff_members')
-      .update({ user_id: newUser.user.id, status: 'active' })
-      .eq('id', staffMemberId)
+    // Generate new temp password and update auth user
+    const tempPassword = generateTempPassword()
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(
+      staffRecord.user_id,
+      { password: tempPassword }
+    )
 
     if (updateError) {
-      console.error('Error linking user to staff:', updateError)
+      console.error('Error updating password:', updateError)
+      return new Response(JSON.stringify({ error: 'Failed to reset password' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Send credentials email
-    await sendCredentialsEmail(name, email, tempPassword)
+    // Send email
+    if (resendApiKey) {
+      const loginUrl = 'https://invoice-joy-track.lovable.app/auth'
+      const html = buildCredentialsEmail(staffRecord.name, staffRecord.email, tempPassword, loginUrl)
 
-    return new Response(JSON.stringify({ tempPassword, userId: newUser.user.id }), {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Orion Labs <updates@updates.orionlabslesotho.com>',
+          to: [staffRecord.email],
+          subject: 'Your Updated Login Credentials — Orion Labs',
+          html,
+        }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error('Failed to send email:', errText)
+        return new Response(JSON.stringify({ error: 'Password reset but email failed to send' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      await res.text()
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
