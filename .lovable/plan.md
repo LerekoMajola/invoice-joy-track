@@ -1,45 +1,79 @@
 
-## The Problem: Stale Deployment + Fragile Error Check
+## The Real Problem: Portal Users Can Access the Business Dashboard
 
-### Why it's still failing
+### What Is Happening
 
-The edge function logs show the error at `index.ts:236:51`. In the updated code, line 236 is `if (!isAlreadyRegistered)` — not the `createUser` call. But in the **old code**, line 236 was the `createUser` await. This means the deployed function is still running the old version. The file was updated but the deployment did not propagate.
+When a gym member signs in at `/portal`, the `PortalLogin` component calls `supabase.auth.signInWithPassword`. This creates a **shared browser session** — the same session used by business owners. There is no distinction at the session level between a portal user and a business user.
 
-Additionally, the current check uses a string match on the error message:
+When a portal user navigates to `/dashboard`:
+1. `AuthContext` sees a logged-in user — ✅ passes
+2. `ProtectedRoute` sees a logged-in user — ✅ passes
+3. `ProtectedRoute` then finds **no subscription** for this portal user, so it **creates a brand-new free trial subscription** for them and assigns all platform modules
+4. The full business dashboard renders — the gym member can see Clients, Invoices, Accounting, CRM, etc.
+
+This is the exact bug shown in the screenshot.
+
+### Root Cause
+
+`ProtectedRoute` has no concept of portal users. It only checks `if (!user)`. Portal users are real authenticated users, so they pass that check and get treated as business owners.
+
+### The Fix: Two-Layer Defence
+
+**Layer 1 — ProtectedRoute: block portal users at the gate**
+
+The `ProtectedRoute` must detect when the logged-in user is a portal user and redirect them to `/portal` instead of letting them through. A portal user is identified by their `user_metadata.portal_type` being set (the edge function sets this: `{ full_name: name, portal_type: portalType }`).
+
 ```typescript
-createError.message?.toLowerCase().includes('already registered')
+// In ProtectedRoute.tsx — add before the subscription check:
+const portalType = user.user_metadata?.portal_type;
+if (portalType === 'gym' || portalType === 'school') {
+  return <Navigate to="/portal" replace />;
+}
 ```
 
-This is fragile. Supabase auth errors have a `code` property that is guaranteed: `code: "email_exists"`. Using the code is far more reliable.
+**Layer 2 — Auth page: redirect portal users to `/portal`**
 
-### The Fix: Two changes to the Edge Function
+The `Auth` page currently redirects all logged-in users to `/dashboard`. A portal user who visits `/auth` would also get redirected there. The redirect must also check for portal users:
 
-**1. Switch to `code`-based check (reliable)**
-
-Replace:
 ```typescript
-const isAlreadyRegistered = createError.message?.toLowerCase().includes('already registered') ||
-  createError.message?.toLowerCase().includes('already exists')
+// In Auth.tsx — change the redirect logic:
+if (isAdmin) {
+  navigate('/admin', { replace: true });
+} else if (user.user_metadata?.portal_type) {
+  navigate('/portal', { replace: true });
+} else {
+  navigate('/dashboard', { replace: true });
+}
 ```
 
-With:
-```typescript
-const isAlreadyRegistered = 
-  (createError as any).code === 'email_exists' ||
-  createError.message?.toLowerCase().includes('already registered') ||
-  createError.message?.toLowerCase().includes('already exists')
-```
+**Layer 3 — Database safety net (already in place)**
 
-This checks the `code` first (most reliable), then falls back to message matching.
+The RLS policies from the previous migration already ensure portal users cannot read business data tables (invoices, clients, accounting, etc.) — those policies check `auth.uid() = user_id` against the business owner's ID. A portal user's auth UID will never match a business owner's user_id, so even if they somehow reach `/dashboard`, all data queries return empty results. This is the fail-safe that was already working.
 
-**2. Force redeploy**
+### Why This Is the Correct and Minimal Fix
 
-The file will be saved and redeployed so the running function matches the code.
+| Approach | Verdict |
+|---|---|
+| Block in `ProtectedRoute` via `user_metadata.portal_type` | ✅ Correct — stops the redirect, prevents free trial creation |
+| Block in `Auth.tsx` redirect | ✅ Correct — prevents portal users who visit `/auth` from going to dashboard |
+| Database RLS (already done) | ✅ Already in place — provides a data-layer safety net |
+| Creating a separate Supabase project | ❌ Not needed — metadata check is sufficient |
 
 ### Files to Change
 
 | File | Change |
 |---|---|
-| `supabase/functions/create-portal-account/index.ts` | Add `code === 'email_exists'` to the `isAlreadyRegistered` check; triggers fresh deployment |
+| `src/components/layout/ProtectedRoute.tsx` | After auth resolves, check `user.user_metadata?.portal_type` — if set, redirect to `/portal` instead of allowing access |
+| `src/pages/Auth.tsx` | In the redirect-after-login effect, check `user_metadata.portal_type` and redirect portal users to `/portal` |
 
-No database changes, no UI changes — one small code improvement and a fresh deploy.
+No database changes needed. No edge function changes needed. The `user_metadata.portal_type` field is already being set correctly by the `create-portal-account` edge function.
+
+### What This Prevents
+
+After this fix:
+- A portal user logging in at `/portal` stays on `/portal` — the portal session hook resolves their gym/school record and shows their personal portal
+- If a portal user manually navigates to `/dashboard`, `/invoices`, `/accounting`, etc., `ProtectedRoute` immediately redirects them back to `/portal`
+- If a portal user visits `/auth`, they are redirected to `/portal` not `/dashboard`
+- No free trial subscriptions are ever created for portal users
+- No platform modules are ever assigned to portal users
+- RLS still ensures zero data access even if any edge case gets through
