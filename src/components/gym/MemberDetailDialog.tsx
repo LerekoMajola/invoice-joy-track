@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle, Send } from 'lucide-react';
+import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle, KeyRound } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useGymMemberSubscriptions } from '@/hooks/useGymMemberSubscriptions';
@@ -45,22 +45,28 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
   const activeSub = subscriptions.find(s => s.status === 'active' || s.status === 'frozen');
   const today = new Date();
 
-  const handleSendPortalInvite = async () => {
+  const handleCreatePortalAccess = async () => {
     if (!member.email) {
       toast({ title: 'No email', description: 'This member has no email address on file.', variant: 'destructive' });
       return;
     }
     setSendingInvite(true);
-    const redirectTo = `${window.location.origin}/portal?type=gym`;
-    const { error } = await supabase.auth.signInWithOtp({
-      email: member.email,
-      options: { emailRedirectTo: redirectTo },
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await supabase.functions.invoke('create-portal-account', {
+      body: {
+        memberId: member.id,
+        portalType: 'gym',
+        name: `${member.firstName} ${member.lastName}`,
+        email: member.email,
+      },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     });
     setSendingInvite(false);
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (res.error || res.data?.error) {
+      const msg = res.data?.error || res.error?.message || 'Failed to create portal access';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
     } else {
-      toast({ title: 'Invite sent!', description: `A portal link was sent to ${member.email}.` });
+      toast({ title: 'Portal access created!', description: `Login credentials have been emailed to ${member.email}.` });
     }
   };
 
@@ -219,8 +225,8 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
             <Separator />
             <div className="flex flex-wrap gap-2">
               {member.email && (
-                <Button size="sm" variant="outline" onClick={handleSendPortalInvite} disabled={sendingInvite} className="flex-1">
-                  <Send className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Sending…' : 'Send Portal Invite'}
+                <Button size="sm" variant="outline" onClick={handleCreatePortalAccess} disabled={sendingInvite} className="flex-1">
+                  <KeyRound className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Creating…' : 'Create Portal Access'}
                 </Button>
               )}
               {!activeSub && <Button size="sm" onClick={() => setAssignOpen(true)}>Assign Plan</Button>}

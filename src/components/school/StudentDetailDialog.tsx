@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, MapPin, Heart, GraduationCap, Trash2, Send } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Heart, GraduationCap, Trash2, KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Student } from '@/hooks/useStudents';
 import { SchoolClass } from '@/hooks/useSchoolClasses';
@@ -34,22 +34,29 @@ export function StudentDetailDialog({ student, open, onOpenChange, classes, onDe
   if (!student) return null;
   const className = classes.find((c) => c.id === student.classId)?.name || 'Unassigned';
 
-  const handleSendPortalInvite = async () => {
+  const handleCreatePortalAccess = async () => {
     const email = student.guardianEmail;
     if (!email) {
       toast({ title: 'No email', description: 'This guardian has no email address on file.', variant: 'destructive' });
       return;
     }
     setSendingInvite(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/portal?type=school` },
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await supabase.functions.invoke('create-portal-account', {
+      body: {
+        studentId: student.id,
+        portalType: 'school',
+        name: student.guardianName || `${student.firstName} ${student.lastName} Guardian`,
+        email,
+      },
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     });
     setSendingInvite(false);
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (res.error || res.data?.error) {
+      const msg = res.data?.error || res.error?.message || 'Failed to create portal access';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
     } else {
-      toast({ title: 'Invite sent!', description: `A portal link was sent to ${email}.` });
+      toast({ title: 'Portal access created!', description: `Login credentials have been emailed to ${email}.` });
     }
   };
 
@@ -155,8 +162,8 @@ export function StudentDetailDialog({ student, open, onOpenChange, classes, onDe
             {/* Actions */}
             <div className="pt-2 space-y-2">
               {student.guardianEmail && (
-                <Button variant="outline" className="w-full" onClick={handleSendPortalInvite} disabled={sendingInvite}>
-                  <Send className="h-4 w-4 mr-2" />{sendingInvite ? 'Sending…' : 'Send Portal Invite'}
+                <Button variant="outline" className="w-full" onClick={handleCreatePortalAccess} disabled={sendingInvite}>
+                  <KeyRound className="h-4 w-4 mr-2" />{sendingInvite ? 'Creating…' : 'Create Portal Access'}
                 </Button>
               )}
               {onDelete && (

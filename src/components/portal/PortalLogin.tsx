@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Dumbbell, GraduationCap, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Dumbbell, GraduationCap, Loader2, Eye, EyeOff, Lock } from 'lucide-react';
 
 interface PortalLoginProps {
   portalType?: 'gym' | 'school' | null;
@@ -12,38 +12,34 @@ interface PortalLoginProps {
 
 export function PortalLogin({ portalType }: PortalLoginProps) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
   const { toast } = useToast();
 
   const isGym = portalType === 'gym';
   const isSchool = portalType === 'school';
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password) return;
     setLoading(true);
 
-    const type = portalType || 'gym';
-    const redirectTo = `${window.location.origin}/portal?type=${type}`;
-
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: redirectTo },
+      password,
     });
 
     setLoading(false);
 
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setSent(true);
+      toast({ title: 'Sign in failed', description: 'Incorrect email or password.', variant: 'destructive' });
     }
   };
 
   const icon = isGym ? <Dumbbell className="h-8 w-8 text-primary" /> :
                 isSchool ? <GraduationCap className="h-8 w-8 text-primary" /> :
-                <Mail className="h-8 w-8 text-primary" />;
+                <Lock className="h-8 w-8 text-primary" />;
 
   const title = isGym ? 'GymPro Member Portal' :
                 isSchool ? 'EduPro Parent Portal' :
@@ -51,34 +47,7 @@ export function PortalLogin({ portalType }: PortalLoginProps) {
 
   const subtitle = isGym ? 'Access your membership, class schedule & more' :
                    isSchool ? "Stay connected with your child's school" :
-                   'Enter your email to receive a magic sign-in link';
-
-  if (sent) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Check your email</h1>
-            <p className="text-muted-foreground mt-1">
-              We sent a magic link to <span className="font-medium text-foreground">{email}</span>.
-              Tap the link in your email to sign in — no password needed.
-            </p>
-          </div>
-          <button
-            className="text-sm text-primary underline underline-offset-4"
-            onClick={() => setSent(false)}
-          >
-            Use a different email
-          </button>
-        </div>
-      </div>
-    );
-  }
+                   'Sign in to access your portal';
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -97,9 +66,9 @@ export function PortalLogin({ portalType }: PortalLoginProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSend} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Your email address</Label>
+            <Label htmlFor="email">Email address</Label>
             <Input
               id="email"
               type="email"
@@ -111,16 +80,39 @@ export function PortalLogin({ portalType }: PortalLoginProps) {
               className="h-12 text-base"
             />
           </div>
-          <Button type="submit" className="w-full h-12 text-base" disabled={loading || !email.trim()}>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="h-12 text-base pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(p => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <Button type="submit" className="w-full h-12 text-base" disabled={loading || !email.trim() || !password}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-            {loading ? 'Sending...' : 'Send me a link'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          No account needed — we'll find your record by email.
+          Your login credentials were emailed to you when your account was created.
         </p>
       </div>
     </div>
   );
 }
+
