@@ -45,7 +45,7 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
       <header className="z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 h-14 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-            <PortalIcon className="h-4 w-4 text-primary" strokeWidth={0} fill="hsl(var(--primary))" />
+            <PortalIcon className="h-4 w-4 text-primary" />
           </div>
           <span className="font-semibold text-sm text-foreground">{portalTitle}</span>
         </div>
@@ -88,8 +88,6 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
                       'h-5 w-5 transition-colors duration-200',
                       isActive ? 'text-primary' : 'text-muted-foreground'
                     )}
-                    strokeWidth={0}
-                    fill={isActive ? 'hsl(var(--primary))' : 'currentColor'}
                   />
                 </div>
                 <span className={cn(
