@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, startOfDay, startOfMonth, subDays, differenceInDays, getDayOfYear } from 'date-fns';
-import { Share2, Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
@@ -35,8 +35,8 @@ const QUOTES = [
   { text: "Your body can do it. It's time to convince your mind.", author: "Unknown" },
   { text: "Fitness is not about being better than someone else. It's about being better than you used to be.", author: "Unknown" },
   { text: "Wake up. Work out. Look hot. Kick ass.", author: "Unknown" },
-  { text: "The difference between try and triumph is just a little umph!", author: "Marvin Phillips" },
   { text: "Today's soreness is tomorrow's strength.", author: "Unknown" },
+  { text: "The difference between try and triumph is just a little umph!", author: "Marvin Phillips" },
 ];
 
 function getGreeting(): { word: string; emoji: string } {
@@ -117,29 +117,15 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const quote = QUOTES[getDayOfYear(today) % QUOTES.length];
   const checkInTime = data?.todayRecord ? format(parseISO(data.todayRecord.check_in), 'h:mm a') : null;
   const daysLeft = data?.planEnd ? Math.max(differenceInDays(parseISO(data.planEnd), today), 0) : null;
-  const initials = `${member.first_name?.[0] ?? ''}${member.last_name?.[0] ?? ''}`.toUpperCase();
-
-  const handleShare = async () => {
-    const text = `Good ${greeting.word}! ${greeting.emoji}\n\n🔥 ${data?.streak}-day streak · ⚡ ${data?.monthlyCount} visits this month · 🏆 ${data?.allTimeCount} total${data?.todayRecord ? ' · ✅ Trained today!' : ''}\n\n"${quote.text}"\n— ${quote.author}\n\n📍 ${data?.gymName}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: '💪 My Fitness Progress', text }); } catch { /* dismissed */ }
-    } else {
-      try { await navigator.clipboard.writeText(text); } catch { /* not available */ }
-    }
-  };
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden animate-fade-in">
 
-      {/* ── TOP HERO ─────────────────────────────────────────────────────── */}
+      {/* ── TOP HERO ──────────────────────────────────────────────── */}
       <div
         className="relative flex-shrink-0 px-5 pt-5 pb-6"
         style={{ background: 'linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.75) 100%)' }}
       >
-        {/* Subtle noise texture */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }} />
-
         {/* Greeting row */}
         <div className="relative flex items-center justify-between mb-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/50">
@@ -163,7 +149,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         {/* Today status pill */}
         {data?.todayRecord ? (
           <div className="relative flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3.5 py-2.5 w-fit">
-            <CheckCircle2 className="h-3.5 w-3.5 text-white shrink-0" />
+            <span className="text-sm leading-none">✅</span>
             <span className="text-xs font-semibold text-white">Checked in at {checkInTime}</span>
           </div>
         ) : (
@@ -174,7 +160,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         )}
       </div>
 
-      {/* ── STATS ROW ─────────────────────────────────────────────────────── */}
+      {/* ── STATS ROW ─────────────────────────────────────────────── */}
       <div className="flex-shrink-0 grid grid-cols-3 border-b border-border/60">
         {[
           { emoji: '🔥', value: data?.streak ?? 0, label: 'Day Streak' },
@@ -195,7 +181,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         ))}
       </div>
 
-      {/* ── QUOTE ─────────────────────────────────────────────────────────── */}
+      {/* ── QUOTE ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col justify-center px-5 py-5 min-h-0">
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mb-3">
           Today's Motivation
@@ -206,9 +192,8 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         <p className="text-xs text-muted-foreground">— {quote.author}</p>
       </div>
 
-      {/* ── BOTTOM BAR ────────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 space-y-2 border-t border-border/40">
-        {/* Plan strip */}
+      {/* ── BOTTOM ────────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-border/40">
         {data?.planName && daysLeft !== null && (
           <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/50">
             <div className="flex items-center gap-2">
@@ -223,17 +208,8 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
             </span>
           </div>
         )}
-
-        {/* Share CTA */}
-        <button
-          onClick={handleShare}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.97]"
-          style={{ background: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
-        >
-          <Share2 className="h-4 w-4" />
-          Share My Progress
-        </button>
       </div>
+
     </div>
   );
 }
