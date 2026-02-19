@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -31,12 +32,14 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
   const queryClient = useQueryClient();
   const [plan, setPlan] = useState(tenant?.subscription?.plan || 'free_trial');
   const [status, setStatus] = useState(tenant?.subscription?.status || 'trialing');
+  const [billingNote, setBillingNote] = useState(tenant?.subscription?.billing_note || '');
 
   const updateMutation = useMutation({
     mutationFn: async ({ userId, newPlan, newStatus }: { userId: string; newPlan: string; newStatus: string }) => {
       const updateData: Record<string, any> = { 
         plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro' | 'custom',
         status: newStatus as 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired',
+        billing_note: billingNote || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -81,6 +84,7 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
   const handleSave = () => {
     updateMutation.mutate({
       userId: tenant.user_id,
+
       newPlan: plan,
       newStatus: status,
     });
@@ -128,6 +132,17 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="billing_note">Billing Note</Label>
+            <Textarea
+              id="billing_note"
+              placeholder="e.g. Pays M450/month via EFT"
+              value={billingNote}
+              onChange={(e) => setBillingNote(e.target.value)}
+              rows={3}
+            />
           </div>
         </div>
 

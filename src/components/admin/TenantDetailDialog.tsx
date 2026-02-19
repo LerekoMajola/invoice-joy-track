@@ -126,6 +126,11 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                       <span>{format(new Date(tenant.subscription.current_period_end), 'MMM d, yyyy')}</span>
                     </div>
                   )}
+                  {tenant.subscription.billing_note && (
+                    <div className="mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
+                      <span className="font-medium">Note:</span> {tenant.subscription.billing_note}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No subscription data</p>
