@@ -1,28 +1,18 @@
 
 
-## Fix: Payment Required Page Banking Details
+## Fix: Geographically Accurate Southern Africa Map
 
-### The Problem
-The banking details on the Payment Required page don't match the actual details used on the admin invoices. The invoice uses the correct details, but the payment page has placeholder/wrong values.
+### Problem
+The current map image at `src/assets/southern-africa-map.png` has incorrect geography for the five countries (Lesotho, South Africa, Botswana, eSwatini, Namibia).
 
-### What's Wrong (Payment Required page vs Invoice)
+### Fix
+Replace the map with a new, geographically accurate image generated using the AI image model. The prompt will specify correct positioning:
 
-| Field | Payment Page (wrong) | Invoice (correct) |
-|-------|---------------------|-------------------|
-| Bank | FNB Lesotho | First National Bank (FNB) |
-| Account Name | Orion Labs (Pty) Ltd | Orion Labs (Pty) Ltd |
-| Account Number | 62012345678 | 63027317585 |
-| Branch Code | 260001 | Pioneer Mall |
+- **South Africa** at the southern tip of the continent
+- **Lesotho** fully enclosed within South Africa (small mountainous kingdom)
+- **eSwatini** on South Africa's northeast border, also bordered by Mozambique
+- **Botswana** north of South Africa, west of Zimbabwe
+- **Namibia** on South Africa's northwest border, along the Atlantic coast
 
-### The Fix
-
-**File: `src/pages/PaymentRequired.tsx`**
-
-Update the Bank Transfer tab (lines 215-234) to use the correct banking details from the invoice:
-
-- Bank: "First National Bank (FNB)"
-- Account Name: "Orion Labs (Pty) Ltd" (already correct)
-- Account No: "63027317585"
-- Branch: "Pioneer Mall"
-- Reference: (already correct -- uses `paymentReference`)
+The image will be regenerated via the AI image generation endpoint and saved to `src/assets/southern-africa-map.png`. No other code changes needed -- the Coverage component already references this file.
 
