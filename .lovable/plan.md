@@ -1,71 +1,102 @@
 
-## Three Changes to Staff Management
+## Admin CRM — Platform Sales Prospect Tracker
 
-### 1. Remove "Draft" from Payslips -- Create as Final Documents
-Payslips are actual documents meant for download and sending. The current "draft" workflow adds unnecessary friction.
+### What This Builds
 
-**Changes:**
-- **`src/hooks/usePayslips.tsx`**: Change default status from `'draft'` to `'approved'` when creating a payslip. Remove the `approvePayslip` function.
-- **`src/components/staff/PayrollTab.tsx`**: Remove the "Draft" stat card and replace with something more useful (e.g. "This Month"). Remove the "Approve" menu item. Update the status filter to remove "Draft". Keep "Mark as Paid" as the only status transition.
-- **`src/components/staff/PayslipPreview.tsx`**: Remove `'draft'` from status color handling.
+A dedicated "CRM" tab inside the `/admin` console for the super-admin to track **platform-level sales prospects** (companies/people who might subscribe). This is completely separate from the tenant-side CRM — it is a tool for you (the platform owner) to manage your own sales pipeline.
 
-### 2. Auto-Generate Employee Number
-When adding a new staff member, the employee number will be automatically generated in the format `EMP001`, `EMP002`, etc., based on the highest existing number.
+---
 
-**Changes:**
-- **`src/hooks/useStaff.tsx`**: Add a helper function `generateEmployeeNumber` that queries the database for the highest existing employee number matching the `EMP###` pattern and increments it. Call this in `createStaff` when no manual employee number is provided.
-- **`src/components/staff/AddStaffDialog.tsx`**: Change the employee number field to show "Auto-generated" as placeholder text and make it read-only (or show "Will be auto-assigned: EMP00X"). Remove the manual input -- the number is always auto-assigned.
+### Core Features
 
-### 3. Custom Roles (Free-text instead of fixed enum)
-Different companies use different role names. The fixed `admin/manager/staff/viewer` enum will be replaced with a free-text role field plus the ability to create custom roles.
+1. **Kanban Pipeline Board** — 7 stages: Lead → Contacted → Demo Booked → Proposal Sent → Negotiation → Won → Lost. Drag-and-drop cards between stages.
+2. **Prospect List View** — searchable, filterable table of all prospects.
+3. **Prospect Detail Sheet** — slide-in panel with full edit form, activity log (notes/calls/emails), and follow-up scheduling.
+4. **Add Prospect Dialog** — quick form to add company, contact name, email, phone, expected plan, and estimated value.
+5. **Activity Log** — log calls, emails, demos, and notes against each prospect. Timestamped timeline.
+6. **Stats Bar** — total pipeline value, weighted value, # active prospects, # follow-ups due today.
 
-**Changes:**
-- **Database migration**: 
-  - Change the `staff_roles.role` column from `staff_role` enum to `TEXT`
-  - Keep backward compatibility with existing data
-- **`src/hooks/useStaff.tsx`**: Change `StaffRole` from a union type to `string`. Update role handling.
-- **`src/components/staff/AddStaffDialog.tsx`**: Replace the fixed role `Select` dropdown with a combobox-style input that shows existing roles as suggestions plus a free-text "Create custom role" option.
-- **`src/components/staff/StaffDetailDialog.tsx`**: Same change for the role selector in the detail view -- show existing roles as suggestions plus allow typing a custom role.
+---
+
+### Database Changes
+
+Two new tables, admin-only (no RLS exposure to tenants):
+
+**`admin_prospects`**
+```
+id, created_at, updated_at,
+contact_name, company_name, email, phone,
+status (text: lead/contacted/demo/proposal/negotiation/won/lost),
+priority (text: low/medium/high),
+estimated_value (numeric),
+expected_close_date (date),
+win_probability (int),
+source (text),
+notes (text),
+next_follow_up (date),
+stage_entered_at (timestamptz),
+loss_reason (text),
+interested_plan (text),
+interested_system (text)
+```
+
+**`admin_prospect_activities`**
+```
+id, created_at,
+prospect_id (FK → admin_prospects),
+type (text: note/call/email/demo/meeting),
+title (text),
+description (text)
+```
+
+RLS: Both tables restricted to authenticated users with `super_admin` role using the existing `has_role()` security definer function.
+
+---
+
+### Files to Create / Modify
+
+**New files:**
+- `src/hooks/useAdminProspects.tsx` — CRUD for prospects + activities
+- `src/components/admin/crm/AdminCRMTab.tsx` — main CRM tab (pipeline + list views + stats)
+- `src/components/admin/crm/ProspectKanban.tsx` — drag-and-drop Kanban board
+- `src/components/admin/crm/ProspectCard.tsx` — card for Kanban column
+- `src/components/admin/crm/ProspectDetailSheet.tsx` — slide-in detail panel (edit + activity log)
+- `src/components/admin/crm/AddProspectDialog.tsx` — add prospect form
+- `supabase/migrations/TIMESTAMP_admin_crm.sql` — creates both tables with RLS
+
+**Modified files:**
+- `src/pages/Admin.tsx` — add "CRM" tab trigger + content
+- `src/components/admin/index.ts` — export new `AdminCRMTab`
+
+---
+
+### Pipeline Stages
+
+| Stage | Color | Default Win% |
+|---|---|---|
+| Lead | Blue | 5% |
+| Contacted | Purple | 15% |
+| Demo | Teal | 35% |
+| Proposal | Yellow | 55% |
+| Negotiation | Orange | 75% |
+| Won | Green | 100% |
+| Lost | Red | 0% |
 
 ---
 
 ### Technical Details
 
-**Database Migration:**
+**RLS Policies (both tables):**
 ```sql
--- Change staff_roles.role from enum to text
-ALTER TABLE public.staff_roles ALTER COLUMN role TYPE TEXT USING role::TEXT;
--- Drop the old enum type (if not used elsewhere)
-DROP TYPE IF EXISTS public.staff_role;
+CREATE POLICY "Super admins only" ON admin_prospects
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin'));
 ```
 
-**Auto Employee Number Logic (`useStaff.tsx`):**
-```typescript
-const generateEmployeeNumber = async (): Promise<string> => {
-  const { data } = await supabase
-    .from('staff_members')
-    .select('employee_number')
-    .eq('owner_user_id', user.id)
-    .not('employee_number', 'is', null)
-    .order('employee_number', { ascending: false });
-  
-  // Find highest EMP### number and increment
-  let maxNum = 0;
-  (data || []).forEach(s => {
-    const match = s.employee_number?.match(/^EMP(\d+)$/);
-    if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
-  });
-  return `EMP${String(maxNum + 1).padStart(3, '0')}`;
-};
-```
+**Hook pattern** (`useAdminProspects`): follows the same pattern as `useCRMClients` / `useDeals` — local state updated optimistically, Supabase as source of truth, `toast` notifications on errors.
 
-**Custom Role UI:** The role selector will show previously used roles from existing staff as quick-select options, plus a text input to type a new custom role name. This way common roles are reusable but companies aren't limited.
+**Kanban drag-and-drop**: Uses native HTML5 drag events (same pattern as `PipelineBoard.tsx` in the tenant CRM) — no extra library needed.
 
-**Files modified:**
-1. Database migration (new)
-2. `src/hooks/useStaff.tsx`
-3. `src/hooks/usePayslips.tsx`
-4. `src/components/staff/AddStaffDialog.tsx`
-5. `src/components/staff/StaffDetailDialog.tsx`
-6. `src/components/staff/PayrollTab.tsx`
-7. `src/components/staff/PayslipPreview.tsx`
+**Stats computation**: Derived from the prospects array in-memory (no extra DB calls). Weighted pipeline = Σ(value × win_probability).
+
+**Activity log**: Stored in `admin_prospect_activities`, fetched per prospect when detail sheet opens. Add activity form is inline inside the sheet.
