@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { LogOut } from 'lucide-react';
+import { Home, CreditCard, CalendarDays, MessageCircle, GraduationCap, LogOut, Zap, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -8,23 +8,22 @@ export type PortalTab = 'home' | 'membership' | 'classes' | 'messages' | 'fees' 
 interface NavItem {
   id: PortalTab;
   label: string;
-  emoji: string;
-  activeEmoji: string;
+  icon: React.ElementType;
 }
 
 const gymNav: NavItem[] = [
-  { id: 'home',       label: 'Home',     emoji: '🏠',  activeEmoji: '🏠' },
-  { id: 'membership', label: 'Plan',     emoji: '💳',  activeEmoji: '💳' },
-  { id: 'classes',    label: 'Classes',  emoji: '📅',  activeEmoji: '📅' },
-  { id: 'check-in',   label: 'Check In', emoji: '⚡',  activeEmoji: '⚡' },
-  { id: 'messages',   label: 'Messages', emoji: '💬',  activeEmoji: '💬' },
+  { id: 'home',       label: 'Home',     icon: Home },
+  { id: 'membership', label: 'Plan',     icon: CreditCard },
+  { id: 'classes',    label: 'Classes',  icon: CalendarDays },
+  { id: 'check-in',   label: 'Check In', icon: Zap },
+  { id: 'messages',   label: 'Messages', icon: MessageCircle },
 ];
 
 const schoolNav: NavItem[] = [
-  { id: 'home',      label: 'Home',      emoji: '🏠', activeEmoji: '🏠' },
-  { id: 'fees',      label: 'Fees',      emoji: '💳', activeEmoji: '💳' },
-  { id: 'timetable', label: 'Timetable', emoji: '📅', activeEmoji: '📅' },
-  { id: 'messages',  label: 'Messages',  emoji: '💬', activeEmoji: '💬' },
+  { id: 'home',      label: 'Home',      icon: Home },
+  { id: 'fees',      label: 'Fees',      icon: CreditCard },
+  { id: 'timetable', label: 'Timetable', icon: CalendarDays },
+  { id: 'messages',  label: 'Messages',  icon: MessageCircle },
 ];
 
 interface PortalLayoutProps {
@@ -37,7 +36,7 @@ interface PortalLayoutProps {
 
 export function PortalLayout({ children, activeTab, onTabChange, portalType, onSignOut }: PortalLayoutProps) {
   const nav = portalType === 'gym' ? gymNav : schoolNav;
-  const portalEmoji = portalType === 'gym' ? '🏋️' : '🎓';
+  const PortalIcon = portalType === 'gym' ? Dumbbell : GraduationCap;
   const portalTitle = portalType === 'gym' ? 'Member Portal' : 'Student Portal';
 
   return (
@@ -45,8 +44,8 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
       {/* Top Header */}
       <header className="z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 h-14 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-            {portalEmoji}
+          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <PortalIcon className="h-4 w-4 text-primary" strokeWidth={0} fill="hsl(var(--primary))" />
           </div>
           <span className="font-semibold text-sm text-foreground">{portalTitle}</span>
         </div>
@@ -70,8 +69,9 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
 
       {/* Bottom Navigation */}
       <nav className="bg-card/95 backdrop-blur-md border-t border-border z-50 shrink-0">
-        <div className="flex items-center justify-around px-3 py-2">
+        <div className="flex items-center justify-around px-2 py-2">
           {nav.map(item => {
+            const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
@@ -80,10 +80,17 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
                 className="flex flex-col items-center gap-1 px-3 py-1.5 min-w-[56px] transition-all"
               >
                 <div className={cn(
-                  'flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200 text-xl',
-                  isActive ? 'bg-primary/12 scale-110' : 'scale-100'
+                  'flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200',
+                  isActive ? 'bg-primary/12' : 'bg-transparent'
                 )}>
-                  {item.emoji}
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 transition-colors duration-200',
+                      isActive ? 'text-primary' : 'text-muted-foreground'
+                    )}
+                    strokeWidth={0}
+                    fill={isActive ? 'hsl(var(--primary))' : 'currentColor'}
+                  />
                 </div>
                 <span className={cn(
                   'text-[10px] font-medium transition-colors duration-200',
