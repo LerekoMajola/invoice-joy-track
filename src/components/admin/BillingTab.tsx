@@ -169,11 +169,22 @@ export function BillingTab() {
                       <div className="flex justify-end gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setBillingTenant(tenant)}>
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
+                            <span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setBillingTenant(tenant)}
+                                disabled={sub.status !== 'active'}
+                              >
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            </span>
                           </TooltipTrigger>
-                          <TooltipContent>Billing & Payments</TooltipContent>
+                          <TooltipContent>
+                            {sub.status !== 'active'
+                              ? 'Payment tracking only available after subscription is set to Active'
+                              : 'Billing & Payments'}
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
