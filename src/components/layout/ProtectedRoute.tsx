@@ -160,6 +160,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [loading, checkSubscription]);
 
+  // Block portal users from accessing the business dashboard
+  if (!loading && !checkingSubscription && user) {
+    const portalType = user.user_metadata?.portal_type;
+    if (portalType === 'gym' || portalType === 'school') {
+      return <Navigate to="/portal" replace />;
+    }
+  }
+
   if (loading || checkingSubscription) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

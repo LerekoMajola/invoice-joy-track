@@ -51,6 +51,8 @@ export default function Auth() {
     if (!loading && user && isLogin) {
       if (isAdmin) {
         navigate('/admin', { replace: true });
+      } else if (user.user_metadata?.portal_type) {
+        navigate('/portal', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
