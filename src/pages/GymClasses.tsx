@@ -68,9 +68,9 @@ export default function GymClasses() {
         </div>
 
         <Tabs defaultValue="schedule">
-          <TabsList>
-            <TabsTrigger value="schedule">Weekly Schedule</TabsTrigger>
-            <TabsTrigger value="classes">Class Library</TabsTrigger>
+          <TabsList className="bg-muted/60 border border-border p-1 rounded-lg h-auto">
+            <TabsTrigger value="schedule" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium">Weekly Schedule</TabsTrigger>
+            <TabsTrigger value="classes" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium">Class Library</TabsTrigger>
           </TabsList>
 
           <TabsContent value="schedule" className="space-y-4">
