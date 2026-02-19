@@ -1,163 +1,89 @@
 
-## Client-Facing Portal: GymPro Member App + EduPro Parent App
+## Two Issues, One Fix Each
 
-### What This Is
-A separate, mobile-first `/portal` route that gym members and school parents/guardians can access from their phone. It is completely isolated from the main tenant dashboard. The gym/school business owner does NOT manage this — it is for their end-customers.
+### Issue 1: Build Warning (Dynamic Import)
+In `src/pages/Portal.tsx` line 108, the sign-out button uses a **dynamic import** (`await import('@/integrations/supabase/client')`). The same file is already statically imported everywhere else, which causes Vite to emit a bundle warning. This is a one-line fix — replace the dynamic import with the static `supabase` import that is already used at the top of the file via `usePortalSession`.
 
-There are two distinct portal experiences on the same `/portal` route, distinguished by a token/invite mechanism:
-- **GymPro Member Portal**: gym members view their membership, class schedule, attendance, and can message the gym.
-- **EduPro Parent Portal**: school parents/guardians view their child's schedule, fee balance, term dates, and can message the school.
+**Fix:** Change the `onClick` handler to just call `supabase.auth.signOut()` directly (the `supabase` client is already accessible in scope via the `usePortalSession` hook's return, or we simply add a static import).
 
 ---
 
-### Access / Authentication Strategy
+### Issue 2: Data Does Not Update Without a Page Reload (Platform-Wide)
 
-Portal users are NOT standard platform subscribers. They use **passwordless magic-link login** via their email address (the same email stored on their gym_member or student/guardian record).
+**Root Cause:** Every single data hook in the platform (e.g., `useGymMembers`, `useStudents`, `useInvoices`, `useQuotes`, `useLeads`, `useClients`, `useStaff`, and dozens more) follows the same pattern:
 
-Flow:
-1. Gym/school owner clicks "Send Portal Invite" on a member or student record.
-2. System calls `supabase.auth.signInWithOtp({ email })`, sending a magic link.
-3. The link contains a `portal_type` query param (`?portal=gym` or `?portal=school`) so the portal knows which view to render.
-4. On arrival at `/portal`, the user is authenticated. The portal queries their data by matching `auth.user().email` against `gym_members.email` or `students.guardian_email`.
-
-No passwords, no signup form — just one click from their email inbox.
-
----
-
-### Database Changes (New Tables)
-
-**`portal_messages`** — real-time messaging between portal users and the business
 ```
-id, created_at,
-sender_type (text: 'member' | 'guardian' | 'business'),
-sender_id (text — auth user id or business owner id),
-recipient_owner_id (uuid — the gym/school owner's user_id),
-portal_type (text: 'gym' | 'school'),
-reference_id (uuid — gym_member.id or student.id),
-message (text),
-is_read (boolean, default false)
+useEffect(() => { fetchXxx(); }, [user, activeCompanyId]);
 ```
 
-RLS: Portal users can only read/write messages where `sender_id = auth.uid()` OR where the `recipient_owner_id` matches the row AND the authenticated user's email matches the linked member/guardian.
+They fetch data **once on mount** and then only re-fetch when `user` or `activeCompanyId` changes. There is **no real-time subscription** and **no polling**. So when you add a record, the mutation runs `fetchMembers()` / `fetchStudents()` etc. on the same hook instance — but the issue arises when:
 
----
+1. The dialog/form component is unmounted after saving (closing the dialog re-mounts nothing that triggers a re-fetch).
+2. Multiple hook instances exist (as happened with the Admin CRM).
+3. The mutation in some hooks uses optimistic local state (`setStudents(prev => [...prev, newStudent])`) which works for `createStudent`, but `updateStudent` calls `fetchStudents()` which is an async network round-trip that can silently fail if the component unmounts mid-flight.
 
-### New Files to Create
+**The Fix:** Add a **Supabase Realtime channel subscription** to every affected hook. When the database table changes (INSERT, UPDATE, DELETE), the hook automatically calls its own `fetchXxx()` to refresh. This is the canonical Supabase pattern and makes the app truly live without any architectural restructuring.
 
-**Pages:**
-- `src/pages/Portal.tsx` — root shell; detects `portal_type` from URL or session, renders correct sub-portal
-
-**Portal Components:**
-- `src/components/portal/PortalLogin.tsx` — magic-link request form (email input + "Send me a link" button)
-- `src/components/portal/PortalLayout.tsx` — mobile-first layout with bottom nav for portal pages
-- `src/components/portal/gym/GymMemberPortal.tsx` — main gym portal home: membership card + quick stats
-- `src/components/portal/gym/GymPortalSchedule.tsx` — weekly class timetable view (read-only)
-- `src/components/portal/gym/GymPortalMembership.tsx` — current plan, expiry, freeze status
-- `src/components/portal/school/SchoolParentPortal.tsx` — main parent portal home
-- `src/components/portal/school/SchoolPortalFees.tsx` — fee balance, payment history per term
-- `src/components/portal/school/SchoolPortalTimetable.tsx` — child's class timetable (read-only)
-- `src/components/portal/shared/PortalMessaging.tsx` — real-time messaging thread
-
-**Hooks:**
-- `src/hooks/usePortalSession.tsx` — resolves the logged-in portal user to their gym_member or student record by email matching
-
-**Business-side components (triggers sending invite):**
-- Add "Send Portal Invite" button inside `MemberDetailDialog.tsx` (gym) and `StudentDetailDialog.tsx` (school) — calls `supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: '/portal?type=gym' }})`
-
----
-
-### Modified Files
-
-- `src/App.tsx` — add `/portal` public route (no ProtectedRoute wrapper, uses its own auth)
-- `src/components/gym/MemberDetailDialog.tsx` — add "Send Portal Invite" button
-- `src/components/school/StudentDetailDialog.tsx` — add "Send Portal Invite" button
-
----
-
-### Portal Feature Breakdown
-
-**GymPro Member Portal** (4 screens via bottom tab nav):
-1. **Home** — Welcome card with member name, member number, current status badge (Active/Frozen/Expired). Shows expiry date and days remaining.
-2. **Membership** — Active plan details: plan name, start/end dates, payment status, freeze history, auto-renew status.
-3. **Classes** — Read-only weekly grid of all gym classes (same data as `gym_class_schedules`). Tapping a class shows description, instructor, duration, and capacity.
-4. **Messages** — Simple message thread between member and gym staff. Real-time via Supabase Realtime on `portal_messages`.
-
-**EduPro Parent Portal** (4 screens via bottom tab nav):
-1. **Home** — Child's name, class, term info (current term name, start/end dates), overall fee balance summary.
-2. **Fees** — Breakdown per term: what is owed, what has been paid, outstanding balance. Shows each payment with date and amount.
-3. **Timetable** — Child's class timetable grid filtered to their class (read-only, same data as `timetable_entries`).
-4. **Messages** — Message thread with the school office.
-
----
-
-### Technical Details
-
-**RLS for `portal_messages`:**
-```sql
--- Portal users can insert their own messages
-CREATE POLICY "portal_messages_insert" ON portal_messages
-  FOR INSERT TO authenticated
-  WITH CHECK (sender_id = auth.uid()::text);
-
--- Portal users can read messages in their thread
-CREATE POLICY "portal_messages_select" ON portal_messages
-  FOR SELECT TO authenticated
-  USING (
-    sender_id = auth.uid()::text
-    OR recipient_owner_id = auth.uid()
-  );
-```
-
-**`usePortalSession` hook logic:**
+**Pattern to add to every hook (example for `useGymMembers`):**
 ```typescript
-// After signIn via magic link, get the current user
-const { data: { user } } = await supabase.auth.getUser();
+useEffect(() => {
+  fetchMembers();
 
-// For gym portal: match email to gym_members
-const { data: member } = await supabase
-  .from('gym_members')
-  .select('*')
-  .ilike('email', user.email)
-  .single();
+  const channel = supabase
+    .channel('gym-members-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'gym_members',
+    }, () => {
+      fetchMembers();
+    })
+    .subscribe();
 
-// For school portal: match email to students.guardian_email
-const { data: student } = await supabase
-  .from('students')
-  .select('*')
-  .ilike('guardian_email', user.email)
-  .single();
+  return () => { supabase.removeChannel(channel); };
+}, [user, activeCompanyId]);
 ```
-
-**Real-time messaging:**
-```typescript
-supabase.channel('portal-messages')
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portal_messages' }, handler)
-  .subscribe();
-```
-
-**Portal type detection priority:**
-1. URL query param: `/portal?type=gym`
-2. Stored in localStorage after first successful login
-3. Falls back to: if a gym_member record found → gym; if student found → school
 
 ---
 
-### Files Summary
+### Hooks to Update (All Core Business Hooks)
 
-| File | Action |
-|---|---|
-| `supabase/migrations/[ts]_portal.sql` | New — creates `portal_messages` table + RLS |
-| `src/pages/Portal.tsx` | New |
-| `src/components/portal/PortalLogin.tsx` | New |
-| `src/components/portal/PortalLayout.tsx` | New |
-| `src/components/portal/gym/GymMemberPortal.tsx` | New |
-| `src/components/portal/gym/GymPortalSchedule.tsx` | New |
-| `src/components/portal/gym/GymPortalMembership.tsx` | New |
-| `src/components/portal/school/SchoolParentPortal.tsx` | New |
-| `src/components/portal/school/SchoolPortalFees.tsx` | New |
-| `src/components/portal/school/SchoolPortalTimetable.tsx` | New |
-| `src/components/portal/shared/PortalMessaging.tsx` | New |
-| `src/hooks/usePortalSession.tsx` | New |
-| `src/App.tsx` | Modified — add `/portal` route |
-| `src/components/gym/MemberDetailDialog.tsx` | Modified — add invite button |
-| `src/components/school/StudentDetailDialog.tsx` | Modified — add invite button |
+| Hook File | Table | Channel Name |
+|---|---|---|
+| `useGymMembers.tsx` | `gym_members` | `gym-members-rt` |
+| `useStudents.tsx` | `students` | `students-rt` |
+| `useInvoices.tsx` | `invoices` | `invoices-rt` |
+| `useQuotes.tsx` | `quotes` | `quotes-rt` |
+| `useLeads.tsx` | `leads` | `leads-rt` |
+| `useClients.tsx` | `clients` | `clients-rt` |
+| `useStaff.tsx` | `staff_members` | `staff-rt` |
+| `useDeals.tsx` | `deals` | `deals-rt` |
+| `useTasks.tsx` | `tasks` | `tasks-rt` |
+| `useExpenses.tsx` | `expenses` | `expenses-rt` |
+| `useBankAccounts.tsx` | `bank_accounts` | `bank-accounts-rt` |
+| `useFleetVehicles.tsx` | `fleet_vehicles` | `fleet-vehicles-rt` |
+| `useFleetDrivers.tsx` | `fleet_drivers` | `fleet-drivers-rt` |
+| `useFleetFuelLogs.tsx` | `fleet_fuel_logs` | `fleet-fuel-rt` |
+| `useFleetServiceLogs.tsx` | `fleet_service_logs` | `fleet-service-rt` |
+| `useEquipment.tsx` | `equipment` | `equipment-rt` |
+| `useHireOrders.tsx` | `hire_orders` | `hire-orders-rt` |
+| `useBookings.tsx` | `bookings` | `bookings-rt` |
+| `useRooms.tsx` | `rooms` | `rooms-rt` |
+| `useGymClasses.tsx` | `gym_classes` | `gym-classes-rt` |
+| `useGymMembershipPlans.tsx` | `gym_membership_plans` | `gym-plans-rt` |
+| `useGymMemberSubscriptions.tsx` | `gym_member_subscriptions` | `gym-subs-rt` |
+| `useSchoolFees.tsx` | `school_fees` | `school-fees-rt` |
+| `useLegalCases.tsx` | `legal_cases` | `legal-cases-rt` |
+| `useJobCards.tsx` | `job_cards` | `job-cards-rt` |
+| `usePayslips.tsx` | `payslips` | `payslips-rt` |
+| `useDeliveryNotes.tsx` | `delivery_notes` | `delivery-notes-rt` |
+| `useAdminProspects.tsx` | `admin_prospects` | `admin-prospects-rt` |
+
+---
+
+### Files Changed
+
+- **`src/pages/Portal.tsx`** — fix dynamic import (1-line fix)
+- All ~28 hook files above — add realtime channel subscription inside the main `useEffect`
+
+No database migrations needed. No new components. The realtime tables are already accessible via existing RLS policies since the subscriptions fire as the logged-in user who already has SELECT permission on their own data.
