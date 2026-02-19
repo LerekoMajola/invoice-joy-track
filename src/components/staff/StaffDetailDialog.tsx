@@ -42,7 +42,9 @@ import {
 import { useStaff, StaffMember, StaffRole, StaffStatus } from '@/hooks/useStaff';
 import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
-import { Loader2, Pencil, Trash2, UserCheck, UserX, Shield } from 'lucide-react';
+import { Loader2, Pencil, Trash2, UserCheck, UserX, Shield, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 const editSchema = z.object({
@@ -109,8 +111,10 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [editModuleIds, setEditModuleIds] = useState<string[]>([]);
   const { updateStaff, updateStaffRole, deleteStaff } = useStaff();
+  const { toast } = useToast();
   const { userModules } = useModules();
   const { moduleIds, saveModuleAccess, isLoading: moduleAccessLoading } = useStaffModuleAccess(staff?.id);
 
@@ -457,6 +461,30 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
+                {staff.userId && (
+                  <Button
+                    variant="outline"
+                    disabled={isResending}
+                    onClick={async () => {
+                      setIsResending(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('resend-staff-credentials', {
+                          body: { staffMemberId: staff.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast({ title: 'Credentials sent', description: `New login credentials emailed to ${staff.email}` });
+                      } catch (err: any) {
+                        toast({ title: 'Error', description: err.message || 'Failed to resend credentials', variant: 'destructive' });
+                      } finally {
+                        setIsResending(false);
+                      }
+                    }}
+                  >
+                    {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                    Resend Credentials
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleStatusToggle}>
                   {staff.status === 'active' ? (
                     <>
