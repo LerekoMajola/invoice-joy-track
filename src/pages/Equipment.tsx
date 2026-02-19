@@ -10,9 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useEquipment, CreateEquipmentInput } from '@/hooks/useEquipment';
-import { formatMaluti } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 import { Progress } from '@/components/ui/progress';
 import { Plus, Search, Loader2, Hammer, Package } from 'lucide-react';
+import { EquipmentDetailDialog } from '@/components/hire/EquipmentDetailDialog';
+import type { EquipmentItem } from '@/hooks/useEquipment';
 
 const CATEGORIES = ['Power Tools', 'Earthmoving', 'Generators', 'Scaffolding', 'Cleaning', 'Compactors', 'Event/Party', 'General'];
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor'];
@@ -27,10 +29,13 @@ const statusColor: Record<string, string> = {
 
 export default function Equipment() {
   const { equipment, isLoading, createEquipment, deleteEquipment, isCreating } = useEquipment();
+  const { fc } = useCurrency();
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedItem, setSelectedItem] = useState<EquipmentItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const [form, setForm] = useState<CreateEquipmentInput>({
     name: '',
@@ -57,6 +62,11 @@ export default function Equipment() {
     createEquipment(form);
     setAddOpen(false);
     setForm({ name: '', category: 'General', daily_rate: 0, description: '', serial_number: '', deposit_amount: 0, condition: 'good', quantity_total: 1 });
+  };
+
+  const handleCardClick = (item: EquipmentItem) => {
+    setSelectedItem(item);
+    setDetailOpen(true);
   };
 
   const uniqueCategories = [...new Set(equipment.map(e => e.category))];
@@ -104,7 +114,7 @@ export default function Equipment() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map(item => (
-              <Card key={item.id} className="overflow-hidden">
+              <Card key={item.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleCardClick(item)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -130,12 +140,12 @@ export default function Equipment() {
                   <div className="flex items-center justify-between mt-3 pt-3 border-t">
                     <div>
                       <p className="text-xs text-muted-foreground">Daily Rate</p>
-                      <p className="font-bold text-sm">{formatMaluti(item.daily_rate)}</p>
+                      <p className="font-bold text-sm">{fc(item.daily_rate)}</p>
                     </div>
                     {item.weekly_rate && (
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Weekly</p>
-                        <p className="font-semibold text-sm">{formatMaluti(item.weekly_rate)}</p>
+                        <p className="font-semibold text-sm">{fc(item.weekly_rate)}</p>
                       </div>
                     )}
                     <div className="text-right">
@@ -223,6 +233,13 @@ export default function Equipment() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Equipment Detail Dialog */}
+      <EquipmentDetailDialog
+        item={selectedItem}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </DashboardLayout>
   );
 }
