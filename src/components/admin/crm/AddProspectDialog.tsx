@@ -5,16 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAdminProspects, ProspectStatus, ProspectPriority } from '@/hooks/useAdminProspects';
+import { ProspectStatus, ProspectPriority, AdminProspect } from '@/hooks/useAdminProspects';
 
 interface AddProspectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultStatus?: ProspectStatus;
+  createProspect: (data: Omit<AdminProspect, 'id' | 'created_at' | 'updated_at'>) => Promise<AdminProspect | null>;
 }
 
-export function AddProspectDialog({ open, onOpenChange, defaultStatus = 'lead' }: AddProspectDialogProps) {
-  const { createProspect } = useAdminProspects();
+export function AddProspectDialog({ open, onOpenChange, defaultStatus = 'lead', createProspect }: AddProspectDialogProps) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     company_name: '',
@@ -53,6 +53,7 @@ export function AddProspectDialog({ open, onOpenChange, defaultStatus = 'lead' }
       source: form.source || null,
       notes: form.notes || null,
       next_follow_up: null,
+      stage_entered_at: null,
       loss_reason: null,
       interested_plan: form.interested_plan || null,
       interested_system: form.interested_system || null,

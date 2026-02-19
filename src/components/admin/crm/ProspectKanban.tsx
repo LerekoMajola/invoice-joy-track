@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AdminProspect, ProspectStatus, useAdminProspects } from '@/hooks/useAdminProspects';
+import { AdminProspect, ProspectStatus } from '@/hooks/useAdminProspects';
 import { ProspectCard } from './ProspectCard';
 import { AddProspectDialog } from './AddProspectDialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Plus } from 'lucide-react';
 interface ProspectKanbanProps {
   prospects: AdminProspect[];
   onCardClick: (prospect: AdminProspect) => void;
+  moveProspect: (id: string, status: ProspectStatus) => Promise<void>;
+  createProspect: (data: Omit<AdminProspect, 'id' | 'created_at' | 'updated_at'>) => Promise<AdminProspect | null>;
 }
 
 const STAGES: { key: ProspectStatus; label: string; color: string; headerColor: string }[] = [
@@ -20,8 +22,7 @@ const STAGES: { key: ProspectStatus; label: string; color: string; headerColor: 
   { key: 'lost',        label: 'Lost',          color: 'border-t-red-500',     headerColor: 'text-red-600' },
 ];
 
-export function ProspectKanban({ prospects, onCardClick }: ProspectKanbanProps) {
-  const { moveProspect } = useAdminProspects();
+export function ProspectKanban({ prospects, onCardClick, moveProspect, createProspect }: ProspectKanbanProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ProspectStatus | null>(null);
   const [addDialogStage, setAddDialogStage] = useState<ProspectStatus | null>(null);
@@ -102,6 +103,7 @@ export function ProspectKanban({ prospects, onCardClick }: ProspectKanbanProps) 
         open={addDialogStage !== null}
         onOpenChange={open => !open && setAddDialogStage(null)}
         defaultStatus={addDialogStage || 'lead'}
+        createProspect={createProspect}
       />
     </>
   );

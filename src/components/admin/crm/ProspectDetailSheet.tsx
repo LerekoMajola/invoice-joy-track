@@ -8,15 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AdminProspect, ProspectActivity, ActivityType, ProspectStatus, ProspectPriority, useAdminProspects } from '@/hooks/useAdminProspects';
+import { AdminProspect, ProspectActivity, ActivityType } from '@/hooks/useAdminProspects';
 import { format } from 'date-fns';
-import { Phone, Mail, MessageSquare, Video, Users, StickyNote, Trash2, Save, Plus } from 'lucide-react';
-
-interface ProspectDetailSheetProps {
-  prospect: AdminProspect | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import { Phone, Mail, Video, Users, StickyNote, Trash2, Save, Plus } from 'lucide-react';
 
 const activityIcons: Record<ActivityType, React.ReactNode> = {
   call: <Phone className="h-3.5 w-3.5" />,
@@ -30,12 +24,21 @@ const activityColors: Record<ActivityType, string> = {
   call: 'bg-primary/10 text-primary',
   email: 'bg-accent text-accent-foreground',
   note: 'bg-muted text-muted-foreground',
-  demo: 'bg-success/10 text-success',
+  demo: 'bg-green-100 text-green-700',
   meeting: 'bg-secondary text-secondary-foreground',
 };
 
-export function ProspectDetailSheet({ prospect, open, onOpenChange }: ProspectDetailSheetProps) {
-  const { updateProspect, deleteProspect, fetchActivities, addActivity } = useAdminProspects();
+interface ProspectDetailSheetProps {
+  prospect: AdminProspect | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  updateProspect: (id: string, data: Partial<AdminProspect>) => Promise<AdminProspect | null>;
+  deleteProspect: (id: string) => Promise<void>;
+  fetchActivities: (prospectId: string) => Promise<ProspectActivity[]>;
+  addActivity: (prospectId: string, data: { type: ActivityType; title: string; description: string }) => Promise<ProspectActivity | null>;
+}
+
+export function ProspectDetailSheet({ prospect, open, onOpenChange, updateProspect, deleteProspect, fetchActivities, addActivity }: ProspectDetailSheetProps) {
   const [activities, setActivities] = useState<ProspectActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [saving, setSaving] = useState(false);
