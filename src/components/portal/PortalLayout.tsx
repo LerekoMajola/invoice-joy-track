@@ -40,9 +40,9 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
   const portalTitle = portalType === 'gym' ? 'Member Portal' : 'Student Portal';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto">
+    <div className="h-[100dvh] bg-background flex flex-col max-w-md mx-auto overflow-hidden">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 h-14 flex items-center justify-between shrink-0">
+      <header className="z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 h-14 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
             <PortalIcon className="h-4 w-4 text-primary" />
@@ -63,13 +63,13 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-24">
+      <main className="flex-1 min-h-0 overflow-y-auto">
         {children}
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-card/95 backdrop-blur-md border-t border-border z-50">
-        <div className="flex items-center justify-around px-3 py-2 safe-area-bottom">
+      <nav className="bg-card/95 backdrop-blur-md border-t border-border z-50 shrink-0">
+        <div className="flex items-center justify-around px-3 py-2">
           {nav.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
