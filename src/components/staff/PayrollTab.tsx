@@ -16,7 +16,7 @@ import { Plus, Search, MoreVertical, Eye, CheckCircle, DollarSign, Trash2, FileT
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function PayrollTab() {
-  const { payslips, isLoading, approvePayslip, markAsPaid, deletePayslip } = usePayslips();
+  const { payslips, isLoading, approvePayslip, markAsPaid, deletePayslip, createPayslip, refetch } = usePayslips();
   const { staff } = useStaff();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -234,6 +234,8 @@ export function PayrollTab() {
         open={showGenerateDialog} 
         onOpenChange={setShowGenerateDialog}
         staff={staff.filter(s => s.status === 'active')}
+        createPayslip={createPayslip}
+        onSuccess={refetch}
       />
       
       <PayslipPreview

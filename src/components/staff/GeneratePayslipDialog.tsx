@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePayslips, AllowanceDeduction } from '@/hooks/usePayslips';
+import { AllowanceDeduction, CreatePayslipData, Payslip } from '@/hooks/usePayslips';
 import { StaffMember } from '@/hooks/useStaff';
 import { formatMaluti } from '@/lib/currency';
 import { format, startOfMonth, endOfMonth, lastDayOfMonth } from 'date-fns';
@@ -16,10 +16,11 @@ interface GeneratePayslipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   staff: StaffMember[];
+  createPayslip: (data: CreatePayslipData) => Promise<Payslip | null>;
+  onSuccess?: () => void;
 }
 
-export function GeneratePayslipDialog({ open, onOpenChange, staff }: GeneratePayslipDialogProps) {
-  const { createPayslip } = usePayslips();
+export function GeneratePayslipDialog({ open, onOpenChange, staff, createPayslip, onSuccess }: GeneratePayslipDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const today = new Date();
@@ -100,7 +101,7 @@ export function GeneratePayslipDialog({ open, onOpenChange, staff }: GeneratePay
 
     setIsSubmitting(true);
     try {
-      await createPayslip({
+      const result = await createPayslip({
         staffMemberId: formData.staffMemberId,
         payPeriodStart: formData.payPeriodStart,
         payPeriodEnd: formData.payPeriodEnd,
@@ -112,6 +113,9 @@ export function GeneratePayslipDialog({ open, onOpenChange, staff }: GeneratePay
         deductions: deductions.filter(d => d.name && d.amount > 0),
         notes: formData.notes || undefined,
       });
+      if (result) {
+        onSuccess?.();
+      }
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
