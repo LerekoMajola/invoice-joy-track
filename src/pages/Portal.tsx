@@ -16,6 +16,12 @@ export default function Portal() {
   const { user, portalType, gymMember, schoolStudent, loading } = usePortalSession();
   const [activeTab, setActiveTab] = useState<PortalTab>('home');
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('portal_type');
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -24,7 +30,7 @@ export default function Portal() {
     );
   }
 
-  // Not authenticated — show magic-link login
+  // Not authenticated — show login
   if (!user) {
     const urlType = new URLSearchParams(window.location.search).get('type') as 'gym' | 'school' | null;
     return <PortalLogin portalType={urlType} />;
@@ -57,7 +63,7 @@ export default function Portal() {
     };
 
     return (
-      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="gym">
+      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="gym" onSignOut={handleSignOut}>
         {renderGymTab()}
       </PortalLayout>
     );
@@ -90,7 +96,7 @@ export default function Portal() {
     };
 
     return (
-      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="school">
+      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="school" onSignOut={handleSignOut}>
         {renderSchoolTab()}
       </PortalLayout>
     );
@@ -107,11 +113,7 @@ export default function Portal() {
         </p>
         <button
           className="text-sm text-primary underline"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            localStorage.removeItem('portal_type');
-            window.location.reload();
-          }}
+          onClick={handleSignOut}
         >
           Try a different email
         </button>
