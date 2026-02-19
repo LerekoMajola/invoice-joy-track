@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import southernAfricaMap from '@/assets/southern-africa-map.png';
+import southernAfricaMap from '@/assets/southern-africa-map.svg';
 
 const countries = [
   { name: 'Lesotho', flag: '🇱🇸' },
