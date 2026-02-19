@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AdminOverviewTab, CustomersTab, BillingTab, AdminSettingsTab, AdminInvoicesTab } from '@/components/admin';
+import { AdminOverviewTab, CustomersTab, BillingTab, AdminSettingsTab, AdminInvoicesTab, AdminCRMTab } from '@/components/admin';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 export default function Admin() {
@@ -49,6 +49,7 @@ export default function Admin() {
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
             <TabsList className="w-max sm:w-auto">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="crm">CRM</TabsTrigger>
               <TabsTrigger value="customers">Customers</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
               <TabsTrigger value="invoices">Invoices</TabsTrigger>
@@ -58,6 +59,10 @@ export default function Admin() {
 
           <TabsContent value="overview">
             <AdminOverviewTab />
+          </TabsContent>
+
+          <TabsContent value="crm">
+            <AdminCRMTab />
           </TabsContent>
 
           <TabsContent value="customers">

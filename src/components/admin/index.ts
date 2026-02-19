@@ -8,3 +8,4 @@ export { SignupsChart } from './SignupsChart';
 export { RevenueChart } from './RevenueChart';
 export { AdminSettingsTab } from './AdminSettingsTab';
 export { AdminInvoicesTab } from './AdminInvoicesTab';
+export { AdminCRMTab } from './crm/AdminCRMTab';
