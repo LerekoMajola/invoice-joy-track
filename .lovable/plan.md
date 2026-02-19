@@ -1,54 +1,43 @@
 
-# Gym-Specific Roles for GymPro Staff
+# Style the Tab Selector on Gym Classes Page
 
 ## What's changing
 
-Both the "Add Staff" dialog and the "Staff Detail" dialog currently show generic roles (Admin, Manager, Staff, Viewer) and generic job title suggestions (Technician, Senior Technician, Workshop Foreman). These will be made context-aware so that GymPro tenants see fitness industry roles and job titles instead.
+The `TabsList` and `TabsTrigger` on the Gym Classes page (`/gym-classes`) currently use the default muted background with a plain white active state — low contrast and visually flat.
 
-## How the system type is detected
+The fix is scoped to just this page's `<TabsList>` and `<TabsTrigger>` elements by passing custom `className` props directly.
 
-`useSubscription()` exposes a `systemType` value (e.g. `'gym'`, `'business'`, `'workshop'`) read from the subscriptions table. This will be imported into both dialogs to conditionally swap the role and job title lists.
+## Changes
 
-## New GymPro-specific content
+### `src/pages/GymClasses.tsx` — lines 71–74
 
-**Roles:**
-- Head Coach
-- Personal Trainer
-- Group Fitness Instructor
-- Receptionist
-- Membership Consultant
-- Facility Manager
-- Nutritionist
-- Physiotherapist
-- Admin
-- Viewer
+**TabsList**: Give it a darker, higher-contrast background (e.g. `bg-muted/80 border border-border`) so the pill container is clearly visible.
 
-**Job Title Suggestions:**
-- Personal Trainer
-- Group Fitness Instructor
-- Head Coach
-- Receptionist
-- Membership Consultant
-- Facility Manager
-- Nutritionist
-- Physiotherapist
+**TabsTrigger (active)**: Override the default `data-[state=active]:bg-background` with an inline gradient using a custom class. Since Tailwind doesn't support arbitrary gradient `data-*` variants easily, the active trigger will use a wrapper approach — apply `className` with:
+- Inactive: muted text, transparent background
+- Active: white text, blue-purple gradient via `data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md`
 
-**Departments (Gym-specific):**
-- Fitness
-- Reception
-- Management
-- Nutrition & Wellness
-- Maintenance
-- Admin
+## Technical details
 
-## Files to edit
+```tsx
+<TabsList className="bg-muted/60 border border-border p-1 rounded-lg h-auto">
+  <TabsTrigger
+    value="schedule"
+    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium"
+  >
+    Weekly Schedule
+  </TabsTrigger>
+  <TabsTrigger
+    value="classes"
+    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium"
+  >
+    Class Library
+  </TabsTrigger>
+</TabsList>
+```
 
-### 1. `src/components/staff/AddStaffDialog.tsx`
-- Import `useSubscription`
-- Replace the hardcoded `defaultRoles`, `jobTitleSuggestions`, and `departments` arrays with context-aware versions that swap based on `systemType === 'gym'`
+## File to edit
 
-### 2. `src/components/staff/StaffDetailDialog.tsx`
-- Import `useSubscription`
-- Replace the hardcoded `defaultRoles` constant with a context-aware version
+- `src/pages/GymClasses.tsx` — only the TabsList/TabsTrigger block (lines 71–74)
 
-No database changes are required — roles are stored as free-text strings in the `staff_roles` table, so any string value works.
+No other files need to change. The global `tabs.tsx` UI component is left untouched so other pages are unaffected.
