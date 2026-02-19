@@ -113,6 +113,7 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [editModuleIds, setEditModuleIds] = useState<string[]>([]);
+  const [isSavingModule, setIsSavingModule] = useState(false);
   const { updateStaff, updateStaffRole, deleteStaff } = useStaff();
   const { toast } = useToast();
   const { userModules } = useModules();
@@ -155,6 +156,16 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
         ? prev.filter((id) => id !== moduleId)
         : [...prev, moduleId]
     );
+  };
+
+  const handleInlineModuleToggle = async (moduleId: string) => {
+    if (!staff) return;
+    const newIds = moduleIds.includes(moduleId)
+      ? moduleIds.filter((id) => id !== moduleId)
+      : [...moduleIds, moduleId];
+    setIsSavingModule(true);
+    await saveModuleAccess(staff.id, newIds);
+    setIsSavingModule(false);
   };
 
   const onSubmit = async (data: EditFormData) => {
@@ -209,7 +220,7 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Staff Member Details</span>
@@ -365,9 +376,9 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
               </form>
             </Form>
           ) : (
-            <div className="space-y-6">
-              {/* Details View */}
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Left Column: Staff Info */}
+              <div className="space-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Name</p>
                   <p className="font-medium">{staff.name}</p>
@@ -412,96 +423,110 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                 )}
               </div>
 
-              {/* Role Selector */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Role</p>
-                <Select value={staff.role} onValueChange={(v) => handleRoleChange(v as StaffRole)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        {role.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Module Access (View Mode) */}
-              {userModules.length > 0 && (
+              {/* Right Column: Role, Modules, Actions */}
+              <div className="space-y-4">
+                {/* Role Selector */}
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Module Access</p>
-                  </div>
-                  {moduleAccessLoading ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading...
-                    </div>
-                  ) : accessibleModules.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {accessibleModules.map((um) => (
-                        <Badge key={um.module_id} variant="secondary" className="text-xs">
-                          {um.module?.name || 'Unknown'}
-                        </Badge>
+                  <p className="text-sm text-muted-foreground mb-2">Role</p>
+                  <Select value={staff.role} onValueChange={(v) => handleRoleChange(v as StaffRole)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
                       ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">No modules assigned</p>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-                {staff.userId && (
-                  <Button
-                    variant="outline"
-                    disabled={isResending}
-                    onClick={async () => {
-                      setIsResending(true);
-                      try {
-                        const { data, error } = await supabase.functions.invoke('resend-staff-credentials', {
-                          body: { staffMemberId: staff.id },
-                        });
-                        if (error) throw error;
-                        if (data?.error) throw new Error(data.error);
-                        toast({ title: 'Credentials sent', description: `New login credentials emailed to ${staff.email}` });
-                      } catch (err: any) {
-                        toast({ title: 'Error', description: err.message || 'Failed to resend credentials', variant: 'destructive' });
-                      } finally {
-                        setIsResending(false);
-                      }
-                    }}
-                  >
-                    {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                    Resend Credentials
-                  </Button>
+                {/* Module Access (Inline Checkboxes) */}
+                {userModules.length > 0 && (
+                  <div className="space-y-2 rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Module Access</p>
+                      {isSavingModule && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                    </div>
+                    {moduleAccessLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading...
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {userModules.map((um) => (
+                          <div key={um.module_id} className="flex items-center gap-3">
+                            <Checkbox
+                              id={`view-module-${um.module_id}`}
+                              checked={moduleIds.includes(um.module_id)}
+                              onCheckedChange={() => handleInlineModuleToggle(um.module_id)}
+                              disabled={isSavingModule}
+                            />
+                            <Label
+                              htmlFor={`view-module-${um.module_id}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {um.module?.name || 'Unknown Module'}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-                <Button variant="outline" onClick={handleStatusToggle}>
-                  {staff.status === 'active' ? (
-                    <>
-                      <UserX className="mr-2 h-4 w-4" />
-                      Deactivate
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      Activate
-                    </>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  {staff.userId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isResending}
+                      onClick={async () => {
+                        setIsResending(true);
+                        try {
+                          const { data, error } = await supabase.functions.invoke('resend-staff-credentials', {
+                            body: { staffMemberId: staff.id },
+                          });
+                          if (error) throw error;
+                          if (data?.error) throw new Error(data.error);
+                          toast({ title: 'Credentials sent', description: `New login credentials emailed to ${staff.email}` });
+                        } catch (err: any) {
+                          toast({ title: 'Error', description: err.message || 'Failed to resend credentials', variant: 'destructive' });
+                        } finally {
+                          setIsResending(false);
+                        }
+                      }}
+                    >
+                      {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                      Resend Credentials
+                    </Button>
                   )}
-                </Button>
-                <Button variant="destructive" onClick={() => setShowDeleteAlert(true)}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Remove
-                </Button>
+                  <Button variant="outline" size="sm" onClick={handleStatusToggle}>
+                    {staff.status === 'active' ? (
+                      <>
+                        <UserX className="mr-2 h-4 w-4" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Activate
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setShowDeleteAlert(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
+                  </Button>
+                </div>
               </div>
             </div>
           )}
