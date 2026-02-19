@@ -1,135 +1,113 @@
 
-## Gym Member Billing: Proof of Payment Upload + Renewal Reminders
+## Two Features: Self Check-In from Portal + Shareable Workout Card
 
 ### What's Being Built
 
-Two features:
-1. **POP Upload** — A gym member can take a photo of their payment slip and attach it to their active subscription directly from the portal's Plan tab. The gym owner sees it in their admin view.
-2. **Renewal Reminder Emails** — A new scheduled backend function runs daily and emails gym members whose membership expires in exactly 2 days, reminding them to renew.
+**Feature 1 — Portal Self Check-In:**
+A gym member opens the portal on their phone, taps "Check In", and their attendance is recorded instantly. They can also see their visit stats (today, weekly, monthly streak). The gym owner's admin view already shows this in the Attendance page.
+
+**Feature 2 — Shareable Workout Card ("Share Your Visit"):**
+After checking in, a visually stunning digital "gym card" appears that members can screenshot and post on social media. It shows their name, gym, today's check-in time, monthly visit count, and a motivational streak badge — styled like a fitness app's achievement card.
 
 ---
 
-### Part 1: Proof of Payment (POP) Upload
+### Technical Reality Check
 
-#### Database Changes
+The `gym_attendance` table currently only allows the **gym owner** or **staff** to insert records (via `user_id = auth.uid()` RLS). A portal user trying to insert an attendance row would fail because their `auth.uid()` is their own portal user ID, not the gym owner's `user_id`.
 
-**Add `pop_url` column to `gym_member_subscriptions`:**
-A new nullable text column to store the URL of the uploaded proof-of-payment image.
+Two things need to change:
 
-```sql
-ALTER TABLE public.gym_member_subscriptions
-  ADD COLUMN IF NOT EXISTS pop_url text;
-```
+1. **New RLS policies on `gym_attendance`** — portal members can INSERT their own check-in (where `member_id` links back to their gym_members record), and SELECT their own attendance history.
 
-**Add `plan_name` column to `gym_member_subscriptions`:**
-Currently `plan_name` doesn't exist in the table — the subscriptions only store `plan_id`. The `GymPortalMembership` component was reading a non-existent column. A `plan_name` column will be added to store the resolved plan name at subscription creation time (it's already being passed in the create dialog). This also makes the portal read simpler without needing joins.
-
-```sql
-ALTER TABLE public.gym_member_subscriptions
-  ADD COLUMN IF NOT EXISTS plan_name text;
-```
-
-**RLS Policy — Portal member can UPDATE their own subscription's `pop_url` only:**
-A portal user should only be able to update the `pop_url` field (no other fields). This is implemented as a targeted UPDATE policy:
-
-```sql
-CREATE POLICY "Portal: gym member can upload POP"
-  ON public.gym_member_subscriptions FOR UPDATE TO authenticated
-  USING (member_id IN (
-    SELECT id FROM public.gym_members WHERE portal_user_id = auth.uid()
-  ))
-  WITH CHECK (member_id IN (
-    SELECT id FROM public.gym_members WHERE portal_user_id = auth.uid()
-  ));
-```
-
-**Storage bucket — `gym-pop` for proof-of-payment images:**
-A new public bucket so that images are viewable by the gym owner without authentication overhead:
-
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('gym-pop', 'gym-pop', true);
-
--- Portal members can upload to their own folder
-CREATE POLICY "Portal member can upload POP"
-  ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'gym-pop');
-
--- Anyone can view (public bucket)
-CREATE POLICY "Public can read gym POP"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'gym-pop');
-```
-
-#### Portal UI Changes — `GymPortalMembership.tsx`
-
-The Plan tab gets a full billing-focused redesign:
-
-- **Fetch joins the plan name** from `gym_membership_plans` via `plan_id` (since `plan_name` may not yet be populated for old subscriptions, it falls back gracefully).
-- **Active subscription card shows:**
-  - Plan name, status badge, date range
-  - Days remaining progress bar
-  - Amount paid (large, green)
-  - Payment status badge
-- **POP Upload section** (shown only when `payment_status !== 'paid'` OR always as proof):
-  - "Attach Proof of Payment" button — opens file picker for images
-  - On select: uploads to `gym-pop/{memberId}/{subscriptionId}.jpg` bucket
-  - Updates `pop_url` on the subscription record
-  - Shows a thumbnail preview once uploaded with a green "Submitted ✓" badge
-  - If POP already exists: shows the existing thumbnail with option to replace
-- **Full-screen Proof Modal:**
-  - "Show as Proof" button opens a clean full-screen modal
-  - If POP image exists: displays the photo with gym details overlay
-  - If no POP: shows the digital receipt (plan name, amount, dates, member number)
-
-#### Gym Owner View — `AddMembershipPlanDialog` / `AssignPlanDialog`
-
-When the gym assigns a plan, `plan_name` is populated from the selected plan's `name`. This is wired into the existing `AssignPlanDialog.tsx` — just add `plan_name` to the insert payload.
-
-The gym owner's subscription list in `useGymMemberSubscriptions.tsx` will show a camera icon if a POP has been submitted, so they can view it.
+2. **The `user_id` column problem** — When a portal user checks in, we need to set `user_id` to the gym owner's user ID (so the owner can see it in their attendance page). The portal member object already has `user_id` and `owner_user_id` available from the `gymMember` object in `usePortalSession`.
 
 ---
 
-### Part 2: Membership Renewal Reminder Emails
-
-#### New Edge Function — `check-gym-membership-reminders/index.ts`
-
-A new function that:
-1. Finds all `gym_member_subscriptions` where `end_date = today + 2 days` and `status = 'active'`
-2. For each, looks up the `gym_members` record to get the member's `email`, `first_name`, and `last_name`
-3. Gets the gym's `company_profiles` record (via `user_id`) for the gym name
-4. Sends a personalized reminder email via Resend directly (same pattern as `send-email-notification`)
-5. Also inserts a notification record for the gym owner: "Member [Name] membership expires in 2 days"
-
-The email content:
-```
-Subject: Your [Gym Name] membership expires in 2 days
-
-Hi [First Name],
-
-Your [Plan Name] membership at [Gym Name] expires on [End Date].
-
-To continue enjoying access, please make your renewal payment and attach your proof of payment in the member portal.
-
-[Open Portal button → https://invoice-joy-track.lovable.app/portal]
-```
-
-#### Scheduled Cron Job
-
-The function is called daily at 8 AM via `pg_cron` (same pattern used throughout the project):
+### Part 1: Database — New RLS Policies
 
 ```sql
-SELECT cron.schedule(
-  'gym-membership-reminders-daily',
-  '0 8 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://upjtsekkpjgikrrlfoxv.supabase.co/functions/v1/check-gym-membership-reminders',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <anon_key>"}'::jsonb,
-    body := '{}'::jsonb
+-- Portal member can check themselves in
+CREATE POLICY "Portal: gym member can check in"
+  ON public.gym_attendance FOR INSERT TO authenticated
+  WITH CHECK (
+    member_id IN (
+      SELECT id FROM public.gym_members
+      WHERE portal_user_id = auth.uid()
+    )
   );
-  $$
-);
+
+-- Portal member can read their own attendance history
+CREATE POLICY "Portal: gym member can view own attendance"
+  ON public.gym_attendance FOR SELECT TO authenticated
+  USING (
+    member_id IN (
+      SELECT id FROM public.gym_members
+      WHERE portal_user_id = auth.uid()
+    )
+  );
 ```
+
+When the portal member inserts the attendance row, we set `user_id` to `gymMember.user_id` (the gym owner's ID) — this means the gym owner sees it in their admin attendance view correctly.
+
+---
+
+### Part 2: New Component — `GymPortalAttendance.tsx`
+
+A new portal tab component replacing the Home tab or adding as new "Check In" tab.
+
+**Check-In Flow:**
+- Detects if member is **already checked in today** (attendance row exists with no `check_out` today)
+- If not: shows a large animated "Check In" button
+- On press: inserts attendance row → instant confirmation animation
+- Shows today's check-in time
+
+**Stats Strip (below button):**
+- Total visits this month
+- Current streak (consecutive days visited)
+- Last visit date
+
+**Shareable Card (appears after check-in):**
+A beautifully designed card with:
+- Gradient background (gym primary colour)
+- "🏋️ I just worked out!" headline
+- Member name + member number
+- Gym name (from company profile)
+- Today's date + check-in time
+- Monthly visit count badge ("Visit #12 this month")
+- Small watermark logo at bottom
+- "Screenshot & share on socials! 📸" prompt text
+- A button that triggers the native share sheet (`navigator.share()`) or just prompts the user to screenshot
+
+**Design — the card looks like an achievement unlock:**
+
+```text
+┌──────────────────────────────────┐
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│  🔥 WORKOUT UNLOCKED!            │
+│                                  │
+│  [JD]                            │
+│  John Doe  •  MEM-0042           │
+│  Fit Zone Gym                    │
+│                                  │
+│  TODAY                           │
+│  Thursday, 20 Feb 2026           │
+│  Checked in at 07:34 AM          │
+│                                  │
+│  ⚡ Visit #12 this month          │
+│  🔥 3-day streak                  │
+│                                  │
+│  ░░░░ powered by OrionBiz ░░░░   │
+└──────────────────────────────────┘
+```
+
+---
+
+### Part 3: Add "Check In" Tab to Gym Portal Navigation
+
+Add a 5th nav tab: `check-in` with a `Zap` or `ScanLine` icon (the classic gym check-in icon).
+
+The gym nav goes from 4 to 5 items:
+- Home · Plan · Classes · Check In · Messages
 
 ---
 
@@ -137,37 +115,34 @@ SELECT cron.schedule(
 
 | File | Change |
 |---|---|
-| Database migration | Add `pop_url` + `plan_name` columns to `gym_member_subscriptions`; add portal UPDATE policy; create `gym-pop` storage bucket with policies |
-| `src/components/portal/gym/GymPortalMembership.tsx` | Full redesign: fetch with plan join, POP upload UI, proof modal, amount paid display |
-| `src/components/gym/AssignPlanDialog.tsx` | Pass `plan_name` on subscription insert |
-| `supabase/functions/check-gym-membership-reminders/index.ts` | New edge function: finds expiring memberships, sends reminder emails + owner notifications |
-| Cron SQL (run once via backend) | Schedule daily cron for the new function |
+| Database migration | Add 2 RLS policies on `gym_attendance` for portal SELECT + INSERT |
+| `src/components/portal/PortalLayout.tsx` | Add `check-in` to gym nav; update `PortalTab` type |
+| `src/pages/Portal.tsx` | Wire `check-in` tab to new `GymPortalAttendance` component |
+| `src/components/portal/gym/GymPortalAttendance.tsx` | New component: check-in button, stats, shareable card |
+
+No new npm packages needed. The share card is pure CSS/HTML — no canvas library needed, just a styled `div` with a screenshot prompt. `navigator.share()` is used for mobile native share where available, with a fallback "long-press to save" tip.
 
 ---
 
 ### Data Flow
 
 ```text
-Member opens Plan tab
-  → Fetches gym_member_subscriptions JOIN gym_membership_plans
-  → Sees active plan + amount paid
+Member opens Check In tab
+  → Query: gym_attendance WHERE member_id = gymMember.id AND check_in >= today
+  → If no active check-in: show big "Check In Now" button
+  → On tap: INSERT { member_id, user_id: gymMember.user_id (owner), check_in: now }
+  → Animation + shareable card appears
+  → Member screenshots card and posts on Instagram/WhatsApp
 
-Member taps "Attach Proof of Payment"
-  → Selects photo from phone camera roll
-  → Uploads to gym-pop bucket
-  → pop_url saved on subscription record
-  → Green "Submitted" badge appears
-
-Member taps "Show as Proof"
-  → Full-screen modal with photo + gym details
-
-──────────────────────────────────────────────
-
-Every day at 8 AM:
-  check-gym-membership-reminders runs
-  → Finds subscriptions expiring in 2 days
-  → Emails each member directly
-  → Notifies gym owner in notification panel
+Gym owner:
+  → Opens Attendance page
+  → Sees the self check-in in their log (it shows under their user_id)
 ```
 
-No new npm packages needed. Uses existing Resend key and `company-assets` bucket pattern.
+### Why `navigator.share()` Instead of Canvas Rendering
+
+The card is rendered as a DOM element. On mobile (where this portal is used), members can:
+1. Tap "Share" → `navigator.share()` API opens native sheet on iOS/Android
+2. Or simply long-press/screenshot the card — it's designed to look great as a screenshot
+
+No `html2canvas` complexity needed since the card is a styled component, not a PDF.
