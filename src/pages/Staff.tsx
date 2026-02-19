@@ -33,12 +33,12 @@ export default function Staff() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview" className="gap-2">
+          <TabsList className="bg-muted/60 border border-border p-1 rounded-lg h-auto">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium">
               <Users className="h-4 w-4" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="payroll" className="gap-2">
+            <TabsTrigger value="payroll" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md font-medium">
               <Receipt className="h-4 w-4" />
               Payroll
             </TabsTrigger>
