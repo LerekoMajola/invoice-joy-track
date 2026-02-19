@@ -92,6 +92,7 @@ export function useTasks() {
           sort_order: maxOrder + 1,
           assigned_to: input.assigned_to || null,
           assigned_to_name: input.assigned_to_name || null,
+          company_profile_id: activeCompanyId,
         })
         .select()
         .single();
