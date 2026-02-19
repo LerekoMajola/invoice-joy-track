@@ -56,7 +56,18 @@ export function useFleetDrivers() {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchDrivers(); }, [user, activeCompanyId]);
+  useEffect(() => {
+    fetchDrivers();
+
+    const channel = supabase
+      .channel('fleet-drivers-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_drivers' }, () => {
+        fetchDrivers();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
 
   const createDriver = async (d: FleetDriverInsert): Promise<boolean> => {
     if (!user) return false;

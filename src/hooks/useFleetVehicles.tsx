@@ -113,7 +113,18 @@ export function useFleetVehicles() {
     }
   };
 
-  useEffect(() => { fetchVehicles(); }, [user, activeCompanyId]);
+  useEffect(() => {
+    fetchVehicles();
+
+    const channel = supabase
+      .channel('fleet-vehicles-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_vehicles' }, () => {
+        fetchVehicles();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
 
   const createVehicle = async (v: FleetVehicleInsert): Promise<FleetVehicle | null> => {
     if (!user) { toast.error('You must be logged in'); return null; }

@@ -70,6 +70,15 @@ export function useClients() {
 
   useEffect(() => {
     fetchClients();
+
+    const channel = supabase
+      .channel('clients-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        fetchClients();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const createClient = async (client: ClientInsert): Promise<Client | null> => {

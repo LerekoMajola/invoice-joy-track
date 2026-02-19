@@ -49,7 +49,18 @@ export function useFleetServiceLogs(vehicleId?: string) {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchLogs(); }, [user, vehicleId]);
+  useEffect(() => {
+    fetchLogs();
+
+    const channel = supabase
+      .channel('fleet-service-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_service_logs' }, () => {
+        fetchLogs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
 
   const createLog = async (log: FleetServiceLogInsert): Promise<boolean> => {
     if (!user) return false;

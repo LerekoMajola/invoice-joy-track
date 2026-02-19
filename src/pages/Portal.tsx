@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
 import { PortalLogin } from '@/components/portal/PortalLogin';
 import { PortalLayout, type PortalTab } from '@/components/portal/PortalLayout';
@@ -105,7 +106,6 @@ export default function Portal() {
         <button
           className="text-sm text-primary underline"
           onClick={async () => {
-            const { supabase } = await import('@/integrations/supabase/client');
             await supabase.auth.signOut();
             localStorage.removeItem('portal_type');
             window.location.reload();

@@ -121,6 +121,15 @@ export function useStaff() {
 
   useEffect(() => {
     fetchStaff();
+
+    const channel = supabase
+      .channel('staff-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_members' }, () => {
+        fetchStaff();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchStaff]);
 
   const generateEmployeeNumber = async (): Promise<string> => {

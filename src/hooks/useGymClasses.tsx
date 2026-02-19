@@ -133,6 +133,18 @@ export function useGymClasses() {
   useEffect(() => {
     fetchClasses();
     fetchSchedules();
+
+    const channel = supabase
+      .channel('gym-classes-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_classes' }, () => {
+        fetchClasses();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_class_schedules' }, () => {
+        fetchSchedules();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const createClass = async (cls: GymClassInsert): Promise<boolean> => {

@@ -150,9 +150,18 @@
      }
    };
  
-   useEffect(() => {
-     fetchDeals();
-   }, [user]);
+  useEffect(() => {
+    fetchDeals();
+
+    const channel = supabase
+      .channel('deals-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        fetchDeals();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
  
    const createDeal = async (deal: DealInsert) => {
      if (!user) return null;

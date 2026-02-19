@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
@@ -128,6 +129,16 @@ export function useEquipment() {
     },
     onError: () => toast.error('Failed to delete equipment'),
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('equipment-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_items' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['equipment'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   return {
     equipment,

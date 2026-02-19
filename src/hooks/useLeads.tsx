@@ -135,6 +135,15 @@ export function useLeads() {
 
   useEffect(() => {
     fetchLeads();
+
+    const channel = supabase
+      .channel('leads-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        fetchLeads();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const createLead = async (lead: LeadInsert) => {

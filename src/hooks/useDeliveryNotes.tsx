@@ -117,6 +117,15 @@ export function useDeliveryNotes() {
 
   useEffect(() => {
     fetchDeliveryNotes();
+
+    const channel = supabase
+      .channel('delivery-notes-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_notes' }, () => {
+        fetchDeliveryNotes();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const generateNoteNumber = async (): Promise<string> => {

@@ -177,6 +177,15 @@ export function useJobCards() {
 
   useEffect(() => {
     fetchJobCards();
+
+    const channel = supabase
+      .channel('job-cards-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
+        fetchJobCards();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const generateJobCardNumber = async (): Promise<string> => {
