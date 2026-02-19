@@ -230,7 +230,9 @@ Deno.serve(async (req) => {
     let portalUserId: string
 
     if (createError) {
-      const isAlreadyRegistered = createError.message?.toLowerCase().includes('already registered') ||
+      const isAlreadyRegistered =
+        (createError as any).code === 'email_exists' ||
+        createError.message?.toLowerCase().includes('already registered') ||
         createError.message?.toLowerCase().includes('already exists')
 
       if (!isAlreadyRegistered) {
