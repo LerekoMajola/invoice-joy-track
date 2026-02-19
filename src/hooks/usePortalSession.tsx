@@ -12,6 +12,8 @@ export interface GymPortalMember {
   member_number: string;
   status: string;
   user_id: string;
+  owner_user_id: string | null;
+  portal_user_id: string | null;
   join_date: string | null;
   date_of_birth: string | null;
   phone: string | null;
@@ -33,6 +35,8 @@ export interface SchoolPortalStudent {
   guardian_phone: string | null;
   status: string;
   user_id: string;
+  owner_user_id: string | null;
+  portal_user_id: string | null;
   company_profile_id: string | null;
   date_of_birth: string | null;
   enrollment_date: string | null;
@@ -85,7 +89,7 @@ export function usePortalSession(): PortalSession {
         const { data: member } = await supabase
           .from('gym_members')
           .select('*')
-          .ilike('email', currentUser.email)
+          .eq('portal_user_id', currentUser.id)
           .maybeSingle();
 
         if (member && !cancelled) {
@@ -98,7 +102,7 @@ export function usePortalSession(): PortalSession {
         const { data: student } = await supabase
           .from('students')
           .select('*')
-          .ilike('guardian_email', currentUser.email)
+          .eq('portal_user_id', currentUser.id)
           .maybeSingle();
 
         if (student && !cancelled) {

@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     if (portalType === 'gym' && memberId) {
       const { data: record, error } = await adminClient
         .from('gym_members')
-        .select('id, user_id, owner_user_id')
+        .select('id, user_id, portal_user_id')
         .eq('id', memberId)
         .single()
 
@@ -169,13 +169,14 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      if (record.owner_user_id !== caller.id) {
+      // user_id is still the gym owner's ID at this point (owner_user_id was backfilled from it)
+      if (record.user_id !== caller.id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      if (record.user_id) {
+      if (record.portal_user_id) {
         return new Response(JSON.stringify({ error: 'Portal account already exists for this member' }), {
           status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -184,7 +185,7 @@ Deno.serve(async (req) => {
     } else if (portalType === 'school' && studentId) {
       const { data: record, error } = await adminClient
         .from('students')
-        .select('id, user_id, owner_user_id')
+        .select('id, user_id, portal_user_id')
         .eq('id', studentId)
         .single()
 
@@ -194,13 +195,14 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      if (record.owner_user_id !== caller.id) {
+      // user_id is still the school owner's ID at this point
+      if (record.user_id !== caller.id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      if (record.user_id) {
+      if (record.portal_user_id) {
         return new Response(JSON.stringify({ error: 'Portal account already exists for this student' }), {
           status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -233,20 +235,20 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Link user_id back to the record
+    // Link portal_user_id back to the record (NOT user_id — that stays as the owner's ID)
     const newUserId = newUser.user.id
     if (portalType === 'gym' && memberId) {
       const { error: updateError } = await adminClient
         .from('gym_members')
-        .update({ user_id: newUserId })
+        .update({ portal_user_id: newUserId })
         .eq('id', memberId)
-      if (updateError) console.error('Error linking user to gym_member:', updateError)
+      if (updateError) console.error('Error linking portal_user_id to gym_member:', updateError)
     } else if (portalType === 'school' && studentId) {
       const { error: updateError } = await adminClient
         .from('students')
-        .update({ user_id: newUserId })
+        .update({ portal_user_id: newUserId })
         .eq('id', studentId)
-      if (updateError) console.error('Error linking user to student:', updateError)
+      if (updateError) console.error('Error linking portal_user_id to student:', updateError)
     }
 
     // Derive origin from request

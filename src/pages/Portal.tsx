@@ -32,6 +32,7 @@ export default function Portal() {
 
   // Authenticated as gym member
   if (portalType === 'gym' && gymMember) {
+    const ownerUserId = gymMember.owner_user_id ?? gymMember.user_id;
     const renderGymTab = () => {
       switch (activeTab) {
         case 'home':
@@ -39,13 +40,13 @@ export default function Portal() {
         case 'membership':
           return <GymPortalMembership memberId={gymMember.id} />;
         case 'classes':
-          return <GymPortalSchedule ownerId={gymMember.user_id} />;
+          return <GymPortalSchedule ownerId={ownerUserId} />;
         case 'messages':
           return (
             <PortalMessaging
               user={user}
               referenceId={gymMember.id}
-              recipientOwnerId={gymMember.user_id}
+              recipientOwnerId={ownerUserId}
               portalType="gym"
               senderType="member"
             />
@@ -64,20 +65,21 @@ export default function Portal() {
 
   // Authenticated as school parent/guardian
   if (portalType === 'school' && schoolStudent) {
+    const ownerUserId = schoolStudent.owner_user_id ?? schoolStudent.user_id;
     const renderSchoolTab = () => {
       switch (activeTab) {
         case 'home':
           return <SchoolParentPortal student={schoolStudent} user={user} />;
         case 'fees':
-          return <SchoolPortalFees studentId={schoolStudent.id} ownerId={schoolStudent.user_id} />;
+          return <SchoolPortalFees studentId={schoolStudent.id} ownerId={ownerUserId} />;
         case 'timetable':
-          return <SchoolPortalTimetable classId={schoolStudent.class_id} ownerId={schoolStudent.user_id} />;
+          return <SchoolPortalTimetable classId={schoolStudent.class_id} ownerId={ownerUserId} />;
         case 'messages':
           return (
             <PortalMessaging
               user={user}
               referenceId={schoolStudent.id}
-              recipientOwnerId={schoolStudent.user_id}
+              recipientOwnerId={ownerUserId}
               portalType="school"
               senderType="guardian"
             />
