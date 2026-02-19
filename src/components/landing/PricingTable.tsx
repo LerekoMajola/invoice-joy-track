@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatMaluti } from '@/lib/currency';
+import { useGeoPricing, formatGeoPrice } from '@/hooks/useGeoPricing';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PackageTier {
   name: string;
@@ -359,7 +360,7 @@ const systems: SystemTab[] = [
   },
 ];
 
-function PricingCard({ tier, systemKey }: { tier: PackageTier; systemKey: string }) {
+function PricingCard({ tier, systemKey, symbol, rate, loading, currency }: { tier: PackageTier; systemKey: string; symbol: string; rate: number; loading: boolean; currency: string }) {
   return (
     <div
       className={cn(
@@ -381,10 +382,17 @@ function PricingCard({ tier, systemKey }: { tier: PackageTier; systemKey: string
       </div>
 
       <div className="text-center mb-8">
-        <span className="font-display text-4xl sm:text-5xl font-bold text-gradient">
-          {formatMaluti(tier.price)}
-        </span>
+        {loading ? (
+          <Skeleton className="h-12 w-32 mx-auto mb-1" />
+        ) : (
+          <span className="font-display text-4xl sm:text-5xl font-bold text-gradient">
+            {formatGeoPrice(tier.price, symbol, rate)}
+          </span>
+        )}
         <span className="text-muted-foreground text-sm block mt-1">/month</span>
+        {!loading && currency !== 'LSL' && (
+          <span className="text-xs text-muted-foreground">Prices shown in {currency}</span>
+        )}
       </div>
 
       <ul className="space-y-3 mb-8 flex-1">
@@ -424,6 +432,7 @@ function PricingCard({ tier, systemKey }: { tier: PackageTier; systemKey: string
 export function PricingTable() {
   const [activeSystem, setActiveSystem] = useState('business');
   const current = systems.find((s) => s.key === activeSystem)!;
+  const { symbol, rate, loading, currency } = useGeoPricing();
 
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
@@ -470,7 +479,7 @@ export function PricingTable() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
           {current.tiers.map((tier) => (
-            <PricingCard key={`${current.key}-${tier.name}`} tier={tier} systemKey={current.key} />
+            <PricingCard key={`${current.key}-${tier.name}`} tier={tier} systemKey={current.key} symbol={symbol} rate={rate} loading={loading} currency={currency} />
           ))}
         </div>
 

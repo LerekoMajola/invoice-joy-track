@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { Footer } from '@/components/landing/Footer';
+import { useGeoPricing, formatGeoPrice } from '@/hooks/useGeoPricing';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   ArrowRight,
   Briefcase,
@@ -31,7 +33,7 @@ const industries = [
     gradient: 'from-primary to-violet',
     description: 'Complete operations suite for companies, freelancers, and professional service providers.',
     features: ['Quotes & Estimates', 'Invoices & Receipts', 'Client CRM & Pipeline', 'Delivery Notes', 'Tender Management', 'Profitability Tracking'],
-    price: 'M350',
+    basePrice: 350,
   },
   {
     icon: Wrench,
@@ -40,7 +42,7 @@ const industries = [
     gradient: 'from-coral to-warning',
     description: 'Manage job cards, track parts and labour, and keep full vehicle history for every customer.',
     features: ['Job Cards & Progress Tracking', 'Parts & Labour Costing', 'Vehicle History Records', 'Technician Assignment', 'Quote-to-Invoice Flow', 'Workshop Dashboard'],
-    price: 'M450',
+    basePrice: 450,
   },
   {
     icon: GraduationCap,
@@ -49,7 +51,7 @@ const industries = [
     gradient: 'from-info to-cyan',
     description: 'Simplify student records, fee collection, class management, and parent communication.',
     features: ['Student Records & Enrolment', 'Fee Tracking & Invoicing', 'Class & Term Management', 'Timetable Scheduling', 'Announcements', 'Fee Reports & Analytics'],
-    price: 'M720',
+    basePrice: 720,
   },
   {
     icon: Scale,
@@ -58,7 +60,7 @@ const industries = [
     gradient: 'from-violet to-primary',
     description: 'Case management, billable time tracking, court calendars, and conflict checking for law firms.',
     features: ['Case & Matter Management', 'Billable Time Tracking', 'Court Calendar & Reminders', 'Legal Document Storage', 'Conflict-of-Interest Checks', 'Case-Based Invoicing'],
-    price: 'M500',
+    basePrice: 500,
   },
   {
     icon: Hammer,
@@ -67,7 +69,7 @@ const industries = [
     gradient: 'from-success to-info',
     description: 'Equipment catalogues, hire orders, availability calendars, and damage tracking for rental companies.',
     features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage & Condition Tracking', 'Deposit Management', 'Hire Reports'],
-    price: 'M400',
+    basePrice: 400,
   },
   {
     icon: Hotel,
@@ -76,7 +78,7 @@ const industries = [
     gradient: 'from-rose-500 to-pink-500',
     description: 'Room management, booking calendars, housekeeping tasks, and guest reviews for lodges and B&Bs.',
     features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings', 'Meal Plan Tracking', 'Occupancy Reports'],
-    price: 'M650',
+    basePrice: 650,
   },
 ];
 
@@ -97,6 +99,8 @@ const techHighlights = [
 ];
 
 export default function About() {
+  const { symbol, rate, loading, currency } = useGeoPricing();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
@@ -194,7 +198,9 @@ export default function About() {
                     <ind.icon className="h-6 w-6" />
                   </div>
                   <h3 className="font-display text-xl font-bold">{ind.name}</h3>
-                  <p className="text-white/70 text-sm mt-1">from {ind.price}/mo</p>
+                   <p className="text-white/70 text-sm mt-1">
+                     {loading ? <Skeleton className="h-4 w-20 bg-white/20" /> : `from ${formatGeoPrice(ind.basePrice, symbol, rate)}/mo`}
+                   </p>
                 </div>
                 <div className="flex-1 p-6">
                   <p className="text-sm text-muted-foreground mb-4">{ind.description}</p>
@@ -301,7 +307,9 @@ export default function About() {
                       </div>
                       <span className="font-medium text-foreground">{ind.name}</span>
                     </td>
-                    <td className="px-6 py-4 text-right font-semibold text-foreground">{ind.price}/mo</td>
+                    <td className="px-6 py-4 text-right font-semibold text-foreground">
+                      {loading ? <Skeleton className="h-4 w-20 ml-auto" /> : `${formatGeoPrice(ind.basePrice, symbol, rate)}/mo`}
+                    </td>
                   </tr>
                 ))}
               </tbody>
