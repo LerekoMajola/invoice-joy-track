@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -77,13 +77,19 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
     },
   });
 
-  // Reset form when tenant changes
-  useState(() => {
+  // Reset form when tenant changes or dialog opens
+  useEffect(() => {
     if (tenant?.subscription) {
       setPlan(tenant.subscription.plan);
       setStatus(tenant.subscription.status);
+      setBillingNote(tenant.subscription.billing_note || '');
+      setBillingOverride(
+        tenant.subscription.billing_override != null
+          ? String(tenant.subscription.billing_override)
+          : ''
+      );
     }
-  });
+  }, [tenant, open]);
 
   if (!tenant) return null;
 
