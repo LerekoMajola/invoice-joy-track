@@ -1,46 +1,30 @@
 
 
-## Send Staff Credentials via Email
+## Staff Detail: Full-View Layout and Inline Module Management
 
-### What Changes
+### 1. Full-View Dialog (No Scrolling)
+The current dialog is 500px wide and scrolls vertically. It will be redesigned to:
+- Use a wider dialog (`sm:max-w-[700px]`) with a two-column layout on desktop
+- **Left column**: Staff info (name, email, phone, job title, department, dates)
+- **Right column**: Role selector, Module Access checkboxes, and action buttons
+- This eliminates the need to scroll by spreading content horizontally
 
-**1. Auto-email credentials on staff creation**
-When you add a staff member, the system will automatically send them an email with their login credentials (email + temporary password) right after creating their account. No more manual copying needed.
-
-**2. Resend credentials for existing staff**
-A new "Resend Credentials" button will appear in the Staff Detail Dialog for staff members who already have accounts. This will generate a new temporary password, update their account, and email them the fresh credentials.
+### 2. Inline Module Access Editing
+Currently, module access can only be changed when in "Edit" mode. The change:
+- In **view mode**, the Module Access section will show checkboxes (not just badges) so the admin can toggle modules on/off directly without entering full edit mode
+- Changes save immediately on toggle (no separate save button needed)
+- A loading spinner shows while saving
 
 ---
 
 ### Technical Details
 
-**Modified: `supabase/functions/create-staff-account/index.ts`**
-- After creating the auth user and generating the temp password, send an email via Resend with the login credentials
-- The email includes the staff member's email address, temporary password, and a link to the login page
-- Uses the existing RESEND_API_KEY secret (already configured)
+**File: `src/components/staff/StaffDetailDialog.tsx`**
 
-**New: `supabase/functions/resend-staff-credentials/index.ts`**
-- Accepts a `staffMemberId` in the request body
-- Verifies the caller owns the staff record
-- Confirms the staff member has a linked auth account (`user_id` exists)
-- Generates a new temporary password, updates the auth user's password via `admin.updateUserById`
-- Sends the new credentials via Resend email
-- Returns success/failure
-
-**Modified: `src/components/staff/StaffDetailDialog.tsx`**
-- Add a "Resend Credentials" button in the action bar (visible only for staff with linked accounts, i.e. those with `user_id`)
-- The button calls `supabase.functions.invoke('resend-staff-credentials')` and shows a success/error toast
-- Need to extend `StaffMember` interface to include `userId` so the UI knows if an account exists
-
-**Modified: `src/hooks/useStaff.tsx`**
-- Map the `user_id` column from the database to `userId` on the `StaffMember` interface so the detail dialog knows whether the staff member has a linked account
-
-**Config: `supabase/config.toml`**
-- Add `[functions.resend-staff-credentials]` with `verify_jwt = false` (auth is validated in-code)
-
-**Email template** (used by both functions):
-- Clean branded HTML email from "Orion Labs"
-- Shows the staff member's name, email, and temporary password
-- Includes a "Login Now" button linking to the app
-- Security notice to change password on first login
+- Change `DialogContent` class from `sm:max-w-[500px] max-h-[90vh] overflow-y-auto` to `sm:max-w-[700px]`
+- Wrap the view-mode content in a two-column grid: `grid grid-cols-1 sm:grid-cols-2 gap-6`
+  - Left side: staff details (name, email, phone, job title, department, dates, notes)
+  - Right side: role selector, module access checkboxes, action buttons
+- In view mode, replace the Module Access badge display with interactive checkboxes that call `saveModuleAccess` directly on toggle
+- The edit form keeps its current single-column layout (it already fits well)
 
