@@ -1,64 +1,56 @@
 
-# Consolidate Admin Dashboard Duplication
+# Restore Billing Tab — Paying Customers Only
 
-## The Problem
+## What Happened
 
-There are three overlapping "tenant list" views in the admin panel, plus duplicated constant definitions spread across files:
-
-**Redundant tabs / components:**
-- `CustomersTab.tsx` — full tenant table with filters, search, eye/settings/delete actions
-- `SubscriptionsTab.tsx` (rendered as "Billing" tab) — another full tenant table with its own search/filter, also opens `TenantDetailDialog` and `EditSubscriptionDialog`
-- `TenantsTab.tsx` — a third tenant table, not even rendered anywhere in the app
-
-**Duplicated constants (copy-pasted across 3+ files):**
-- `statusColors` — defined identically in `TenantsTab`, `SubscriptionsTab`, `CustomersTab`
-- `planLabels` — defined in `TenantsTab`, `SubscriptionsTab`, `CustomersTab`, `TenantDetailDialog`
-- `systemIcons`, `systemLabels`, `systemColors` — defined in `TenantsTab`, `CustomersTab`, and partially in `TenantDetailDialog`
+The consolidation merged the Billing tab into the Customers tab (accessible via the billing sheet icon per row). But you want a dedicated Billing tab focused purely on revenue-relevant accounts — companies that are past the trial stage.
 
 ## The Fix
 
-### 1. Create a shared constants file — `src/components/admin/adminConstants.ts`
+### 1. Create `src/components/admin/BillingTab.tsx`
 
-Extract all repeated lookup maps into one place:
-- `STATUS_COLORS` (subscription status → badge class)
-- `PLAN_LABELS` (plan key → display name)
-- `SYSTEM_ICONS`, `SYSTEM_LABELS`, `SYSTEM_COLORS` (system type → icon/label/color)
+A new, focused billing view that:
+- **Filters to non-trialing tenants only**: `status` is `active`, `past_due`, `cancelled`, or `expired` — never `trialing`
+- Shows a summary header: total active count, total MRR (monthly recurring revenue)
+- Table columns: Company, System, Status, Plan, Price/mo, Trial Ended, Actions
+- Row actions: open the billing sheet (PaymentTracker + Generate Invoice) and Edit Subscription
+- Reuses the same billing sheet already built in CustomersTab (extract it to a shared component or duplicate minimally)
 
-All three tab files and the detail dialog import from here — no more copy-paste.
+### 2. Add "Billing" tab to `Admin.tsx`
 
-### 2. Delete `TenantsTab.tsx`
+Insert between Customers and Invoices:
+```
+Overview | CRM | Customers | Billing | Invoices | Settings
+```
 
-It is not imported anywhere in `Admin.tsx` or `admin/index.ts` and is completely superseded by `CustomersTab`. Remove it.
+### 3. Export from `admin/index.ts`
 
-### 3. Merge "Customers" and "Billing" tabs into one enhanced tab
+Add `BillingTab` to the barrel export.
 
-The two tabs serve different but complementary purposes:
-- **Customers** = who has signed up (onboarded + not-onboarded), with delete actions
-- **Billing** = subscription plan, price, payment tracker, generate invoice
+## What the Billing Tab Shows
 
-These can be unified into a single **"Customers"** tab. When you click on a row it opens a detail sheet that already has billing info. The "Generate Invoice" button (currently only in Billing) moves to the row actions on the shared table. The Billing tab is then removed.
-
-The admin nav becomes: `Overview | CRM | Customers | Invoices | Settings` (one less tab, no lost functionality).
-
-### 4. Update `admin/index.ts`
-
-Remove the `BillingTab` export (and `TenantsTab` if it was ever exported).
-
-## Files Changed
-
-| File | Action |
+| Column | Source |
 |---|---|
-| `src/components/admin/adminConstants.ts` | Create (new shared constants) |
-| `src/components/admin/TenantsTab.tsx` | Delete |
-| `src/components/admin/SubscriptionsTab.tsx` | Delete (merged into Customers) |
-| `src/components/admin/BillingTab.tsx` | Delete (re-export shim no longer needed) |
-| `src/components/admin/CustomersTab.tsx` | Enhance: add Price column + Generate Invoice button + import from shared constants |
-| `src/components/admin/TenantDetailDialog.tsx` | Refactor: import constants from shared file |
-| `src/components/admin/index.ts` | Remove `BillingTab` export |
-| `src/pages/Admin.tsx` | Remove "Billing" tab, import only remaining tabs |
+| Company | `tenant.company_name` |
+| System | `tenant.subscription.system_type` |
+| Status | `active` / `past_due` / `cancelled` / `expired` (never `trialing`) |
+| Plan | `PLAN_LABELS[plan]` |
+| Price/mo | `formatMaluti(module_total)` |
+| Trial Ended | `trial_ends_at` formatted date |
+| Actions | 💳 Billing sheet, ✏️ Edit subscription |
 
-## What is preserved
+## Summary Stats Bar (top of tab)
 
-- All functionality: search, filter, detail view, edit subscription, generate invoice, delete, payment tracker
-- The "Billing" detail sheet from `SubscriptionsTab` (PaymentTracker + price display) is moved into the existing `CustomersTab` row-click sheet
-- No database changes needed
+```
+[ Paying: 3 ]  [ Past Due: 1 ]  [ MRR: M1,350/mo ]
+```
+
+Calculated from the filtered list — gives quick financial health at a glance.
+
+## Technical Notes
+
+- Data comes from `useAdminTenants()` already loaded — no new query needed
+- Filter: `tenant.subscription?.status !== 'trialing'` AND subscription exists
+- The billing sheet (PaymentTracker) and GenerateAdminInvoiceDialog are already built — just wired in
+- No database changes required
+- The Customers tab remains unchanged — it still shows all customers including trialing ones
