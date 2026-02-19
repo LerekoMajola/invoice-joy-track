@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle } from 'lucide-react';
+import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle, Send } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useGymMemberSubscriptions } from '@/hooks/useGymMemberSubscriptions';
@@ -13,6 +13,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { ConfirmDialog as ConfirmDialogComponent } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { GymMember } from '@/hooks/useGymMembers';
 
 interface Props {
@@ -32,14 +34,35 @@ const statusColors: Record<string, string> = {
 
 export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Props) {
   const { fc } = useCurrency();
+  const { toast } = useToast();
   const { subscriptions, freezeSubscription, unfreezeSubscription, cancelSubscription } = useGymMemberSubscriptions(member.id);
   const [assignOpen, setAssignOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [freezeEnd, setFreezeEnd] = useState('');
+  const [sendingInvite, setSendingInvite] = useState(false);
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
 
   const activeSub = subscriptions.find(s => s.status === 'active' || s.status === 'frozen');
   const today = new Date();
+
+  const handleSendPortalInvite = async () => {
+    if (!member.email) {
+      toast({ title: 'No email', description: 'This member has no email address on file.', variant: 'destructive' });
+      return;
+    }
+    setSendingInvite(true);
+    const redirectTo = `${window.location.origin}/portal?type=gym`;
+    const { error } = await supabase.auth.signInWithOtp({
+      email: member.email,
+      options: { emailRedirectTo: redirectTo },
+    });
+    setSendingInvite(false);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Invite sent!', description: `A portal link was sent to ${member.email}.` });
+    }
+  };
 
   let daysRemaining = 0;
   let totalDays = 1;
@@ -116,8 +139,8 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
 
             {/* Health Declaration */}
             {member.healthConditions && (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-1"><Heart className="h-3.5 w-3.5" />Health Declaration</p>
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
+                <p className="text-xs font-medium text-warning flex items-center gap-1.5 mb-1"><Heart className="h-3.5 w-3.5" />Health Declaration</p>
                 <p className="text-sm text-foreground">{member.healthConditions}</p>
               </div>
             )}
@@ -143,7 +166,7 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
                   <Progress value={progressPercent} className="h-2" />
                 </div>
                 {activeSub.status === 'frozen' && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1"><Snowflake className="h-3 w-3" />Frozen since {activeSub.freezeStart ? format(parseISO(activeSub.freezeStart), 'dd MMM') : 'N/A'}</p>
+                  <p className="text-xs text-info flex items-center gap-1"><Snowflake className="h-3 w-3" />Frozen since {activeSub.freezeStart ? format(parseISO(activeSub.freezeStart), 'dd MMM') : 'N/A'}</p>
                 )}
                 <div className="flex gap-2 pt-1">
                   {activeSub.status === 'active' && (
@@ -194,7 +217,12 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
 
             {/* Actions */}
             <Separator />
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap gap-2">
+              {member.email && (
+                <Button size="sm" variant="outline" onClick={handleSendPortalInvite} disabled={sendingInvite} className="flex-1">
+                  <Send className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Sending…' : 'Send Portal Invite'}
+                </Button>
+              )}
               {!activeSub && <Button size="sm" onClick={() => setAssignOpen(true)}>Assign Plan</Button>}
               <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
             </div>

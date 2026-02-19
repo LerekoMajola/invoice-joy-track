@@ -3473,6 +3473,42 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          portal_type: string
+          recipient_owner_id: string
+          reference_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          portal_type: string
+          recipient_owner_id: string
+          reference_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          portal_type?: string
+          recipient_owner_id?: string
+          reference_id?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string

@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, MapPin, Heart, GraduationCap, Trash2 } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Heart, GraduationCap, Trash2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Student } from '@/hooks/useStudents';
 import { SchoolClass } from '@/hooks/useSchoolClasses';
 import { formatMaluti } from '@/lib/currency';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const statusStyles: Record<string, string> = {
   active: 'bg-success/10 text-success border-success/20',
@@ -26,8 +29,29 @@ interface StudentDetailDialogProps {
 }
 
 export function StudentDetailDialog({ student, open, onOpenChange, classes, onDelete, feeBalance }: StudentDetailDialogProps) {
+  const { toast } = useToast();
+  const [sendingInvite, setSendingInvite] = useState(false);
   if (!student) return null;
   const className = classes.find((c) => c.id === student.classId)?.name || 'Unassigned';
+
+  const handleSendPortalInvite = async () => {
+    const email = student.guardianEmail;
+    if (!email) {
+      toast({ title: 'No email', description: 'This guardian has no email address on file.', variant: 'destructive' });
+      return;
+    }
+    setSendingInvite(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/portal?type=school` },
+    });
+    setSendingInvite(false);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Invite sent!', description: `A portal link was sent to ${email}.` });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,13 +153,18 @@ export function StudentDetailDialog({ student, open, onOpenChange, classes, onDe
             )}
 
             {/* Actions */}
-            {onDelete && (
-              <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              {student.guardianEmail && (
+                <Button variant="outline" className="w-full" onClick={handleSendPortalInvite} disabled={sendingInvite}>
+                  <Send className="h-4 w-4 mr-2" />{sendingInvite ? 'Sending…' : 'Send Portal Invite'}
+                </Button>
+              )}
+              {onDelete && (
                 <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10" onClick={() => onDelete(student.id)}>
                   <Trash2 className="h-4 w-4 mr-2" /> Remove Student
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </ScrollArea>
       </DialogContent>
