@@ -32,6 +32,7 @@ import {
 import { useStaff, CreateStaffData, StaffRole } from '@/hooks/useStaff';
 import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Loader2, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StaffCredentialsDialog } from './StaffCredentialsDialog';
@@ -54,7 +55,7 @@ interface AddStaffDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const departments = [
+const DEFAULT_DEPARTMENTS = [
   { value: 'operations', label: 'Operations' },
   { value: 'sales', label: 'Sales' },
   { value: 'finance', label: 'Finance' },
@@ -63,13 +64,46 @@ const departments = [
   { value: 'other', label: 'Other' },
 ];
 
-const jobTitleSuggestions = [
+const GYM_DEPARTMENTS = [
+  { value: 'fitness', label: 'Fitness' },
+  { value: 'reception', label: 'Reception' },
+  { value: 'management', label: 'Management' },
+  { value: 'nutrition_wellness', label: 'Nutrition & Wellness' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'admin', label: 'Admin' },
+];
+
+const DEFAULT_JOB_TITLE_SUGGESTIONS = [
   'Technician',
   'Senior Technician',
   'Workshop Foreman',
 ];
 
-const defaultRoles = ['Admin', 'Manager', 'Staff', 'Viewer'];
+const GYM_JOB_TITLE_SUGGESTIONS = [
+  'Personal Trainer',
+  'Group Fitness Instructor',
+  'Head Coach',
+  'Receptionist',
+  'Membership Consultant',
+  'Facility Manager',
+  'Nutritionist',
+  'Physiotherapist',
+];
+
+const DEFAULT_ROLES = ['Admin', 'Manager', 'Staff', 'Viewer'];
+
+const GYM_ROLES = [
+  'Head Coach',
+  'Personal Trainer',
+  'Group Fitness Instructor',
+  'Receptionist',
+  'Membership Consultant',
+  'Facility Manager',
+  'Nutritionist',
+  'Physiotherapist',
+  'Admin',
+  'Viewer',
+];
 
 export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,6 +112,12 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const { createStaff, staff } = useStaff();
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
+  const { systemType } = useSubscription();
+  const isGym = systemType === 'gym';
+
+  const departments = isGym ? GYM_DEPARTMENTS : DEFAULT_DEPARTMENTS;
+  const jobTitleSuggestions = isGym ? GYM_JOB_TITLE_SUGGESTIONS : DEFAULT_JOB_TITLE_SUGGESTIONS;
+  const defaultRoles = isGym ? GYM_ROLES : DEFAULT_ROLES;
 
   // Collect existing roles from staff for suggestions
   const existingRoles = Array.from(new Set(staff.map(s => s.role).filter(Boolean)));
