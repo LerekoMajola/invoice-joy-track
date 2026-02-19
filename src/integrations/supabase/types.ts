@@ -4445,6 +4445,7 @@ export type Database = {
       subscriptions: {
         Row: {
           billing_note: string | null
+          billing_override: number | null
           created_at: string | null
           current_period_end: string | null
           current_period_start: string | null
@@ -4461,6 +4462,7 @@ export type Database = {
         }
         Insert: {
           billing_note?: string | null
+          billing_override?: number | null
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
@@ -4477,6 +4479,7 @@ export type Database = {
         }
         Update: {
           billing_note?: string | null
+          billing_override?: number | null
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null

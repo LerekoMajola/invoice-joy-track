@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -33,13 +34,18 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
   const [plan, setPlan] = useState(tenant?.subscription?.plan || 'free_trial');
   const [status, setStatus] = useState(tenant?.subscription?.status || 'trialing');
   const [billingNote, setBillingNote] = useState(tenant?.subscription?.billing_note || '');
+  const [billingOverride, setBillingOverride] = useState<string>(
+    tenant?.subscription?.billing_override != null ? String(tenant.subscription.billing_override) : ''
+  );
 
   const updateMutation = useMutation({
     mutationFn: async ({ userId, newPlan, newStatus }: { userId: string; newPlan: string; newStatus: string }) => {
+      const overrideVal = billingOverride.trim() !== '' ? parseFloat(billingOverride) : null;
       const updateData: Record<string, any> = { 
         plan: newPlan as 'free_trial' | 'basic' | 'standard' | 'pro' | 'custom',
         status: newStatus as 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired',
         billing_note: billingNote || null,
+        billing_override: isNaN(overrideVal as number) ? null : overrideVal,
         updated_at: new Date().toISOString(),
       };
 
@@ -135,13 +141,26 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="billing_override">Billing Override (M)</Label>
+            <Input
+              id="billing_override"
+              type="number"
+              min="0"
+              placeholder="Leave blank to use module total"
+              value={billingOverride}
+              onChange={(e) => setBillingOverride(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Set to 0 for internal/free accounts. Overrides the module-based total.</p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="billing_note">Billing Note</Label>
             <Textarea
               id="billing_note"
               placeholder="e.g. Pays M450/month via EFT"
               value={billingNote}
               onChange={(e) => setBillingNote(e.target.value)}
-              rows={3}
+              rows={2}
             />
           </div>
         </div>
