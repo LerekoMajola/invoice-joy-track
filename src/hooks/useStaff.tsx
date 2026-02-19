@@ -17,6 +17,7 @@ export interface StaffMember {
   status: StaffStatus;
   role: StaffRole;
   notes: string | null;
+  employeeNumber: string | null;
   invitedAt: string;
   joinedAt: string | null;
   userId: string | null;
@@ -29,6 +30,7 @@ export interface CreateStaffData {
   jobTitle?: string;
   department?: string;
   role: StaffRole;
+  employeeNumber?: string;
   notes?: string;
 }
 
@@ -39,6 +41,7 @@ export interface UpdateStaffData {
   jobTitle?: string;
   department?: string;
   status?: StaffStatus;
+  employeeNumber?: string;
   notes?: string;
 }
 
@@ -97,6 +100,7 @@ export function useStaff() {
         status: s.status as StaffStatus,
         role: (roleMap.get(s.id) as StaffRole) || 'viewer',
         notes: s.notes,
+        employeeNumber: (s as any).employee_number || null,
         invitedAt: s.invited_at || s.created_at,
         joinedAt: s.joined_at,
         userId: s.user_id,
@@ -139,6 +143,7 @@ export function useStaff() {
           job_title: data.jobTitle || null,
           department: data.department || null,
           notes: data.notes || null,
+          employee_number: data.employeeNumber || null,
           status: 'invited',
         })
         .select()
@@ -156,6 +161,7 @@ export function useStaff() {
         id: staffData.id, name: staffData.name, email: staffData.email,
         phone: staffData.phone, jobTitle: staffData.job_title, department: staffData.department,
         status: staffData.status as StaffStatus, role: data.role, notes: staffData.notes,
+        employeeNumber: (staffData as any).employee_number || null,
         invitedAt: staffData.invited_at || staffData.created_at, joinedAt: staffData.joined_at,
         userId: staffData.user_id,
       };
@@ -185,6 +191,7 @@ export function useStaff() {
       if (data.department !== undefined) updateData.department = data.department || null;
       if (data.status !== undefined) updateData.status = data.status;
       if (data.notes !== undefined) updateData.notes = data.notes || null;
+      if (data.employeeNumber !== undefined) updateData.employee_number = data.employeeNumber || null;
 
       const { error } = await supabase
         .from('staff_members')
