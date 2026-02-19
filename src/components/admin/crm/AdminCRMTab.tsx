@@ -35,7 +35,7 @@ const priorityBadge: Record<string, string> = {
 };
 
 export function AdminCRMTab() {
-  const { prospects, loading, stats } = useAdminProspects();
+  const { prospects, loading, stats, createProspect, updateProspect, deleteProspect, moveProspect, fetchActivities, addActivity } = useAdminProspects();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -167,6 +167,8 @@ export function AdminCRMTab() {
         <ProspectKanban
           prospects={filtered}
           onCardClick={openDetail}
+          moveProspect={moveProspect}
+          createProspect={createProspect}
         />
       ) : (
         <div className="rounded-xl border overflow-hidden">
@@ -233,9 +235,13 @@ export function AdminCRMTab() {
           setSheetOpen(open);
           if (!open) setSelectedProspect(null);
         }}
+        updateProspect={updateProspect}
+        deleteProspect={deleteProspect}
+        fetchActivities={fetchActivities}
+        addActivity={addActivity}
       />
 
-      <AddProspectDialog open={addOpen} onOpenChange={setAddOpen} />
+      <AddProspectDialog open={addOpen} onOpenChange={setAddOpen} createProspect={createProspect} />
     </div>
   );
 }
