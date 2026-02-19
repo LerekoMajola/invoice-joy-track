@@ -142,7 +142,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               >
                 {/* Active indicator glow */}
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full shadow-glow-primary" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                 )}
                 <item.icon className={cn(
                   'h-5 w-5 flex-shrink-0 transition-transform duration-200',
