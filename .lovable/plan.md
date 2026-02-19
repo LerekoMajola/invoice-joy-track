@@ -1,89 +1,72 @@
 
-## Two Issues, One Fix Each
+## Portal: Switch from Magic Links to Real Credentials + Fix Build Error
 
-### Issue 1: Build Warning (Dynamic Import)
-In `src/pages/Portal.tsx` line 108, the sign-out button uses a **dynamic import** (`await import('@/integrations/supabase/client')`). The same file is already statically imported everywhere else, which causes Vite to emit a bundle warning. This is a one-line fix — replace the dynamic import with the static `supabase` import that is already used at the top of the file via `usePortalSession`.
-
-**Fix:** Change the `onClick` handler to just call `supabase.auth.signOut()` directly (the `supabase` client is already accessible in scope via the `usePortalSession` hook's return, or we simply add a static import).
-
----
-
-### Issue 2: Data Does Not Update Without a Page Reload (Platform-Wide)
-
-**Root Cause:** Every single data hook in the platform (e.g., `useGymMembers`, `useStudents`, `useInvoices`, `useQuotes`, `useLeads`, `useClients`, `useStaff`, and dozens more) follows the same pattern:
-
-```
-useEffect(() => { fetchXxx(); }, [user, activeCompanyId]);
-```
-
-They fetch data **once on mount** and then only re-fetch when `user` or `activeCompanyId` changes. There is **no real-time subscription** and **no polling**. So when you add a record, the mutation runs `fetchMembers()` / `fetchStudents()` etc. on the same hook instance — but the issue arises when:
-
-1. The dialog/form component is unmounted after saving (closing the dialog re-mounts nothing that triggers a re-fetch).
-2. Multiple hook instances exist (as happened with the Admin CRM).
-3. The mutation in some hooks uses optimistic local state (`setStudents(prev => [...prev, newStudent])`) which works for `createStudent`, but `updateStudent` calls `fetchStudents()` which is an async network round-trip that can silently fail if the component unmounts mid-flight.
-
-**The Fix:** Add a **Supabase Realtime channel subscription** to every affected hook. When the database table changes (INSERT, UPDATE, DELETE), the hook automatically calls its own `fetchXxx()` to refresh. This is the canonical Supabase pattern and makes the app truly live without any architectural restructuring.
-
-**Pattern to add to every hook (example for `useGymMembers`):**
-```typescript
-useEffect(() => {
-  fetchMembers();
-
-  const channel = supabase
-    .channel('gym-members-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'gym_members',
-    }, () => {
-      fetchMembers();
-    })
-    .subscribe();
-
-  return () => { supabase.removeChannel(channel); };
-}, [user, activeCompanyId]);
-```
+### What the User Sees Right Now and Why
+- The portal login shows "Send me a link" (magic-link flow). The user wants real email+password credentials instead.
+- The URL shows `lovable.app` in the Lovable editor preview — this is only visible inside the Lovable development environment. The published URL is already `invoice-joy-track.lovable.app`. This can be connected to a custom domain in Settings → Domains to remove all Lovable references for end users.
+- **Build error**: The PWA is rejecting the production build because the JS bundle is 5.27 MB and the cache limit is exactly 5 MB — just barely over.
 
 ---
 
-### Hooks to Update (All Core Business Hooks)
+### Fix 1: Build Error (1 file)
 
-| Hook File | Table | Channel Name |
-|---|---|---|
-| `useGymMembers.tsx` | `gym_members` | `gym-members-rt` |
-| `useStudents.tsx` | `students` | `students-rt` |
-| `useInvoices.tsx` | `invoices` | `invoices-rt` |
-| `useQuotes.tsx` | `quotes` | `quotes-rt` |
-| `useLeads.tsx` | `leads` | `leads-rt` |
-| `useClients.tsx` | `clients` | `clients-rt` |
-| `useStaff.tsx` | `staff_members` | `staff-rt` |
-| `useDeals.tsx` | `deals` | `deals-rt` |
-| `useTasks.tsx` | `tasks` | `tasks-rt` |
-| `useExpenses.tsx` | `expenses` | `expenses-rt` |
-| `useBankAccounts.tsx` | `bank_accounts` | `bank-accounts-rt` |
-| `useFleetVehicles.tsx` | `fleet_vehicles` | `fleet-vehicles-rt` |
-| `useFleetDrivers.tsx` | `fleet_drivers` | `fleet-drivers-rt` |
-| `useFleetFuelLogs.tsx` | `fleet_fuel_logs` | `fleet-fuel-rt` |
-| `useFleetServiceLogs.tsx` | `fleet_service_logs` | `fleet-service-rt` |
-| `useEquipment.tsx` | `equipment` | `equipment-rt` |
-| `useHireOrders.tsx` | `hire_orders` | `hire-orders-rt` |
-| `useBookings.tsx` | `bookings` | `bookings-rt` |
-| `useRooms.tsx` | `rooms` | `rooms-rt` |
-| `useGymClasses.tsx` | `gym_classes` | `gym-classes-rt` |
-| `useGymMembershipPlans.tsx` | `gym_membership_plans` | `gym-plans-rt` |
-| `useGymMemberSubscriptions.tsx` | `gym_member_subscriptions` | `gym-subs-rt` |
-| `useSchoolFees.tsx` | `school_fees` | `school-fees-rt` |
-| `useLegalCases.tsx` | `legal_cases` | `legal-cases-rt` |
-| `useJobCards.tsx` | `job_cards` | `job-cards-rt` |
-| `usePayslips.tsx` | `payslips` | `payslips-rt` |
-| `useDeliveryNotes.tsx` | `delivery_notes` | `delivery-notes-rt` |
-| `useAdminProspects.tsx` | `admin_prospects` | `admin-prospects-rt` |
+Raise `maximumFileSizeToCacheInBytes` in `vite.config.ts` from `5 * 1024 * 1024` (5 MB) to `6 * 1024 * 1024` (6 MB). The bundle is currently 5.27 MB so 6 MB gives comfortable headroom.
+
+**File:** `vite.config.ts`
 
 ---
 
-### Files Changed
+### Fix 2: Replace Magic Links with Real Email + Password Credentials
 
-- **`src/pages/Portal.tsx`** — fix dynamic import (1-line fix)
-- All ~28 hook files above — add realtime channel subscription inside the main `useEffect`
+The same pattern already used for staff accounts will be replicated for portal users. When the gym owner clicks "Create Portal Access" on a member, or the school admin on a student/guardian:
 
-No database migrations needed. No new components. The realtime tables are already accessible via existing RLS policies since the subscriptions fire as the logged-in user who already has SELECT permission on their own data.
+1. A new backend function generates a random temporary password.
+2. It creates a real auth account (email + password, pre-confirmed).
+3. It stores the new `user_id` back on the `gym_members.user_id` or `students.user_id` column (these columns already exist).
+4. It emails the member/guardian their login email + temporary password.
+5. The portal login screen becomes a standard email + password form.
+
+---
+
+### New Backend Function: `create-portal-account`
+
+Similar in structure to the existing `create-staff-account` function. Accepts:
+- `memberId` (UUID) OR `studentId` (UUID)
+- `portalType`: `'gym'` | `'school'`
+- `name` (string)
+- `email` (string)
+
+Behaviour:
+- Validates the caller owns the record (`gym_members.user_id` / `students.user_id` matches caller)
+- If a portal auth account already exists for that email → returns an error with a toast "Account already exists"
+- Generates a temp password, creates auth user, links `user_id`, sends a branded credentials email pointing to `/portal?type=gym` or `/portal?type=school`
+- The email says "Your Gym Portal access" or "Your Parent Portal access" — no mention of Lovable anywhere
+
+---
+
+### Files to Change
+
+| File | Change |
+|---|---|
+| `vite.config.ts` | Raise PWA cache limit to 6 MB |
+| `supabase/functions/create-portal-account/index.ts` | **New** — backend function to create email+password portal accounts |
+| `src/components/portal/PortalLogin.tsx` | Replace magic-link form with email + password sign-in form |
+| `src/components/gym/MemberDetailDialog.tsx` | Replace "Send Portal Invite" (OTP) with "Create Portal Access" (calls new function) |
+| `src/components/school/StudentDetailDialog.tsx` | Same — replace OTP invite with credential creation |
+
+---
+
+### What Portal Users Will Experience After the Fix
+
+1. Gym owner opens a member's detail → clicks **"Create Portal Access"** → system creates an account and emails the member their login and temporary password.
+2. Member opens `invoice-joy-track.lovable.app/portal` (or your custom domain `/portal`) — sees a clean **Email + Password** login form with the gym/school branding, zero Lovable references.
+3. They log in → see only their own membership, schedule, and messages. No other members' data is accessible (enforced by RLS on the backend).
+
+---
+
+### Technical Details (Security)
+
+- The new function uses the **service role key on the server** — the client never touches admin APIs.
+- The `user_id` stored on `gym_members` and `students` is already used by existing RLS policies to restrict data access. Portal users can only read rows where `user_id = auth.uid()`.
+- The portal login uses `supabase.auth.signInWithPassword()` — standard, secure, no magic tokens in URLs.
+- If an account already exists for a member, the function returns a conflict response and the UI shows a toast.
