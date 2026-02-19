@@ -2090,6 +2090,8 @@ export type Database = {
           notes: string | null
           payment_status: string
           plan_id: string
+          plan_name: string | null
+          pop_url: string | null
           start_date: string
           status: string
           updated_at: string
@@ -2109,6 +2111,8 @@ export type Database = {
           notes?: string | null
           payment_status?: string
           plan_id: string
+          plan_name?: string | null
+          pop_url?: string | null
           start_date?: string
           status?: string
           updated_at?: string
@@ -2128,6 +2132,8 @@ export type Database = {
           notes?: string | null
           payment_status?: string
           plan_id?: string
+          plan_name?: string | null
+          pop_url?: string | null
           start_date?: string
           status?: string
           updated_at?: string

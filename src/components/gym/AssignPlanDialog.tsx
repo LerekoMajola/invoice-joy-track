@@ -53,6 +53,7 @@ export function AssignPlanDialog({ open, onOpenChange, memberId, memberName }: P
       paymentStatus,
       amountPaid: parseFloat(amountPaid) || 0,
       autoRenew,
+      planName: selectedPlan?.name,
     });
     setIsSubmitting(false);
     if (ok) onOpenChange(false);

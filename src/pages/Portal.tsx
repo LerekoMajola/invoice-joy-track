@@ -44,7 +44,7 @@ export default function Portal() {
         case 'home':
           return <GymMemberPortal member={gymMember} user={user} />;
         case 'membership':
-          return <GymPortalMembership memberId={gymMember.id} />;
+          return <GymPortalMembership memberId={gymMember.id} member={gymMember} />;
         case 'classes':
           return <GymPortalSchedule ownerId={ownerUserId} />;
         case 'messages':
