@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, Settings, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Eye, Settings, FileText, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,62 +13,22 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { useAdminSignups, type AdminSignup } from '@/hooks/useAdminSignups';
 import { TenantDetailDialog } from './TenantDetailDialog';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
+import { GenerateAdminInvoiceDialog } from './GenerateAdminInvoiceDialog';
+import { PaymentTracker } from './PaymentTracker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-
-const statusColors: Record<string, string> = {
-  trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  past_due: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  expired: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-};
-
-const planLabels: Record<string, string> = {
-  free_trial: 'Free Trial',
-  basic: 'Basic',
-  standard: 'Standard',
-  pro: 'Pro',
-  custom: 'Custom',
-};
-
-const systemIcons: Record<string, typeof Briefcase> = {
-  business: Briefcase,
-  workshop: Wrench,
-  school: GraduationCap,
-  legal: Scale,
-  hire: Hammer,
-  guesthouse: Hotel,
-  fleet: Car,
-  gym: Dumbbell,
-};
-
-const systemLabels: Record<string, string> = {
-  business: 'Business',
-  workshop: 'Workshop',
-  school: 'School',
-  legal: 'Legal',
-  hire: 'HirePro',
-  guesthouse: 'StayPro',
-  fleet: 'FleetPro',
-  gym: 'GymPro',
-};
-
-const systemColors: Record<string, string> = {
-  business: 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
-  workshop: 'bg-orange-600 text-white dark:bg-orange-500 dark:text-white',
-  school: 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
-  legal: 'bg-purple-600 text-white dark:bg-purple-500 dark:text-white',
-  hire: 'bg-amber-600 text-white dark:bg-amber-500 dark:text-white',
-  guesthouse: 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white',
-  fleet: 'bg-slate-600 text-white dark:bg-slate-500 dark:text-white',
-  gym: 'bg-lime-600 text-white dark:bg-lime-500 dark:text-white',
-};
+import { STATUS_COLORS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
+import { formatMaluti } from '@/lib/currency';
 
 interface UnifiedCustomer {
   id: string;
@@ -80,14 +40,12 @@ interface UnifiedCustomer {
   created_at: string;
   subscription_status: string | null;
   subscription_plan: string | null;
-  // Only for onboarded tenants
   tenant?: Tenant;
 }
 
 function mergeData(tenants: Tenant[] | undefined, signups: AdminSignup[] | undefined): UnifiedCustomer[] {
   const customerMap = new Map<string, UnifiedCustomer>();
 
-  // Add all signups first (keyed by user id)
   (signups || []).forEach((s) => {
     customerMap.set(s.id, {
       id: s.id,
@@ -102,7 +60,6 @@ function mergeData(tenants: Tenant[] | undefined, signups: AdminSignup[] | undef
     });
   });
 
-  // Enrich with tenant data for onboarded users
   (tenants || []).forEach((t) => {
     const existing = customerMap.get(t.user_id);
     if (existing) {
@@ -115,7 +72,6 @@ function mergeData(tenants: Tenant[] | undefined, signups: AdminSignup[] | undef
         existing.system_type = t.subscription.system_type;
       }
     } else {
-      // Tenant exists but wasn't in signups list (edge case)
       customerMap.set(t.user_id, {
         id: t.id,
         user_id: t.user_id,
@@ -145,7 +101,9 @@ export function CustomersTab() {
   const [onboardFilter, setOnboardFilter] = useState('all');
   const [systemFilter, setSystemFilter] = useState('all');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [billingTenant, setBillingTenant] = useState<Tenant | null>(null);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [invoiceTenant, setInvoiceTenant] = useState<Tenant | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UnifiedCustomer | null>(null);
 
   const isLoading = tenantsLoading || signupsLoading;
@@ -165,7 +123,6 @@ export function CustomersTab() {
           .eq('id', customer.tenant.id);
         if (profileError) throw profileError;
       } else {
-        // Non-onboarded user — delete via edge function
         const { data, error } = await supabase.functions.invoke('admin-get-signups', {
           body: { action: 'delete', userId: customer.user_id },
         });
@@ -211,7 +168,6 @@ export function CustomersTab() {
 
   return (
     <div className="space-y-4">
-      {/* Onboard toggle */}
       <Tabs value={onboardFilter} onValueChange={setOnboardFilter}>
         <TabsList>
           <TabsTrigger value="all">All ({allCustomers.length})</TabsTrigger>
@@ -220,7 +176,6 @@ export function CustomersTab() {
         </TabsList>
       </Tabs>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -251,15 +206,15 @@ export function CustomersTab() {
 
       <div className="text-sm text-muted-foreground">{filtered.length} customers</div>
 
-      {/* Table */}
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[700px]">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
               <TableHead>Company / Email</TableHead>
               <TableHead>System</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Subscription</TableHead>
+              <TableHead>Price/mo</TableHead>
               <TableHead>Usage</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -268,14 +223,14 @@ export function CustomersTab() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No customers found
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((customer) => {
                 const sys = customer.system_type || 'business';
-                const Icon = systemIcons[sys] || Briefcase;
+                const Icon = SYSTEM_ICONS[sys] || SYSTEM_ICONS.business;
                 return (
                   <TableRow key={customer.id}>
                     <TableCell>
@@ -289,9 +244,9 @@ export function CustomersTab() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={systemColors[sys] || systemColors.business}>
+                      <Badge className={SYSTEM_COLORS[sys] || SYSTEM_COLORS.business}>
                         <Icon className="h-3 w-3 mr-1" />
-                        {systemLabels[sys] || 'Business'}
+                        {SYSTEM_LABELS[sys] || 'Business'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -310,18 +265,21 @@ export function CustomersTab() {
                     <TableCell>
                       {customer.subscription_status ? (
                         <div className="flex flex-col gap-1">
-                          <Badge className={statusColors[customer.subscription_status] || ''}>
+                          <Badge className={STATUS_COLORS[customer.subscription_status] || ''}>
                             {customer.subscription_status}
                           </Badge>
                           {customer.subscription_plan && (
                             <span className="text-xs text-muted-foreground">
-                              {planLabels[customer.subscription_plan] || customer.subscription_plan}
+                              {PLAN_LABELS[customer.subscription_plan] || customer.subscription_plan}
                             </span>
                           )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground text-sm">None</span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {customer.tenant ? formatMaluti(customer.tenant.module_total) : '-'}
                     </TableCell>
                     <TableCell>
                       {customer.tenant?.usage ? (
@@ -343,22 +301,45 @@ export function CustomersTab() {
                       <div className="flex justify-end gap-1">
                         {customer.tenant && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => setSelectedTenant(customer.tenant!)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setEditingTenant(customer.tenant!)}>
-                              <Settings className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectedTenant(customer.tenant!)}>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View Details</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => setBillingTenant(customer.tenant!)}>
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Billing & Invoices</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => setEditingTenant(customer.tenant!)}>
+                                  <Settings className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit Subscription</TooltipContent>
+                            </Tooltip>
                           </>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(customer)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTarget(customer)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete Customer</TooltipContent>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -368,6 +349,63 @@ export function CustomersTab() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Billing detail sheet (formerly SubscriptionsTab detail) */}
+      <Sheet open={!!billingTenant} onOpenChange={(open) => !open && setBillingTenant(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{billingTenant?.company_name} — Billing</SheetTitle>
+          </SheetHeader>
+          {billingTenant?.subscription && (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline">{PLAN_LABELS[billingTenant.subscription.plan] || billingTenant.subscription.plan}</Badge>
+                <Badge className={STATUS_COLORS[billingTenant.subscription.status]}>
+                  {billingTenant.subscription.status}
+                </Badge>
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {formatMaluti(billingTenant.module_total)}/mo
+                </span>
+              </div>
+
+              <Separator />
+
+              <PaymentTracker
+                subscriptionId={billingTenant.subscription.id}
+                userId={billingTenant.user_id}
+                planPrice={billingTenant.module_total}
+                trialEndsAt={billingTenant.subscription.trial_ends_at}
+              />
+
+              <Separator />
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setInvoiceTenant(billingTenant);
+                  setBillingTenant(null);
+                }}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Generate Invoice
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setEditingTenant(billingTenant);
+                  setBillingTenant(null);
+                }}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Subscription
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <TenantDetailDialog
         tenant={selectedTenant}
@@ -379,6 +417,12 @@ export function CustomersTab() {
         tenant={editingTenant}
         open={!!editingTenant}
         onOpenChange={(open) => !open && setEditingTenant(null)}
+      />
+
+      <GenerateAdminInvoiceDialog
+        open={!!invoiceTenant}
+        onOpenChange={(open) => !open && setInvoiceTenant(null)}
+        preselectedTenant={invoiceTenant}
       />
 
       <ConfirmDialog
