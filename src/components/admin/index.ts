@@ -1,4 +1,5 @@
 export { AdminOverviewTab } from './AdminOverviewTab';
+export { BillingTab } from './BillingTab';
 export { CustomersTab } from './CustomersTab';
 export { TenantDetailDialog } from './TenantDetailDialog';
 export { EditSubscriptionDialog } from './EditSubscriptionDialog';
