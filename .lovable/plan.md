@@ -1,68 +1,64 @@
 
-# Add Billing Note to Subscription — Record "Leselihub pays M450/month"
+# Consolidate Admin Dashboard Duplication
 
-## What's needed
+## The Problem
 
-The `subscriptions` table has no notes field. We need a `billing_note` text column so admins can record custom billing context like "pays M450/month" against a tenant — visible in the tenant detail view and editable from the Edit Subscription sheet.
+There are three overlapping "tenant list" views in the admin panel, plus duplicated constant definitions spread across files:
 
-## Changes
+**Redundant tabs / components:**
+- `CustomersTab.tsx` — full tenant table with filters, search, eye/settings/delete actions
+- `SubscriptionsTab.tsx` (rendered as "Billing" tab) — another full tenant table with its own search/filter, also opens `TenantDetailDialog` and `EditSubscriptionDialog`
+- `TenantsTab.tsx` — a third tenant table, not even rendered anywhere in the app
 
-### 1. Database — add `billing_note` column to `subscriptions`
+**Duplicated constants (copy-pasted across 3+ files):**
+- `statusColors` — defined identically in `TenantsTab`, `SubscriptionsTab`, `CustomersTab`
+- `planLabels` — defined in `TenantsTab`, `SubscriptionsTab`, `CustomersTab`, `TenantDetailDialog`
+- `systemIcons`, `systemLabels`, `systemColors` — defined in `TenantsTab`, `CustomersTab`, and partially in `TenantDetailDialog`
 
-```sql
-ALTER TABLE public.subscriptions
-  ADD COLUMN IF NOT EXISTS billing_note text;
-```
+## The Fix
 
-Nullable text, no default. No RLS changes needed (existing subscription RLS covers it).
+### 1. Create a shared constants file — `src/components/admin/adminConstants.ts`
 
-### 2. `src/components/admin/EditSubscriptionDialog.tsx` — add Billing Note field
+Extract all repeated lookup maps into one place:
+- `STATUS_COLORS` (subscription status → badge class)
+- `PLAN_LABELS` (plan key → display name)
+- `SYSTEM_ICONS`, `SYSTEM_LABELS`, `SYSTEM_COLORS` (system type → icon/label/color)
 
-Add a textarea input for `billing_note` below the Status selector. On save, include the value in the `updateData` patch.
+All three tab files and the detail dialog import from here — no more copy-paste.
 
-```tsx
-// New state
-const [billingNote, setBillingNote] = useState(tenant?.subscription?.billing_note || '');
+### 2. Delete `TenantsTab.tsx`
 
-// In the form JSX
-<div className="space-y-2">
-  <Label htmlFor="billing_note">Billing Note</Label>
-  <Textarea
-    id="billing_note"
-    placeholder="e.g. Pays M450/month via EFT"
-    value={billingNote}
-    onChange={(e) => setBillingNote(e.target.value)}
-    rows={3}
-  />
-</div>
-```
+It is not imported anywhere in `Admin.tsx` or `admin/index.ts` and is completely superseded by `CustomersTab`. Remove it.
 
-And in `updateData`:
-```tsx
-billing_note: billingNote || null,
-```
+### 3. Merge "Customers" and "Billing" tabs into one enhanced tab
 
-### 3. `src/components/admin/TenantDetailDialog.tsx` — display the note
+The two tabs serve different but complementary purposes:
+- **Customers** = who has signed up (onboarded + not-onboarded), with delete actions
+- **Billing** = subscription plan, price, payment tracker, generate invoice
 
-Show `billing_note` in the Subscription info block if it exists:
+These can be unified into a single **"Customers"** tab. When you click on a row it opens a detail sheet that already has billing info. The "Generate Invoice" button (currently only in Billing) moves to the row actions on the shared table. The Billing tab is then removed.
 
-```tsx
-{tenant.subscription.billing_note && (
-  <div className="mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
-    <span className="font-medium">Note:</span> {tenant.subscription.billing_note}
-  </div>
-)}
-```
+The admin nav becomes: `Overview | CRM | Customers | Invoices | Settings` (one less tab, no lost functionality).
 
-### 4. `src/hooks/useAdminTenants.tsx` — include `billing_note` in the subscription select
+### 4. Update `admin/index.ts`
 
-Ensure the subscription query fetches the new field (it likely uses `select('*')` already, so this may be automatic — will verify).
+Remove the `BillingTab` export (and `TenantsTab` if it was ever exported).
 
-## Files to edit
+## Files Changed
 
-- Database migration (add column)
-- `src/components/admin/EditSubscriptionDialog.tsx`
-- `src/components/admin/TenantDetailDialog.tsx`
-- `src/hooks/useAdminTenants.tsx` (verify `billing_note` is fetched)
+| File | Action |
+|---|---|
+| `src/components/admin/adminConstants.ts` | Create (new shared constants) |
+| `src/components/admin/TenantsTab.tsx` | Delete |
+| `src/components/admin/SubscriptionsTab.tsx` | Delete (merged into Customers) |
+| `src/components/admin/BillingTab.tsx` | Delete (re-export shim no longer needed) |
+| `src/components/admin/CustomersTab.tsx` | Enhance: add Price column + Generate Invoice button + import from shared constants |
+| `src/components/admin/TenantDetailDialog.tsx` | Refactor: import constants from shared file |
+| `src/components/admin/index.ts` | Remove `BillingTab` export |
+| `src/pages/Admin.tsx` | Remove "Billing" tab, import only remaining tabs |
 
-After the change, open Leselihub's detail → Edit Subscription → type "Pays M450/month" in the Billing Note field and save.
+## What is preserved
+
+- All functionality: search, filter, detail view, edit subscription, generate invoice, delete, payment tracker
+- The "Billing" detail sheet from `SubscriptionsTab` (PaymentTracker + price display) is moved into the existing `CustomersTab` row-click sheet
+- No database changes needed
