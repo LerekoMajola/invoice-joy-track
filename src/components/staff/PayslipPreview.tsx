@@ -131,6 +131,9 @@ export function PayslipPreview({ payslip, open, onOpenChange }: PayslipPreviewPr
             <div>
               <p className="text-sm text-muted-foreground">Employee</p>
               <p className="font-semibold">{payslip.staffName}</p>
+              {payslip.staffEmployeeNumber && (
+                <p className="text-sm text-muted-foreground">Employee No: {payslip.staffEmployeeNumber}</p>
+              )}
               {payslip.staffDepartment && (
                 <p className="text-sm text-muted-foreground">Department: {payslip.staffDepartment}</p>
               )}

@@ -52,6 +52,7 @@ const editSchema = z.object({
   email: z.string().trim().email('Invalid email').max(255),
   phone: z.string().max(20).optional().or(z.literal('')),
   jobTitle: z.string().max(100).optional().or(z.literal('')),
+  employeeNumber: z.string().max(50).optional().or(z.literal('')),
   department: z.string().optional(),
   notes: z.string().max(500).optional().or(z.literal('')),
 });
@@ -133,6 +134,7 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
       email: staff?.email || '',
       phone: staff?.phone || '',
       jobTitle: staff?.jobTitle || '',
+      employeeNumber: staff?.employeeNumber || '',
       department: staff?.department || '',
       notes: staff?.notes || '',
     },
@@ -145,6 +147,7 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
       email: staff.email,
       phone: staff.phone || '',
       jobTitle: staff.jobTitle || '',
+      employeeNumber: staff.employeeNumber || '',
       department: staff.department || '',
       notes: staff.notes || '',
     });
@@ -178,6 +181,7 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
         email: data.email,
         phone: data.phone || undefined,
         jobTitle: data.jobTitle || undefined,
+        employeeNumber: data.employeeNumber || undefined,
         department: data.department || undefined,
         notes: data.notes || undefined,
       });
@@ -292,6 +296,20 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
 
                 <FormField
                   control={form.control}
+                  name="employeeNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employee Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. EMP001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="department"
                   render={({ field }) => (
                     <FormItem>
@@ -397,6 +415,12 @@ export function StaffDetailDialog({ staff, open, onOpenChange }: StaffDetailDial
                   <div>
                     <p className="text-sm text-muted-foreground">Job Title</p>
                     <p className="font-medium">{staff.jobTitle}</p>
+                  </div>
+                )}
+                {staff.employeeNumber && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Employee Number</p>
+                    <p className="font-medium">{staff.employeeNumber}</p>
                   </div>
                 )}
                 {staff.department && (

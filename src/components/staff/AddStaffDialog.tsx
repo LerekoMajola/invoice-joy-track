@@ -42,6 +42,7 @@ const staffSchema = z.object({
   email: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
   phone: z.string().max(20, 'Phone must be less than 20 characters').optional().or(z.literal('')),
   jobTitle: z.string().max(100, 'Job title must be less than 100 characters').optional().or(z.literal('')),
+  employeeNumber: z.string().max(50, 'Employee number must be less than 50 characters').optional().or(z.literal('')),
   department: z.string().optional(),
   role: z.enum(['admin', 'manager', 'staff', 'viewer']),
   notes: z.string().max(500, 'Notes must be less than 500 characters').optional().or(z.literal('')),
@@ -99,6 +100,7 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
       email: '',
       phone: '',
       jobTitle: '',
+      employeeNumber: '',
       department: '',
       role: 'staff',
       notes: '',
@@ -121,6 +123,7 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
         email: data.email,
         phone: data.phone || undefined,
         jobTitle: data.jobTitle || undefined,
+        employeeNumber: data.employeeNumber || undefined,
         department: data.department || undefined,
         role: data.role as StaffRole,
         notes: data.notes || undefined,
@@ -238,6 +241,20 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
                       </Badge>
                     ))}
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="employeeNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Employee Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. EMP001" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

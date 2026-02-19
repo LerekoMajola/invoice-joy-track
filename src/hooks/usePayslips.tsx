@@ -16,6 +16,7 @@ export interface Payslip {
   staffMemberId: string;
   staffName?: string;
   staffDepartment?: string;
+  staffEmployeeNumber?: string | null;
   payPeriodStart: string;
   payPeriodEnd: string;
   paymentDate: string;
@@ -94,7 +95,8 @@ export function usePayslips() {
           *,
           staff_members (
             name,
-            department
+            department,
+            employee_number
           )
         `)
         .eq('owner_user_id', user.id)
@@ -107,6 +109,7 @@ export function usePayslips() {
         staffMemberId: p.staff_member_id,
         staffName: p.staff_members?.name || 'Unknown',
         staffDepartment: p.staff_members?.department || undefined,
+        staffEmployeeNumber: (p.staff_members as any)?.employee_number || null,
         payPeriodStart: p.pay_period_start,
         payPeriodEnd: p.pay_period_end,
         paymentDate: p.payment_date,

@@ -1,0 +1,1 @@
+ALTER TABLE public.staff_members ADD COLUMN employee_number TEXT;
