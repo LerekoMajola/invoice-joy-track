@@ -1,86 +1,122 @@
 
-## Gym Portal: Self-Enrollment in Classes
-
-### What's Broken / Missing Today
-
-The Classes tab (`GymPortalSchedule.tsx`) is read-only. Members can view the schedule but there is no "Book" button. Gym owners currently have to manually add members to classes from the admin side.
+## Gym Home Tab: Attendance Stats + Daily Motivation — Incredible Shareable Design
 
 ### What's Being Built
 
-A full self-booking flow for gym members in the portal:
+The Home tab (`GymMemberPortal.tsx`) is getting a complete redesign. Instead of a plain profile overview, it becomes a **daily fitness dashboard** — the screen a member wakes up and checks every morning. It will feature:
 
-- **Book a class** — tap a class card, see spots remaining, tap "Book Class" to reserve a spot
-- **My Bookings** — a dedicated section or tab showing upcoming bookings with the option to cancel
-- **Spot tracking** — live count of how many spots are filled vs. capacity so you know if a class is full before booking
-- **Prevent double-booking** — if you're already booked into a class on that schedule slot, the button shows "Booked ✓" instead
+1. **Personalized hero greeting** with time-of-day awareness ("Good Morning ☀️", "Good Evening 🌙")
+2. **Live attendance stats pulled in from the database** — monthly visits, current streak, last visit date
+3. **Daily rotating motivational quote** — a curated list cycling by day-of-year so it's different every day
+4. **A shareable "Daily Stats Card"** — beautiful gradient card they can screenshot and post to Instagram/WhatsApp Stories, showing their streak + monthly count + quote
+5. **Membership status pill** — compact, at the top — not the huge card it currently is (the full plan detail stays on the Plan tab)
+6. **Today's check-in status strip** — shows if they're checked in today or prompts them to go check in
 
-### Database Changes
+---
 
-**New table: `gym_class_bookings`**
+### Design Vision
 
-Stores each member's booking per schedule slot:
-
-```sql
-CREATE TABLE public.gym_class_bookings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,           -- gym owner's user_id (for RLS scoping)
-  schedule_id uuid NOT NULL REFERENCES public.gym_class_schedules(id) ON DELETE CASCADE,
-  member_id uuid NOT NULL REFERENCES public.gym_members(id) ON DELETE CASCADE,
-  booked_at timestamptz NOT NULL DEFAULT now(),
-  status text NOT NULL DEFAULT 'booked', -- 'booked' | 'cancelled'
-  UNIQUE(schedule_id, member_id)
-);
-```
-
-**RLS Policies:**
-
-- Portal member can INSERT a booking where `member_id` links back to their `gym_members.portal_user_id = auth.uid()`
-- Portal member can SELECT their own bookings (same pattern)
-- Portal member can UPDATE (cancel) their own bookings
-- Gym owner can SELECT all bookings under their `user_id`
-
-### UI Changes
-
-#### `GymPortalSchedule.tsx` — Add booking capability
-
-- Each class card shows a **spot counter**: "8 / 12 spots filled" (queried from `gym_class_bookings` count)
-- When you tap a class, the bottom sheet detail panel gains a **"Book Class"** button
-- If already booked: shows "Booked ✓" badge (green) + "Cancel Booking" link
-- If class is full: shows "Class Full" disabled state
-- On book: inserts into `gym_class_bookings`, spot count updates instantly
-
-#### New "My Bookings" section inside the Classes tab
-
-Below the schedule grid, a collapsible section shows:
-- All upcoming bookings (booked status, not cancelled)
-- Each card: class name, day + time, instructor
-- "Cancel" button with confirm prompt
-
-### Files to Change
-
-| File | Change |
-|---|---|
-| Database migration | Create `gym_class_bookings` table + RLS policies |
-| `src/components/portal/gym/GymPortalSchedule.tsx` | Add booking button in detail sheet; live spot count; "My Bookings" section |
-
-No new nav tabs needed — everything lives within the existing Classes tab for a clean experience.
-
-### Flow
+The page is structured like a fitness super-app's home screen:
 
 ```text
-Member opens Classes tab
-  → Sees schedule with spots remaining per class
-  → Taps a class card → bottom sheet opens
-  → Taps "Book Class" → booking inserted
-  → Button changes to "Booked ✓"
-  → Spot count updates
-
-"My Bookings" section below schedule:
-  → Lists all upcoming bookings
-  → Member can cancel a booking (status → 'cancelled')
-
-Gym owner admin side:
-  → Can see bookings count per class in their schedule view
+┌─────────────────────────────────────────┐
+│  Good Morning, Sarah ☀️         [ACTIVE]│
+│  Thursday · 20 Feb                      │
+│─────────────────────────────────────────│
+│                                         │
+│  ┌─── TODAY ──────────────────────────┐ │
+│  │  ✓ Checked in at 07:34 AM  💪      │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│  ╔══════════════════════════════════╗   │
+│  ║  🔥 12        ⚡ 5         🏆 31  ║  │
+│  ║  Day Streak   This Month  Total  ║   │
+│  ╚══════════════════════════════════╝   │
+│                                         │
+│  ┌─────── DAILY MOTIVATION ──────────┐  │
+│  │  "The only bad workout is the     │  │
+│  │   one that didn't happen."        │  │
+│  │                    — Unknown      │  │
+│  │         [📸 Share this]           │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌── SHAREABLE CARD ─────────────────┐  │
+│  │  Gradient card — name, streak,    │  │
+│  │  monthly visits, quote, gym name  │  │
+│  │  + OrionBiz watermark             │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+│  ┌── MY PLAN ────────────────────────┐  │
+│  │  Premium · Expires 30 Mar · 38d   │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
 ```
 
-No new packages needed.
+---
+
+### Data Fetched on Home Tab
+
+The home tab will now pull the same attendance data as the Check In tab, plus the subscription summary (compact version). Specifically:
+
+- Today's check-in record (to show "Checked in ✓" or "Not yet checked in")
+- Monthly visit count (from `gym_attendance` WHERE `check_in >= start of month`)
+- All-time visit count (total `gym_attendance` rows for this member)
+- Streak (last 30 days rolling calculation — same logic as `GymPortalAttendance`)
+- Active subscription (compact — just plan name + end date)
+- Gym name from `company_profiles`
+
+All fetched in a single `Promise.all` so there's one loading state.
+
+---
+
+### Daily Motivation System
+
+A hardcoded array of 30 curated fitness/motivation quotes. The active quote is selected by `dayOfYear % quotes.length` — so it rotates automatically, changes each day, and requires no backend:
+
+```typescript
+const QUOTES = [
+  { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
+  { text: "Your body can stand almost anything. It's your mind you have to convince.", author: "Unknown" },
+  { text: "Sweat is just fat crying.", author: "Unknown" },
+  // ... 27 more
+];
+const todayQuote = QUOTES[getDayOfYear(new Date()) % QUOTES.length];
+```
+
+---
+
+### The Shareable Card (on Home tab)
+
+A redesigned shareable card lives on the Home tab (not hidden behind Check In). It's always visible once data loads, showing:
+
+- Full-bleed gradient (primary color, diagonal)
+- Member name + gym name
+- Today's quote in quotes
+- Streak badge + monthly count badge
+- Check-in status for today
+- "Share Your Progress" button → `navigator.share()` on mobile
+
+The card is designed as a **9:16 portrait-ish block** that screenshotted looks perfect for Instagram Stories.
+
+---
+
+### What Changes
+
+| File | What changes |
+|---|---|
+| `src/components/portal/gym/GymMemberPortal.tsx` | Complete redesign: fetch attendance stats + gym info + subscription summary; time-aware greeting; stats bar; daily quote; shareable card; compact membership strip |
+
+No database changes needed — the existing `gym_attendance` table with the RLS policies added in the last migration already supports this. No new edge functions. No new packages.
+
+The existing `GymPortalAttendance.tsx` (Check In tab) remains unchanged — it still handles the actual check-in action. The Home tab shows the stats passively and links the user to go check in if they haven't yet today.
+
+---
+
+### Stat Definitions (what members care about)
+
+- **Day Streak** 🔥 — consecutive days with at least one check-in. Everyone chases this.
+- **This Month** ⚡ — total visits in the current calendar month. Gym owners often use "12 visits = good month" as a benchmark.
+- **All Time** 🏆 — total lifetime visits. A vanity metric members love.
+- **Last Visit** 📅 — date of last attendance (shown subtly below stats).
+
+These are the four numbers every fitness app (Peloton, MyFitnessPal, Strava) puts on the home screen because they drive retention through accountability.
