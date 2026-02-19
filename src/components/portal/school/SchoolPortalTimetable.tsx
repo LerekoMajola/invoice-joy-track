@@ -38,10 +38,10 @@ export function SchoolPortalTimetable({ classId, ownerId }: SchoolPortalTimetabl
     async function load() {
       const db = supabase as any;
       const [{ data: periodsData }, { data: entriesData }] = await Promise.all([
-        db.from('timetable_periods').select('*').eq('user_id', ownerId).order('sort_order'),
+        db.from('school_periods').select('*').eq('user_id', ownerId).order('sort_order'),
         classId
           ? db.from('timetable_entries')
-              .select('*, timetable_subjects(name), timetable_periods(name, start_time, end_time)')
+              .select('*, school_subjects(name), school_periods(name, start_time, end_time)')
               .eq('class_id', classId)
               .eq('user_id', ownerId)
           : Promise.resolve({ data: [] }),
@@ -52,7 +52,7 @@ export function SchoolPortalTimetable({ classId, ownerId }: SchoolPortalTimetabl
         id: e.id,
         day_of_week: e.day_of_week,
         period_id: e.period_id,
-        subject_name: e.timetable_subjects?.name || e.subject_name || 'Subject',
+        subject_name: e.school_subjects?.name || e.subject_name || 'Subject',
         teacher_name: e.teacher_name || null,
         room: e.room || null,
       }));

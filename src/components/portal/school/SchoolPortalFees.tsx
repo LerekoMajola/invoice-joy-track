@@ -42,7 +42,7 @@ export function SchoolPortalFees({ studentId, ownerId }: SchoolPortalFeesProps) 
       const db = supabase as any;
       const [{ data: termsData }, { data: paymentsData }] = await Promise.all([
         db.from('academic_terms').select('*').eq('user_id', ownerId).order('start_date', { ascending: false }),
-        db.from('school_fee_payments').select('*').eq('student_id', studentId),
+        db.from('student_fee_payments').select('*').eq('student_id', studentId),
       ]);
       setTerms((termsData as unknown as Term[]) || []);
       setPayments((paymentsData as unknown as FeePayment[]) || []);

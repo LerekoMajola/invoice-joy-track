@@ -2174,8 +2174,10 @@ export type Database = {
           last_name: string
           member_number: string
           notes: string | null
+          owner_user_id: string | null
           phone: string | null
           photo_url: string | null
+          portal_user_id: string | null
           status: string
           updated_at: string
           user_id: string
@@ -2196,8 +2198,10 @@ export type Database = {
           last_name: string
           member_number: string
           notes?: string | null
+          owner_user_id?: string | null
           phone?: string | null
           photo_url?: string | null
+          portal_user_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -2218,8 +2222,10 @@ export type Database = {
           last_name?: string
           member_number?: string
           notes?: string | null
+          owner_user_id?: string | null
           phone?: string | null
           photo_url?: string | null
+          portal_user_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -4261,7 +4267,9 @@ export type Database = {
           last_name: string
           medical_notes: string | null
           notes: string | null
+          owner_user_id: string | null
           photo_url: string | null
+          portal_user_id: string | null
           secondary_guardian_name: string | null
           secondary_guardian_phone: string | null
           status: string
@@ -4286,7 +4294,9 @@ export type Database = {
           last_name: string
           medical_notes?: string | null
           notes?: string | null
+          owner_user_id?: string | null
           photo_url?: string | null
+          portal_user_id?: string | null
           secondary_guardian_name?: string | null
           secondary_guardian_phone?: string | null
           status?: string
@@ -4311,7 +4321,9 @@ export type Database = {
           last_name?: string
           medical_notes?: string | null
           notes?: string | null
+          owner_user_id?: string | null
           photo_url?: string | null
+          portal_user_id?: string | null
           secondary_guardian_name?: string | null
           secondary_guardian_phone?: string | null
           status?: string

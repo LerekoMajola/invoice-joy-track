@@ -62,7 +62,7 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
       allPromises.push(
         db.from('academic_terms')
           .select('*')
-          .eq('user_id', student.user_id)
+          .eq('user_id', student.owner_user_id ?? student.user_id)
           .eq('is_current', true)
           .maybeSingle()
           .then(({ data }: any) => setCurrentTerm(data))
@@ -73,13 +73,13 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
       const { data: term } = await db
         .from('academic_terms')
         .select('id')
-        .eq('user_id', student.user_id)
+        .eq('user_id', student.owner_user_id ?? student.user_id)
         .eq('is_current', true)
         .maybeSingle();
 
       if (term) {
         const { data: fees } = await db
-          .from('school_fee_payments')
+          .from('student_fee_payments')
           .select('amount, status')
           .eq('student_id', student.id)
           .eq('term_id', term.id);
@@ -95,7 +95,7 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
     }
 
     load();
-  }, [student.id, student.user_id, student.class_id]);
+  }, [student.id, student.owner_user_id, student.user_id, student.class_id]);
 
   if (loading) {
     return (

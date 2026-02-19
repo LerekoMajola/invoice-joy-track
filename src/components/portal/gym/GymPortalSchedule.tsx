@@ -33,21 +33,21 @@ export function GymPortalSchedule({ ownerId }: GymPortalScheduleProps) {
   useEffect(() => {
     supabase
       .from('gym_class_schedules')
-      .select('*, gym_class_types(name, description, duration_minutes, capacity, instructor_name)')
+      .select('*, gym_classes(name, description, duration_minutes, capacity, instructor_name)')
       .eq('user_id', ownerId)
       .eq('is_active', true)
       .order('start_time')
       .then(({ data }) => {
         const mapped = (data || []).map((s: any) => ({
           id: s.id,
-          class_name: s.gym_class_types?.name || 'Class',
-          instructor_name: s.instructor_override || s.gym_class_types?.instructor_name || null,
+          class_name: s.gym_classes?.name || 'Class',
+          instructor_name: s.instructor_override || s.gym_classes?.instructor_name || null,
           day_of_week: s.day_of_week,
           start_time: s.start_time,
           end_time: s.end_time,
-          duration_minutes: s.gym_class_types?.duration_minutes || null,
-          capacity: s.max_capacity_override || s.gym_class_types?.capacity || null,
-          description: s.gym_class_types?.description || null,
+          duration_minutes: s.gym_classes?.duration_minutes || null,
+          capacity: s.max_capacity_override || s.gym_classes?.capacity || null,
+          description: s.gym_classes?.description || null,
           location: null,
         }));
         setClasses(mapped);
