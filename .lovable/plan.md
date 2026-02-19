@@ -1,102 +1,50 @@
 
-## Admin CRM — Platform Sales Prospect Tracker
+## Root Cause: Multiple Isolated Hook Instances
 
-### What This Builds
+The bug is caused by **each component calling `useAdminProspects()` independently**, creating completely separate, isolated copies of the `prospects` state array. When one component updates its copy, the others know nothing about it.
 
-A dedicated "CRM" tab inside the `/admin` console for the super-admin to track **platform-level sales prospects** (companies/people who might subscribe). This is completely separate from the tenant-side CRM — it is a tool for you (the platform owner) to manage your own sales pipeline.
+Currently there are **4 separate instances** running simultaneously:
+- `AdminCRMTab` — owns the `prospects` list displayed on screen
+- `ProspectKanban` — calls its own `useAdminProspects()` just to get `moveProspect`
+- `ProspectDetailSheet` — calls its own `useAdminProspects()` to get `updateProspect` / `deleteProspect`
+- `AddProspectDialog` — calls its own `useAdminProspects()` to get `createProspect`
 
----
+This is confirmed by the network logs showing **5 identical GET requests** to `admin_prospects` firing at the same time on page load.
 
-### Core Features
-
-1. **Kanban Pipeline Board** — 7 stages: Lead → Contacted → Demo Booked → Proposal Sent → Negotiation → Won → Lost. Drag-and-drop cards between stages.
-2. **Prospect List View** — searchable, filterable table of all prospects.
-3. **Prospect Detail Sheet** — slide-in panel with full edit form, activity log (notes/calls/emails), and follow-up scheduling.
-4. **Add Prospect Dialog** — quick form to add company, contact name, email, phone, expected plan, and estimated value.
-5. **Activity Log** — log calls, emails, demos, and notes against each prospect. Timestamped timeline.
-6. **Stats Bar** — total pipeline value, weighted value, # active prospects, # follow-ups due today.
+When you add a prospect via `AddProspectDialog`, it inserts into the database and updates its own local state — but `AdminCRMTab`'s state is a completely separate variable and never receives the update. Switching tabs forces a full re-mount, which re-runs `fetchProspects()` from scratch in `AdminCRMTab`, which is why you see the data after tab-switching.
 
 ---
 
-### Database Changes
+## The Fix: Lift State to the Top Level
 
-Two new tables, admin-only (no RLS exposure to tenants):
+The solution is the **single source of truth pattern**: call `useAdminProspects()` only once in `AdminCRMTab`, then pass the necessary functions down as props to child components. No child should call the hook directly.
 
-**`admin_prospects`**
-```
-id, created_at, updated_at,
-contact_name, company_name, email, phone,
-status (text: lead/contacted/demo/proposal/negotiation/won/lost),
-priority (text: low/medium/high),
-estimated_value (numeric),
-expected_close_date (date),
-win_probability (int),
-source (text),
-notes (text),
-next_follow_up (date),
-stage_entered_at (timestamptz),
-loss_reason (text),
-interested_plan (text),
-interested_system (text)
+### Component Hierarchy After Fix
+
+```text
+AdminCRMTab  (owns the single useAdminProspects() instance)
+├── ProspectKanban     receives: prospects, moveProspect, onCardClick
+│   └── AddProspectDialog  receives: createProspect
+└── ProspectDetailSheet    receives: prospect, updateProspect, deleteProspect, fetchActivities, addActivity
 ```
 
-**`admin_prospect_activities`**
-```
-id, created_at,
-prospect_id (FK → admin_prospects),
-type (text: note/call/email/demo/meeting),
-title (text),
-description (text)
-```
+### Files to Change
 
-RLS: Both tables restricted to authenticated users with `super_admin` role using the existing `has_role()` security definer function.
+**1. `src/components/admin/crm/ProspectKanban.tsx`**
+- Remove `const { moveProspect } = useAdminProspects()` call
+- Add `moveProspect` to the `ProspectKanbanProps` interface
+- Add `createProspect` to props and pass it into `AddProspectDialog`
 
----
+**2. `src/components/admin/crm/AddProspectDialog.tsx`**
+- Remove `const { createProspect } = useAdminProspects()` call
+- Add `createProspect` to the `AddProspectDialogProps` interface and accept it as a prop
 
-### Files to Create / Modify
+**3. `src/components/admin/crm/ProspectDetailSheet.tsx`**
+- Remove `const { updateProspect, deleteProspect, fetchActivities, addActivity } = useAdminProspects()` call
+- Add those 4 functions to the `ProspectDetailSheetProps` interface and accept them as props
 
-**New files:**
-- `src/hooks/useAdminProspects.tsx` — CRUD for prospects + activities
-- `src/components/admin/crm/AdminCRMTab.tsx` — main CRM tab (pipeline + list views + stats)
-- `src/components/admin/crm/ProspectKanban.tsx` — drag-and-drop Kanban board
-- `src/components/admin/crm/ProspectCard.tsx` — card for Kanban column
-- `src/components/admin/crm/ProspectDetailSheet.tsx` — slide-in detail panel (edit + activity log)
-- `src/components/admin/crm/AddProspectDialog.tsx` — add prospect form
-- `supabase/migrations/TIMESTAMP_admin_crm.sql` — creates both tables with RLS
+**4. `src/components/admin/crm/AdminCRMTab.tsx`**
+- This already calls `useAdminProspects()` — now also destructure `updateProspect`, `deleteProspect`, `fetchActivities`, `addActivity`, `moveProspect`, `createProspect`
+- Pass them down to `ProspectKanban`, `ProspectDetailSheet`, and `AddProspectDialog`
 
-**Modified files:**
-- `src/pages/Admin.tsx` — add "CRM" tab trigger + content
-- `src/components/admin/index.ts` — export new `AdminCRMTab`
-
----
-
-### Pipeline Stages
-
-| Stage | Color | Default Win% |
-|---|---|---|
-| Lead | Blue | 5% |
-| Contacted | Purple | 15% |
-| Demo | Teal | 35% |
-| Proposal | Yellow | 55% |
-| Negotiation | Orange | 75% |
-| Won | Green | 100% |
-| Lost | Red | 0% |
-
----
-
-### Technical Details
-
-**RLS Policies (both tables):**
-```sql
-CREATE POLICY "Super admins only" ON admin_prospects
-  FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(), 'super_admin'));
-```
-
-**Hook pattern** (`useAdminProspects`): follows the same pattern as `useCRMClients` / `useDeals` — local state updated optimistically, Supabase as source of truth, `toast` notifications on errors.
-
-**Kanban drag-and-drop**: Uses native HTML5 drag events (same pattern as `PipelineBoard.tsx` in the tenant CRM) — no extra library needed.
-
-**Stats computation**: Derived from the prospects array in-memory (no extra DB calls). Weighted pipeline = Σ(value × win_probability).
-
-**Activity log**: Stored in `admin_prospect_activities`, fetched per prospect when detail sheet opens. Add activity form is inline inside the sheet.
+No database changes, no new files — this is purely a React state architecture fix. After this change, all mutations will update the single `prospects` array in `AdminCRMTab` and the UI will reflect changes instantly.
