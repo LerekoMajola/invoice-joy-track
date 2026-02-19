@@ -207,6 +207,107 @@ export type Database = {
           },
         ]
       }
+      admin_prospect_activities: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          prospect_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          prospect_id: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          prospect_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_prospect_activities_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "admin_prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_prospects: {
+        Row: {
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string | null
+          estimated_value: number | null
+          expected_close_date: string | null
+          id: string
+          interested_plan: string | null
+          interested_system: string | null
+          loss_reason: string | null
+          next_follow_up: string | null
+          notes: string | null
+          phone: string | null
+          priority: string
+          source: string | null
+          stage_entered_at: string | null
+          status: string
+          updated_at: string
+          win_probability: number | null
+        }
+        Insert: {
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email?: string | null
+          estimated_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          interested_plan?: string | null
+          interested_system?: string | null
+          loss_reason?: string | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          priority?: string
+          source?: string | null
+          stage_entered_at?: string | null
+          status?: string
+          updated_at?: string
+          win_probability?: number | null
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string | null
+          estimated_value?: number | null
+          expected_close_date?: string | null
+          id?: string
+          interested_plan?: string | null
+          interested_system?: string | null
+          loss_reason?: string | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          priority?: string
+          source?: string | null
+          stage_entered_at?: string | null
+          status?: string
+          updated_at?: string
+          win_probability?: number | null
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_name: string
