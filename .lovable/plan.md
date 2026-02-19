@@ -1,56 +1,53 @@
 
-# Restore Billing Tab — Paying Customers Only
+## Bug: Edit Subscription Dialog Shows Stale Data
 
-## What Happened
+### Root Cause
 
-The consolidation merged the Billing tab into the Customers tab (accessible via the billing sheet icon per row). But you want a dedicated Billing tab focused purely on revenue-relevant accounts — companies that are past the trial stage.
+In `EditSubscriptionDialog.tsx`, lines 80–86 use `useState` (incorrectly) where `useEffect` is needed:
 
-## The Fix
-
-### 1. Create `src/components/admin/BillingTab.tsx`
-
-A new, focused billing view that:
-- **Filters to non-trialing tenants only**: `status` is `active`, `past_due`, `cancelled`, or `expired` — never `trialing`
-- Shows a summary header: total active count, total MRR (monthly recurring revenue)
-- Table columns: Company, System, Status, Plan, Price/mo, Trial Ended, Actions
-- Row actions: open the billing sheet (PaymentTracker + Generate Invoice) and Edit Subscription
-- Reuses the same billing sheet already built in CustomersTab (extract it to a shared component or duplicate minimally)
-
-### 2. Add "Billing" tab to `Admin.tsx`
-
-Insert between Customers and Invoices:
-```
-Overview | CRM | Customers | Billing | Invoices | Settings
+```tsx
+// BROKEN — useState initializer only runs once, never re-runs when tenant changes
+useState(() => {
+  if (tenant?.subscription) {
+    setPlan(tenant.subscription.plan);
+    setStatus(tenant.subscription.status);
+  }
+});
 ```
 
-### 3. Export from `admin/index.ts`
+Because the dialog component stays mounted in the DOM between opens, the four `useState` calls on lines 34–39 also only fire on the very first mount. When you click "Edit" for a different tenant (Leselihub after having opened another row), the component reuses its old state — hence "Free Trial / Trialing" appearing even though the database correctly stores `basic / active`.
 
-Add `BillingTab` to the barrel export.
+### The Fix
 
-## What the Billing Tab Shows
+Replace the broken `useState` call with a proper `useEffect` that depends on `[tenant, open]` so the form resets whenever the dialog opens for any tenant.
 
-| Column | Source |
+**File:** `src/components/admin/EditSubscriptionDialog.tsx`
+
+```tsx
+// Add useEffect to imports
+import { useState, useEffect } from 'react';
+
+// Replace the broken useState block with:
+useEffect(() => {
+  if (tenant?.subscription) {
+    setPlan(tenant.subscription.plan);
+    setStatus(tenant.subscription.status);
+    setBillingNote(tenant.subscription.billing_note || '');
+    setBillingOverride(
+      tenant.subscription.billing_override != null
+        ? String(tenant.subscription.billing_override)
+        : ''
+    );
+  }
+}, [tenant, open]);
+```
+
+The dependency on `open` ensures values reset every time the sheet opens, and the dependency on `tenant` ensures correct values load when a different row is selected.
+
+### Files Changed
+
+| File | Change |
 |---|---|
-| Company | `tenant.company_name` |
-| System | `tenant.subscription.system_type` |
-| Status | `active` / `past_due` / `cancelled` / `expired` (never `trialing`) |
-| Plan | `PLAN_LABELS[plan]` |
-| Price/mo | `formatMaluti(module_total)` |
-| Trial Ended | `trial_ends_at` formatted date |
-| Actions | 💳 Billing sheet, ✏️ Edit subscription |
+| `src/components/admin/EditSubscriptionDialog.tsx` | Replace `useState` reset with `useEffect`; add `useEffect` to import |
 
-## Summary Stats Bar (top of tab)
-
-```
-[ Paying: 3 ]  [ Past Due: 1 ]  [ MRR: M1,350/mo ]
-```
-
-Calculated from the filtered list — gives quick financial health at a glance.
-
-## Technical Notes
-
-- Data comes from `useAdminTenants()` already loaded — no new query needed
-- Filter: `tenant.subscription?.status !== 'trialing'` AND subscription exists
-- The billing sheet (PaymentTracker) and GenerateAdminInvoiceDialog are already built — just wired in
-- No database changes required
-- The Customers tab remains unchanged — it still shows all customers including trialing ones
+No database changes needed — the database already has the correct values.
