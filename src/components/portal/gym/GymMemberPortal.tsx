@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, startOfDay, startOfMonth, subDays, differenceInDays, getDayOfYear } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap, Flame, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
@@ -160,23 +160,37 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         )}
       </div>
 
-      {/* ── STATS ROW ─────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 grid grid-cols-3 border-b border-border/60">
+      {/* ── STATS CARDS ───────────────────────────────────────────── */}
+      <div className="flex-shrink-0 grid grid-cols-3 gap-3 px-4 py-4">
         {[
-          { emoji: '🔥', value: data?.streak ?? 0, label: 'Day Streak' },
-          { emoji: '⚡', value: data?.monthlyCount ?? 0, label: 'This Month' },
-          { emoji: '🏆', value: data?.allTimeCount ?? 0, label: 'All Time' },
-        ].map(({ emoji, value, label }, i) => (
-          <div
-            key={label}
-            className={cn(
-              'flex flex-col items-center py-5 gap-0.5',
-              i < 2 && 'border-r border-border/60'
-            )}
-          >
-            <span className="text-xl mb-1 leading-none">{emoji}</span>
-            <p className="text-3xl font-black text-foreground leading-none">{value}</p>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
+          {
+            icon: Zap,
+            iconClass: 'fill-[hsl(243,75%,59%)] text-[hsl(243,75%,59%)]',
+            bgClass: 'bg-[hsl(243,75%,59%)]/15',
+            value: data?.monthlyCount ?? 0,
+            label: 'visits this\nmonth',
+          },
+          {
+            icon: Flame,
+            iconClass: 'fill-orange-500 text-orange-500',
+            bgClass: 'bg-orange-500/15',
+            value: data?.streak ?? 0,
+            label: 'day\nstreak',
+          },
+          {
+            icon: Trophy,
+            iconClass: 'fill-yellow-500 text-yellow-500',
+            bgClass: 'bg-yellow-500/15',
+            value: data?.allTimeCount ?? 0,
+            label: 'all\ntime',
+          },
+        ].map(({ icon: Icon, iconClass, bgClass, value, label }) => (
+          <div key={label} className="bg-card rounded-2xl border border-border/50 shadow-sm flex flex-col items-center pt-5 pb-4 px-2 gap-2">
+            <div className={cn('h-11 w-11 rounded-full flex items-center justify-center', bgClass)}>
+              <Icon className={cn('h-5 w-5', iconClass)} strokeWidth={0} />
+            </div>
+            <p className="text-[1.75rem] font-black text-foreground leading-none">{value}</p>
+            <p className="text-[10px] font-medium text-muted-foreground text-center leading-tight whitespace-pre-line">{label}</p>
           </div>
         ))}
       </div>
