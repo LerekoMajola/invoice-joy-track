@@ -4026,19 +4026,19 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: string
           staff_member_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
-          role: Database["public"]["Enums"]["staff_role"]
+          role: string
           staff_member_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
-          role?: Database["public"]["Enums"]["staff_role"]
+          role?: string
           staff_member_id?: string
         }
         Relationships: [
@@ -4629,7 +4629,7 @@ export type Database = {
     Functions: {
       get_staff_role: {
         Args: { p_owner_user_id: string; p_user_id: string }
-        Returns: Database["public"]["Enums"]["staff_role"]
+        Returns: string
       }
       has_role: {
         Args: {
@@ -4641,7 +4641,6 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "support_agent" | "user"
-      staff_role: "admin" | "manager" | "staff" | "viewer"
       subscription_plan: "free_trial" | "basic" | "standard" | "pro" | "custom"
       subscription_status:
         | "trialing"
@@ -4777,7 +4776,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "support_agent", "user"],
-      staff_role: ["admin", "manager", "staff", "viewer"],
       subscription_plan: ["free_trial", "basic", "standard", "pro", "custom"],
       subscription_status: [
         "trialing",

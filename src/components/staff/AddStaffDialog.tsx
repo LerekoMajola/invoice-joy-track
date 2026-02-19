@@ -42,9 +42,8 @@ const staffSchema = z.object({
   email: z.string().trim().email('Invalid email address').max(255, 'Email must be less than 255 characters'),
   phone: z.string().max(20, 'Phone must be less than 20 characters').optional().or(z.literal('')),
   jobTitle: z.string().max(100, 'Job title must be less than 100 characters').optional().or(z.literal('')),
-  employeeNumber: z.string().max(50, 'Employee number must be less than 50 characters').optional().or(z.literal('')),
   department: z.string().optional(),
-  role: z.enum(['admin', 'manager', 'staff', 'viewer']),
+  role: z.string().min(1, 'Role is required').max(50, 'Role must be less than 50 characters'),
   notes: z.string().max(500, 'Notes must be less than 500 characters').optional().or(z.literal('')),
 });
 
@@ -70,18 +69,19 @@ const jobTitleSuggestions = [
   'Workshop Foreman',
 ];
 
-const roles = [
-  { value: 'admin', label: 'Admin', description: 'Full access to all features' },
-  { value: 'manager', label: 'Manager', description: 'Can manage team data' },
-  { value: 'staff', label: 'Staff', description: 'Can create and edit' },
-  { value: 'viewer', label: 'Viewer', description: 'Read-only access' },
-];
+const defaultRoles = ['Admin', 'Manager', 'Staff', 'Viewer'];
 
 export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
   const [credentialsData, setCredentialsData] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
   const { createStaff, staff } = useStaff();
+  const [customRoleInput, setCustomRoleInput] = useState('');
+  const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
+
+  // Collect existing roles from staff for suggestions
+  const existingRoles = Array.from(new Set(staff.map(s => s.role).filter(Boolean)));
+  const allRoleSuggestions = Array.from(new Set([...defaultRoles, ...existingRoles]));
   const isAtLimit = staff.length >= 5;
   const { userModules } = useModules();
   const { saveModuleAccess } = useStaffModuleAccess();
@@ -100,9 +100,8 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
       email: '',
       phone: '',
       jobTitle: '',
-      employeeNumber: '',
       department: '',
-      role: 'staff',
+      role: 'Staff',
       notes: '',
     },
   });
@@ -123,9 +122,8 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
         email: data.email,
         phone: data.phone || undefined,
         jobTitle: data.jobTitle || undefined,
-        employeeNumber: data.employeeNumber || undefined,
         department: data.department || undefined,
-        role: data.role as StaffRole,
+        role: data.role,
         notes: data.notes || undefined,
       };
 
@@ -158,6 +156,8 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
 
         form.reset();
         setSelectedModuleIds([]);
+        setShowCustomRoleInput(false);
+        setCustomRoleInput('');
         onOpenChange(false);
       }
     } finally {
@@ -248,20 +248,6 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
 
             <FormField
               control={form.control}
-              name="employeeNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Employee Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. EMP001" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="department"
               render={({ field }) => (
                 <FormItem>
@@ -291,23 +277,43 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          <div className="flex flex-col">
-                            <span>{role.label}</span>
-                            <span className="text-xs text-muted-foreground">{role.description}</span>
-                          </div>
-                        </SelectItem>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {allRoleSuggestions.map((role) => (
+                        <Badge
+                          key={role}
+                          variant={field.value === role ? 'default' : 'outline'}
+                          className="cursor-pointer text-xs"
+                          onClick={() => {
+                            form.setValue('role', role, { shouldValidate: true });
+                            setShowCustomRoleInput(false);
+                          }}
+                        >
+                          {role}
+                        </Badge>
                       ))}
-                    </SelectContent>
-                  </Select>
+                      <Badge
+                        variant={showCustomRoleInput ? 'default' : 'outline'}
+                        className="cursor-pointer text-xs"
+                        onClick={() => setShowCustomRoleInput(true)}
+                      >
+                        + Custom
+                      </Badge>
+                    </div>
+                    {showCustomRoleInput && (
+                      <Input
+                        placeholder="Type custom role name..."
+                        value={customRoleInput}
+                        onChange={(e) => {
+                          setCustomRoleInput(e.target.value);
+                          form.setValue('role', e.target.value, { shouldValidate: true });
+                        }}
+                      />
+                    )}
+                    {!showCustomRoleInput && field.value && (
+                      <p className="text-xs text-muted-foreground">Selected: {field.value}</p>
+                    )}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
