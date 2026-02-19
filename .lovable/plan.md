@@ -1,79 +1,94 @@
 
-## The Real Problem: Portal Users Can Access the Business Dashboard
+## Portal Redesign: Modern UI + Logout Button
 
-### What Is Happening
+### What's Being Built
 
-When a gym member signs in at `/portal`, the `PortalLogin` component calls `supabase.auth.signInWithPassword`. This creates a **shared browser session** — the same session used by business owners. There is no distinction at the session level between a portal user and a business user.
+A complete visual refresh of the member portal — covering the layout shell, the bottom navigation, the gym home screen, the school home screen, and the login page. A logout button will be added to the portal header. The data-fetching logic stays 100% untouched.
 
-When a portal user navigates to `/dashboard`:
-1. `AuthContext` sees a logged-in user — ✅ passes
-2. `ProtectedRoute` sees a logged-in user — ✅ passes
-3. `ProtectedRoute` then finds **no subscription** for this portal user, so it **creates a brand-new free trial subscription** for them and assigns all platform modules
-4. The full business dashboard renders — the gym member can see Clients, Invoices, Accounting, CRM, etc.
+### Current Problems
 
-This is the exact bug shown in the screenshot.
+- No way to sign out — members are trapped in the portal
+- Bottom nav has no header/top bar — no branding or context
+- The home cards look like basic admin UI, not a polished member-facing app
+- Login page is plain and minimal
+- No visual hierarchy or personality
 
-### Root Cause
+### What Changes
 
-`ProtectedRoute` has no concept of portal users. It only checks `if (!user)`. Portal users are real authenticated users, so they pass that check and get treated as business owners.
+#### 1. `src/components/portal/PortalLayout.tsx` — Header + Logout + Redesigned Bottom Nav
 
-### The Fix: Two-Layer Defence
+Add a sticky top header bar that shows:
+- The portal type icon + name (e.g. "Member Portal" / "Student Portal")
+- A logout button (LogOut icon, top right)
 
-**Layer 1 — ProtectedRoute: block portal users at the gate**
+The bottom nav gets an active pill indicator (a solid rounded background under the active tab) and larger tap targets.
 
-The `ProtectedRoute` must detect when the logged-in user is a portal user and redirect them to `/portal` instead of letting them through. A portal user is identified by their `user_metadata.portal_type` being set (the edge function sets this: `{ full_name: name, portal_type: portalType }`).
+The sign-out logic: `supabase.auth.signOut()` + `localStorage.removeItem('portal_type')` + `window.location.reload()`.
 
-```typescript
-// In ProtectedRoute.tsx — add before the subscription check:
-const portalType = user.user_metadata?.portal_type;
-if (portalType === 'gym' || portalType === 'school') {
-  return <Navigate to="/portal" replace />;
-}
-```
+The layout accepts an `onSignOut` prop passed from `Portal.tsx` — same pattern used everywhere else.
 
-**Layer 2 — Auth page: redirect portal users to `/portal`**
+#### 2. `src/pages/Portal.tsx` — Pass sign-out handler down
 
-The `Auth` page currently redirects all logged-in users to `/dashboard`. A portal user who visits `/auth` would also get redirected there. The redirect must also check for portal users:
+Create a `handleSignOut` function at the page level and pass it to `PortalLayout`.
 
-```typescript
-// In Auth.tsx — change the redirect logic:
-if (isAdmin) {
-  navigate('/admin', { replace: true });
-} else if (user.user_metadata?.portal_type) {
-  navigate('/portal', { replace: true });
-} else {
-  navigate('/dashboard', { replace: true });
-}
-```
+#### 3. `src/components/portal/gym/GymMemberPortal.tsx` — Modern Home Screen
 
-**Layer 3 — Database safety net (already in place)**
+Replace the plain card list with:
+- A vibrant gradient hero section: avatar initials circle, large greeting, status badge
+- A bold "Membership Card" with a shiny gradient, plan name, expiry progress bar
+- A quick-actions row: 3 icon buttons (Classes, Messages, Membership) with colored icons
+- Profile section as a clean list with icons — no change to data, just styling
 
-The RLS policies from the previous migration already ensure portal users cannot read business data tables (invoices, clients, accounting, etc.) — those policies check `auth.uid() = user_id` against the business owner's ID. A portal user's auth UID will never match a business owner's user_id, so even if they somehow reach `/dashboard`, all data queries return empty results. This is the fail-safe that was already working.
+#### 4. `src/components/portal/school/SchoolParentPortal.tsx` — Modern Home Screen
 
-### Why This Is the Correct and Minimal Fix
+Same design language for school:
+- Hero section with student name and admission number
+- Class + Term info as icon cards in a 2-column grid
+- Fee summary as a visual progress bar card (paid vs outstanding)
+- Guardian section as clean icon list
 
-| Approach | Verdict |
-|---|---|
-| Block in `ProtectedRoute` via `user_metadata.portal_type` | ✅ Correct — stops the redirect, prevents free trial creation |
-| Block in `Auth.tsx` redirect | ✅ Correct — prevents portal users who visit `/auth` from going to dashboard |
-| Database RLS (already done) | ✅ Already in place — provides a data-layer safety net |
-| Creating a separate Supabase project | ❌ Not needed — metadata check is sufficient |
+#### 5. `src/components/portal/PortalLogin.tsx` — Polished Login Page
+
+- Full-height gradient background (subtle, behind content)
+- Larger icon with animated ring effect
+- Card-based form container with shadow
+- Better typography hierarchy
 
 ### Files to Change
 
 | File | Change |
 |---|---|
-| `src/components/layout/ProtectedRoute.tsx` | After auth resolves, check `user.user_metadata?.portal_type` — if set, redirect to `/portal` instead of allowing access |
-| `src/pages/Auth.tsx` | In the redirect-after-login effect, check `user_metadata.portal_type` and redirect portal users to `/portal` |
+| `src/components/portal/PortalLayout.tsx` | Add top header with portal name + logout button; redesign bottom nav active states |
+| `src/pages/Portal.tsx` | Create `handleSignOut` and pass to `PortalLayout` |
+| `src/components/portal/gym/GymMemberPortal.tsx` | Modern hero + membership card + quick-actions redesign |
+| `src/components/portal/school/SchoolParentPortal.tsx` | Modern hero + class/term cards + fee bar redesign |
+| `src/components/portal/PortalLogin.tsx` | Polished login with gradient background and card form |
 
-No database changes needed. No edge function changes needed. The `user_metadata.portal_type` field is already being set correctly by the `create-portal-account` edge function.
+No database changes. No edge function changes. No new dependencies.
 
-### What This Prevents
+### Visual Direction
 
-After this fix:
-- A portal user logging in at `/portal` stays on `/portal` — the portal session hook resolves their gym/school record and shows their personal portal
-- If a portal user manually navigates to `/dashboard`, `/invoices`, `/accounting`, etc., `ProtectedRoute` immediately redirects them back to `/portal`
-- If a portal user visits `/auth`, they are redirected to `/portal` not `/dashboard`
-- No free trial subscriptions are ever created for portal users
-- No platform modules are ever assigned to portal users
-- RLS still ensures zero data access even if any edge case gets through
+```text
+┌─────────────────────────────────────┐
+│  🏋️ Member Portal          [←Exit] │  ← New sticky header
+├─────────────────────────────────────┤
+│                                     │
+│   ┌─ Hero ─────────────────────┐    │
+│   │  [JD]  Hi, John! 👋        │    │
+│   │        Member #GYM-001     │    │
+│   │        ● Active            │    │
+│   └────────────────────────────┘    │
+│                                     │
+│   ┌─ Membership Card ──────────┐    │
+│   │  Current Plan              │    │
+│   │  Premium Monthly           │    │
+│   │  Expires: 30 Mar 2026      │    │
+│   │  ████████████░░░  82%      │    │
+│   └────────────────────────────┘    │
+│                                     │
+│   [📅 Classes] [💬 Chat] [💳 Plan]  │
+│                                     │
+├─────────────────────────────────────┤
+│  [Home]  [Plan]  [Classes]  [Chat]  │  ← Redesigned bottom nav
+└─────────────────────────────────────┘
+```
