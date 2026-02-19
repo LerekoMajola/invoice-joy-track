@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
-import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, Puzzle, X, ArrowLeft } from 'lucide-react';
+import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Puzzle, X, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -9,28 +9,13 @@ import { formatMaluti } from '@/lib/currency';
 import { TenantModuleManager } from './TenantModuleManager';
 import { TenantBusinessInsights } from './TenantBusinessInsights';
 import { TenantSmsCredits } from './TenantSmsCredits';
+import { STATUS_COLORS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS } from './adminConstants';
 
 interface TenantDetailDialogProps {
   tenant: Tenant | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const planLabels: Record<string, string> = {
-  free_trial: 'Free Trial',
-  basic: 'Basic',
-  standard: 'Standard',
-  pro: 'Pro',
-  custom: 'Custom',
-};
-
-const statusColors: Record<string, string> = {
-  trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  past_due: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-  expired: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-};
 
 export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailDialogProps) {
   if (!tenant || !open) return null;
@@ -94,25 +79,26 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                     <span className="font-medium flex items-center gap-1.5">
                       {(() => {
                         const sys = tenant.subscription.system_type || 'business';
-                        const iconMap: Record<string, typeof Briefcase> = { business: Briefcase, workshop: Wrench, school: GraduationCap, legal: Scale, hire: Hammer, guesthouse: Hotel, fleet: Car, gym: Dumbbell };
-                        const labelMap: Record<string, string> = { business: 'Business', workshop: 'Workshop', school: 'School', legal: 'Legal', hire: 'HirePro', guesthouse: 'StayPro', fleet: 'FleetPro', gym: 'GymPro' };
-                        const Icon = iconMap[sys] || Briefcase;
-                        const label = labelMap[sys] || 'Business';
-                        return (<><Icon className="h-4 w-4" />{label}</>);
+                        const Icon = SYSTEM_ICONS[sys] || SYSTEM_ICONS.business;
+                        return (<><Icon className="h-4 w-4" />{SYSTEM_LABELS[sys] || 'Business'}</>);
                       })()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Plan:</span>
                     <span className="font-medium">
-                      {planLabels[tenant.subscription.plan] || tenant.subscription.plan}
+                      {PLAN_LABELS[tenant.subscription.plan] || tenant.subscription.plan}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Status:</span>
-                    <Badge className={statusColors[tenant.subscription.status]}>
+                    <Badge className={STATUS_COLORS[tenant.subscription.status]}>
                       {tenant.subscription.status}
                     </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Monthly Price:</span>
+                    <span className="font-medium">{formatMaluti(tenant.module_total)}/mo</span>
                   </div>
                   {tenant.subscription.trial_ends_at && (
                     <div className="flex items-center justify-between">

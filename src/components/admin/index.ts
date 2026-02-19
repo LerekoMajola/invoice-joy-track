@@ -1,6 +1,5 @@
 export { AdminOverviewTab } from './AdminOverviewTab';
 export { CustomersTab } from './CustomersTab';
-export { BillingTab } from './BillingTab';
 export { TenantDetailDialog } from './TenantDetailDialog';
 export { EditSubscriptionDialog } from './EditSubscriptionDialog';
 export { PlatformStatsCards } from './PlatformStatsCards';
