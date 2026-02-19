@@ -149,6 +149,15 @@ export function useInvoices() {
 
   useEffect(() => {
     fetchInvoices();
+
+    const channel = supabase
+      .channel('invoices-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => {
+        fetchInvoices();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const generateInvoiceNumber = async (): Promise<string> => {

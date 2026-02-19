@@ -114,6 +114,15 @@ export function useStudents() {
 
   useEffect(() => {
     fetchStudents();
+
+    const channel = supabase
+      .channel('students-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        fetchStudents();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const generateAdmissionNumber = async (): Promise<string> => {

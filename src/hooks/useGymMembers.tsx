@@ -95,7 +95,18 @@ export function useGymMembers() {
     }
   };
 
-  useEffect(() => { fetchMembers(); }, [user, activeCompanyId]);
+  useEffect(() => {
+    fetchMembers();
+
+    const channel = supabase
+      .channel('gym-members-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_members' }, () => {
+        fetchMembers();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
 
   const generateMemberNumber = async (): Promise<string> => {
     const { data } = await (supabase.from('gym_members') as any)

@@ -124,6 +124,15 @@ export function useQuotes() {
 
   useEffect(() => {
     fetchQuotes();
+
+    const channel = supabase
+      .channel('quotes-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, () => {
+        fetchQuotes();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, activeCompanyId]);
 
   const generateQuoteNumber = async (): Promise<string> => {

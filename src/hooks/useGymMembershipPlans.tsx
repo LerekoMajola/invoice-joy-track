@@ -69,7 +69,18 @@ export function useGymMembershipPlans() {
     }
   };
 
-  useEffect(() => { fetchPlans(); }, [user, activeCompanyId]);
+  useEffect(() => {
+    fetchPlans();
+
+    const channel = supabase
+      .channel('gym-plans-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_membership_plans' }, () => {
+        fetchPlans();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
 
   const createPlan = async (plan: GymMembershipPlanInsert): Promise<boolean> => {
     const activeUser = await getActiveUser();

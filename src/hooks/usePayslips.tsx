@@ -143,6 +143,15 @@ export function usePayslips() {
 
   useEffect(() => {
     fetchPayslips();
+
+    const channel = supabase
+      .channel('payslips-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payslips' }, () => {
+        fetchPayslips();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchPayslips]);
 
   const calculateTotals = (data: CreatePayslipData | UpdatePayslipData) => {

@@ -45,7 +45,18 @@ export function useFleetFuelLogs(vehicleId?: string) {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchLogs(); }, [user, vehicleId]);
+  useEffect(() => {
+    fetchLogs();
+
+    const channel = supabase
+      .channel('fleet-fuel-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_fuel_logs' }, () => {
+        fetchLogs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
 
   const createLog = async (log: FleetFuelLogInsert): Promise<boolean> => {
     if (!user) return false;

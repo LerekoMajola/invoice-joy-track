@@ -94,6 +94,18 @@ export function useSchoolFees() {
 
   useEffect(() => {
     fetchAll();
+
+    const channel = supabase
+      .channel('school-fees-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fee_schedules' }, () => {
+        fetchAll();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_fee_payments' }, () => {
+        fetchAll();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   // ===== Fee Schedules =====

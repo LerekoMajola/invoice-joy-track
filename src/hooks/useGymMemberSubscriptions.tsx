@@ -87,7 +87,18 @@ export function useGymMemberSubscriptions(memberId?: string) {
     }
   };
 
-  useEffect(() => { fetchSubscriptions(); }, [user, activeCompanyId, memberId]);
+  useEffect(() => {
+    fetchSubscriptions();
+
+    const channel = supabase
+      .channel('gym-subs-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_member_subscriptions' }, () => {
+        fetchSubscriptions();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId, memberId]);
 
   const createSubscription = async (sub: GymMemberSubscriptionInsert): Promise<boolean> => {
     const activeUser = await getActiveUser();

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
@@ -144,6 +145,16 @@ export function useBankAccounts() {
       toast({ title: 'Error deleting account', description: error.message, variant: 'destructive' });
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('bank-accounts-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bank_accounts' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const activeAccounts = accounts.filter(a => a.is_active);
   const totalBalance = activeAccounts.reduce((sum, a) => sum + Number(a.current_balance), 0);

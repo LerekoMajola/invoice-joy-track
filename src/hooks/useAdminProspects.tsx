@@ -59,6 +59,15 @@ export function useAdminProspects() {
 
   useEffect(() => {
     fetchProspects();
+
+    const channel = supabase
+      .channel('admin-prospects-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_prospects' }, () => {
+        fetchProspects();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [fetchProspects]);
 
   const createProspect = async (values: Omit<AdminProspect, 'id' | 'created_at' | 'updated_at' | 'stage_entered_at'>) => {

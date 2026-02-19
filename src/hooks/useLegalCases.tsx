@@ -75,7 +75,18 @@ export function useLegalCases() {
     }
   };
 
-  useEffect(() => { fetchCases(); }, [user, activeCompanyId]);
+  useEffect(() => {
+    fetchCases();
+
+    const channel = supabase
+      .channel('legal-cases-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'legal_cases' }, () => {
+        fetchCases();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
 
   return { cases, isLoading, refetch: fetchCases };
 }

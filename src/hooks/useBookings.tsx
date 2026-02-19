@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
@@ -120,6 +121,16 @@ export function useBookings() {
       toast.success('Guest checked out');
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('bookings-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   return { bookings, isLoading, createBooking, updateBooking, deleteBooking, checkIn, checkOut };
 }
