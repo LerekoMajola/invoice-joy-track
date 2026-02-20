@@ -204,5 +204,19 @@ export function useGymMemberSubscriptions(memberId?: string) {
     }
   };
 
-  return { subscriptions, isLoading, createSubscription, freezeSubscription, unfreezeSubscription, cancelSubscription, refetch: fetchSubscriptions };
+  const updateSubscription = async (id: string, updates: Record<string, any>): Promise<boolean> => {
+    try {
+      const { error } = await (supabase.from('gym_member_subscriptions') as any).update(updates).eq('id', id);
+      if (error) throw error;
+      await fetchSubscriptions();
+      toast.success('Payment updated');
+      return true;
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast.error('Failed to update payment');
+      return false;
+    }
+  };
+
+  return { subscriptions, isLoading, createSubscription, freezeSubscription, unfreezeSubscription, cancelSubscription, updateSubscription, refetch: fetchSubscriptions };
 }

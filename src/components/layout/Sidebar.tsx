@@ -78,6 +78,7 @@ const navigation = [
   { name: 'Members', href: '/gym-members', icon: Users, moduleKey: 'gym_members', systemTypes: ['gym'] },
   { name: 'Classes', href: '/gym-classes', icon: Dumbbell, moduleKey: 'gym_classes', systemTypes: ['gym'] },
   { name: 'Attendance', href: '/gym-attendance', icon: UserCheck, moduleKey: 'gym_attendance', systemTypes: ['gym'] },
+  { name: 'Payments', href: '/gym-payments', icon: Wallet, moduleKey: 'gym_members', systemTypes: ['gym'] },
   // Shared
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks', systemTypes: null },
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff', systemTypes: null },

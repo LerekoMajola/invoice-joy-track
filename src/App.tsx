@@ -53,6 +53,7 @@ import Fleet from "./pages/Fleet";
 import GymMembers from "./pages/GymMembers";
 import GymClasses from "./pages/GymClasses";
 import GymAttendance from "./pages/GymAttendance";
+import GymPayments from "./pages/GymPayments";
 import Portal from "./pages/Portal";
 
 const queryClient = new QueryClient();
@@ -124,6 +125,7 @@ const App = () => {
             <Route path="/gym-members" element={<ProtectedRoute><GymMembers /></ProtectedRoute>} />
             <Route path="/gym-classes" element={<ProtectedRoute><GymClasses /></ProtectedRoute>} />
             <Route path="/gym-attendance" element={<ProtectedRoute><GymAttendance /></ProtectedRoute>} />
+            <Route path="/gym-payments" element={<ProtectedRoute><GymPayments /></ProtectedRoute>} />
             <Route path="/portal" element={<Portal />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
