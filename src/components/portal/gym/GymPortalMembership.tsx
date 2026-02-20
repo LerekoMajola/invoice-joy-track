@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, differenceInDays, parseISO } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
-  CreditCard, Snowflake, Calendar, Loader2, Upload, CheckCircle2,
-  ImageIcon, X, Eye, RefreshCw
+  CreditCard, Snowflake, Loader2, Upload, CheckCircle2,
+  X, Paperclip
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -100,7 +98,7 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
 
       if (updateError) throw updateError;
 
-      toast.success('Proof of payment uploaded!');
+      toast.success('Receipt uploaded!');
       await fetchSubscriptions();
     } catch (err: any) {
       console.error(err);
@@ -119,212 +117,165 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
   }
 
   return (
-    <div className="p-4 space-y-5">
-      <h2 className="text-lg font-bold text-foreground pt-2">Billing & Payment</h2>
+    <div className="p-4 space-y-4">
 
-      {/* Active subscription */}
-      {active ? (
-        <div className="space-y-3">
-          {/* Plan info card */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
+      {/* Active subscription — hero card */}
+      {active ? (() => {
+        const start = parseISO(active.start_date);
+        const end = parseISO(active.end_date);
+        const total = Math.max(differenceInDays(end, start), 1);
+        const remaining = Math.max(differenceInDays(end, today), 0);
+        const elapsed = Math.round(((total - remaining) / total) * 100);
+
+        return (
+          <div className="space-y-3">
+            {/* Hero card */}
+            <div className="rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-primary/70 p-5 text-white shadow-xl">
+              {/* Top row */}
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="font-semibold text-foreground">{active.plan_name || 'Membership Plan'}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {format(parseISO(active.start_date), 'dd MMM yyyy')} — {format(parseISO(active.end_date), 'dd MMM yyyy')}
-                  </p>
-                </div>
-                <Badge
-                  variant={active.status === 'frozen' ? 'secondary' : 'default'}
-                  className="capitalize shrink-0"
-                >
-                  {active.status}
-                </Badge>
-              </div>
-
-              {/* Progress */}
-              {(() => {
-                const start = parseISO(active.start_date);
-                const end = parseISO(active.end_date);
-                const total = Math.max(differenceInDays(end, start), 1);
-                const remaining = Math.max(differenceInDays(end, today), 0);
-                const elapsed = Math.round(((total - remaining) / total) * 100);
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{remaining} days remaining</span>
-                      <span>{elapsed}% elapsed</span>
-                    </div>
-                    <Progress value={elapsed} className="h-2" />
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                      {active.status === 'frozen' ? 'Frozen' : 'Active Plan'}
+                    </span>
+                    {active.status === 'frozen' && (
+                      <Snowflake className="h-3 w-3 text-blue-300" />
+                    )}
                   </div>
-                );
-              })()}
-
-              {/* Amount + payment status */}
-              <div className="flex items-center justify-between pt-1 border-t border-border">
-                <div>
-                  <p className="text-xs text-muted-foreground">Amount Paid</p>
-                  <p className={cn(
-                    'text-xl font-bold mt-0.5',
-                    active.payment_status === 'paid' ? 'text-green-600' : 'text-destructive'
-                  )}>
-                    {active.amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-white">
+                    {active.plan_name || 'Membership'}
+                  </h2>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    {format(start, 'dd MMM yyyy')} — {format(end, 'dd MMM yyyy')}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Payment</p>
-                  <Badge
-                    variant={active.payment_status === 'paid' ? 'default' : 'destructive'}
-                    className="capitalize mt-0.5"
-                  >
-                    {active.payment_status === 'paid' ? '✓ Paid' : active.payment_status}
-                  </Badge>
+                <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-green-400" />
                 </div>
               </div>
 
-              {active.status === 'frozen' && active.freeze_start && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <Snowflake className="h-4 w-4" />
-                  <span>Frozen since {format(parseISO(active.freeze_start), 'dd MMM yyyy')}</span>
+              {/* Days remaining + progress */}
+              <div className="space-y-2 mb-5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-3xl font-black text-white">{remaining}</span>
+                  <span className="text-xs text-white/40">{elapsed}% elapsed</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <p className="text-xs text-white/50 -mt-1">days remaining</p>
+                {/* Slim progress strip */}
+                <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-green-400 transition-all"
+                    style={{ width: `${Math.max(100 - elapsed, 2)}%` }}
+                  />
+                </div>
+              </div>
 
-          {/* Proof of Payment section */}
-          <Card className={cn(
-            'border-2 transition-colors',
-            active.pop_url ? 'border-green-500/30 bg-green-500/5' : 'border-dashed border-border'
-          )}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-semibold text-foreground">Proof of Payment</p>
-                </div>
-                {active.pop_url && (
-                  <Badge variant="outline" className="text-green-600 border-green-500/40 bg-green-500/10 text-xs">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Submitted
+              {/* Investment */}
+              <div className="border-t border-white/10 pt-4">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-0.5">
+                  Invested in your health
+                </p>
+                <p className={cn(
+                  'text-2xl font-extrabold',
+                  active.payment_status === 'paid' ? 'text-green-400' : 'text-red-400'
+                )}>
+                  {active.amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
+                {active.payment_status !== 'paid' && (
+                  <Badge variant="destructive" className="mt-1 text-xs capitalize">
+                    {active.payment_status}
                   </Badge>
                 )}
               </div>
 
+              {active.status === 'frozen' && active.freeze_start && (
+                <p className="mt-3 text-xs text-blue-300 flex items-center gap-1.5">
+                  <Snowflake className="h-3 w-3" />
+                  Frozen since {format(parseISO(active.freeze_start), 'dd MMM yyyy')}
+                </p>
+              )}
+            </div>
+
+            {/* Receipt chip — compact, no image preview */}
+            <div className="flex items-center gap-2">
               {active.pop_url ? (
-                <div className="space-y-3">
-                  {/* Thumbnail */}
-                  <div
-                    className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer border border-border"
+                <>
+                  <button
                     onClick={() => { setProofSub(active); setProofOpen(true); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-xs font-semibold hover:bg-green-500/20 transition-colors"
                   >
-                    <img
-                      src={active.pop_url}
-                      alt="Proof of payment"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Eye className="h-8 w-8 text-white drop-shadow" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => { setProofSub(active); setProofOpen(true); }}
-                    >
-                      <Eye className="h-4 w-4 mr-1.5" />
-                      Show as Proof
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-1.5" />
-                      Replace
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-2">
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Attach a photo of your payment receipt so the gym can verify your payment.
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full"
+                    <Paperclip className="h-3 w-3" />
+                    Receipt attached ✓
+                  </button>
+                  <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
                   >
-                    {uploading ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</>
-                    ) : (
-                      <><Upload className="h-4 w-4 mr-2" />Attach Proof of Payment</>
-                    )}
-                  </Button>
-                </div>
+                    Replace
+                  </button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="rounded-full text-xs"
+                >
+                  {uploading ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Uploading…</>
+                  ) : (
+                    <><Upload className="h-3.5 w-3.5 mr-1.5" />Attach Receipt</>
+                  )}
+                </Button>
               )}
+            </div>
 
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleUpload(file, active);
-                  e.target.value = '';
-                }}
-              />
-            </CardContent>
-          </Card>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleUpload(file, active);
+                e.target.value = '';
+              }}
+            />
+          </div>
+        );
+      })() : (
+        <div className="rounded-2xl border-2 border-dashed border-border p-8 text-center text-muted-foreground">
+          <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm font-medium">No active membership</p>
+          <p className="text-xs mt-1 opacity-60">Contact the gym to renew your plan.</p>
         </div>
-      ) : (
-        <Card>
-          <CardContent className="p-4 text-center text-muted-foreground">
-            <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No active membership.</p>
-            <p className="text-xs mt-1">Contact the gym to renew your plan.</p>
-          </CardContent>
-        </Card>
       )}
 
-      {/* Payment History */}
+      {/* Compact history */}
       {history.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">History</h3>
-          {history.map(s => (
-            <Card key={s.id}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{s.plan_name || 'Plan'}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Calendar className="h-3 w-3 shrink-0" />
-                      {format(parseISO(s.start_date), 'dd MMM yy')} — {format(parseISO(s.end_date), 'dd MMM yy')}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <Badge variant="secondary" className="capitalize text-xs">{s.status}</Badge>
-                    {s.amount_paid > 0 && (
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {s.amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                    )}
-                  </div>
+        <div className="pt-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Past Plans</p>
+          <div className="space-y-0 divide-y divide-border">
+            {history.map(s => (
+              <div key={s.id} className="flex items-center justify-between py-2.5 gap-2">
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-foreground truncate">{s.plan_name || 'Plan'}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {format(parseISO(s.start_date), 'MMM yy')}–{format(parseISO(s.end_date), 'MMM yy')}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <Badge variant="secondary" className="capitalize text-xs shrink-0">{s.status}</Badge>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Full-screen Proof Modal */}
+      {/* Full-screen Proof Modal — unchanged */}
       <Dialog open={proofOpen} onOpenChange={setProofOpen}>
         <DialogContent className="max-w-sm p-0 overflow-hidden">
           <div className="bg-primary p-4 text-primary-foreground">
@@ -350,7 +301,7 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
                 <p className="font-medium">{member.member_number}</p>
               </div>
               <div>
-                <p className="text-[10px] text-primary-foreground/50 uppercase tracking-wider">Amount Paid</p>
+                <p className="text-[10px] text-primary-foreground/50 uppercase tracking-wider">Invested</p>
                 <p className="font-bold text-base">
                   {proofSub?.amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
@@ -370,7 +321,6 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
             </div>
           </div>
 
-          {/* POP image */}
           {proofSub?.pop_url ? (
             <div className="p-3 bg-muted/50">
               <p className="text-xs text-muted-foreground mb-2 font-medium">Payment Receipt Photo</p>
@@ -385,7 +335,7 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
               <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
               <p className="text-sm font-semibold text-foreground">Payment on Record</p>
               <p className="text-xs text-muted-foreground mt-1">
-                No receipt photo attached yet. Upload one to show gym staff.
+                No receipt photo attached yet.
               </p>
             </div>
           )}
