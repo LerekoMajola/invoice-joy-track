@@ -1,53 +1,67 @@
 
-## Bug: Edit Subscription Dialog Shows Stale Data
+## Fix: "Send Portal Access" — Always Works (Create or Resend)
 
 ### Root Cause
 
-In `EditSubscriptionDialog.tsx`, lines 80–86 use `useState` (incorrectly) where `useEffect` is needed:
+The `create-portal-account` edge function blocks re-invitations with a **409 Conflict** error when `portal_user_id` is already set on the member/student record (lines 180–185 and 207–212). This means:
 
-```tsx
-// BROKEN — useState initializer only runs once, never re-runs when tenant changes
-useState(() => {
-  if (tenant?.subscription) {
-    setPlan(tenant.subscription.plan);
-    setStatus(tenant.subscription.status);
-  }
-});
+- First time: works fine.
+- After first invite: button appears but clicking it fails with "Portal account already exists."
+- On the published version, where real members have already been provisioned, the button never works again.
+
+### Solution
+
+Two changes:
+
+**1. Edge Function (`create-portal-account/index.ts`)**
+
+Remove the 409 early-return block. Instead, if `portal_user_id` is already set, treat the request as a **"Resend"** — reset the password and re-send the email (the existing "already registered" path already handles this correctly). So the fix is simply to remove those early-exit blocks:
+
+```ts
+// REMOVE this block for gym:
+if (record.portal_user_id) {
+  return new Response(JSON.stringify({ error: 'Portal account already exists for this member' }), {
+    status: 409, ...
+  })
+}
+
+// REMOVE this block for school:
+if (record.portal_user_id) {
+  return new Response(JSON.stringify({ error: 'Portal account already exists for this student' }), {
+    status: 409, ...
+  })
+}
 ```
 
-Because the dialog component stays mounted in the DOM between opens, the four `useState` calls on lines 34–39 also only fire on the very first mount. When you click "Edit" for a different tenant (Leselihub after having opened another row), the component reuses its old state — hence "Free Trial / Trialing" appearing even though the database correctly stores `basic / active`.
+When `portal_user_id` is already set, the function continues to `createUser`, gets an "already registered" error, then correctly falls into the existing `isAlreadyRegistered` branch — which resets the password and re-links the user. The email is then re-sent with new credentials.
 
-### The Fix
+**2. UI Labels — Gym (`MemberDetailDialog.tsx`) and School (`StudentDetailDialog.tsx`)**
 
-Replace the broken `useState` call with a proper `useEffect` that depends on `[tenant, open]` so the form resets whenever the dialog opens for any tenant.
+Update the button label to reflect the state dynamically:
+- If `member.portalUserId` is set → show **"Resend Portal Access"**
+- If not → show **"Create Portal Access"**
 
-**File:** `src/components/admin/EditSubscriptionDialog.tsx`
+This gives the business owner clear feedback and makes the button useful on an ongoing basis.
 
-```tsx
-// Add useEffect to imports
-import { useState, useEffect } from 'react';
-
-// Replace the broken useState block with:
-useEffect(() => {
-  if (tenant?.subscription) {
-    setPlan(tenant.subscription.plan);
-    setStatus(tenant.subscription.status);
-    setBillingNote(tenant.subscription.billing_note || '');
-    setBillingOverride(
-      tenant.subscription.billing_override != null
-        ? String(tenant.subscription.billing_override)
-        : ''
-    );
-  }
-}, [tenant, open]);
-```
-
-The dependency on `open` ensures values reset every time the sheet opens, and the dependency on `tenant` ensures correct values load when a different row is selected.
-
-### Files Changed
+### Files to Change
 
 | File | Change |
 |---|---|
-| `src/components/admin/EditSubscriptionDialog.tsx` | Replace `useState` reset with `useEffect`; add `useEffect` to import |
+| `supabase/functions/create-portal-account/index.ts` | Remove the two 409 early-exit blocks for existing `portal_user_id` |
+| `src/components/gym/MemberDetailDialog.tsx` | Update button label: "Create" vs "Resend" based on `member.portalUserId` |
+| `src/components/school/StudentDetailDialog.tsx` | Update button label: "Create" vs "Resend" based on `student.portalUserId` |
 
-No database changes needed — the database already has the correct values.
+### No database changes needed.
+
+The flow after the fix:
+
+```text
+Click "Create/Resend Portal Access"
+  │
+  ├─ portal_user_id not set → Create new auth user → Link ID → Send email ✓
+  │
+  └─ portal_user_id already set → createUser gets "already registered" error
+       → Find existing user → Reset password → Re-link → Re-send email ✓
+```
+
+Both paths end with the member receiving fresh credentials in their inbox.
