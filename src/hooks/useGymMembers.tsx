@@ -23,6 +23,7 @@ export interface GymMember {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  portalUserId: string | null;
 }
 
 export interface GymMemberInsert {
@@ -86,6 +87,7 @@ export function useGymMembers() {
         notes: m.notes,
         createdAt: m.created_at,
         updatedAt: m.updated_at,
+        portalUserId: m.portal_user_id || null,
       })));
     } catch (error) {
       console.error('Error fetching gym members:', error);
