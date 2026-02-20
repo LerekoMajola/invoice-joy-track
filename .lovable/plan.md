@@ -1,67 +1,60 @@
 
-## Fix: "Send Portal Access" — Always Works (Create or Resend)
+## Redesign: Gym Portal "Plan" Tab — Minimalist & Pride-Inducing
 
-### Root Cause
+### Goal
 
-The `create-portal-account` edge function blocks re-invitations with a **409 Conflict** error when `portal_user_id` is already set on the member/student record (lines 180–185 and 207–212). This means:
+Replace the current cluttered "Billing & Payment" layout (which prominently shows a large proof-of-payment image thumbnail that takes up significant screen space) with a clean, minimalist design that makes the member feel proud and confident about their health investment.
 
-- First time: works fine.
-- After first invite: button appears but clicking it fails with "Portal account already exists."
-- On the published version, where real members have already been provisioned, the button never works again.
+### Design Philosophy
 
-### Solution
+- **Hero membership card**: Bold, full-width card with the plan name in large type — the member's plan name front and center like a badge of honor.
+- **Clean status ring / countdown**: A simple circular or strip progress showing days remaining — not percentage elapsed which feels negative.
+- **Proof of Payment**: Collapsed by default into a single small "Receipt" chip/button — no image preview visible until tapped. This reclaims the entire lower half of the screen.
+- **Motivational tone**: Replace "Amount Paid" with "Invested in your health" framing. Replace dry labels with confidence-building copy.
+- **History**: Keep the history section but make it ultra-compact — a simple timeline of past plans, no cards.
 
-Two changes:
-
-**1. Edge Function (`create-portal-account/index.ts`)**
-
-Remove the 409 early-return block. Instead, if `portal_user_id` is already set, treat the request as a **"Resend"** — reset the password and re-send the email (the existing "already registered" path already handles this correctly). So the fix is simply to remove those early-exit blocks:
-
-```ts
-// REMOVE this block for gym:
-if (record.portal_user_id) {
-  return new Response(JSON.stringify({ error: 'Portal account already exists for this member' }), {
-    status: 409, ...
-  })
-}
-
-// REMOVE this block for school:
-if (record.portal_user_id) {
-  return new Response(JSON.stringify({ error: 'Portal account already exists for this student' }), {
-    status: 409, ...
-  })
-}
-```
-
-When `portal_user_id` is already set, the function continues to `createUser`, gets an "already registered" error, then correctly falls into the existing `isAlreadyRegistered` branch — which resets the password and re-links the user. The email is then re-sent with new credentials.
-
-**2. UI Labels — Gym (`MemberDetailDialog.tsx`) and School (`StudentDetailDialog.tsx`)**
-
-Update the button label to reflect the state dynamically:
-- If `member.portalUserId` is set → show **"Resend Portal Access"**
-- If not → show **"Create Portal Access"**
-
-This gives the business owner clear feedback and makes the button useful on an ongoing basis.
-
-### Files to Change
-
-| File | Change |
-|---|---|
-| `supabase/functions/create-portal-account/index.ts` | Remove the two 409 early-exit blocks for existing `portal_user_id` |
-| `src/components/gym/MemberDetailDialog.tsx` | Update button label: "Create" vs "Resend" based on `member.portalUserId` |
-| `src/components/school/StudentDetailDialog.tsx` | Update button label: "Create" vs "Resend" based on `student.portalUserId` |
-
-### No database changes needed.
-
-The flow after the fix:
+### Layout (top to bottom)
 
 ```text
-Click "Create/Resend Portal Access"
-  │
-  ├─ portal_user_id not set → Create new auth user → Link ID → Send email ✓
-  │
-  └─ portal_user_id already set → createUser gets "already registered" error
-       → Find existing user → Reset password → Re-link → Re-send email ✓
+┌─────────────────────────────────┐
+│  [Active badge]                 │
+│  Ball Breaker              ✓    │  ← Large plan name, bold
+│  19 Feb – 21 Mar 2026           │
+│                                 │
+│  28 days left  ══════╌╌╌╌  7%   │  ← Slim progress strip
+│                                 │
+│  Invested in your health        │
+│  M 1,000.00                     │  ← Big green number
+└─────────────────────────────────┘
+
+  [📎 Receipt attached ✓]         ← Compact chip, tap to view full-screen modal
+  [+ Attach Receipt]              ← Only if no POP yet
+
+  ── Past Plans ──────────────────
+  Ball Breaker  Jan–Feb 2026  Expired
 ```
 
-Both paths end with the member receiving fresh credentials in their inbox.
+### What Changes
+
+| Element | Before | After |
+|---|---|---|
+| POP image thumbnail | Always shown, aspect-video height | Hidden — single small chip button |
+| "Billing & Payment" header | Plain h2 | Removed — the card IS the header |
+| Amount label | "Amount Paid" | "Invested in your health" |
+| Progress bar | Shows % elapsed (negative framing) | Shows days remaining prominently |
+| Background | White cards | Dark gradient hero card for active plan (premium feel) |
+| History | Card per item | Single-line timeline rows |
+
+### Technical Changes
+
+**File:** `src/components/portal/gym/GymPortalMembership.tsx`
+
+- Replace the active subscription `Card` with a dark-gradient hero card (`bg-gradient-to-br from-gray-900 to-primary/80`) that uses white text.
+- Collapse the POP section: if `pop_url` exists, show a small green badge/button "Receipt attached ✓". Tapping it opens the existing full-screen proof modal — the image stays hidden otherwise.
+- If no POP: show a minimal ghost button "Attach Receipt" (no explanatory paragraph, just the button).
+- Remove the image thumbnail entirely from the main view.
+- Rename the "Billing & Payment" title to nothing (remove it — the hero card communicates everything).
+- Update "Amount Paid" to "Invested in your health".
+- Make history a compact list without card wrappers — just separator-divided rows.
+
+No database changes, no backend changes. UI only.
