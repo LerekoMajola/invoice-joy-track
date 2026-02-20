@@ -13,7 +13,7 @@ import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/us
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
-import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, Lock, Palette, Settings2, PenTool, Globe } from 'lucide-react';
+import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, Lock, Palette, Settings2, PenTool, Globe, ToggleRight, Receipt, FolderOpen } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,11 +21,13 @@ import { toast } from 'sonner';
 import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { useOptionalFeatures } from '@/hooks/useOptionalFeatures';
 
 export default function Settings() {
   const { profile, isLoading, saveProfile, isSaving, uploadAsset } = useCompanyProfile();
   const { systemType } = useSubscription();
   const { refetchCompanies } = useActiveCompany();
+  const { features, toggle } = useOptionalFeatures();
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const handleSendBackup = async () => {
@@ -217,6 +219,7 @@ export default function Settings() {
               <TabsTrigger value="defaults" className="gap-1.5 text-xs md:text-sm"><Settings2 className="h-4 w-4" /><span className="hidden sm:inline">Defaults</span></TabsTrigger>
               <TabsTrigger value="signature" className="gap-1.5 text-xs md:text-sm"><PenTool className="h-4 w-4" /><span className="hidden sm:inline">Signature</span></TabsTrigger>
               <TabsTrigger value="documents" className="gap-1.5 text-xs md:text-sm"><FileCheck className="h-4 w-4" /><span className="hidden sm:inline">Documents</span></TabsTrigger>
+              <TabsTrigger value="extras" className="gap-1.5 text-xs md:text-sm"><ToggleRight className="h-4 w-4" /><span className="hidden sm:inline">Extras</span></TabsTrigger>
             </TabsList>
           </div>
 
@@ -636,6 +639,49 @@ export default function Settings() {
                       </Button>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Optional Extras Tab */}
+          <TabsContent value="extras">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ToggleRight className="h-5 w-5 text-primary" />Optional Extras</CardTitle>
+                <CardDescription>Toggle extra navigation sections on or off. Changes take effect immediately.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-background border border-border">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Invoices</p>
+                      <p className="text-xs text-muted-foreground">Show the Invoices section in navigation</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={features.invoices}
+                    onCheckedChange={(v) => toggle('invoices', v)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-background border border-border">
+                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Drafts</p>
+                      <p className="text-xs text-muted-foreground">Show the Drafts section in navigation</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={features.drafts}
+                    onCheckedChange={(v) => toggle('drafts', v)}
+                  />
                 </div>
               </CardContent>
             </Card>
