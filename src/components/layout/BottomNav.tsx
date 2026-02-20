@@ -1,4 +1,5 @@
 import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal, Users, FileText, Wrench, Scale, Timer, CalendarDays, Hammer, ClipboardList, BedDouble, CalendarCheck, Car, Dumbbell, FolderOpen } from 'lucide-react';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,8 @@ const allNavItems = [
   { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'] },
   // Fleet
   { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['fleet'] },
+  // Gym
+  { icon: Wallet, label: 'Payments', path: '/gym-payments', moduleKey: 'gym_members', systemTypes: ['gym'] },
   // Shared (Invoices moved to after Quotes in Business section)
   { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null },
 ];
