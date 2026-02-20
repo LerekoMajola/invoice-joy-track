@@ -163,7 +163,7 @@ export function StudentDetailDialog({ student, open, onOpenChange, classes, onDe
             <div className="pt-2 space-y-2">
               {student.guardianEmail && (
                 <Button variant="outline" className="w-full" onClick={handleCreatePortalAccess} disabled={sendingInvite}>
-                  <KeyRound className="h-4 w-4 mr-2" />{sendingInvite ? 'Creating…' : 'Create Portal Access'}
+                  <KeyRound className="h-4 w-4 mr-2" />{sendingInvite ? 'Sending…' : student.portalUserId ? 'Resend Portal Access' : 'Create Portal Access'}
                 </Button>
               )}
               {onDelete && (

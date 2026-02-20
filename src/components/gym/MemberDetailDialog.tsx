@@ -226,7 +226,7 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
             <div className="flex flex-wrap gap-2">
               {member.email && (
                 <Button size="sm" variant="outline" onClick={handleCreatePortalAccess} disabled={sendingInvite} className="flex-1">
-                  <KeyRound className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Creating…' : 'Create Portal Access'}
+                  <KeyRound className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Sending…' : member.portalUserId ? 'Resend Portal Access' : 'Create Portal Access'}
                 </Button>
               )}
               {!activeSub && <Button size="sm" onClick={() => setAssignOpen(true)}>Assign Plan</Button>}

@@ -26,6 +26,7 @@ export interface Student {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  portalUserId: string | null;
 }
 
 interface StudentInsert {
@@ -102,6 +103,7 @@ export function useStudents() {
           notes: s.notes,
           createdAt: s.created_at,
           updatedAt: s.updated_at,
+          portalUserId: s.portal_user_id || null,
         }))
       );
     } catch (error) {
@@ -200,6 +202,7 @@ export function useStudents() {
         notes: data.notes,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
+        portalUserId: data.portal_user_id || null,
       };
 
       setStudents((prev) => [newStudent, ...prev]);

@@ -177,12 +177,6 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      if (record.portal_user_id) {
-        return new Response(JSON.stringify({ error: 'Portal account already exists for this member' }), {
-          status: 409,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
     } else if (portalType === 'school' && studentId) {
       const { data: record, error } = await adminClient
         .from('students')
@@ -201,12 +195,6 @@ Deno.serve(async (req) => {
       if (ownerId !== caller.id) {
         return new Response(JSON.stringify({ error: 'Forbidden' }), {
           status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      if (record.portal_user_id) {
-        return new Response(JSON.stringify({ error: 'Portal account already exists for this student' }), {
-          status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
