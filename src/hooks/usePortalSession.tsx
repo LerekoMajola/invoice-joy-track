@@ -79,43 +79,63 @@ export function usePortalSession(): PortalSession {
 
       if (!cancelled) setUser(currentUser);
 
-      // Determine portal type: URL param > localStorage > auto-detect
+      // Determine portal type hint from URL or localStorage (used only as hint, not strict filter)
       const urlParams = new URLSearchParams(window.location.search);
       const urlType = urlParams.get('type') as PortalType;
-      const storedType = localStorage.getItem('portal_type') as PortalType;
-      let resolvedType: PortalType = urlType || storedType || null;
 
-      if (resolvedType === 'gym' || !resolvedType) {
+      let resolvedType: PortalType = null;
+      let foundGymMember: GymPortalMember | null = null;
+      let foundStudent: SchoolPortalStudent | null = null;
+
+      // Always check gym first (or if URL hint says gym)
+      if (!urlType || urlType === 'gym') {
         const { data: member } = await supabase
           .from('gym_members')
           .select('*')
           .eq('portal_user_id', currentUser.id)
           .maybeSingle();
 
-        if (member && !cancelled) {
-          setGymMember(member as unknown as GymPortalMember);
+        if (member) {
+          foundGymMember = member as unknown as GymPortalMember;
           resolvedType = 'gym';
         }
       }
 
-      if (resolvedType === 'school' || (!resolvedType)) {
+      // Check school if not found yet (or if URL hint says school)
+      if (!foundGymMember && (!urlType || urlType === 'school')) {
         const { data: student } = await supabase
           .from('students')
           .select('*')
           .eq('portal_user_id', currentUser.id)
           .maybeSingle();
 
-        if (student && !cancelled) {
-          setSchoolStudent(student as unknown as SchoolPortalStudent);
-          if (!resolvedType) resolvedType = 'school';
+        if (student) {
+          foundStudent = student as unknown as SchoolPortalStudent;
+          resolvedType = 'school';
         }
       }
 
-      if (resolvedType) {
-        localStorage.setItem('portal_type', resolvedType);
+      // If URL hinted at school but we only found gym record, still use it
+      if (!resolvedType && urlType === 'school') {
+        const { data: member } = await supabase
+          .from('gym_members')
+          .select('*')
+          .eq('portal_user_id', currentUser.id)
+          .maybeSingle();
+        if (member) {
+          foundGymMember = member as unknown as GymPortalMember;
+          resolvedType = 'gym';
+        }
       }
 
       if (!cancelled) {
+        setGymMember(foundGymMember);
+        setSchoolStudent(foundStudent);
+        if (resolvedType) {
+          localStorage.setItem('portal_type', resolvedType);
+        } else {
+          localStorage.removeItem('portal_type');
+        }
         setPortalType(resolvedType);
         setLoading(false);
       }
