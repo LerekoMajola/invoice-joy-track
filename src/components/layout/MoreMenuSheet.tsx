@@ -6,6 +6,7 @@ import { haptics } from '@/lib/haptics';
 import { Button } from '@/components/ui/button';
 import { useModules } from '@/hooks/useModules';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useOptionalFeatures } from '@/hooks/useOptionalFeatures';
 
 interface MoreMenuSheetProps {
   open: boolean;
@@ -13,36 +14,38 @@ interface MoreMenuSheetProps {
 }
 
 // systemTypes: null = all systems, string[] = specific systems only
+// optionalFeature: if set, item only shows when that optional feature is enabled
 const allMenuItems = [
   // Business-specific
-  { icon: Kanban, label: 'CRM', path: '/crm', description: 'Sales pipeline', moduleKey: 'core_crm', systemTypes: ['business'] },
-  { icon: Briefcase, label: 'Tenders', path: '/tenders', description: 'Track opportunities', moduleKey: 'tenders', systemTypes: ['business'] },
-  { icon: Truck, label: 'Delivery Notes', path: '/delivery-notes', description: 'Track deliveries', moduleKey: 'delivery_notes', systemTypes: ['business'] },
+  { icon: Kanban, label: 'CRM', path: '/crm', description: 'Sales pipeline', moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
+  { icon: Briefcase, label: 'Tenders', path: '/tenders', description: 'Track opportunities', moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
+  { icon: Truck, label: 'Delivery Notes', path: '/delivery-notes', description: 'Track deliveries', moduleKey: 'delivery_notes', systemTypes: ['business'], optionalFeature: null },
   // Workshop-specific
-  { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'] },
+  { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
   // Hire-specific
-  { icon: Hammer, label: 'Equipment', path: '/equipment', description: 'Tool catalogue', moduleKey: 'hire_equipment', systemTypes: ['hire'] },
-  { icon: ClipboardList, label: 'Hire Orders', path: '/hire-orders', description: 'Rental bookings', moduleKey: 'hire_orders', systemTypes: ['hire'] },
-  { icon: CalendarDays, label: 'Availability', path: '/hire-calendar', description: 'Booking calendar', moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  { icon: Hammer, label: 'Equipment', path: '/equipment', description: 'Tool catalogue', moduleKey: 'hire_equipment', systemTypes: ['hire'], optionalFeature: null },
+  { icon: ClipboardList, label: 'Hire Orders', path: '/hire-orders', description: 'Rental bookings', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
+  { icon: CalendarDays, label: 'Availability', path: '/hire-calendar', description: 'Booking calendar', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
   // Guest House-specific
-  { icon: Hotel, label: 'Housekeeping', path: '/housekeeping', description: 'Room cleaning tasks', moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'] },
-  { icon: Star, label: 'Reviews', path: '/guest-reviews', description: 'Guest feedback', moduleKey: 'gh_reviews', systemTypes: ['guesthouse'] },
+  { icon: Hotel, label: 'Housekeeping', path: '/housekeeping', description: 'Room cleaning tasks', moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'], optionalFeature: null },
+  { icon: Star, label: 'Reviews', path: '/guest-reviews', description: 'Guest feedback', moduleKey: 'gh_reviews', systemTypes: ['guesthouse'], optionalFeature: null },
   // Legal-specific
-  { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'] },
+  { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'], optionalFeature: null },
   // School-specific
-  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['school'] },
-  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['school'] },
+  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
+  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
   // Fleet
-  { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet', systemTypes: ['fleet'] },
+  { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet', systemTypes: ['fleet'], optionalFeature: null },
   // Gym
-  { icon: Wallet, label: 'Payments', path: '/gym-payments', description: 'Member payments', moduleKey: 'gym_members', systemTypes: ['gym'] },
+  { icon: Wallet, label: 'Payments', path: '/gym-payments', description: 'Member payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   // Shared
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks', systemTypes: null },
-  { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting', systemTypes: null },
-  { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff', systemTypes: null },
-  { icon: TrendingUp, label: 'Profitability', path: '/profitability', description: 'Margins & costs', moduleKey: 'profitability', systemTypes: ['business', 'workshop'] },
-  { icon: Settings, label: 'Settings', path: '/settings', description: 'Company profile', moduleKey: null, systemTypes: null },
-  { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null, systemTypes: null },
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks', systemTypes: null, optionalFeature: null },
+  { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting', systemTypes: null, optionalFeature: null },
+  { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff', systemTypes: null, optionalFeature: null },
+  { icon: TrendingUp, label: 'Profitability', path: '/profitability', description: 'Margins & costs', moduleKey: 'profitability', systemTypes: ['business', 'workshop'], optionalFeature: null },
+  { icon: FolderOpen, label: 'Drafts', path: '/drafts', description: 'Saved drafts', moduleKey: null, systemTypes: null, optionalFeature: 'drafts' as const },
+  { icon: Settings, label: 'Settings', path: '/settings', description: 'Company profile', moduleKey: null, systemTypes: null, optionalFeature: null },
+  { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null, systemTypes: null, optionalFeature: null },
 ];
 
 export function MoreMenuSheet({ open, onOpenChange }: MoreMenuSheetProps) {
@@ -50,8 +53,11 @@ export function MoreMenuSheet({ open, onOpenChange }: MoreMenuSheetProps) {
   const location = useLocation();
   const { hasModule, userModules } = useModules();
   const { systemType } = useSubscription();
+  const { isEnabled } = useOptionalFeatures();
 
   const menuItems = allMenuItems.filter((item) => {
+    // Optional feature gate
+    if (item.optionalFeature && !isEnabled(item.optionalFeature)) return false;
     // System type filter
     if (item.systemTypes !== null && !item.systemTypes.includes(systemType)) {
       return false;

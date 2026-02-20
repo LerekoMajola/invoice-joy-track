@@ -1,43 +1,43 @@
 import { Home, GraduationCap, Wallet, Receipt, MoreHorizontal, Users, FileText, Wrench, Scale, Timer, CalendarDays, Hammer, ClipboardList, BedDouble, CalendarCheck, Car, Dumbbell, FolderOpen } from 'lucide-react';
-
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { useModules } from '@/hooks/useModules';
 import { useSubscription, SystemType } from '@/hooks/useSubscription';
+import { useOptionalFeatures } from '@/hooks/useOptionalFeatures';
 import { MoreMenuSheet } from './MoreMenuSheet';
 
 // Bottom nav items per system type
-// systemTypes: null = all systems, string[] = specific systems only
+// optionalFeature: if set, item only shows when that optional feature is enabled
 const allNavItems = [
-  { icon: Home, label: 'Home', path: '/dashboard', moduleKey: null, systemTypes: null },
+  { icon: Home, label: 'Home', path: '/dashboard', moduleKey: null, systemTypes: null, optionalFeature: null },
   // Business
-  { icon: Users, label: 'Clients', path: '/clients', moduleKey: 'core_crm', systemTypes: ['business'] },
-  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['business'] },
+  { icon: Users, label: 'Clients', path: '/clients', moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
+  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['business'], optionalFeature: null },
   // Workshop
-  { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['workshop'] },
-  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['workshop'] },
+  { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
+  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['workshop'], optionalFeature: null },
   // Hire
-  { icon: Hammer, label: 'Equipment', path: '/equipment', moduleKey: 'hire_equipment', systemTypes: ['hire'] },
-  { icon: ClipboardList, label: 'Orders', path: '/hire-orders', moduleKey: 'hire_orders', systemTypes: ['hire'] },
-  { icon: CalendarDays, label: 'Calendar', path: '/hire-calendar', moduleKey: 'hire_orders', systemTypes: ['hire'] },
+  { icon: Hammer, label: 'Equipment', path: '/equipment', moduleKey: 'hire_equipment', systemTypes: ['hire'], optionalFeature: null },
+  { icon: ClipboardList, label: 'Orders', path: '/hire-orders', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
+  { icon: CalendarDays, label: 'Calendar', path: '/hire-calendar', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
   // Guest House
-  { icon: BedDouble, label: 'Rooms', path: '/rooms', moduleKey: 'gh_rooms', systemTypes: ['guesthouse'] },
-  { icon: CalendarCheck, label: 'Bookings', path: '/bookings', moduleKey: 'gh_bookings', systemTypes: ['guesthouse'] },
+  { icon: BedDouble, label: 'Rooms', path: '/rooms', moduleKey: 'gh_rooms', systemTypes: ['guesthouse'], optionalFeature: null },
+  { icon: CalendarCheck, label: 'Bookings', path: '/bookings', moduleKey: 'gh_bookings', systemTypes: ['guesthouse'], optionalFeature: null },
   // Legal
-  { icon: Scale, label: 'Cases', path: '/legal-cases', moduleKey: 'legal_cases', systemTypes: ['legal'] },
-  { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'] },
-  { icon: CalendarDays, label: 'Calendar', path: '/legal-calendar', moduleKey: 'legal_calendar', systemTypes: ['legal'] },
+  { icon: Scale, label: 'Cases', path: '/legal-cases', moduleKey: 'legal_cases', systemTypes: ['legal'], optionalFeature: null },
+  { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'], optionalFeature: null },
+  { icon: CalendarDays, label: 'Calendar', path: '/legal-calendar', moduleKey: 'legal_calendar', systemTypes: ['legal'], optionalFeature: null },
   // School
-  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'] },
-  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'] },
+  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'], optionalFeature: null },
+  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'], optionalFeature: null },
   // Fleet
-  { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['fleet'] },
+  { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['fleet'], optionalFeature: null },
   // Gym
-  { icon: Wallet, label: 'Payments', path: '/gym-payments', moduleKey: 'gym_members', systemTypes: ['gym'] },
-  // Shared (Invoices moved to after Quotes in Business section)
-  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null },
+  { icon: Wallet, label: 'Payments', path: '/gym-payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
+  // Shared
+  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null, optionalFeature: 'invoices' as const },
 ];
 
 export function BottomNav() {
@@ -46,8 +46,11 @@ export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const { hasModule, userModules } = useModules();
   const { systemType } = useSubscription();
+  const { isEnabled } = useOptionalFeatures();
 
   const navItems = allNavItems.filter((item) => {
+    // Optional feature gate
+    if (item.optionalFeature && !isEnabled(item.optionalFeature)) return false;
     // System type filter
     if (item.systemTypes !== null && !item.systemTypes.includes(systemType)) {
       return false;
@@ -65,7 +68,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents', '/equipment', '/hire-orders', '/hire-calendar', '/housekeeping', '/guest-reviews', '/fleet', '/gym-members', '/gym-classes', '/gym-attendance', '/drafts'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents', '/equipment', '/hire-orders', '/hire-calendar', '/housekeeping', '/guest-reviews', '/fleet', '/gym-members', '/gym-classes', '/gym-attendance', '/gym-payments', '/drafts', '/invoices'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (
