@@ -1,71 +1,122 @@
 
-## Gym Payments Page
+## Redesigned Gym Payments Page
 
-### What's Being Built
+### The Problem with the Current Design
+The current page shows a flat chronological list of all subscriptions. For a gym with month-to-month billing, this is hard to use because the owner needs to answer one question above all: **"Who has paid this month, and who hasn't?"** A flat list sorted by sign-up date doesn't answer that.
 
-A dedicated **Gym Payments** page at `/gym-payments` — the gym owner's central view of all member subscription payments. This mirrors what the School Fees page does for schools: one place to see total revenue collected, who has paid, who still owes, and a full payment history list.
+### New Design Concept: Period Navigator
 
-### Page Layout
+Instead of filtering by "status only", the page will be organized around **billing periods** — months. The owner picks a month (or week), and immediately sees:
+- How much was collected in that period
+- A clear split: Paid vs Unpaid members
+- One-tap "Mark Paid" for outstanding payments
+
+---
+
+### Layout Overview
 
 ```text
-┌──────────────────────────────────────────────┐
-│  Gym Payments                                │
-│  All member subscription payments            │
-├───────────┬──────────────┬───────────────────┤
-│ Revenue   │  Paid        │  Pending/Overdue  │
-│ This Mo.  │  Count       │  Count            │
-├──────────────────────────────────────────────┤
-│  [ All Statuses ▼ ]  [ Search... ]           │
-├──────────────────────────────────────────────┤
-│  Member        Plan        Amount  Status    │
-│  John Doe      Ball Breaker  1,000  Paid     │
-│  Jane Smith    Monthly        500   Pending  │
-│  ...                                         │
-└──────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  Gym Payments                                       │
+│                                                     │
+│  ◄  February 2026  ►        [ Month ▼ ]            │
+├──────────────┬──────────────┬──────────────┬────────┤
+│  Collected   │  Outstanding │  Total Paid  │ Unpaid │
+│  M 12,500    │  M 3,000     │  25 members  │ 6      │
+├─────────────────────────────────────────────────────┤
+│  [ All ▼ ]  [ Search... ]                          │
+├─────────────────────────────────────────────────────┤
+│  ● UNPAID (6)                                       │
+│  ┌───────────────────────────────────────────────┐  │
+│  │ John Doe       Monthly Plan    M500  [Mark Paid]│ │
+│  │ Jane Smith     Premium Plan    M800  [Mark Paid]│ │
+│  └───────────────────────────────────────────────┘  │
+│                                                     │
+│  ✓ PAID (25)                                        │
+│  ┌───────────────────────────────────────────────┐  │
+│  │ Alice Brown    Monthly Plan    M500  ✓ Paid   │  │
+│  └───────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Stats Cards (top row)
-- **Revenue This Month** — sum of `amountPaid` for subscriptions created this calendar month
-- **Total Paid** — count of subscriptions with `paymentStatus = 'paid'`
-- **Pending / Overdue** — count of subscriptions where `paymentStatus` is `pending` or `overdue`
-- **All-Time Revenue** — total sum of all `amountPaid` regardless of date
+---
 
-### Payment List
+### Key UX Changes
+
+**1. Period Navigator (top)**
+- Left/right arrows to step through months (or weeks if week granularity selected)
+- Dropdown to switch between "Monthly" and "Weekly" view
+- Defaults to the current month/week on load
+
+**2. Period-aware Stats Bar**
+The 4 stat cards will update as you navigate periods:
+- **Collected** — sum of `amountPaid` for subscriptions whose `startDate` falls in the selected period
+- **Outstanding** — sum of plan price × count for unpaid subscriptions in the period
+- **Paid Members** — count with `paymentStatus = 'paid'` in period
+- **Unpaid Members** — count with `paymentStatus != 'paid'` in period
+
+**3. Grouped List: Unpaid First, Then Paid**
+Instead of one flat list, subscriptions in the selected period are split into two visual sections:
+- **Unpaid** section at the top (red/amber accent) — these need action
+- **Paid** section below (green/muted) — confirmation of collected payments
+
 Each row shows:
-- Member name (linked to member record)
+- Member avatar initials chip
+- Member name + member number
 - Plan name
-- Subscription dates (start → end)
-- Amount paid
-- Payment status badge (Paid / Pending / Overdue)
-- Subscription status badge (Active / Frozen / Expired / Cancelled)
+- Date range (e.g. "1 Feb → 28 Feb")
+- Amount
+- "Mark Paid" button (unpaid) or green ✓ (paid)
 
-Filters:
-- Payment status filter (All / Paid / Pending / Overdue)
-- Search by member name or plan
+**4. Period Filtering Logic**
+A subscription falls into a period if its `startDate` is within that month/week window. For weekly view, the week is Mon–Sun ISO week.
 
-### Update Payment Status
-Owners can tap a "Mark Paid" button on pending subscriptions directly from this list — no need to drill into the member detail dialog.
+**5. Search still works** — filters within the selected period
 
-### Navigation Wiring
-The page needs to appear in three places:
-1. **Sidebar** (`src/components/layout/Sidebar.tsx`) — add `Gym Payments` entry for `gym` system type with `gym_members` module key
-2. **Bottom Nav** (`src/components/layout/BottomNav.tsx`) — add as `Payments` item for `gym` system type
-3. **More Menu** (`src/components/layout/MoreMenuSheet.tsx`) — add for overflow on mobile
-4. **App Router** (`src/App.tsx`) — register `/gym-payments` route
+---
 
 ### Technical Details
 
-**New files:**
-- `src/pages/GymPayments.tsx` — the main page component
+**Files to edit:**
+- `src/pages/GymPayments.tsx` — full redesign (only this file changes)
 
-**Modified files:**
-- `src/App.tsx` — add route `/gym-payments`
-- `src/components/layout/Sidebar.tsx` — add nav item
-- `src/components/layout/BottomNav.tsx` — add to gym bottom nav items
-- `src/components/layout/MoreMenuSheet.tsx` — add to more menu
+**No hook changes needed** — all subscriptions are already fetched. Period filtering is done purely in `useMemo` on the frontend using `startDate`.
 
-**Hook reuse:** The page reuses the existing `useGymMemberSubscriptions()` (called without a `memberId` so it fetches all subscriptions) and `useGymMembers()` to resolve names. No new hook or database changes required — all data already exists.
+**Period logic (Month):**
+```typescript
+// Selected period: { year: 2026, month: 1 } (0-indexed)
+const periodStart = new Date(year, month, 1);
+const periodEnd   = new Date(year, month + 1, 0); // last day of month
 
-**Update payment status:** Add a `updateSubscription` function to `useGymMemberSubscriptions` that does a simple `UPDATE` on `gym_member_subscriptions` by id — used to mark pending payments as paid.
+const inPeriod = subscriptions.filter(s => {
+  const d = parseISO(s.startDate);
+  return d >= periodStart && d <= periodEnd;
+});
+```
 
-No schema changes needed. All data is already captured when plans are assigned via `AssignPlanDialog`.
+**Period logic (Week):**
+```typescript
+// startOfWeek / endOfWeek from date-fns (already installed)
+import { startOfWeek, endOfWeek } from 'date-fns';
+const ws = startOfWeek(selectedWeekDate, { weekStartsOn: 1 });
+const we = endOfWeek(selectedWeekDate, { weekStartsOn: 1 });
+```
+
+**Grouped rendering:**
+```typescript
+const unpaid = inPeriod.filter(s => s.paymentStatus !== 'paid');
+const paid   = inPeriod.filter(s => s.paymentStatus === 'paid');
+```
+
+**Date-fns functions used** (already installed):
+- `startOfWeek`, `endOfWeek`, `startOfMonth`, `endOfMonth`
+- `addMonths`, `subMonths`, `addWeeks`, `subWeeks`
+- `format`, `parseISO`
+
+---
+
+### What Stays the Same
+- `useGymMemberSubscriptions` hook — no changes
+- `useGymMembers` hook — no changes
+- Navigation wiring (Sidebar, BottomNav, MoreMenu) — no changes
+- No database changes required
