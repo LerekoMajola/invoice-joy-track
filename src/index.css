@@ -459,55 +459,97 @@
 
 /* ── Gym Portal Power-Up Animations ─────────────────────────────── */
 .power-ring-spin {
-  animation: powerRingSpin 8s linear infinite;
+  animation: powerRingSpin 10s linear infinite;
 }
-
 @keyframes powerRingSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.shockwave-ring {
-  animation: shockwave 0.8s ease-out forwards;
+/* Breathing idle ring */
+.checkin-breathe {
+  animation: checkinBreathe 3s ease-in-out infinite;
+}
+@keyframes checkinBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.06); opacity: 0.8; }
 }
 
-@keyframes shockwave {
-  0% { width: 4rem; height: 4rem; opacity: 1; }
-  100% { width: 14rem; height: 14rem; opacity: 0; border-width: 1px; }
+/* Charging shake */
+.checkin-shake {
+  animation: checkinShake 0.1s ease-in-out infinite;
+}
+@keyframes checkinShake {
+  0%, 100% { transform: scale(0.95) translateX(0); }
+  25% { transform: scale(0.95) translateX(-2px); }
+  75% { transform: scale(0.95) translateX(2px); }
 }
 
-.burst-ray {
-  width: 2px;
-  height: 0;
-  background: linear-gradient(to top, transparent, #00E5A0);
-  transform-origin: bottom center;
-  animation: burstRay 0.6s ease-out forwards;
+/* Charge pulse on icon */
+.checkin-charge-pulse {
+  animation: chargePulse 0.4s ease-in-out infinite;
+}
+@keyframes chargePulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.2); filter: brightness(1.5); }
 }
 
-@keyframes burstRay {
-  0% { height: 0; opacity: 1; margin-top: 0; }
-  50% { height: 60px; opacity: 0.8; }
-  100% { height: 80px; opacity: 0; margin-top: -40px; }
+/* Particle fly-out */
+@keyframes particleFly {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--fly-x)), calc(-50% + var(--fly-y))) scale(0); opacity: 0; }
 }
 
-.checkin-bounce-in {
-  animation: checkinBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+/* Ring expand */
+@keyframes ringExpand {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3); opacity: 0; }
 }
 
-@keyframes checkinBounce {
-  0% { transform: scale(0.3); opacity: 0; }
-  60% { transform: scale(1.15); opacity: 1; }
+/* Flash */
+.checkin-flash {
+  animation: checkinFlash 0.4s ease-out forwards;
+}
+@keyframes checkinFlash {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.5); }
+}
+
+/* Slam-in checkmark */
+.checkin-slam {
+  animation: checkinSlam 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes checkinSlam {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
   100% { transform: scale(1); opacity: 1; }
 }
 
-.glow-pulse-anim {
-  animation: glowPulse 1.5s ease-in-out;
+/* Glow fade in */
+.checkin-glow-in {
+  animation: checkinGlowIn 1s ease-out forwards;
+}
+@keyframes checkinGlowIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
 }
 
-@keyframes glowPulse {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.3); }
-  100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+/* Text pop */
+.checkin-text-pop {
+  animation: textPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+@keyframes textPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Stats reveal */
+.checkin-stats-reveal {
+  animation: statsReveal 0.5s ease-out 0.6s both;
+}
+@keyframes statsReveal {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 /* Prevent iOS zoom on input focus */
