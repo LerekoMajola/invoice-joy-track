@@ -7,6 +7,7 @@ import { GymMemberPortal } from '@/components/portal/gym/GymMemberPortal';
 import { GymPortalMembership } from '@/components/portal/gym/GymPortalMembership';
 import { GymPortalSchedule } from '@/components/portal/gym/GymPortalSchedule';
 import { GymPortalAttendance } from '@/components/portal/gym/GymPortalAttendance';
+import { GymPortalProgress } from '@/components/portal/gym/GymPortalProgress';
 import { SchoolParentPortal } from '@/components/portal/school/SchoolParentPortal';
 import { SchoolPortalFees } from '@/components/portal/school/SchoolPortalFees';
 import { SchoolPortalTimetable } from '@/components/portal/school/SchoolPortalTimetable';
@@ -47,6 +48,8 @@ export default function Portal() {
           return <GymPortalMembership memberId={gymMember.id} member={gymMember} />;
         case 'classes':
           return <GymPortalSchedule ownerId={ownerUserId} member={gymMember} />;
+        case 'progress':
+          return <GymPortalProgress member={gymMember} />;
         case 'check-in':
           return <GymPortalAttendance member={gymMember} user={user} />;
         case 'messages':
