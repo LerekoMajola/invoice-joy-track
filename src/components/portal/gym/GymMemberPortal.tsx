@@ -63,6 +63,27 @@ interface GymMemberPortalProps {
   user: AuthUser;
 }
 
+/* ── Circular Progress Ring ──────────────────────────────────────── */
+function ProgressRing({ value, max, color, size = 88 }: { value: number; max: number; color: string; size?: number }) {
+  const stroke = 6;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pct = max > 0 ? Math.min(value / max, 1) : 0;
+  const offset = circumference * (1 - pct);
+
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius} fill="none"
+        stroke={color} strokeWidth={stroke} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        className="transition-all duration-700 ease-out"
+      />
+    </svg>
+  );
+}
+
 export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +128,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        <Loader2 className="h-7 w-7 animate-spin text-[#00E5A0]" />
       </div>
     );
   }
@@ -119,104 +140,111 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const daysLeft = data?.planEnd ? Math.max(differenceInDays(parseISO(data.planEnd), today), 0) : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden animate-fade-in">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden animate-fade-in text-white">
 
       {/* ── TOP HERO ──────────────────────────────────────────────── */}
       <div
         className="relative flex-shrink-0 px-5 pt-5 pb-6"
-        style={{ background: 'linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.75) 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #00E5A0 0%, #00C4FF 50%, #0a0a0f 100%)' }}
       >
+        {/* Subtle noise overlay */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")' }} />
+
         {/* Greeting row */}
         <div className="relative flex items-center justify-between mb-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/50">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/40">
             Good {greeting.word} {greeting.emoji}
           </p>
           <div className={cn(
             'text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider',
             member.status === 'active'
-              ? 'bg-white/15 border-white/25 text-white/90'
-              : 'bg-white/10 border-white/15 text-white/60'
+              ? 'bg-black/15 border-black/20 text-black/70'
+              : 'bg-black/10 border-black/10 text-black/50'
           )}>
             {member.status}
           </div>
         </div>
 
         {/* Name */}
-        <h1 className="relative text-[1.75rem] font-black text-white leading-none tracking-tight mb-3">
+        <h1 className="relative text-[1.75rem] font-black text-black leading-none tracking-tight mb-3">
           {member.first_name} {member.last_name}
         </h1>
 
         {/* Today status pill */}
         {data?.todayRecord ? (
-          <div className="relative flex items-center gap-2 bg-white/15 border border-white/20 rounded-xl px-3.5 py-2.5 w-fit">
+          <div className="relative flex items-center gap-2 bg-black/20 backdrop-blur-sm border border-black/10 rounded-xl px-3.5 py-2.5 w-fit">
             <span className="text-sm leading-none">✅</span>
-            <span className="text-xs font-semibold text-white">Checked in at {checkInTime}</span>
+            <span className="text-xs font-semibold text-black/80">Checked in at {checkInTime}</span>
           </div>
         ) : (
-          <div className="relative flex items-center gap-2 bg-black/20 border border-white/10 rounded-xl px-3.5 py-2.5 w-fit">
-            <div className="h-2 w-2 rounded-full bg-white/30 shrink-0" />
-            <span className="text-xs font-medium text-white/60">Not checked in yet — go to Check In</span>
+          <div className="relative flex items-center gap-2 bg-black/15 backdrop-blur-sm border border-black/10 rounded-xl px-3.5 py-2.5 w-fit">
+            <div className="h-2 w-2 rounded-full bg-black/30 shrink-0" />
+            <span className="text-xs font-medium text-black/50">Not checked in yet — go to Check In</span>
           </div>
         )}
       </div>
 
-      {/* ── STATS CARDS ───────────────────────────────────────────── */}
+      {/* ── STATS CARDS — frosted glass ───────────────────────────── */}
       <div className="flex-shrink-0 grid grid-cols-3 gap-3 px-4 py-4">
         {[
           {
+            color: '#00E5A0',
             icon: Zap,
-            iconClass: 'fill-[hsl(243,75%,59%)] text-[hsl(243,75%,59%)]',
-            bgClass: 'bg-[hsl(243,75%,59%)]/15',
             value: data?.monthlyCount ?? 0,
+            max: 30,
             label: 'visits this\nmonth',
           },
           {
+            color: '#FF6B35',
             icon: Flame,
-            iconClass: 'fill-orange-500 text-orange-500',
-            bgClass: 'bg-orange-500/15',
             value: data?.streak ?? 0,
+            max: 30,
             label: 'day\nstreak',
           },
           {
+            color: '#FFD700',
             icon: Trophy,
-            iconClass: 'fill-yellow-500 text-yellow-500',
-            bgClass: 'bg-yellow-500/15',
             value: data?.allTimeCount ?? 0,
+            max: Math.max(data?.allTimeCount ?? 1, 100),
             label: 'all\ntime',
           },
-        ].map(({ icon: Icon, iconClass, bgClass, value, label }) => (
-          <div key={label} className="bg-card rounded-2xl border border-border/50 shadow-sm flex flex-col items-center pt-5 pb-4 px-2 gap-2">
-            <div className={cn('h-11 w-11 rounded-full flex items-center justify-center', bgClass)}>
-              <Icon className={cn('h-5 w-5', iconClass)} strokeWidth={0} />
+        ].map(({ color, icon: Icon, value, max, label }) => (
+          <div key={label} className="relative bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] shadow-lg flex flex-col items-center pt-4 pb-3.5 px-2 gap-1">
+            {/* Ring + value overlay */}
+            <div className="relative h-[72px] w-[72px] flex items-center justify-center">
+              <ProgressRing value={value} max={max} color={color} size={72} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <Icon className="h-3.5 w-3.5 mb-0.5" style={{ color }} strokeWidth={0} fill={color} />
+                <p className="text-lg font-black text-white leading-none">{value}</p>
+              </div>
             </div>
-            <p className="text-[1.75rem] font-black text-foreground leading-none">{value}</p>
-            <p className="text-[10px] font-medium text-muted-foreground text-center leading-tight whitespace-pre-line">{label}</p>
+            <p className="text-[10px] font-medium text-white/40 text-center leading-tight whitespace-pre-line">{label}</p>
           </div>
         ))}
       </div>
 
       {/* ── QUOTE ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col justify-center px-5 py-5 min-h-0">
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 mb-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/20 mb-3">
           Today's Motivation
         </p>
-        <blockquote className="text-[1.05rem] font-bold text-foreground leading-snug tracking-tight mb-2">
+        <blockquote className="text-[1.05rem] font-bold text-white/90 leading-snug tracking-tight mb-2">
           "{quote.text}"
         </blockquote>
-        <p className="text-xs text-muted-foreground">— {quote.author}</p>
+        <p className="text-xs text-white/40">— {quote.author}</p>
       </div>
 
       {/* ── BOTTOM ────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-border/40">
+      <div className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-white/[0.06]">
         {data?.planName && daysLeft !== null && (
-          <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/50">
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-success" />
-              <span className="text-xs font-semibold text-foreground">{data.planName}</span>
+              <div className="h-1.5 w-1.5 rounded-full bg-[#00E5A0] shadow-[0_0_6px_rgba(0,229,160,0.5)]" />
+              <span className="text-xs font-semibold text-white/80">{data.planName}</span>
             </div>
             <span className={cn(
               'text-xs font-bold',
-              daysLeft <= 7 ? 'text-destructive' : daysLeft <= 14 ? 'text-warning' : 'text-muted-foreground'
+              daysLeft <= 7 ? 'text-red-400' : daysLeft <= 14 ? 'text-amber-400' : 'text-white/40'
             )}>
               {daysLeft}d left
             </span>

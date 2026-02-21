@@ -40,21 +40,21 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
   const portalTitle = portalType === 'gym' ? 'Member Portal' : 'Student Portal';
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col max-w-md mx-auto overflow-hidden">
-      {/* Top Header */}
-      <header className="z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 h-14 flex items-center justify-between shrink-0">
+    <div className="h-[100dvh] bg-[#0a0a0f] flex flex-col max-w-md mx-auto overflow-hidden">
+      {/* Top Header — glassmorphic dark */}
+      <header className="z-50 bg-white/[0.03] backdrop-blur-xl border-b border-white/[0.06] px-4 h-14 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-            <PortalIcon className="h-4 w-4 text-primary" />
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#00E5A0] to-[#00C4FF] flex items-center justify-center shadow-[0_0_20px_rgba(0,229,160,0.25)]">
+            <PortalIcon className="h-4 w-4 text-black" />
           </div>
-          <span className="font-semibold text-sm text-foreground">{portalTitle}</span>
+          <span className="font-bold text-sm text-white/90 tracking-tight">{portalTitle}</span>
         </div>
         {onSignOut && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onSignOut}
-            className="h-8 px-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 text-xs"
+            className="h-8 px-2.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 gap-1.5 text-xs"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign out
@@ -67,8 +67,8 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="bg-card/95 backdrop-blur-md border-t border-border z-50 shrink-0">
+      {/* Bottom Navigation — glassmorphic dark bar */}
+      <nav className="bg-[#0a0a0f]/90 backdrop-blur-xl border-t border-white/[0.06] z-50 shrink-0">
         <div className="flex items-center justify-around px-2 py-2">
           {nav.map(item => {
             const Icon = item.icon;
@@ -77,22 +77,26 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className="flex flex-col items-center gap-1 px-3 py-1.5 min-w-[56px] transition-all"
+                className="flex flex-col items-center gap-1 px-3 py-1.5 min-w-[56px] transition-all relative"
               >
+                {/* Glow dot above active icon */}
+                {isActive && (
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#00E5A0] shadow-[0_0_8px_2px_rgba(0,229,160,0.6)]" />
+                )}
                 <div className={cn(
                   'flex items-center justify-center h-9 w-9 rounded-xl transition-all duration-200',
-                  isActive ? 'bg-primary/12' : 'bg-transparent'
+                  isActive ? 'bg-[#00E5A0]/10' : 'bg-transparent'
                 )}>
                   <Icon
                     className={cn(
                       'h-5 w-5 transition-colors duration-200',
-                      isActive ? 'text-primary' : 'text-muted-foreground'
+                      isActive ? 'text-[#00E5A0]' : 'text-white/30'
                     )}
                   />
                 </div>
                 <span className={cn(
                   'text-[10px] font-medium transition-colors duration-200',
-                  isActive ? 'text-primary font-bold' : 'text-muted-foreground'
+                  isActive ? 'text-[#00E5A0] font-bold' : 'text-white/30'
                 )}>
                   {item.label}
                 </span>
