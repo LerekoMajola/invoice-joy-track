@@ -1,81 +1,59 @@
 
 
-## AI Workout Plan Generator
+## Fix: Multiple Daily Check-ins and Accurate Stats
 
-An AI-powered feature that generates personalized workout sessions for gym members based on their fitness goals, body stats, and training history -- accessible from the Progress tab.
+### Problem
 
-### How It Works
+Two core bugs prevent the check-in system from working correctly:
 
-1. **Member sets their fitness goal** (one-time, changeable anytime): Weight Loss, Muscle Gain, General Fitness, Strength, Endurance, or Flexibility
-2. **AI generates a workout plan** using the member's vitals data (weight, body fat %, muscle mass) + goal + available equipment context
-3. **Member sees today's workout** as a clean, swipeable exercise list with sets, reps, and rest times
-4. **Can regenerate** if they want variety or a different focus
+1. Both the Home tab and Check-In tab use `.maybeSingle()` to query today's attendance. Since you can check in multiple times per day, this query fails when there is more than one record, returning null -- making the Home page say "Not checked in yet" even after checking in.
 
-### What Members See
+2. After one check-in, the Check-In tab hides the button entirely for the rest of the day. There is no way to check in again for a second session.
 
-On the Progress tab, below the existing stats and charts, a new "Today's Workout" section appears:
+### Solution
 
-- **Goal selector** -- a row of pill buttons (Weight Loss, Muscle Gain, General Fitness, etc.) saved to their profile
-- **Workout card** -- AI-generated workout with:
-  - Workout title (e.g., "Upper Body Power")
-  - Estimated duration
-  - List of exercises with sets x reps, rest periods
-  - Difficulty badge (Beginner / Intermediate / Advanced)
-- **"Generate New Workout" button** -- calls AI for a fresh plan
-- Workouts are cached per day so regenerating is optional, not required
+**GymMemberPortal.tsx (Home tab):**
+- Change the today query from `.maybeSingle()` to `.select().order('check_in', desc).limit(1)` to fetch the latest check-in of the day (works with 1 or many records)
+- Display the latest check-in time in the status pill
 
-### Database Changes
+**GymPortalAttendance.tsx (Check-In tab):**
+- Change the today query from `.maybeSingle()` to fetch ALL of today's records as an array
+- Replace the single `todayRecord` state with a `todayRecords` array
+- Always show the check-in button, even after checking in
+- Below the button (or below the confirmed state), list all of today's check-ins with their timestamps
+- After checking in, show the power-up animation, then return to the "ready" state so the member can check in again later
+- Keep the "LET'S GO" confirmation visible for a few seconds, then reset to idle with the check-in button showing again
 
-**Add `fitness_goal` column to `gym_members` table:**
-- `fitness_goal` (text, nullable) -- stores the member's selected goal
+**Stats accuracy:**
+- `monthlyCount` already uses `count: 'exact'` with `head: true`, which correctly counts all records -- no change needed
+- `streak` already uses unique days from the last 30 days -- no change needed
+- The only issue was `.maybeSingle()` crashing when multiple rows exist
 
-**New table: `gym_workout_plans`**
-- `id` (uuid, PK)
-- `member_id` (FK to gym_members)
-- `generated_at` (timestamp)
-- `goal` (text -- the goal used to generate)
-- `title` (text)
-- `duration_minutes` (integer)
-- `difficulty` (text)
-- `exercises` (jsonb -- array of exercise objects)
-- `vitals_snapshot` (jsonb -- weight/bf%/muscle at time of generation)
-
-RLS: Members can read their own plans. Insert via edge function (service role).
-
-### Edge Function: `generate-workout`
-
-- Receives: `member_id`, `goal`, latest vitals
-- Uses Lovable AI (gemini-3-flash-preview) with a fitness-focused system prompt
-- Uses tool calling to extract structured workout data (title, exercises array, duration, difficulty)
-- Saves the result to `gym_workout_plans`
-- Returns the plan to the client
-
-### Navigation
-
-No nav changes needed -- the workout section lives inside the existing Progress tab, below the body stats and charts. This keeps the tab as the "training hub."
-
-### File Changes
+### Files to Change
 
 | File | Change |
 |------|--------|
-| **Migration** | Add `fitness_goal` to `gym_members`, create `gym_workout_plans` table with RLS |
-| `supabase/functions/generate-workout/index.ts` | **New** -- edge function that calls Lovable AI to generate structured workout plans |
-| `src/components/portal/gym/GymPortalProgress.tsx` | Add goal selector pills and "Today's Workout" card section below existing stats |
+| `src/components/portal/gym/GymMemberPortal.tsx` | Fix today query to handle multiple check-ins; show latest check-in time |
+| `src/components/portal/gym/GymPortalAttendance.tsx` | Track array of today's records; always show check-in button after animation resets; list today's check-in times below stats |
 
 ### Technical Details
 
-**AI prompt structure:**
-- System: "You are a certified personal trainer. Generate a workout session based on the member's goal and body stats."
-- User: Includes goal, weight, body fat %, muscle mass, gender, age (from date_of_birth)
-- Tool calling extracts structured JSON: `{ title, duration_minutes, difficulty, exercises: [{ name, sets, reps, rest_seconds, notes }] }`
+**Home tab today query fix:**
+```typescript
+// Before (breaks with >1 record):
+supabase.from('gym_attendance').select('id, check_in').eq('member_id', member.id).gte('check_in', todayStart).maybeSingle()
 
-**Caching strategy:**
-- Query for existing plan from today before calling AI
-- Only call AI if no plan exists for today or member taps "Generate New"
-- Plans are lightweight (single JSONB column for exercises)
+// After (always works):
+supabase.from('gym_attendance').select('id, check_in').eq('member_id', member.id).gte('check_in', todayStart).order('check_in', { ascending: false }).limit(1)
+```
 
-**Goal selector:**
-- Saves to `gym_members.fitness_goal` via direct update
-- Persists across sessions so member doesn't re-select every time
-- Changing goal triggers a new plan generation
+**Check-in tab flow after fix:**
+1. Page loads -- fetches all today's records into an array
+2. If no records exist, show idle check-in button
+3. If records exist, show check-in button (still available) plus a list of today's sessions below
+4. On check-in: charge animation, explosion, "LET'S GO" confirmation for 3 seconds, then auto-reset to show the button again with updated session list
+5. Stats (monthly visits, streak) update accurately from the real data
 
+**Today's sessions list** (shown below stats when there are check-ins):
+- Simple list showing each check-in time (e.g., "Session 1 -- 8:40 PM", "Session 2 -- 10:05 PM")
+- Styled consistently with the dark portal theme
