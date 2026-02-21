@@ -1,122 +1,60 @@
 
-## Redesigned Gym Payments Page
 
-### The Problem with the Current Design
-The current page shows a flat chronological list of all subscriptions. For a gym with month-to-month billing, this is hard to use because the owner needs to answer one question above all: **"Who has paid this month, and who hasn't?"** A flat list sorted by sign-up date doesn't answer that.
+## Direct App Download (APK Hosting)
 
-### New Design Concept: Period Navigator
+### What's Being Built
 
-Instead of filtering by "status only", the page will be organized around **billing periods** — months. The owner picks a month (or week), and immediately sees:
-- How much was collected in that period
-- A clear split: Paid vs Unpaid members
-- One-tap "Mark Paid" for outstanding payments
+Since the app isn't on the Play Store or App Store yet, we'll host the Android APK file directly on your platform and let users download and install it from the website. For iOS, since Apple doesn't allow sideloading APKs, we'll show instructions to install the PWA (Add to Home Screen via Safari).
 
----
+### How It Works
 
-### Layout Overview
+**For Admin (you):**
+- A new **"App Distribution"** card in Admin Settings where you upload the latest APK file
+- The APK gets stored in your backend file storage
+- You can replace it anytime with a newer version and add a version label (e.g. "v1.0.2")
 
-```text
-┌─────────────────────────────────────────────────────┐
-│  Gym Payments                                       │
-│                                                     │
-│  ◄  February 2026  ►        [ Month ▼ ]            │
-├──────────────┬──────────────┬──────────────┬────────┤
-│  Collected   │  Outstanding │  Total Paid  │ Unpaid │
-│  M 12,500    │  M 3,000     │  25 members  │ 6      │
-├─────────────────────────────────────────────────────┤
-│  [ All ▼ ]  [ Search... ]                          │
-├─────────────────────────────────────────────────────┤
-│  ● UNPAID (6)                                       │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ John Doe       Monthly Plan    M500  [Mark Paid]│ │
-│  │ Jane Smith     Premium Plan    M800  [Mark Paid]│ │
-│  └───────────────────────────────────────────────┘  │
-│                                                     │
-│  ✓ PAID (25)                                        │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ Alice Brown    Monthly Plan    M500  ✓ Paid   │  │
-│  └───────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
+**For Visitors:**
+- A **"Download the App"** section on the Landing page (below the hero CTA) and About page
+- Android users see a **"Download for Android"** button that downloads the APK directly
+- iPhone users see an **"Install on iPhone"** button that opens a popover with step-by-step Safari PWA instructions
+- The Footer gets a "Download" column with the same links
 
----
+### Reusable Component
 
-### Key UX Changes
+**`src/components/shared/AppDownloadButtons.tsx`** -- renders both buttons with two variants:
+- `variant="hero"` -- white/light buttons for dark gradient backgrounds
+- `variant="default"` -- standard themed buttons for light backgrounds
 
-**1. Period Navigator (top)**
-- Left/right arrows to step through months (or weeks if week granularity selected)
-- Dropdown to switch between "Monthly" and "Weekly" view
-- Defaults to the current month/week on load
+The component fetches the APK URL from a `platform_settings` row (`android_apk_url`) and shows/hides the Android button based on whether an APK has been uploaded.
 
-**2. Period-aware Stats Bar**
-The 4 stat cards will update as you navigate periods:
-- **Collected** — sum of `amountPaid` for subscriptions whose `startDate` falls in the selected period
-- **Outstanding** — sum of plan price × count for unpaid subscriptions in the period
-- **Paid Members** — count with `paymentStatus = 'paid'` in period
-- **Unpaid Members** — count with `paymentStatus != 'paid'` in period
+### File Changes
 
-**3. Grouped List: Unpaid First, Then Paid**
-Instead of one flat list, subscriptions in the selected period are split into two visual sections:
-- **Unpaid** section at the top (red/amber accent) — these need action
-- **Paid** section below (green/muted) — confirmation of collected payments
+**New files:**
+- `src/components/shared/AppDownloadButtons.tsx` -- reusable download buttons
+- `src/components/admin/AppDistributionSettings.tsx` -- admin APK upload card
 
-Each row shows:
-- Member avatar initials chip
-- Member name + member number
-- Plan name
-- Date range (e.g. "1 Feb → 28 Feb")
-- Amount
-- "Mark Paid" button (unpaid) or green ✓ (paid)
-
-**4. Period Filtering Logic**
-A subscription falls into a period if its `startDate` is within that month/week window. For weekly view, the week is Mon–Sun ISO week.
-
-**5. Search still works** — filters within the selected period
-
----
+**Modified files:**
+- `src/components/landing/Hero.tsx` -- add download buttons below CTA row
+- `src/pages/About.tsx` -- add "Get the App" section before Footer
+- `src/components/landing/Footer.tsx` -- add "Download" column
+- `src/components/admin/AdminSettingsTab.tsx` -- include the AppDistributionSettings card
 
 ### Technical Details
 
-**Files to edit:**
-- `src/pages/GymPayments.tsx` — full redesign (only this file changes)
+**Storage:** The APK file will be uploaded to a `app-releases` storage bucket (public, max 100MB). The admin uploads the file, and the public URL is saved to `platform_settings` with key `android_apk_url`. A second key `android_apk_version` stores the version label.
 
-**No hook changes needed** — all subscriptions are already fetched. Period filtering is done purely in `useMemo` on the frontend using `startDate`.
+**Database:** No new tables -- reuses the existing `platform_settings` table (same pattern as favicon/app icon settings).
 
-**Period logic (Month):**
-```typescript
-// Selected period: { year: 2026, month: 1 } (0-indexed)
-const periodStart = new Date(year, month, 1);
-const periodEnd   = new Date(year, month + 1, 0); // last day of month
+**Storage bucket creation:** A migration will create the `app-releases` bucket if it doesn't exist.
 
-const inPeriod = subscriptions.filter(s => {
-  const d = parseISO(s.startDate);
-  return d >= periodStart && d <= periodEnd;
-});
-```
+**iOS handling:** Since iOS doesn't support APK sideloading, the iPhone button will use a Popover showing: "1. Open this site in Safari  2. Tap the Share icon  3. Tap 'Add to Home Screen'". This installs the PWA which behaves like a native app.
 
-**Period logic (Week):**
-```typescript
-// startOfWeek / endOfWeek from date-fns (already installed)
-import { startOfWeek, endOfWeek } from 'date-fns';
-const ws = startOfWeek(selectedWeekDate, { weekStartsOn: 1 });
-const we = endOfWeek(selectedWeekDate, { weekStartsOn: 1 });
-```
+**Admin upload flow:**
+1. Admin clicks "Upload APK" in Settings
+2. File picker opens (accepts `.apk` files only)
+3. File uploads to `app-releases/orion-labs-latest.apk`
+4. Public URL saved to `platform_settings`
+5. Visitors can now download it
 
-**Grouped rendering:**
-```typescript
-const unpaid = inPeriod.filter(s => s.paymentStatus !== 'paid');
-const paid   = inPeriod.filter(s => s.paymentStatus === 'paid');
-```
+**Android install note:** The download buttons will include a small note: "You may need to enable 'Install from unknown sources' in your phone settings."
 
-**Date-fns functions used** (already installed):
-- `startOfWeek`, `endOfWeek`, `startOfMonth`, `endOfMonth`
-- `addMonths`, `subMonths`, `addWeeks`, `subWeeks`
-- `format`, `parseISO`
-
----
-
-### What Stays the Same
-- `useGymMemberSubscriptions` hook — no changes
-- `useGymMembers` hook — no changes
-- Navigation wiring (Sidebar, BottomNav, MoreMenu) — no changes
-- No database changes required
