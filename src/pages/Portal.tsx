@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
-import { PortalLogin } from '@/components/portal/PortalLogin';
 import { PortalLayout, type PortalTab } from '@/components/portal/PortalLayout';
 import { GymMemberPortal } from '@/components/portal/gym/GymMemberPortal';
 import { GymPortalMembership } from '@/components/portal/gym/GymPortalMembership';
@@ -33,8 +33,7 @@ export default function Portal() {
 
   // Not authenticated — show login
   if (!user) {
-    const urlType = new URLSearchParams(window.location.search).get('type') as 'gym' | 'school' | null;
-    return <PortalLogin portalType={urlType} />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Authenticated as gym member
