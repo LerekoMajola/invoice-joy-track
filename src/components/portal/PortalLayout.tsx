@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { Home, CreditCard, CalendarDays, MessageCircle, GraduationCap, LogOut, Zap, Dumbbell, Activity } from 'lucide-react';
+import { ReactNode, useState, useEffect } from 'react';
+import { Home, CreditCard, CalendarDays, MessageCircle, GraduationCap, LogOut, Zap, Dumbbell, Activity, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -40,27 +40,51 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
   const PortalIcon = portalType === 'gym' ? Dumbbell : GraduationCap;
   const portalTitle = gymName || (portalType === 'gym' ? 'Member Portal' : 'Student Portal');
 
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('portal_theme');
+    return saved ? saved === 'dark' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('portal_theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const bg = isDark ? 'bg-[#0a0a0f]' : 'bg-gray-50';
+  const headerBg = isDark ? 'bg-white/[0.03] backdrop-blur-xl border-b border-white/[0.06]' : 'bg-white border-b border-gray-200 shadow-sm';
+  const headerText = isDark ? 'text-white/90' : 'text-gray-900';
+  const navBg = isDark ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-t border-white/[0.06]' : 'bg-white/95 backdrop-blur-xl border-t border-gray-200';
+
   return (
-    <div className="h-[100dvh] bg-[#0a0a0f] flex flex-col max-w-md mx-auto overflow-hidden">
+    <div className={cn("h-[100dvh] flex flex-col max-w-md mx-auto overflow-hidden", bg)} data-portal-theme={isDark ? 'dark' : 'light'}>
       {/* Top Header — glassmorphic dark */}
-      <header className="z-50 bg-white/[0.03] backdrop-blur-xl border-b border-white/[0.06] px-4 h-14 flex items-center justify-between shrink-0">
+      <header className={cn("z-50 px-4 h-14 flex items-center justify-between shrink-0", headerBg)}>
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#00E5A0] to-[#00C4FF] flex items-center justify-center shadow-[0_0_20px_rgba(0,229,160,0.25)]">
             <PortalIcon className="h-4 w-4 text-black" />
           </div>
-          <span className="font-bold text-sm text-white/90 tracking-tight">{portalTitle}</span>
+          <span className={cn("font-bold text-sm tracking-tight", headerText)}>{portalTitle}</span>
         </div>
-        {onSignOut && (
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={onSignOut}
-            className="h-8 px-2.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 gap-1.5 text-xs"
+            onClick={() => setIsDark(!isDark)}
+            className={cn("h-8 w-8 p-0", isDark ? 'text-white/40 hover:text-yellow-300 hover:bg-yellow-500/10' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100')}
           >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign out
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-        )}
+          {onSignOut && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSignOut}
+              className={cn("h-8 px-2.5 gap-1.5 text-xs", isDark ? 'text-white/40 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50')}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -69,7 +93,7 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
       </main>
 
       {/* Bottom Navigation — glassmorphic dark bar */}
-      <nav className="bg-[#0a0a0f]/90 backdrop-blur-xl border-t border-white/[0.06] z-50 shrink-0">
+      <nav className={cn("z-50 shrink-0", navBg)}>
         <div className="flex items-center justify-around px-2 py-2">
           {nav.map(item => {
             const Icon = item.icon;
@@ -80,7 +104,6 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
                 onClick={() => onTabChange(item.id)}
                 className="flex flex-col items-center gap-1 px-3 py-1.5 min-w-[56px] transition-all relative"
               >
-                {/* Glow dot above active icon */}
                 {isActive && (
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#00E5A0] shadow-[0_0_8px_2px_rgba(0,229,160,0.6)]" />
                 )}
@@ -91,13 +114,13 @@ export function PortalLayout({ children, activeTab, onTabChange, portalType, onS
                   <Icon
                     className={cn(
                       'h-5 w-5 transition-colors duration-200',
-                      isActive ? 'text-[#00E5A0]' : 'text-white/30'
+                      isActive ? 'text-[#00E5A0]' : isDark ? 'text-white/30' : 'text-gray-400'
                     )}
                   />
                 </div>
                 <span className={cn(
                   'text-[10px] font-medium transition-colors duration-200',
-                  isActive ? 'text-[#00E5A0] font-bold' : 'text-white/30'
+                  isActive ? 'text-[#00E5A0] font-bold' : isDark ? 'text-white/30' : 'text-gray-400'
                 )}>
                   {item.label}
                 </span>
