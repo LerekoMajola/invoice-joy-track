@@ -2205,6 +2205,68 @@ export type Database = {
           },
         ]
       }
+      gym_member_vitals: {
+        Row: {
+          arm_cm: number | null
+          body_fat_pct: number | null
+          chest_cm: number | null
+          created_at: string
+          height_cm: number | null
+          hip_cm: number | null
+          id: string
+          logged_at: string
+          member_id: string
+          muscle_mass_kg: number | null
+          notes: string | null
+          thigh_cm: number | null
+          user_id: string
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          logged_at?: string
+          member_id: string
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          thigh_cm?: number | null
+          user_id: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          arm_cm?: number | null
+          body_fat_pct?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          logged_at?: string
+          member_id?: string
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          thigh_cm?: number | null
+          user_id?: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_member_vitals_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_members: {
         Row: {
           address: string | null

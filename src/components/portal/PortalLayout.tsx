@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
-import { Home, CreditCard, CalendarDays, MessageCircle, GraduationCap, LogOut, Zap, Dumbbell } from 'lucide-react';
+import { Home, CreditCard, CalendarDays, MessageCircle, GraduationCap, LogOut, Zap, Dumbbell, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-export type PortalTab = 'home' | 'membership' | 'classes' | 'messages' | 'fees' | 'timetable' | 'check-in';
+export type PortalTab = 'home' | 'membership' | 'classes' | 'messages' | 'fees' | 'timetable' | 'check-in' | 'progress';
 
 interface NavItem {
   id: PortalTab;
@@ -12,11 +12,11 @@ interface NavItem {
 }
 
 const gymNav: NavItem[] = [
-  { id: 'home',       label: 'Home',     icon: Home },
-  { id: 'membership', label: 'Plan',     icon: CreditCard },
-  { id: 'classes',    label: 'Classes',  icon: CalendarDays },
-  { id: 'check-in',   label: 'Check In', icon: Zap },
-  { id: 'messages',   label: 'Messages', icon: MessageCircle },
+  { id: 'home',       label: 'Home',      icon: Home },
+  { id: 'progress',   label: 'Progress',  icon: Activity },
+  { id: 'check-in',   label: 'Check In',  icon: Zap },
+  { id: 'membership', label: 'Plan',      icon: CreditCard },
+  { id: 'messages',   label: 'Messages',  icon: MessageCircle },
 ];
 
 const schoolNav: NavItem[] = [
