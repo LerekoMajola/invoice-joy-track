@@ -1,46 +1,80 @@
 
 
-## Unified Login Page
+## Premium Dark Gym Portal Redesign
 
-### What Changes
+Inspired by the reference image, the entire member portal will be transformed into a dark, immersive fitness experience with mint/cyan accents, bold typography, and an addictive mobile-native feel.
 
-Right now there are two login screens:
-- `/auth` -- for gym owners / business users
-- `/portal` -- has its own separate login form (PortalLogin component)
+### Design Language
 
-The goal: **everyone logs in at `/auth`**. After login, the system automatically sends them to the right place based on their account type. No user action needed -- it just works.
+- **Dark Mode**: Deep charcoal-to-black backgrounds (not the main app's light theme -- scoped only to the portal)
+- **Accent Colors**: Mint/cyan gradient (`#00E5A0` to `#00C4FF`) replacing the current indigo primary
+- **Typography**: Extra-bold headings, tight tracking, uppercase micro-labels
+- **Cards**: Frosted glass effect with subtle white/mint borders on dark backgrounds
+- **Bottom Nav**: Glassmorphic dark bar with glowing active indicator (dot + color shift)
+- **Animations**: Smooth fade-ins, scale-on-tap, pulse effects on key actions
 
-### How Users Experience It
+---
 
-1. A gym owner opens the app and lands on `/auth` -- logs in -- goes to the business dashboard
-2. A gym member opens the app and lands on `/auth` -- logs in with their portal credentials -- goes to the member portal
-3. No confusion, no separate URLs to remember
+### Screen-by-Screen Breakdown
 
-### Technical Changes
+**1. Portal Layout (shell)**
+- Full dark background (`bg-gray-950`) scoped to the portal container
+- Header: transparent/blur with mint accent icon
+- Bottom nav: dark glass bar, active tab gets a glowing mint dot above the icon + mint icon color
+- Haptic feedback on tab switches
 
-**File: `src/pages/Portal.tsx`**
-- When no user is authenticated, instead of rendering the `<PortalLogin />` component, redirect to `/auth`
-- This means visiting `/portal` without being logged in takes you to the unified login page
-- Once logged in, portal users still land on `/portal` as before (the Auth.tsx redirect already handles this)
+**2. Home Tab (GymMemberPortal)**
+- Dark gradient hero with member name in huge bold white text
+- Greeting row with subtle animated emoji
+- Status pill: frosted glass chip showing check-in status or membership status
+- 3 stat cards in frosted dark glass: Monthly Visits (mint ring), Streak (orange glow), All-Time (gold glow)
+- Each stat card uses a circular progress indicator instead of flat numbers
+- Motivational quote section with large italic serif-style text on dark background
+- Active plan strip at the bottom with days-left countdown and thin mint progress bar
 
-**File: `src/pages/Auth.tsx`**
-- No changes needed -- the post-login redirect on lines 50-59 already checks `user.user_metadata?.portal_type` and sends portal users to `/portal`
+**3. Plan Tab (GymPortalMembership)**
+- Keep the existing dark hero card but enhance with mint gradient accents instead of primary
+- Progress bar uses mint-to-cyan gradient
+- Receipt chip gets a glowing mint border
+- Past plans section uses frosted dark cards
 
-**File: `src/components/portal/PortalLogin.tsx`**
-- No deletion needed, but it will no longer be rendered (can be cleaned up later)
+**4. Classes Tab (GymPortalSchedule)**
+- Day selector: horizontal pill strip with mint active state on dark background
+- Class cards: dark frosted glass with mint accent borders
+- Capacity indicator: thin mint progress bar
+- Bottom sheet detail: dark glass panel with mint "Book Class" button
+- My Bookings section: dark cards with subtle glow on booked items
 
-### What Stays the Same
+**5. Check-In Tab (GymPortalAttendance)**
+- Big circular check-in button with pulsing mint glow ring (instead of current primary)
+- Post-check-in: large animated checkmark with particle burst effect (CSS only)
+- Shareable workout card: dark gradient with mint accents, designed for screenshots
+- Stats strip: 3 dark frosted glass cards matching home style
 
-- The `create-portal-account` Edge Function still provisions portal accounts with `portal_type` in metadata
-- `ProtectedRoute.tsx` still blocks portal users from accessing business routes
-- `usePortalSession.tsx` still resolves the correct member/student record after login
-- The member portal UI at `/portal` is unchanged for authenticated users
+**6. Messages Tab (PortalMessaging)**
+- Dark background chat interface
+- Own messages: mint gradient bubble
+- Received messages: dark frosted glass bubble
+- Input bar: dark glass with mint send button
 
-### Summary of Edits
+---
+
+### Files to Change
 
 | File | Change |
 |------|--------|
-| `src/pages/Portal.tsx` | Replace `<PortalLogin />` with `<Navigate to="/auth" />` |
+| `src/components/portal/PortalLayout.tsx` | Dark theme shell, redesigned glassmorphic bottom nav with glow effects |
+| `src/components/portal/gym/GymMemberPortal.tsx` | Complete visual overhaul -- dark hero, frosted stat cards, circular indicators |
+| `src/components/portal/gym/GymPortalMembership.tsx` | Mint accent swap, enhanced frosted glass cards |
+| `src/components/portal/gym/GymPortalSchedule.tsx` | Dark frosted class cards, mint day selector, dark bottom sheet |
+| `src/components/portal/gym/GymPortalAttendance.tsx` | Mint glow check-in button, dark shareable card, frosted stats |
+| `src/components/portal/shared/PortalMessaging.tsx` | Dark chat bubbles, mint own-message gradient |
 
-One line change. The separation logic is already built -- we just need to funnel everyone through the same door.
+### Technical Approach
+
+- All dark styling is **scoped to the portal container** using Tailwind classes (no global CSS changes needed)
+- The portal wrapper div gets `bg-gray-950 text-white` which cascades to all children
+- Existing data fetching hooks and logic remain completely unchanged
+- Only visual/JSX changes -- no database or backend modifications
+- Uses existing Tailwind utilities plus inline styles for specific gradients
 
