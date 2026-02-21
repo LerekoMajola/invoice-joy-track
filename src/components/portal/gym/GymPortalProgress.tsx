@@ -165,7 +165,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
       if (error) throw error;
       return (data?.[0] as unknown as WorkoutPlan) ?? null;
     },
-    enabled: !!selectedGoal,
+    enabled: true,
   });
 
   // Save goal to member profile
@@ -314,6 +314,13 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     }
   }, [latest]);
 
+  // Auto-populate selected goal from existing plan
+  useEffect(() => {
+    if (todayPlan && !selectedGoal) {
+      setSelectedGoal(todayPlan.goal);
+    }
+  }, [todayPlan]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -456,7 +463,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
               <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-8 flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 text-[#00E5A0] animate-spin" />
                 <p className="text-sm text-white/40 font-medium">
-                  {generateMutation.isPending ? 'AI is crafting your workout...' : 'Loading plan...'}
+                  {generateMutation.isPending ? 'Generating your workout...' : 'Loading plan...'}
                 </p>
               </div>
             ) : todayPlan ? (
