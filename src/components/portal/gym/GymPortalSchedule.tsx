@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Clock, Users, CheckCircle2, XCircle, ChevronDown, ChevronUp, CalendarX } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 
 interface ClassSchedule {
@@ -33,6 +34,7 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showMyBookings, setShowMyBookings] = useState(true);
   const memberId = member?.id ?? null;
+  const { pt } = usePortalTheme();
 
   useEffect(() => {
     supabase.from('gym_class_schedules').select('*, gym_classes(name, description, duration_minutes, capacity, instructor_name)')
@@ -88,14 +90,15 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
   const selectedBooked = selected ? myBookedScheduleIds.has(selected.id) : false;
   const selectedCount = selected ? (bookingCounts[selected.id] ?? 0) : 0;
   const selectedFull = selected?.capacity ? selectedCount >= selected.capacity : false;
+  const cardCls = pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm');
 
   return (
-    <div className="space-y-4 pb-6 text-white">
+    <div className={cn("space-y-4 pb-6", pt('text-white', 'text-gray-900'))}>
       <div className="px-4 pt-4">
-        <h2 className="text-lg font-bold text-white">Class Schedule</h2>
+        <h2 className="text-lg font-bold" style={{ color: 'rgb(var(--portal-text))' }}>Class Schedule</h2>
       </div>
 
-      {/* Day Selector — mint pills on dark */}
+      {/* Day Selector */}
       <div className="flex gap-1.5 px-4 overflow-x-auto pb-1 scrollbar-hide">
         {DAYS.map((day, i) => (
           <button key={i} onClick={() => setSelectedDay(i)}
@@ -103,7 +106,7 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
               'flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-xs font-medium transition-all min-w-[44px]',
               selectedDay === i
                 ? 'bg-gradient-to-br from-[#00E5A0] to-[#00C4FF] text-black font-bold shadow-[0_0_15px_rgba(0,229,160,0.2)]'
-                : 'bg-white/[0.04] text-white/30 hover:bg-white/[0.08]'
+                : pt('bg-white/[0.04] text-white/30 hover:bg-white/[0.08]', 'bg-gray-100 text-gray-500 hover:bg-gray-200')
             )}>
             {day}
           </button>
@@ -112,10 +115,10 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
 
       {/* Classes */}
       <div className="px-4 space-y-3">
-        <p className="text-sm text-white/30 font-medium">{FULL_DAYS[selectedDay]}</p>
+        <p className="text-sm font-medium" style={{ color: 'var(--portal-text-dimmed)' }}>{FULL_DAYS[selectedDay]}</p>
         {dayClasses.length === 0 ? (
-          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-6 text-center">
-            <p className="text-sm text-white/30">No classes scheduled for {FULL_DAYS[selectedDay]}.</p>
+          <div className={cn("rounded-2xl border p-6 text-center", cardCls)}>
+            <p className="text-sm" style={{ color: 'var(--portal-text-dimmed)' }}>No classes scheduled for {FULL_DAYS[selectedDay]}.</p>
           </div>
         ) : (
           dayClasses.map(cls => {
@@ -124,18 +127,18 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
             const full = cls.capacity ? count >= cls.capacity : false;
             return (
               <div key={cls.id} onClick={() => setSelected(cls)}
-                className="cursor-pointer rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4 hover:bg-white/[0.06] transition-all">
+                className={cn("cursor-pointer rounded-2xl border p-4 transition-all", cardCls, pt('hover:bg-white/[0.06]', 'hover:bg-gray-50'))}>
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-white/90">{cls.class_name}</p>
+                      <p className="font-semibold" style={{ color: 'var(--portal-text-primary)' }}>{cls.class_name}</p>
                       {booked && <Badge className="text-xs text-[#00E5A0] border-[#00E5A0]/30 bg-[#00E5A0]/10">Booked ✓</Badge>}
                     </div>
-                    {cls.instructor_name && <p className="text-xs text-white/30 mt-0.5">with {cls.instructor_name}</p>}
+                    {cls.instructor_name && <p className="text-xs mt-0.5" style={{ color: 'var(--portal-text-dimmed)' }}>with {cls.instructor_name}</p>}
                   </div>
-                  <Badge className="text-xs shrink-0 bg-white/[0.06] text-white/50 border-white/[0.08]">{cls.start_time.slice(0, 5)}</Badge>
+                  <Badge className={cn("text-xs shrink-0", pt('bg-white/[0.06] text-white/50 border-white/[0.08]', 'bg-gray-100 text-gray-500 border-gray-200'))}>{cls.start_time.slice(0, 5)}</Badge>
                 </div>
-                <div className="flex items-center gap-3 mt-2 text-xs text-white/30">
+                <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--portal-text-dimmed)' }}>
                   {cls.duration_minutes && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{cls.duration_minutes} min</span>}
                   {cls.capacity && (
                     <span className={cn('flex items-center gap-1', full && 'text-red-400')}>
@@ -153,26 +156,26 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
       {memberId && (
         <div className="px-4 space-y-3">
           <button className="flex items-center justify-between w-full" onClick={() => setShowMyBookings(p => !p)}>
-            <p className="text-sm font-semibold text-white/70">My Bookings</p>
-            {showMyBookings ? <ChevronUp className="h-4 w-4 text-white/30" /> : <ChevronDown className="h-4 w-4 text-white/30" />}
+            <p className="text-sm font-semibold" style={{ color: 'var(--portal-text-secondary)' }}>My Bookings</p>
+            {showMyBookings ? <ChevronUp className="h-4 w-4" style={{ color: 'var(--portal-text-dimmed)' }} /> : <ChevronDown className="h-4 w-4" style={{ color: 'var(--portal-text-dimmed)' }} />}
           </button>
           {showMyBookings && (
-            bookingLoading ? <div className="flex items-center justify-center h-16"><Loader2 className="h-4 w-4 animate-spin text-white/30" /></div>
+            bookingLoading ? <div className="flex items-center justify-center h-16"><Loader2 className="h-4 w-4 animate-spin" style={{ color: 'var(--portal-text-dimmed)' }} /></div>
             : myBookings.length === 0 ? (
-              <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-6 text-center">
-                <CalendarX className="h-8 w-8 mx-auto mb-2 text-white/10" />
-                <p className="text-sm text-white/30">No upcoming bookings.</p>
-                <p className="text-xs mt-1 text-white/20">Tap a class above to book your spot.</p>
+              <div className={cn("rounded-2xl border p-6 text-center", cardCls)}>
+                <CalendarX className="h-8 w-8 mx-auto mb-2" style={{ color: 'var(--portal-text-dimmed)' }} />
+                <p className="text-sm" style={{ color: 'var(--portal-text-dimmed)' }}>No upcoming bookings.</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>Tap a class above to book your spot.</p>
               </div>
             ) : myBookings.map(booking => (
-              <div key={booking.id} className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
+              <div key={booking.id} className={cn("rounded-2xl border p-4", cardCls)}>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-white/80 text-sm">{booking.class_name}</p>
-                    <p className="text-xs text-white/30 mt-0.5">
+                    <p className="font-medium text-sm" style={{ color: 'var(--portal-text-heading)' }}>{booking.class_name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--portal-text-dimmed)' }}>
                       {booking.day_of_week !== undefined ? FULL_DAYS[booking.day_of_week] : ''}{booking.start_time ? ` · ${booking.start_time.slice(0, 5)}` : ''}
                     </p>
-                    {booking.instructor_name && <p className="text-xs text-white/30">with {booking.instructor_name}</p>}
+                    {booking.instructor_name && <p className="text-xs" style={{ color: 'var(--portal-text-dimmed)' }}>with {booking.instructor_name}</p>}
                   </div>
                   <button className="text-xs text-red-400 flex items-center gap-1 shrink-0 mt-0.5" onClick={() => handleCancel(booking.id, booking.class_name)} disabled={actionLoading === booking.id}>
                     {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />} Cancel
@@ -186,21 +189,21 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
 
       {/* Bottom Sheet */}
       {selected && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end" onClick={() => setSelected(null)}>
-          <div className="bg-[#111118] border-t border-white/[0.08] rounded-t-2xl w-full max-w-md mx-auto p-5 space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-2" />
+        <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-end" style={{ background: 'var(--portal-overlay)' }} onClick={() => setSelected(null)}>
+          <div className={cn("border-t rounded-t-2xl w-full max-w-md mx-auto p-5 space-y-3", pt('bg-[#111118] border-white/[0.08]', 'bg-white border-gray-200'))} onClick={e => e.stopPropagation()}>
+            <div className={cn("w-10 h-1 rounded-full mx-auto mb-2", pt('bg-white/10', 'bg-gray-300'))} />
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-bold text-white">{selected.class_name}</h3>
-              <Badge className="bg-white/[0.06] text-white/50 border-white/[0.08]">{selected.start_time.slice(0, 5)} — {selected.end_time.slice(0, 5)}</Badge>
+              <h3 className="text-lg font-bold" style={{ color: 'rgb(var(--portal-text))' }}>{selected.class_name}</h3>
+              <Badge className={cn(pt('bg-white/[0.06] text-white/50 border-white/[0.08]', 'bg-gray-100 text-gray-500 border-gray-200'))}>{selected.start_time.slice(0, 5)} — {selected.end_time.slice(0, 5)}</Badge>
             </div>
-            {selected.instructor_name && <p className="text-sm text-white/40">Instructor: {selected.instructor_name}</p>}
-            {selected.duration_minutes && <p className="text-sm text-white/40">Duration: {selected.duration_minutes} minutes</p>}
+            {selected.instructor_name && <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>Instructor: {selected.instructor_name}</p>}
+            {selected.duration_minutes && <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>Duration: {selected.duration_minutes} minutes</p>}
             {selected.capacity && (
-              <p className={cn('text-sm', selectedFull ? 'text-red-400 font-medium' : 'text-white/40')}>
+              <p className={cn('text-sm', selectedFull ? 'text-red-400 font-medium' : '')} style={!selectedFull ? { color: 'var(--portal-text-muted)' } : undefined}>
                 Spots: {selectedCount} / {selected.capacity} filled{selectedFull && ' — Class Full'}
               </p>
             )}
-            {selected.description && <p className="text-sm text-white/60">{selected.description}</p>}
+            {selected.description && <p className="text-sm" style={{ color: 'var(--portal-text-secondary)' }}>{selected.description}</p>}
 
             {memberId && (
               <div className="pt-2">

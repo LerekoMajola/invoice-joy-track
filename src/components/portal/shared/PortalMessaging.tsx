@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Send, Loader2, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 import type { User } from '@supabase/supabase-js';
 
 interface Message {
@@ -23,6 +24,7 @@ export function PortalMessaging({ user, referenceId, recipientOwnerId, portalTyp
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { pt } = usePortalTheme();
 
   useEffect(() => {
     fetchMessages();
@@ -52,12 +54,12 @@ export function PortalMessaging({ user, referenceId, recipientOwnerId, portalTyp
   if (loading) return <div className="flex items-center justify-center h-48"><Loader2 className="h-5 w-5 animate-spin text-[#00E5A0]" /></div>;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] text-white">
+    <div className={cn("flex flex-col h-[calc(100vh-140px)]", pt('text-white', 'text-gray-900'))}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+      <div className={cn("px-4 py-3", pt('border-b border-white/[0.06] bg-white/[0.02]', 'border-b border-gray-200 bg-gray-50'))}>
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-[#00E5A0]" />
-          <span className="font-medium text-sm text-white/80">Messages with {businessName}</span>
+          <span className="font-medium text-sm" style={{ color: 'var(--portal-text-heading)' }}>Messages with {businessName}</span>
         </div>
       </div>
 
@@ -65,9 +67,9 @@ export function PortalMessaging({ user, referenceId, recipientOwnerId, portalTyp
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="text-center py-12">
-            <MessageCircle className="h-10 w-10 text-white/10 mx-auto mb-3" />
-            <p className="text-sm text-white/30">No messages yet.</p>
-            <p className="text-xs text-white/20 mt-1">Send a message to get started.</p>
+            <MessageCircle className="h-10 w-10 mx-auto mb-3" style={{ color: 'var(--portal-text-dimmed)' }} />
+            <p className="text-sm" style={{ color: 'var(--portal-text-dimmed)' }}>No messages yet.</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>Send a message to get started.</p>
           </div>
         ) : messages.map(msg => {
           const isOwn = msg.sender_id === user.id;
@@ -77,10 +79,10 @@ export function PortalMessaging({ user, referenceId, recipientOwnerId, portalTyp
                 'max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm',
                 isOwn
                   ? 'bg-gradient-to-r from-[#00E5A0] to-[#00C4FF] text-black rounded-br-sm'
-                  : 'bg-white/[0.06] text-white/80 rounded-bl-sm border border-white/[0.06]'
+                  : cn('rounded-bl-sm border', pt('bg-white/[0.06] text-white/80 border-white/[0.06]', 'bg-gray-100 text-gray-800 border-gray-200'))
               )}>
                 <p className="leading-relaxed">{msg.message}</p>
-                <p className={cn('text-[10px] mt-1 text-right', isOwn ? 'text-black/40' : 'text-white/20')}>
+                <p className={cn('text-[10px] mt-1 text-right', isOwn ? 'text-black/40' : '')} style={!isOwn ? { color: 'var(--portal-text-dimmed)' } : undefined}>
                   {format(new Date(msg.created_at), 'h:mm a')}
                 </p>
               </div>
@@ -91,11 +93,11 @@ export function PortalMessaging({ user, referenceId, recipientOwnerId, portalTyp
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-white/[0.06] bg-white/[0.02]">
+      <div className={cn("px-4 py-3", pt('border-t border-white/[0.06] bg-white/[0.02]', 'border-t border-gray-200 bg-gray-50'))}>
         <div className="flex gap-2">
           <Input value={text} onChange={e => setText(e.target.value)} onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 h-10 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 focus-visible:ring-[#00E5A0]/30"
+            className={cn("flex-1 h-10", pt('bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/20 focus-visible:ring-[#00E5A0]/30', 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus-visible:ring-[#00E5A0]/30'))}
             disabled={sending} />
           <Button size="icon" className="h-10 w-10 shrink-0 bg-gradient-to-r from-[#00E5A0] to-[#00C4FF] text-black hover:opacity-90 border-0"
             onClick={sendMessage} disabled={!text.trim() || sending}>

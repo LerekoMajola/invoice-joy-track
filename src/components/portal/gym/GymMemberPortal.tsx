@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, startOfDay, startOfMonth, subDays, differenceInDays, getDayOfYear } from 'date-fns';
 import { Loader2, Zap, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
 
@@ -72,7 +73,7 @@ function ProgressRing({ value, max, color, size = 88 }: { value: number; max: nu
 
   return (
     <svg width={size} height={size} className="transform -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--portal-ring-track)" strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={radius} fill="none"
         stroke={color} strokeWidth={stroke} strokeLinecap="round"
@@ -86,6 +87,7 @@ function ProgressRing({ value, max, color, size = 88 }: { value: number; max: nu
 export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { pt } = usePortalTheme();
   const ownerUserId = member.owner_user_id ?? member.user_id;
 
   useEffect(() => {
@@ -138,17 +140,16 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const daysLeft = data?.planEnd ? Math.max(differenceInDays(parseISO(data.planEnd), today), 0) : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden animate-fade-in text-white">
+    <div className={cn("flex flex-col h-full min-h-0 overflow-hidden animate-fade-in", pt('text-white', 'text-gray-900'))}>
 
       {/* ── TOP HERO ──────────────────────────────────────────────── */}
       <div
         className="relative flex-shrink-0 px-5 pt-5 pb-6"
-        style={{ background: 'linear-gradient(160deg, #00E5A0 0%, #00C4FF 50%, #0a0a0f 100%)' }}
+        style={{ background: pt('linear-gradient(160deg, #00E5A0 0%, #00C4FF 50%, #0a0a0f 100%)', 'linear-gradient(160deg, #94f9d6 0%, #90ccf4 50%, #e2e8f0 100%)') }}
       >
         {/* Subtle noise overlay */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")' }} />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")` }} />
 
-        {/* Greeting row */}
         <div className="relative flex items-center justify-between mb-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/40">
             Good {greeting.word} {greeting.emoji}
@@ -163,12 +164,10 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
           </div>
         </div>
 
-        {/* Name */}
         <h1 className="relative text-[1.75rem] font-black text-black leading-none tracking-tight mb-3">
           {member.first_name} {member.last_name}
         </h1>
 
-        {/* Today status pill */}
         {data?.latestCheckIn ? (
           <div className="relative flex items-center gap-2 bg-black/20 backdrop-blur-sm border border-black/10 rounded-xl px-3.5 py-2.5 w-fit">
             <span className="text-sm leading-none">✅</span>
@@ -185,63 +184,56 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       {/* ── STATS CARDS — frosted glass ───────────────────────────── */}
       <div className="flex-shrink-0 grid grid-cols-2 gap-3 px-4 py-4">
         {[
-          {
-            color: '#00E5A0',
-            icon: Zap,
-            value: data?.monthlyCount ?? 0,
-            max: 30,
-            label: 'visits this\nmonth',
-          },
-          {
-            color: '#FF6B35',
-            icon: Flame,
-            value: data?.streak ?? 0,
-            max: 30,
-            label: 'day\nstreak',
-          },
+          { color: '#00E5A0', icon: Zap, value: data?.monthlyCount ?? 0, max: 30, label: 'visits this\nmonth' },
+          { color: '#FF6B35', icon: Flame, value: data?.streak ?? 0, max: 30, label: 'day\nstreak' },
         ].map(({ color, icon: Icon, value, max, label }) => (
-          <div key={label} className="relative bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] shadow-lg flex flex-col items-center pt-5 pb-4 px-2 gap-1.5">
+          <div key={label} className={cn(
+            "relative backdrop-blur-sm rounded-2xl border shadow-lg flex flex-col items-center pt-5 pb-4 px-2 gap-1.5",
+            pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200')
+          )}>
             <div className="relative h-[96px] w-[96px] flex items-center justify-center">
               <ProgressRing value={value} max={max} color={color} size={96} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <Icon className="h-4 w-4 mb-0.5" style={{ color }} strokeWidth={0} fill={color} />
-                <p className="text-2xl font-black text-white leading-none">{value}</p>
+                <p className="text-2xl font-black leading-none" style={{ color: 'rgb(var(--portal-text))' }}>{value}</p>
               </div>
             </div>
-            <p className="text-[11px] font-medium text-white/40 text-center leading-tight whitespace-pre-line">{label}</p>
+            <p className="text-[11px] font-medium text-center leading-tight whitespace-pre-line" style={{ color: 'var(--portal-text-muted)' }}>{label}</p>
           </div>
         ))}
       </div>
 
       {/* ── QUOTE ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-5 min-h-0 text-center">
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/20 mb-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--portal-text-dimmed)' }}>
           Today's Motivation
         </p>
-        <blockquote className="text-[1.05rem] font-bold text-white/90 leading-snug tracking-tight mb-2">
+        <blockquote className="text-[1.05rem] font-bold leading-snug tracking-tight mb-2" style={{ color: 'rgb(var(--portal-text))' }}>
           "{quote.text}"
         </blockquote>
-        <p className="text-xs text-white/40">— {quote.author}</p>
+        <p className="text-xs" style={{ color: 'var(--portal-text-muted)' }}>— {quote.author}</p>
       </div>
 
       {/* ── BOTTOM ────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 border-t border-white/[0.06]">
+      <div className="flex-shrink-0 px-4 pb-5 pt-3" style={{ borderTop: '1px solid var(--portal-divider)' }}>
         {data?.planName && daysLeft !== null && (
-          <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+          <div className={cn(
+            "flex items-center justify-between px-4 py-2.5 rounded-xl border",
+            pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200')
+          )}>
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-[#00E5A0] shadow-[0_0_6px_rgba(0,229,160,0.5)]" />
-              <span className="text-xs font-semibold text-white/80">{data.planName}</span>
+              <span className="text-xs font-semibold" style={{ color: 'rgb(var(--portal-text))' }}>{data.planName}</span>
             </div>
             <span className={cn(
               'text-xs font-bold',
-              daysLeft <= 7 ? 'text-red-400' : daysLeft <= 14 ? 'text-amber-400' : 'text-white/40'
-            )}>
+              daysLeft <= 7 ? 'text-red-400' : daysLeft <= 14 ? 'text-amber-400' : ''
+            )} style={daysLeft > 14 ? { color: 'var(--portal-text-muted)' } : undefined}>
               {daysLeft}d left
             </span>
           </div>
         )}
       </div>
-
     </div>
   );
 }

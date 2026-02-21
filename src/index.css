@@ -457,6 +457,39 @@
   }
 }
 
+/* ── Portal Theme Variables ──────────────────────────────────────── */
+[data-portal-theme="dark"] {
+  --portal-text: 255, 255, 255;
+  --portal-card-bg: rgba(255,255,255,0.04);
+  --portal-card-border: rgba(255,255,255,0.06);
+  --portal-text-muted: rgba(255,255,255,0.40);
+  --portal-text-dimmed: rgba(255,255,255,0.20);
+  --portal-text-secondary: rgba(255,255,255,0.60);
+  --portal-text-primary: rgba(255,255,255,0.90);
+  --portal-text-heading: rgba(255,255,255,0.80);
+  --portal-divider: rgba(255,255,255,0.06);
+  --portal-surface: #12121a;
+  --portal-overlay: rgba(0,0,0,0.60);
+  --portal-input-border: rgba(255,255,255,0.08);
+  --portal-ring-track: rgba(255,255,255,0.06);
+}
+
+[data-portal-theme="light"] {
+  --portal-text: 17, 17, 17;
+  --portal-card-bg: rgba(255,255,255,0.95);
+  --portal-card-border: rgba(0,0,0,0.08);
+  --portal-text-muted: rgba(0,0,0,0.45);
+  --portal-text-dimmed: rgba(0,0,0,0.25);
+  --portal-text-secondary: rgba(0,0,0,0.60);
+  --portal-text-primary: rgba(0,0,0,0.90);
+  --portal-text-heading: rgba(0,0,0,0.80);
+  --portal-divider: rgba(0,0,0,0.08);
+  --portal-surface: #ffffff;
+  --portal-overlay: rgba(0,0,0,0.40);
+  --portal-input-border: rgba(0,0,0,0.12);
+  --portal-ring-track: rgba(0,0,0,0.08);
+}
+
 /* ── Gym Portal Power-Up Animations ─────────────────────────────── */
 .power-ring-spin {
   animation: powerRingSpin 10s linear infinite;

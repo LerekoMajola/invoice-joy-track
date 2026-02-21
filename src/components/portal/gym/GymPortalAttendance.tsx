@@ -4,6 +4,7 @@ import { format, startOfDay, startOfMonth, parseISO, subDays } from 'date-fns';
 import { Zap, Flame, CheckCircle2, Loader2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
 
@@ -74,6 +75,7 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [animPhase, setAnimPhase] = useState<'idle' | 'charging' | 'explode' | 'done'>('idle');
+  const { pt } = usePortalTheme();
 
   const ownerUserId = member.owner_user_id ?? member.user_id;
 
@@ -120,13 +122,11 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
       setTimeout(() => {
         setTodayRecords(prev => [...prev, data as AttendanceRecord]);
         setMonthlyCount(prev => prev + 1);
-        // Only bump streak if this is the first check-in today
         if (todayRecords.length === 0) setStreak(prev => prev + 1);
         setAnimPhase('done');
         toast.success('Checked in! 💪');
       }, 900);
 
-      // Auto-reset to idle after 3 seconds so they can check in again
       setTimeout(() => setAnimPhase('idle'), 3500);
     } catch (err: any) {
       toast.error(err.message || 'Failed to check in');
@@ -142,19 +142,18 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
   const showButton = animPhase !== 'done';
 
   return (
-    <div className="px-4 pt-6 pb-8 space-y-6 text-white">
+    <div className={cn("px-4 pt-6 pb-8 space-y-6", pt('text-white', 'text-gray-900'))}>
 
-      {/* Check-in area — always show button (except during explode) */}
+      {/* Check-in area */}
       <div className="flex flex-col items-center gap-5 py-6 relative">
-        {/* "LET'S GO" confirmation overlay */}
         {animPhase === 'done' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-32 w-32 rounded-full bg-[#00E5A0]/8 blur-3xl checkin-glow-in" />
             <div className="relative h-24 w-24 rounded-full flex items-center justify-center bg-gradient-to-br from-[#00E5A0]/20 to-[#00C4FF]/10 border-2 border-[#00E5A0]/40 checkin-slam">
               <CheckCircle2 className="h-12 w-12 text-[#00E5A0] drop-shadow-[0_0_8px_rgba(0,229,160,0.5)]" />
             </div>
-            <p className="font-black text-xl text-white mt-4 checkin-text-pop">LET'S GO! 💪🔥</p>
-            <p className="text-sm text-white/40 mt-1">
+            <p className="font-black text-xl mt-4 checkin-text-pop" style={{ color: 'rgb(var(--portal-text))' }}>LET'S GO! 💪🔥</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--portal-text-muted)' }}>
               Checked in at {todayRecords.length > 0 ? format(parseISO(todayRecords[todayRecords.length - 1].check_in), 'hh:mm a') : ''}
             </p>
           </div>
@@ -163,17 +162,16 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
         <div className={cn('flex flex-col items-center gap-5', animPhase === 'done' && 'opacity-0')}>
           <div className="text-center space-y-1">
             <p className={cn(
-              'text-lg font-bold text-white transition-all duration-300',
+              'text-lg font-bold transition-all duration-300',
               animPhase === 'charging' && 'scale-110 text-[#00E5A0]'
-            )}>
+            )} style={animPhase !== 'charging' ? { color: 'rgb(var(--portal-text))' } : undefined}>
               {animPhase === 'charging' ? 'Powering up...' : todayRecords.length > 0 ? 'Go again?' : 'Ready to train?'}
             </p>
-            <p className="text-sm text-white/40">
+            <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>
               {animPhase === 'charging' ? '' : todayRecords.length > 0 ? 'Tap to log another session' : 'Tap the button to check in'}
             </p>
           </div>
 
-          {/* Button container with effects */}
           {showButton && (
             <div className="relative flex items-center justify-center h-52 w-52">
               <svg className="absolute inset-0 power-ring-spin" viewBox="0 0 208 208">
@@ -222,7 +220,7 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
         </div>
       </div>
 
-      {/* Stats strip — 2 cols */}
+      {/* Stats strip */}
       <div className={cn(
         'grid grid-cols-2 gap-3',
         animPhase === 'done' && 'checkin-stats-reveal'
@@ -233,13 +231,16 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
         ].map(({ icon: Icon, color, value, label }) => (
           <div
             key={label}
-            className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4 text-center"
+            className={cn(
+              "backdrop-blur-sm border rounded-2xl p-4 text-center",
+              pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm')
+            )}
           >
             <div className="h-9 w-9 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ background: `${color}15` }}>
               <Icon className="h-4 w-4" style={{ color }} />
             </div>
-            <p className="text-2xl font-black text-white">{value}</p>
-            <p className="text-[10px] text-white/30 leading-tight whitespace-pre-line mt-1">{label}</p>
+            <p className="text-2xl font-black" style={{ color: 'rgb(var(--portal-text))' }}>{value}</p>
+            <p className="text-[10px] leading-tight whitespace-pre-line mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>{label}</p>
           </div>
         ))}
       </div>
@@ -247,22 +248,25 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
       {/* Today's sessions list */}
       {todayRecords.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/30 px-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] px-1" style={{ color: 'var(--portal-text-dimmed)' }}>
             Today's Sessions
           </p>
           <div className="space-y-1.5">
             {todayRecords.map((record, idx) => (
               <div
                 key={record.id}
-                className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5"
+                className={cn(
+                  "flex items-center gap-3 border rounded-xl px-4 py-2.5",
+                  pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200')
+                )}
               >
                 <div className="h-7 w-7 rounded-lg bg-[#00E5A0]/10 flex items-center justify-center shrink-0">
                   <Clock className="h-3.5 w-3.5 text-[#00E5A0]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white/80">Session {idx + 1}</p>
+                  <p className="text-xs font-semibold" style={{ color: 'var(--portal-text-heading)' }}>Session {idx + 1}</p>
                 </div>
-                <p className="text-xs font-mono text-white/50">{format(parseISO(record.check_in), 'hh:mm a')}</p>
+                <p className="text-xs font-mono" style={{ color: 'var(--portal-text-muted)' }}>{format(parseISO(record.check_in), 'hh:mm a')}</p>
               </div>
             ))}
           </div>
