@@ -32,12 +32,13 @@ interface PortalLayoutProps {
   onTabChange: (tab: PortalTab) => void;
   portalType: 'gym' | 'school';
   onSignOut?: () => void;
+  gymName?: string;
 }
 
-export function PortalLayout({ children, activeTab, onTabChange, portalType, onSignOut }: PortalLayoutProps) {
+export function PortalLayout({ children, activeTab, onTabChange, portalType, onSignOut, gymName }: PortalLayoutProps) {
   const nav = portalType === 'gym' ? gymNav : schoolNav;
   const PortalIcon = portalType === 'gym' ? Dumbbell : GraduationCap;
-  const portalTitle = portalType === 'gym' ? 'Member Portal' : 'Student Portal';
+  const portalTitle = gymName || (portalType === 'gym' ? 'Member Portal' : 'Student Portal');
 
   return (
     <div className="h-[100dvh] bg-[#0a0a0f] flex flex-col max-w-md mx-auto overflow-hidden">
