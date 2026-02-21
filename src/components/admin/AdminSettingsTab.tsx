@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import orionLabsLogo from '@/assets/orion-labs-logo.png';
 import { AppIconSettings } from './AppIconSettings';
 import { ModuleManagement } from './ModuleManagement';
-import { AppDistributionSettings } from './AppDistributionSettings';
 
 export function AdminSettingsTab() {
   const { logoUrl, updateLogoUrl } = usePlatformSettings();
@@ -146,8 +145,6 @@ export function AdminSettingsTab() {
       </Card>
 
       <AppIconSettings />
-
-      <AppDistributionSettings />
 
       <ModuleManagement />
     </div>

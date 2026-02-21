@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-import { AppDownloadButtons } from '@/components/shared/AppDownloadButtons';
 
 const industries = [
   { icon: Briefcase, label: 'BizPro', gradient: 'from-primary to-violet' },
@@ -104,12 +103,6 @@ export function Hero() {
           <p className="text-white/50 text-sm mt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             No credit card required · 7-day free trial · Cancel anytime
           </p>
-
-          {/* App Download Buttons */}
-          <div className="mt-10 animate-slide-up" style={{ animationDelay: '0.5s' }}>
-            <p className="text-white/60 text-sm font-medium mb-3">Get the App</p>
-            <AppDownloadButtons variant="hero" className="justify-center" />
-          </div>
         </div>
       </div>
     </section>

@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { Footer } from '@/components/landing/Footer';
-import { AppDownloadButtons } from '@/components/shared/AppDownloadButtons';
 import { useGeoPricing, formatGeoPrice } from '@/hooks/useGeoPricing';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -327,19 +326,6 @@ export default function About() {
               No credit card required · Cancel anytime
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Get the App */}
-      <section className="py-16 lg:py-24 bg-gradient-hero text-white">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-            Get the App
-          </h2>
-          <p className="text-white/70 text-lg mb-8">
-            Take Orion Labs with you. Download the Android app or install on iPhone for quick access anywhere.
-          </p>
-          <AppDownloadButtons variant="hero" className="justify-center" />
         </div>
       </section>
 
