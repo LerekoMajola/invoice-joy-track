@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
+import { AppDownloadButtons } from '@/components/shared/AppDownloadButtons';
 
 export function Footer() {
   return (
@@ -49,6 +50,10 @@ export function Footer() {
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Start Free Trial</Link></li>
               <li><a href="mailto:support@orionlabs.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
             </ul>
+
+            {/* Download section */}
+            <h4 className="font-display font-semibold mb-3 mt-8">Download</h4>
+            <AppDownloadButtons variant="hero" className="flex-col items-start" />
           </div>
         </div>
 
