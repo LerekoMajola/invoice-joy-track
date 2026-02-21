@@ -36,3 +36,6 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.generate-workout]
+verify_jwt = false

@@ -2277,6 +2277,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           first_name: string
+          fitness_goal: string | null
           gender: string | null
           health_conditions: string | null
           id: string
@@ -2301,6 +2302,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name: string
+          fitness_goal?: string | null
           gender?: string | null
           health_conditions?: string | null
           id?: string
@@ -2325,6 +2327,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name?: string
+          fitness_goal?: string | null
           gender?: string | null
           health_conditions?: string | null
           id?: string
@@ -2399,6 +2402,50 @@ export type Database = {
             columns: ["company_profile_id"]
             isOneToOne: false
             referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_workout_plans: {
+        Row: {
+          difficulty: string
+          duration_minutes: number
+          exercises: Json
+          generated_at: string
+          goal: string
+          id: string
+          member_id: string
+          title: string
+          vitals_snapshot: Json | null
+        }
+        Insert: {
+          difficulty: string
+          duration_minutes: number
+          exercises?: Json
+          generated_at?: string
+          goal: string
+          id?: string
+          member_id: string
+          title: string
+          vitals_snapshot?: Json | null
+        }
+        Update: {
+          difficulty?: string
+          duration_minutes?: number
+          exercises?: Json
+          generated_at?: string
+          goal?: string
+          id?: string
+          member_id?: string
+          title?: string
+          vitals_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_workout_plans_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
             referencedColumns: ["id"]
           },
         ]

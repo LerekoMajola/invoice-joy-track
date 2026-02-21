@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Plus, Award, Flame, Target, Trophy, Scale, Ruler, Heart, Dumbbell, ArrowUpDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus, Award, Flame, Target, Trophy, Scale, Ruler, Heart, Dumbbell, ArrowUpDown, Zap, Clock, RotateCcw, Loader2 } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -106,6 +106,26 @@ function MilestoneBadge({ label, icon: Icon, unlocked, color }: {
   );
 }
 
+const FITNESS_GOALS = ['Weight Loss', 'Muscle Gain', 'General Fitness', 'Strength', 'Endurance', 'Flexibility'] as const;
+
+interface WorkoutExercise {
+  name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  notes?: string;
+}
+
+interface WorkoutPlan {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  difficulty: string;
+  exercises: WorkoutExercise[];
+  generated_at: string;
+  goal: string;
+}
+
 export function GymPortalProgress({ member }: GymPortalProgressProps) {
   const queryClient = useQueryClient();
   const [logOpen, setLogOpen] = useState(false);
@@ -113,6 +133,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     weight_kg: '', height_cm: '', body_fat_pct: '', muscle_mass_kg: '',
     waist_cm: '', chest_cm: '', arm_cm: '', hip_cm: '', thigh_cm: '', notes: '',
   });
+  const [selectedGoal, setSelectedGoal] = useState<string>(member.fitness_goal || '');
 
   const { data: vitals = [], isLoading } = useQuery({
     queryKey: ['gym-vitals', member.id],
@@ -126,6 +147,74 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
       return (data ?? []) as unknown as Vital[];
     },
   });
+
+  // Today's workout plan query
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const { data: todayPlan, isLoading: planLoading } = useQuery({
+    queryKey: ['gym-workout-plan', member.id, todayStart.toISOString().slice(0, 10)],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gym_workout_plans' as any)
+        .select('*')
+        .eq('member_id', member.id)
+        .gte('generated_at', todayStart.toISOString())
+        .order('generated_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return (data?.[0] as unknown as WorkoutPlan) ?? null;
+    },
+    enabled: !!selectedGoal,
+  });
+
+  // Save goal to member profile
+  const goalMutation = useMutation({
+    mutationFn: async (goal: string) => {
+      const { error } = await supabase
+        .from('gym_members' as any)
+        .update({ fitness_goal: goal } as any)
+        .eq('id', member.id);
+      if (error) throw error;
+    },
+  });
+
+  // Generate workout mutation
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const latest = vitals[0] ?? null;
+      const { data, error } = await supabase.functions.invoke('generate-workout', {
+        body: {
+          member_id: member.id,
+          goal: selectedGoal,
+          vitals: latest ? {
+            weight_kg: latest.weight_kg,
+            body_fat_pct: latest.body_fat_pct,
+            muscle_mass_kg: latest.muscle_mass_kg,
+          } : null,
+          gender: member.gender,
+          date_of_birth: member.date_of_birth,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gym-workout-plan', member.id] });
+      toast.success('Workout generated! 🏋️');
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to generate workout'),
+  });
+
+  const handleGoalSelect = (goal: string) => {
+    setSelectedGoal(goal);
+    goalMutation.mutate(goal);
+    // If no plan for today, auto-generate
+    if (!todayPlan) {
+      setTimeout(() => generateMutation.mutate(), 300);
+    }
+  };
 
   const insertMutation = useMutation({
     mutationFn: async (values: Record<string, any>) => {
@@ -166,17 +255,13 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
   const oldest = vitals.length > 0 ? vitals[vitals.length - 1] : null;
   const bmi = latest ? calcBMI(latest.weight_kg, latest.height_cm) : null;
 
-  // Sparkline data (chronological)
   const weightHistory = useMemo(() => [...vitals].reverse().map(v => v.weight_kg).filter((v): v is number => v != null), [vitals]);
   const fatHistory = useMemo(() => [...vitals].reverse().map(v => v.body_fat_pct).filter((v): v is number => v != null), [vitals]);
   const muscleHistory = useMemo(() => [...vitals].reverse().map(v => v.muscle_mass_kg).filter((v): v is number => v != null), [vitals]);
 
-  // Milestones
   const milestones = useMemo(() => {
     const hasFirst = vitals.length >= 1;
     const totalLogs = vitals.length;
-
-    // Streak: consecutive days
     let streak = 0;
     if (vitals.length > 0) {
       const today = new Date();
@@ -191,23 +276,13 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
         else break;
       }
     }
-
-    // Weight loss
     let weightLost = 0;
     if (oldest && latest && oldest.weight_kg && latest.weight_kg) {
       weightLost = oldest.weight_kg - latest.weight_kg;
     }
-
-    return {
-      firstLog: hasFirst,
-      streak7: streak >= 7,
-      kg5Down: weightLost >= 5,
-      consistency: totalLogs >= 30,
-      streakCount: streak,
-    };
+    return { firstLog: hasFirst, streak7: streak >= 7, kg5Down: weightLost >= 5, consistency: totalLogs >= 30, streakCount: streak };
   }, [vitals, latest, oldest]);
 
-  // Before/After
   const beforeAfter = useMemo(() => {
     if (!oldest || !latest || oldest.id === latest.id) return null;
     const pctChange = (curr: number | null, prev: number | null) => {
@@ -233,7 +308,6 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     { key: 'thigh_cm', label: 'Thighs', unit: 'cm', icon: ArrowUpDown },
   ];
 
-  // Pre-fill height from latest if exists
   useEffect(() => {
     if (latest?.height_cm && !form.height_cm) {
       setForm(f => ({ ...f, height_cm: String(latest.height_cm) }));
@@ -248,6 +322,12 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     );
   }
 
+  const difficultyColor = (d: string) => {
+    if (d === 'Beginner') return '#00E5A0';
+    if (d === 'Intermediate') return '#FFB800';
+    return '#FF4D6A';
+  };
+
   return (
     <div className="px-4 py-6 space-y-6 pb-8">
       {/* Header */}
@@ -260,36 +340,12 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Weight" value={latest?.weight_kg?.toFixed(1) ?? null} unit="kg"
-          icon={Scale} color="#00E5A0"
-          trend={<TrendIcon current={latest?.weight_kg ?? null} previous={previous?.weight_kg ?? null} />}
-        />
-        <StatCard
-          label="Body Fat" value={latest?.body_fat_pct?.toFixed(1) ?? null} unit="%"
-          icon={Heart} color={fatZoneColor(latest?.body_fat_pct ?? null)}
-          trend={<TrendIcon current={latest?.body_fat_pct ?? null} previous={previous?.body_fat_pct ?? null} />}
-        />
-        <StatCard
-          label="BMI" value={bmi?.toFixed(1) ?? null}
-          icon={Target} color="#00C4FF"
-          trend={null}
-        />
-        <StatCard
-          label="Muscle" value={latest?.muscle_mass_kg?.toFixed(1) ?? null} unit="kg"
-          icon={Dumbbell} color="#A855F7"
-          trend={<TrendIcon current={latest?.muscle_mass_kg ?? null} previous={previous?.muscle_mass_kg ?? null} />}
-        />
-        <StatCard
-          label="Height" value={latest?.height_cm?.toFixed(0) ?? null} unit="cm"
-          icon={Ruler} color="#FFB800"
-          trend={null}
-        />
-        <StatCard
-          label="Waist" value={latest?.waist_cm?.toFixed(1) ?? null} unit="cm"
-          icon={ArrowUpDown} color="#FF6B6B"
-          trend={<TrendIcon current={latest?.waist_cm ?? null} previous={previous?.waist_cm ?? null} />}
-        />
+        <StatCard label="Weight" value={latest?.weight_kg?.toFixed(1) ?? null} unit="kg" icon={Scale} color="#00E5A0" trend={<TrendIcon current={latest?.weight_kg ?? null} previous={previous?.weight_kg ?? null} />} />
+        <StatCard label="Body Fat" value={latest?.body_fat_pct?.toFixed(1) ?? null} unit="%" icon={Heart} color={fatZoneColor(latest?.body_fat_pct ?? null)} trend={<TrendIcon current={latest?.body_fat_pct ?? null} previous={previous?.body_fat_pct ?? null} />} />
+        <StatCard label="BMI" value={bmi?.toFixed(1) ?? null} icon={Target} color="#00C4FF" trend={null} />
+        <StatCard label="Muscle" value={latest?.muscle_mass_kg?.toFixed(1) ?? null} unit="kg" icon={Dumbbell} color="#A855F7" trend={<TrendIcon current={latest?.muscle_mass_kg ?? null} previous={previous?.muscle_mass_kg ?? null} />} />
+        <StatCard label="Height" value={latest?.height_cm?.toFixed(0) ?? null} unit="cm" icon={Ruler} color="#FFB800" trend={null} />
+        <StatCard label="Waist" value={latest?.waist_cm?.toFixed(1) ?? null} unit="cm" icon={ArrowUpDown} color="#FF6B6B" trend={<TrendIcon current={latest?.waist_cm ?? null} previous={previous?.waist_cm ?? null} />} />
       </div>
 
       {/* Sparkline Charts */}
@@ -369,6 +425,114 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
         Log Today's Stats
       </Button>
 
+      {/* ===== AI WORKOUT SECTION ===== */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-[#FFB800]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">Today's Workout</h2>
+        </div>
+
+        {/* Goal Selector Pills */}
+        <div className="flex flex-wrap gap-2">
+          {FITNESS_GOALS.map(goal => (
+            <button
+              key={goal}
+              onClick={() => handleGoalSelect(goal)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                selectedGoal === goal
+                  ? 'bg-[#00E5A0]/20 text-[#00E5A0] border border-[#00E5A0]/40 shadow-[0_0_12px_rgba(0,229,160,0.2)]'
+                  : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:bg-white/[0.08]'
+              }`}
+            >
+              {goal}
+            </button>
+          ))}
+        </div>
+
+        {/* Workout Card */}
+        {selectedGoal && (
+          <>
+            {(planLoading || generateMutation.isPending) ? (
+              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-8 flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 text-[#00E5A0] animate-spin" />
+                <p className="text-sm text-white/40 font-medium">
+                  {generateMutation.isPending ? 'AI is crafting your workout...' : 'Loading plan...'}
+                </p>
+              </div>
+            ) : todayPlan ? (
+              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl overflow-hidden">
+                {/* Plan Header */}
+                <div className="p-4 border-b border-white/[0.06]">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-black text-white">{todayPlan.title}</h3>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="flex items-center gap-1 text-[10px] text-white/40">
+                          <Clock className="h-3 w-3" /> {todayPlan.duration_minutes} min
+                        </span>
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: `${difficultyColor(todayPlan.difficulty)}15`,
+                            color: difficultyColor(todayPlan.difficulty),
+                          }}
+                        >
+                          {todayPlan.difficulty}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exercises List */}
+                <div className="divide-y divide-white/[0.04]">
+                  {(todayPlan.exercises as unknown as WorkoutExercise[]).map((ex, i) => (
+                    <div key={i} className="px-4 py-3 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-xl bg-[#00E5A0]/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-black text-[#00E5A0]">{i + 1}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{ex.name}</p>
+                        <p className="text-[10px] text-white/40">
+                          {ex.sets} × {ex.reps} • {ex.rest_seconds}s rest
+                          {ex.notes ? ` • ${ex.notes}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Regenerate */}
+                <div className="p-3 border-t border-white/[0.06]">
+                  <Button
+                    variant="ghost"
+                    onClick={() => generateMutation.mutate()}
+                    disabled={generateMutation.isPending}
+                    className="w-full text-white/40 hover:text-white/60 text-xs font-medium"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1.5" />
+                    Generate New Workout
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-6 flex flex-col items-center gap-3">
+                <Dumbbell className="h-8 w-8 text-white/20" />
+                <p className="text-sm text-white/40 text-center">No workout for today yet</p>
+                <Button
+                  onClick={() => generateMutation.mutate()}
+                  disabled={generateMutation.isPending}
+                  className="bg-[#00E5A0]/20 text-[#00E5A0] hover:bg-[#00E5A0]/30 border border-[#00E5A0]/30 rounded-xl text-xs font-bold"
+                >
+                  <Zap className="h-3 w-3 mr-1.5" />
+                  Generate Workout
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Log Drawer */}
       <Drawer open={logOpen} onOpenChange={setLogOpen}>
         <DrawerContent className="bg-[#12121a] border-white/[0.06] max-h-[85vh]">
@@ -398,7 +562,6 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
                 </div>
               </div>
             ))}
-            {/* Notes */}
             <div>
               <label className="text-[10px] uppercase tracking-wider text-white/40 font-medium">Notes</label>
               <input
