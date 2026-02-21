@@ -1,52 +1,81 @@
 
 
-## Center Quote & Power-Up Check-In Animation
+## AI Workout Plan Generator
 
-### 1. Center the "Today's Motivation" section (GymMemberPortal.tsx)
+An AI-powered feature that generates personalized workout sessions for gym members based on their fitness goals, body stats, and training history -- accessible from the Progress tab.
 
-- Add `text-center items-center` to the quote container
-- Center the label, blockquote, and author text
+### How It Works
 
-### 2. Epic Check-In Animation (GymPortalAttendance.tsx)
+1. **Member sets their fitness goal** (one-time, changeable anytime): Weight Loss, Muscle Gain, General Fitness, Strength, Endurance, or Flexibility
+2. **AI generates a workout plan** using the member's vitals data (weight, body fat %, muscle mass) + goal + available equipment context
+3. **Member sees today's workout** as a clean, swipeable exercise list with sets, reps, and rest times
+4. **Can regenerate** if they want variety or a different focus
 
-Transform the check-in experience into a "power-up" moment:
+### What Members See
 
-**Before check-in:**
-- Pulsing outer ring with a breathing glow effect
-- Rotating energy ring around the button (CSS keyframe)
+On the Progress tab, below the existing stats and charts, a new "Today's Workout" section appears:
 
-**On tap (during check-in):**
-- Button scales down then bursts outward
-- Spinner with energy effect
+- **Goal selector** -- a row of pill buttons (Weight Loss, Muscle Gain, General Fitness, etc.) saved to their profile
+- **Workout card** -- AI-generated workout with:
+  - Workout title (e.g., "Upper Body Power")
+  - Estimated duration
+  - List of exercises with sets x reps, rest periods
+  - Difficulty badge (Beginner / Intermediate / Advanced)
+- **"Generate New Workout" button** -- calls AI for a fresh plan
+- Workouts are cached per day so regenerating is optional, not required
 
-**After check-in (the dopamine hit):**
-- Expanding shockwave ring that fades out
-- The checkmark icon scales up with a bounce
-- Radial burst lines (8 energy rays) that shoot outward and fade
-- Stats below get a staggered fade-in
-- Green glow pulse behind the confirmed state
+### Database Changes
 
-**CSS additions to index.css:**
-- `@keyframes power-ring-spin` -- rotating dashed ring around the button
-- `@keyframes shockwave` -- expanding ring on successful check-in
-- `@keyframes burst-ray` -- energy lines shooting outward
-- `@keyframes bounce-in` -- bouncy scale for the checkmark
-- `@keyframes glow-pulse` -- breathing glow behind confirmed state
+**Add `fitness_goal` column to `gym_members` table:**
+- `fitness_goal` (text, nullable) -- stores the member's selected goal
 
-### 3. Stats strip cleanup (GymPortalAttendance.tsx)
+**New table: `gym_workout_plans`**
+- `id` (uuid, PK)
+- `member_id` (FK to gym_members)
+- `generated_at` (timestamp)
+- `goal` (text -- the goal used to generate)
+- `title` (text)
+- `duration_minutes` (integer)
+- `difficulty` (text)
+- `exercises` (jsonb -- array of exercise objects)
+- `vitals_snapshot` (jsonb -- weight/bf%/muscle at time of generation)
 
-- Remove the "rank" stat (3rd column) to match home tab
-- Switch to `grid-cols-2` for consistency
+RLS: Members can read their own plans. Insert via edge function (service role).
 
-### Files to Change
+### Edge Function: `generate-workout`
+
+- Receives: `member_id`, `goal`, latest vitals
+- Uses Lovable AI (gemini-3-flash-preview) with a fitness-focused system prompt
+- Uses tool calling to extract structured workout data (title, exercises array, duration, difficulty)
+- Saves the result to `gym_workout_plans`
+- Returns the plan to the client
+
+### Navigation
+
+No nav changes needed -- the workout section lives inside the existing Progress tab, below the body stats and charts. This keeps the tab as the "training hub."
+
+### File Changes
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Add power-up animation keyframes |
-| `src/components/portal/gym/GymMemberPortal.tsx` | Center the quote section |
-| `src/components/portal/gym/GymPortalAttendance.tsx` | Power-up check-in animation with shockwave, burst rays, bounce-in checkmark, and staggered stat reveals |
+| **Migration** | Add `fitness_goal` to `gym_members`, create `gym_workout_plans` table with RLS |
+| `supabase/functions/generate-workout/index.ts` | **New** -- edge function that calls Lovable AI to generate structured workout plans |
+| `src/components/portal/gym/GymPortalProgress.tsx` | Add goal selector pills and "Today's Workout" card section below existing stats |
 
 ### Technical Details
 
-The animations are pure CSS (no JS animation libraries needed). State-driven: a `justCheckedIn` boolean triggers the burst animations for 1.5 seconds after successful check-in, then settles into the calm confirmed state. The rotating energy ring uses a dashed SVG circle with CSS animation for the pre-check-in idle state.
+**AI prompt structure:**
+- System: "You are a certified personal trainer. Generate a workout session based on the member's goal and body stats."
+- User: Includes goal, weight, body fat %, muscle mass, gender, age (from date_of_birth)
+- Tool calling extracts structured JSON: `{ title, duration_minutes, difficulty, exercises: [{ name, sets, reps, rest_seconds, notes }] }`
+
+**Caching strategy:**
+- Query for existing plan from today before calling AI
+- Only call AI if no plan exists for today or member taps "Generate New"
+- Plans are lightweight (single JSONB column for exercises)
+
+**Goal selector:**
+- Saves to `gym_members.fitness_goal` via direct update
+- Persists across sessions so member doesn't re-select every time
+- Changing goal triggers a new plan generation
 
