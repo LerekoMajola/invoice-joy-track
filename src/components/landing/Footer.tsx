@@ -6,9 +6,9 @@ export function Footer() {
   return (
     <footer className="bg-primary text-primary-foreground py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1">
             <PlatformLogo className="h-20 w-20 rounded-full p-4 bg-white shadow-sm mb-4 object-contain" />
             <p className="text-primary-foreground/70 text-sm">
               The modular platform for businesses, workshops, schools, law firms, rental companies, and guest houses across Africa.
@@ -50,10 +50,12 @@ export function Footer() {
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Start Free Trial</Link></li>
               <li><a href="mailto:support@orionlabs.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
             </ul>
+          </div>
 
-            {/* Download section */}
-            <h4 className="font-display font-semibold mb-3 mt-8">Download</h4>
-            <AppDownloadButtons variant="hero" className="flex-col items-start" />
+          {/* Download */}
+          <div>
+            <h4 className="font-display font-semibold mb-4">Get the App</h4>
+            <AppDownloadButtons variant="hero" className="flex-col items-stretch" />
           </div>
         </div>
 
