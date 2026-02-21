@@ -6,26 +6,18 @@ import { TrendingUp, TrendingDown, Minus, Plus, Award, Flame, Target, Trophy, Sc
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 
 interface GymPortalProgressProps {
   member: any;
 }
 
 interface Vital {
-  id: string;
-  member_id: string;
-  user_id: string;
-  logged_at: string;
-  weight_kg: number | null;
-  height_cm: number | null;
-  body_fat_pct: number | null;
-  muscle_mass_kg: number | null;
-  waist_cm: number | null;
-  chest_cm: number | null;
-  arm_cm: number | null;
-  hip_cm: number | null;
-  thigh_cm: number | null;
-  notes: string | null;
+  id: string; member_id: string; user_id: string; logged_at: string;
+  weight_kg: number | null; height_cm: number | null; body_fat_pct: number | null;
+  muscle_mass_kg: number | null; waist_cm: number | null; chest_cm: number | null;
+  arm_cm: number | null; hip_cm: number | null; thigh_cm: number | null; notes: string | null;
 }
 
 function calcBMI(weight?: number | null, height?: number | null) {
@@ -41,10 +33,10 @@ function fatZoneColor(pct: number | null) {
 }
 
 function TrendIcon({ current, previous }: { current: number | null; previous: number | null }) {
-  if (current == null || previous == null) return <Minus className="h-3 w-3 text-white/20" />;
+  if (current == null || previous == null) return <Minus className="h-3 w-3" style={{ color: 'var(--portal-text-dimmed)' }} />;
   if (current > previous) return <TrendingUp className="h-3 w-3 text-[#00E5A0]" />;
   if (current < previous) return <TrendingDown className="h-3 w-3 text-[#FF4D6A]" />;
-  return <Minus className="h-3 w-3 text-white/30" />;
+  return <Minus className="h-3 w-3" style={{ color: 'var(--portal-text-dimmed)' }} />;
 }
 
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
@@ -66,21 +58,21 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function StatCard({ label, value, unit, icon: Icon, trend, color }: {
-  label: string; value: string | number | null; unit?: string; icon: any; trend?: React.ReactNode; color: string;
+function StatCard({ label, value, unit, icon: Icon, trend, color, pt }: {
+  label: string; value: string | number | null; unit?: string; icon: any; trend?: React.ReactNode; color: string; pt: (d: string, l: string) => string;
 }) {
   return (
-    <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-1">
+    <div className={cn("backdrop-blur-md border rounded-2xl p-4 flex flex-col gap-1", pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm'))}>
       <div className="flex items-center justify-between">
         <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
           <Icon className="h-3.5 w-3.5" style={{ color }} />
         </div>
         {trend}
       </div>
-      <p className="text-[10px] uppercase tracking-wider text-white/40 mt-2 font-medium">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider mt-2 font-medium" style={{ color: 'var(--portal-text-muted)' }}>{label}</p>
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-black text-white tabular-nums">{value ?? '—'}</span>
-        {unit && <span className="text-xs text-white/30">{unit}</span>}
+        <span className="text-2xl font-black tabular-nums" style={{ color: 'rgb(var(--portal-text))' }}>{value ?? '—'}</span>
+        {unit && <span className="text-xs" style={{ color: 'var(--portal-text-dimmed)' }}>{unit}</span>}
       </div>
     </div>
   );
@@ -94,37 +86,22 @@ function MilestoneBadge({ label, icon: Icon, unlocked, color }: {
       <div
         className="h-12 w-12 rounded-2xl flex items-center justify-center border"
         style={{
-          backgroundColor: unlocked ? `${color}15` : 'rgba(255,255,255,0.03)',
-          borderColor: unlocked ? `${color}40` : 'rgba(255,255,255,0.06)',
+          backgroundColor: unlocked ? `${color}15` : 'var(--portal-card-bg)',
+          borderColor: unlocked ? `${color}40` : 'var(--portal-card-border)',
           boxShadow: unlocked ? `0 0 20px ${color}25` : 'none',
         }}
       >
-        <Icon className="h-5 w-5" style={{ color: unlocked ? color : 'rgba(255,255,255,0.2)' }} />
+        <Icon className="h-5 w-5" style={{ color: unlocked ? color : 'var(--portal-text-dimmed)' }} />
       </div>
-      <span className="text-[9px] font-bold uppercase tracking-wider text-white/50 text-center leading-tight">{label}</span>
+      <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight" style={{ color: 'var(--portal-text-muted)' }}>{label}</span>
     </div>
   );
 }
 
 const FITNESS_GOALS = ['Weight Loss', 'Muscle Gain', 'General Fitness', 'Strength', 'Endurance', 'Flexibility'] as const;
 
-interface WorkoutExercise {
-  name: string;
-  sets: number;
-  reps: string;
-  rest_seconds: number;
-  notes?: string;
-}
-
-interface WorkoutPlan {
-  id: string;
-  title: string;
-  duration_minutes: number;
-  difficulty: string;
-  exercises: WorkoutExercise[];
-  generated_at: string;
-  goal: string;
-}
+interface WorkoutExercise { name: string; sets: number; reps: string; rest_seconds: number; notes?: string; }
+interface WorkoutPlan { id: string; title: string; duration_minutes: number; difficulty: string; exercises: WorkoutExercise[]; generated_at: string; goal: string; }
 
 export function GymPortalProgress({ member }: GymPortalProgressProps) {
   const queryClient = useQueryClient();
@@ -134,98 +111,61 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     waist_cm: '', chest_cm: '', arm_cm: '', hip_cm: '', thigh_cm: '', notes: '',
   });
   const [selectedGoal, setSelectedGoal] = useState<string>(member.fitness_goal || '');
+  const { pt } = usePortalTheme();
 
   const { data: vitals = [], isLoading } = useQuery({
     queryKey: ['gym-vitals', member.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('gym_member_vitals' as any)
-        .select('*')
-        .eq('member_id', member.id)
-        .order('logged_at', { ascending: false });
+      const { data, error } = await supabase.from('gym_member_vitals' as any).select('*').eq('member_id', member.id).order('logged_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Vital[];
     },
   });
 
-  // Today's workout plan query
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
   const { data: todayPlan, isLoading: planLoading } = useQuery({
     queryKey: ['gym-workout-plan', member.id, todayStart.toISOString().slice(0, 10)],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('gym_workout_plans' as any)
-        .select('*')
-        .eq('member_id', member.id)
-        .gte('generated_at', todayStart.toISOString())
-        .order('generated_at', { ascending: false })
-        .limit(1);
+      const { data, error } = await supabase.from('gym_workout_plans' as any).select('*').eq('member_id', member.id).gte('generated_at', todayStart.toISOString()).order('generated_at', { ascending: false }).limit(1);
       if (error) throw error;
       return (data?.[0] as unknown as WorkoutPlan) ?? null;
     },
     enabled: true,
   });
 
-  // Save goal to member profile
   const goalMutation = useMutation({
     mutationFn: async (goal: string) => {
-      const { error } = await supabase
-        .from('gym_members' as any)
-        .update({ fitness_goal: goal } as any)
-        .eq('id', member.id);
+      const { error } = await supabase.from('gym_members' as any).update({ fitness_goal: goal } as any).eq('id', member.id);
       if (error) throw error;
     },
   });
 
-  // Generate workout mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
       const latest = vitals[0] ?? null;
       const { data, error } = await supabase.functions.invoke('generate-workout', {
-        body: {
-          member_id: member.id,
-          goal: selectedGoal,
-          vitals: latest ? {
-            weight_kg: latest.weight_kg,
-            body_fat_pct: latest.body_fat_pct,
-            muscle_mass_kg: latest.muscle_mass_kg,
-          } : null,
-          gender: member.gender,
-          date_of_birth: member.date_of_birth,
-        },
+        body: { member_id: member.id, goal: selectedGoal, vitals: latest ? { weight_kg: latest.weight_kg, body_fat_pct: latest.body_fat_pct, muscle_mass_kg: latest.muscle_mass_kg } : null, gender: member.gender, date_of_birth: member.date_of_birth },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gym-workout-plan', member.id] });
-      toast.success('Workout generated! 🏋️');
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['gym-workout-plan', member.id] }); toast.success('Workout generated! 🏋️'); },
     onError: (err: any) => toast.error(err.message || 'Failed to generate workout'),
   });
 
   const handleGoalSelect = (goal: string) => {
     setSelectedGoal(goal);
     goalMutation.mutate(goal);
-    // If no plan for today, auto-generate
-    if (!todayPlan) {
-      setTimeout(() => generateMutation.mutate(), 300);
-    }
+    if (!todayPlan) { setTimeout(() => generateMutation.mutate(), 300); }
   };
 
   const insertMutation = useMutation({
     mutationFn: async (values: Record<string, any>) => {
       const ownerUserId = member.owner_user_id ?? member.user_id;
-      const { error } = await supabase
-        .from('gym_member_vitals' as any)
-        .insert({
-          member_id: member.id,
-          user_id: ownerUserId,
-          ...values,
-        } as any);
+      const { error } = await supabase.from('gym_member_vitals' as any).insert({ member_id: member.id, user_id: ownerUserId, ...values } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -243,10 +183,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
       if (k === 'notes') { if (v) values[k] = v; }
       else if (v !== '') values[k] = parseFloat(v);
     });
-    if (Object.keys(values).length === 0) {
-      toast.error('Enter at least one measurement');
-      return;
-    }
+    if (Object.keys(values).length === 0) { toast.error('Enter at least one measurement'); return; }
     insertMutation.mutate(values);
   };
 
@@ -264,22 +201,16 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     const totalLogs = vitals.length;
     let streak = 0;
     if (vitals.length > 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
       const dates = vitals.map(v => { const d = new Date(v.logged_at); d.setHours(0, 0, 0, 0); return d.getTime(); });
       const unique = [...new Set(dates)].sort((a, b) => b - a);
       for (let i = 0; i < unique.length; i++) {
-        const expected = new Date(today);
-        expected.setDate(expected.getDate() - i);
-        expected.setHours(0, 0, 0, 0);
-        if (unique[i] === expected.getTime()) streak++;
-        else break;
+        const expected = new Date(today); expected.setDate(expected.getDate() - i); expected.setHours(0, 0, 0, 0);
+        if (unique[i] === expected.getTime()) streak++; else break;
       }
     }
     let weightLost = 0;
-    if (oldest && latest && oldest.weight_kg && latest.weight_kg) {
-      weightLost = oldest.weight_kg - latest.weight_kg;
-    }
+    if (oldest && latest && oldest.weight_kg && latest.weight_kg) { weightLost = oldest.weight_kg - latest.weight_kg; }
     return { firstLog: hasFirst, streak7: streak >= 7, kg5Down: weightLost >= 5, consistency: totalLogs >= 30, streakCount: streak };
   }, [vitals, latest, oldest]);
 
@@ -289,11 +220,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
       if (curr == null || prev == null || prev === 0) return null;
       return ((curr - prev) / prev) * 100;
     };
-    return {
-      weight: pctChange(latest.weight_kg, oldest.weight_kg),
-      fat: pctChange(latest.body_fat_pct, oldest.body_fat_pct),
-      muscle: pctChange(latest.muscle_mass_kg, oldest.muscle_mass_kg),
-    };
+    return { weight: pctChange(latest.weight_kg, oldest.weight_kg), fat: pctChange(latest.body_fat_pct, oldest.body_fat_pct), muscle: pctChange(latest.muscle_mass_kg, oldest.muscle_mass_kg) };
   }, [oldest, latest]);
 
   const inputFields = [
@@ -309,24 +236,15 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
   ];
 
   useEffect(() => {
-    if (latest?.height_cm && !form.height_cm) {
-      setForm(f => ({ ...f, height_cm: String(latest.height_cm) }));
-    }
+    if (latest?.height_cm && !form.height_cm) { setForm(f => ({ ...f, height_cm: String(latest.height_cm) })); }
   }, [latest]);
 
-  // Auto-populate selected goal from existing plan
   useEffect(() => {
-    if (todayPlan && !selectedGoal) {
-      setSelectedGoal(todayPlan.goal);
-    }
+    if (todayPlan && !selectedGoal) { setSelectedGoal(todayPlan.goal); }
   }, [todayPlan]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 rounded-full border-2 border-[#00E5A0]/30 border-t-[#00E5A0] animate-spin" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><div className="h-8 w-8 rounded-full border-2 border-[#00E5A0]/30 border-t-[#00E5A0] animate-spin" /></div>;
   }
 
   const difficultyColor = (d: string) => {
@@ -335,45 +253,47 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
     return '#FF4D6A';
   };
 
+  const cardCls = pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm');
+
   return (
-    <div className="px-4 py-6 space-y-6 pb-8">
+    <div className={cn("px-4 py-6 space-y-6 pb-8", pt('', ''))}>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Progress</h1>
-        <p className="text-xs text-white/40 mt-0.5">
+        <h1 className="text-2xl font-black tracking-tight" style={{ color: 'rgb(var(--portal-text))' }}>Progress</h1>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--portal-text-muted)' }}>
           {vitals.length > 0 ? `${vitals.length} logs • ${milestones.streakCount} day streak 🔥` : 'Start tracking your transformation'}
         </p>
       </div>
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Weight" value={latest?.weight_kg?.toFixed(1) ?? null} unit="kg" icon={Scale} color="#00E5A0" trend={<TrendIcon current={latest?.weight_kg ?? null} previous={previous?.weight_kg ?? null} />} />
-        <StatCard label="Body Fat" value={latest?.body_fat_pct?.toFixed(1) ?? null} unit="%" icon={Heart} color={fatZoneColor(latest?.body_fat_pct ?? null)} trend={<TrendIcon current={latest?.body_fat_pct ?? null} previous={previous?.body_fat_pct ?? null} />} />
-        <StatCard label="BMI" value={bmi?.toFixed(1) ?? null} icon={Target} color="#00C4FF" trend={null} />
-        <StatCard label="Muscle" value={latest?.muscle_mass_kg?.toFixed(1) ?? null} unit="kg" icon={Dumbbell} color="#A855F7" trend={<TrendIcon current={latest?.muscle_mass_kg ?? null} previous={previous?.muscle_mass_kg ?? null} />} />
-        <StatCard label="Height" value={latest?.height_cm?.toFixed(0) ?? null} unit="cm" icon={Ruler} color="#FFB800" trend={null} />
-        <StatCard label="Waist" value={latest?.waist_cm?.toFixed(1) ?? null} unit="cm" icon={ArrowUpDown} color="#FF6B6B" trend={<TrendIcon current={latest?.waist_cm ?? null} previous={previous?.waist_cm ?? null} />} />
+        <StatCard label="Weight" value={latest?.weight_kg?.toFixed(1) ?? null} unit="kg" icon={Scale} color="#00E5A0" trend={<TrendIcon current={latest?.weight_kg ?? null} previous={previous?.weight_kg ?? null} />} pt={pt} />
+        <StatCard label="Body Fat" value={latest?.body_fat_pct?.toFixed(1) ?? null} unit="%" icon={Heart} color={fatZoneColor(latest?.body_fat_pct ?? null)} trend={<TrendIcon current={latest?.body_fat_pct ?? null} previous={previous?.body_fat_pct ?? null} />} pt={pt} />
+        <StatCard label="BMI" value={bmi?.toFixed(1) ?? null} icon={Target} color="#00C4FF" trend={null} pt={pt} />
+        <StatCard label="Muscle" value={latest?.muscle_mass_kg?.toFixed(1) ?? null} unit="kg" icon={Dumbbell} color="#A855F7" trend={<TrendIcon current={latest?.muscle_mass_kg ?? null} previous={previous?.muscle_mass_kg ?? null} />} pt={pt} />
+        <StatCard label="Height" value={latest?.height_cm?.toFixed(0) ?? null} unit="cm" icon={Ruler} color="#FFB800" trend={null} pt={pt} />
+        <StatCard label="Waist" value={latest?.waist_cm?.toFixed(1) ?? null} unit="cm" icon={ArrowUpDown} color="#FF6B6B" trend={<TrendIcon current={latest?.waist_cm ?? null} previous={previous?.waist_cm ?? null} />} pt={pt} />
       </div>
 
       {/* Sparkline Charts */}
       {(weightHistory.length >= 2 || fatHistory.length >= 2) && (
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">Trends</h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--portal-text-muted)' }}>Trends</h2>
           {weightHistory.length >= 2 && (
-            <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-medium">Weight</p>
+            <div className={cn("backdrop-blur-md border rounded-2xl p-4", cardCls)}>
+              <p className="text-[10px] uppercase tracking-wider mb-2 font-medium" style={{ color: 'var(--portal-text-muted)' }}>Weight</p>
               <MiniSparkline data={weightHistory} color="#00E5A0" />
             </div>
           )}
           {fatHistory.length >= 2 && (
-            <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-medium">Body Fat %</p>
+            <div className={cn("backdrop-blur-md border rounded-2xl p-4", cardCls)}>
+              <p className="text-[10px] uppercase tracking-wider mb-2 font-medium" style={{ color: 'var(--portal-text-muted)' }}>Body Fat %</p>
               <MiniSparkline data={fatHistory} color="#FFB800" />
             </div>
           )}
           {muscleHistory.length >= 2 && (
-            <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-medium">Muscle Mass</p>
+            <div className={cn("backdrop-blur-md border rounded-2xl p-4", cardCls)}>
+              <p className="text-[10px] uppercase tracking-wider mb-2 font-medium" style={{ color: 'var(--portal-text-muted)' }}>Muscle Mass</p>
               <MiniSparkline data={muscleHistory} color="#A855F7" />
             </div>
           )}
@@ -382,7 +302,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
 
       {/* Milestones */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">Milestones</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--portal-text-muted)' }}>Milestones</h2>
         <div className="grid grid-cols-4 gap-3">
           <MilestoneBadge label="First Log" icon={Award} unlocked={milestones.firstLog} color="#00E5A0" />
           <MilestoneBadge label="7-Day Streak" icon={Flame} unlocked={milestones.streak7} color="#FFB800" />
@@ -394,9 +314,9 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
       {/* Before / After */}
       {beforeAfter && (
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">Your Journey</h2>
-          <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-4 space-y-3">
-            <div className="flex justify-between text-[10px] uppercase tracking-wider text-white/30 font-medium">
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--portal-text-muted)' }}>Your Journey</h2>
+          <div className={cn("backdrop-blur-md border rounded-2xl p-4 space-y-3", cardCls)}>
+            <div className="flex justify-between text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--portal-text-dimmed)' }}>
               <span>First Log</span>
               <span>Latest</span>
             </div>
@@ -406,17 +326,17 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
               { label: 'Muscle', first: oldest?.muscle_mass_kg, last: latest?.muscle_mass_kg, pct: beforeAfter.muscle, unit: 'kg', flip: false },
             ].map(row => row.first != null && row.last != null && (
               <div key={row.label} className="flex items-center justify-between">
-                <span className="text-sm text-white/60">{row.first?.toFixed(1)}{row.unit}</span>
+                <span className="text-sm" style={{ color: 'var(--portal-text-secondary)' }}>{row.first?.toFixed(1)}{row.unit}</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] font-bold" style={{
-                    color: row.pct == null ? '#ffffff40'
+                    color: row.pct == null ? 'var(--portal-text-muted)'
                       : (row.flip ? (row.pct < 0 ? '#00E5A0' : '#FF4D6A') : (row.pct > 0 ? '#00E5A0' : '#FF4D6A'))
                   }}>
                     {row.pct != null ? `${row.pct > 0 ? '+' : ''}${row.pct.toFixed(1)}%` : '—'}
                   </span>
-                  <span className="text-[10px] text-white/30">{row.label}</span>
+                  <span className="text-[10px]" style={{ color: 'var(--portal-text-dimmed)' }}>{row.label}</span>
                 </div>
-                <span className="text-sm font-bold text-white">{row.last?.toFixed(1)}{row.unit}</span>
+                <span className="text-sm font-bold" style={{ color: 'rgb(var(--portal-text))' }}>{row.last?.toFixed(1)}{row.unit}</span>
               </div>
             ))}
           </div>
@@ -432,11 +352,11 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
         Log Today's Stats
       </Button>
 
-      {/* ===== AI WORKOUT SECTION ===== */}
+      {/* ===== WORKOUT SECTION ===== */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-[#FFB800]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">Today's Workout</h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--portal-text-muted)' }}>Today's Workout</h2>
         </div>
 
         {/* Goal Selector Pills */}
@@ -445,11 +365,12 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
             <button
               key={goal}
               onClick={() => handleGoalSelect(goal)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
                 selectedGoal === goal
-                  ? 'bg-[#00E5A0]/20 text-[#00E5A0] border border-[#00E5A0]/40 shadow-[0_0_12px_rgba(0,229,160,0.2)]'
-                  : 'bg-white/[0.04] text-white/40 border border-white/[0.06] hover:bg-white/[0.08]'
-              }`}
+                  ? 'bg-[#00E5A0]/20 text-[#00E5A0] border-[#00E5A0]/40 shadow-[0_0_12px_rgba(0,229,160,0.2)]'
+                  : cn('border', pt('bg-white/[0.04] text-white/40 border-white/[0.06] hover:bg-white/[0.08]', 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'))
+              )}
             >
               {goal}
             </button>
@@ -460,30 +381,24 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
         {selectedGoal && (
           <>
             {(planLoading || generateMutation.isPending) ? (
-              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-8 flex flex-col items-center gap-3">
+              <div className={cn("backdrop-blur-md border rounded-2xl p-8 flex flex-col items-center gap-3", cardCls)}>
                 <Loader2 className="h-8 w-8 text-[#00E5A0] animate-spin" />
-                <p className="text-sm text-white/40 font-medium">
+                <p className="text-sm font-medium" style={{ color: 'var(--portal-text-muted)' }}>
                   {generateMutation.isPending ? 'Generating your workout...' : 'Loading plan...'}
                 </p>
               </div>
             ) : todayPlan ? (
-              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl overflow-hidden">
+              <div className={cn("backdrop-blur-md border rounded-2xl overflow-hidden", cardCls)}>
                 {/* Plan Header */}
-                <div className="p-4 border-b border-white/[0.06]">
+                <div className="p-4" style={{ borderBottom: '1px solid var(--portal-divider)' }}>
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-black text-white">{todayPlan.title}</h3>
+                      <h3 className="text-lg font-black" style={{ color: 'rgb(var(--portal-text))' }}>{todayPlan.title}</h3>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="flex items-center gap-1 text-[10px] text-white/40">
+                        <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--portal-text-muted)' }}>
                           <Clock className="h-3 w-3" /> {todayPlan.duration_minutes} min
                         </span>
-                        <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: `${difficultyColor(todayPlan.difficulty)}15`,
-                            color: difficultyColor(todayPlan.difficulty),
-                          }}
-                        >
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${difficultyColor(todayPlan.difficulty)}15`, color: difficultyColor(todayPlan.difficulty) }}>
                           {todayPlan.difficulty}
                         </span>
                       </div>
@@ -492,15 +407,15 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
                 </div>
 
                 {/* Exercises List */}
-                <div className="divide-y divide-white/[0.04]">
+                <div>
                   {(todayPlan.exercises as unknown as WorkoutExercise[]).map((ex, i) => (
-                    <div key={i} className="px-4 py-3 flex items-center gap-3">
+                    <div key={i} className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: i < (todayPlan.exercises as unknown as WorkoutExercise[]).length - 1 ? '1px solid var(--portal-divider)' : 'none' }}>
                       <div className="h-8 w-8 rounded-xl bg-[#00E5A0]/10 flex items-center justify-center shrink-0">
                         <span className="text-xs font-black text-[#00E5A0]">{i + 1}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{ex.name}</p>
-                        <p className="text-[10px] text-white/40">
+                        <p className="text-sm font-bold truncate" style={{ color: 'rgb(var(--portal-text))' }}>{ex.name}</p>
+                        <p className="text-[10px]" style={{ color: 'var(--portal-text-muted)' }}>
                           {ex.sets} × {ex.reps} • {ex.rest_seconds}s rest
                           {ex.notes ? ` • ${ex.notes}` : ''}
                         </p>
@@ -510,12 +425,13 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
                 </div>
 
                 {/* Regenerate */}
-                <div className="p-3 border-t border-white/[0.06]">
+                <div className="p-3" style={{ borderTop: '1px solid var(--portal-divider)' }}>
                   <Button
                     variant="ghost"
                     onClick={() => generateMutation.mutate()}
                     disabled={generateMutation.isPending}
-                    className="w-full text-white/40 hover:text-white/60 text-xs font-medium"
+                    className="w-full text-xs font-medium"
+                    style={{ color: 'var(--portal-text-muted)' }}
                   >
                     <RotateCcw className="h-3 w-3 mr-1.5" />
                     Generate New Workout
@@ -523,9 +439,9 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
                 </div>
               </div>
             ) : (
-              <div className="bg-white/[0.04] backdrop-blur-md border border-white/[0.06] rounded-2xl p-6 flex flex-col items-center gap-3">
-                <Dumbbell className="h-8 w-8 text-white/20" />
-                <p className="text-sm text-white/40 text-center">No workout for today yet</p>
+              <div className={cn("backdrop-blur-md border rounded-2xl p-6 flex flex-col items-center gap-3", cardCls)}>
+                <Dumbbell className="h-8 w-8" style={{ color: 'var(--portal-text-dimmed)' }} />
+                <p className="text-sm text-center" style={{ color: 'var(--portal-text-muted)' }}>No workout for today yet</p>
                 <Button
                   onClick={() => generateMutation.mutate()}
                   disabled={generateMutation.isPending}
@@ -542,18 +458,18 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
 
       {/* Log Drawer */}
       <Drawer open={logOpen} onOpenChange={setLogOpen}>
-        <DrawerContent className="bg-[#12121a] border-white/[0.06] max-h-[85vh]">
+        <DrawerContent className={cn("max-h-[85vh]", pt('bg-[#12121a] border-white/[0.06]', 'bg-white border-gray-200'))}>
           <DrawerHeader>
-            <DrawerTitle className="text-white font-black text-lg">Log Your Stats</DrawerTitle>
+            <DrawerTitle className="font-black text-lg" style={{ color: 'rgb(var(--portal-text))' }}>Log Your Stats</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-2 space-y-3 overflow-y-auto max-h-[55vh]">
             {inputFields.map(field => (
               <div key={field.key} className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0">
-                  <field.icon className="h-4 w-4 text-white/40" />
+                <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", pt('bg-white/[0.04]', 'bg-gray-100'))}>
+                  <field.icon className="h-4 w-4" style={{ color: 'var(--portal-text-muted)' }} />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase tracking-wider text-white/40 font-medium">{field.label}</label>
+                  <label className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--portal-text-muted)' }}>{field.label}</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -562,21 +478,23 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
                       placeholder="—"
                       value={(form as any)[field.key]}
                       onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
-                      className="w-full bg-transparent border-b border-white/[0.08] text-white text-lg font-bold py-1 outline-none focus:border-[#00E5A0] transition-colors placeholder:text-white/10"
+                      className="w-full bg-transparent text-lg font-bold py-1 outline-none transition-colors"
+                      style={{ color: 'rgb(var(--portal-text))', borderBottom: '1px solid var(--portal-input-border)' }}
                     />
-                    <span className="text-xs text-white/30 shrink-0">{field.unit}</span>
+                    <span className="text-xs shrink-0" style={{ color: 'var(--portal-text-dimmed)' }}>{field.unit}</span>
                   </div>
                 </div>
               </div>
             ))}
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-white/40 font-medium">Notes</label>
+              <label className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'var(--portal-text-muted)' }}>Notes</label>
               <input
                 type="text"
                 placeholder="How are you feeling?"
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                className="w-full bg-transparent border-b border-white/[0.08] text-white text-sm py-2 outline-none focus:border-[#00E5A0] transition-colors placeholder:text-white/20"
+                className="w-full bg-transparent text-sm py-2 outline-none transition-colors"
+                style={{ color: 'rgb(var(--portal-text))', borderBottom: '1px solid var(--portal-input-border)' }}
               />
             </div>
           </div>
@@ -589,7 +507,7 @@ export function GymPortalProgress({ member }: GymPortalProgressProps) {
               {insertMutation.isPending ? 'Saving...' : 'Save Stats 💪'}
             </Button>
             <DrawerClose asChild>
-              <Button variant="ghost" className="text-white/40">Cancel</Button>
+              <Button variant="ghost" style={{ color: 'var(--portal-text-muted)' }}>Cancel</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>

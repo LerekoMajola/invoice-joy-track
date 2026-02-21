@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, Snowflake, Loader2, Upload, CheckCircle2, X, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePortalTheme } from '@/hooks/usePortalTheme';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 
 interface Subscription {
@@ -24,6 +25,7 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
   const [proofOpen, setProofOpen] = useState(false);
   const [proofSub, setProofSub] = useState<Subscription | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { pt } = usePortalTheme();
 
   const fetchSubscriptions = async () => {
     const { data } = await supabase.from('gym_member_subscriptions' as any).select('*, gym_membership_plans(name)').eq('member_id', memberId).order('created_at', { ascending: false });
@@ -65,8 +67,10 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
     return <div className="flex items-center justify-center h-48"><Loader2 className="h-5 w-5 animate-spin text-[#00E5A0]" /></div>;
   }
 
+  const cardCls = pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm');
+
   return (
-    <div className="p-4 space-y-4 text-white">
+    <div className={cn("p-4 space-y-4", pt('text-white', 'text-gray-900'))}>
 
       {active ? (() => {
         const start = parseISO(active.start_date);
@@ -77,20 +81,19 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
 
         return (
           <div className="space-y-3">
-            {/* Hero card — dark glass with mint accents */}
-            <div className="rounded-2xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] p-5 shadow-xl">
+            <div className={cn("rounded-2xl backdrop-blur-sm border p-5 shadow-xl", cardCls)}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+                    <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--portal-text-dimmed)' }}>
                       {active.status === 'frozen' ? 'Frozen' : 'Active Plan'}
                     </span>
                     {active.status === 'frozen' && <Snowflake className="h-3 w-3 text-blue-400" />}
                   </div>
-                  <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-white">
+                  <h2 className="text-2xl font-extrabold leading-tight tracking-tight" style={{ color: 'rgb(var(--portal-text))' }}>
                     {active.plan_name || 'Membership'}
                   </h2>
-                  <p className="text-xs text-white/30 mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--portal-text-dimmed)' }}>
                     {format(start, 'dd MMM yyyy')} — {format(end, 'dd MMM yyyy')}
                   </p>
                 </div>
@@ -101,17 +104,17 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
 
               <div className="space-y-2 mb-5">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-3xl font-black text-white">{remaining}</span>
-                  <span className="text-xs text-white/20">{elapsed}% elapsed</span>
+                  <span className="text-3xl font-black" style={{ color: 'rgb(var(--portal-text))' }}>{remaining}</span>
+                  <span className="text-xs" style={{ color: 'var(--portal-text-dimmed)' }}>{elapsed}% elapsed</span>
                 </div>
-                <p className="text-xs text-white/30 -mt-1">days remaining</p>
-                <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                <p className="text-xs -mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>days remaining</p>
+                <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'var(--portal-ring-track)' }}>
                   <div className="h-full rounded-full bg-gradient-to-r from-[#00E5A0] to-[#00C4FF] transition-all" style={{ width: `${Math.max(100 - elapsed, 2)}%` }} />
                 </div>
               </div>
 
-              <div className="border-t border-white/[0.06] pt-4">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/20 mb-0.5">Invested in your health</p>
+              <div className="pt-4" style={{ borderTop: '1px solid var(--portal-divider)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: 'var(--portal-text-dimmed)' }}>Invested in your health</p>
                 <p className={cn('text-2xl font-extrabold', active.payment_status === 'paid' ? 'text-[#00E5A0]' : 'text-red-400')}>
                   {active.amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
@@ -133,11 +136,13 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00E5A0]/10 border border-[#00E5A0]/20 text-[#00E5A0] text-xs font-semibold hover:bg-[#00E5A0]/15 transition-colors">
                     <Paperclip className="h-3 w-3" /> Receipt attached ✓
                   </button>
-                  <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="text-xs text-white/30 underline underline-offset-2 hover:text-white/60 transition-colors">Replace</button>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                    className="text-xs underline underline-offset-2 transition-colors"
+                    style={{ color: 'var(--portal-text-dimmed)' }}>Replace</button>
                 </>
               ) : (
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}
-                  className="rounded-full text-xs bg-white/[0.04] border-white/[0.08] text-white/60 hover:bg-white/[0.08]">
+                  className={cn("rounded-full text-xs", pt('bg-white/[0.04] border-white/[0.08] text-white/60 hover:bg-white/[0.08]', 'bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200'))}>
                   {uploading ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Uploading…</> : <><Upload className="h-3.5 w-3.5 mr-1.5" />Attach Receipt</>}
                 </Button>
               )}
@@ -146,25 +151,25 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
           </div>
         );
       })() : (
-        <div className="rounded-2xl border-2 border-dashed border-white/10 p-8 text-center">
-          <CreditCard className="h-8 w-8 mx-auto mb-2 text-white/15" />
-          <p className="text-sm font-medium text-white/40">No active membership</p>
-          <p className="text-xs mt-1 text-white/20">Contact the gym to renew your plan.</p>
+        <div className={cn("rounded-2xl border-2 border-dashed p-8 text-center", pt('border-white/10', 'border-gray-300'))}>
+          <CreditCard className="h-8 w-8 mx-auto mb-2" style={{ color: 'var(--portal-text-dimmed)' }} />
+          <p className="text-sm font-medium" style={{ color: 'var(--portal-text-muted)' }}>No active membership</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>Contact the gym to renew your plan.</p>
         </div>
       )}
 
       {/* Past plans */}
       {history.length > 0 && (
         <div className="pt-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/20 mb-2">Past Plans</p>
-          <div className="space-y-0 divide-y divide-white/[0.06]">
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--portal-text-dimmed)' }}>Past Plans</p>
+          <div className="space-y-0" style={{ borderColor: 'var(--portal-divider)' }}>
             {history.map(s => (
-              <div key={s.id} className="flex items-center justify-between py-2.5 gap-2">
+              <div key={s.id} className="flex items-center justify-between py-2.5 gap-2" style={{ borderBottom: '1px solid var(--portal-divider)' }}>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-white/70 truncate">{s.plan_name || 'Plan'}</span>
-                  <span className="text-xs text-white/30 ml-2">{format(parseISO(s.start_date), 'MMM yy')}–{format(parseISO(s.end_date), 'MMM yy')}</span>
+                  <span className="text-sm font-medium truncate" style={{ color: 'var(--portal-text-secondary)' }}>{s.plan_name || 'Plan'}</span>
+                  <span className="text-xs ml-2" style={{ color: 'var(--portal-text-dimmed)' }}>{format(parseISO(s.start_date), 'MMM yy')}–{format(parseISO(s.end_date), 'MMM yy')}</span>
                 </div>
-                <Badge className="capitalize text-xs shrink-0 bg-white/[0.06] text-white/40 border-white/[0.08]">{s.status}</Badge>
+                <Badge className={cn("capitalize text-xs shrink-0", pt('bg-white/[0.06] text-white/40 border-white/[0.08]', 'bg-gray-100 text-gray-500 border-gray-200'))}>{s.status}</Badge>
               </div>
             ))}
           </div>
@@ -173,7 +178,7 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
 
       {/* Proof Modal */}
       <Dialog open={proofOpen} onOpenChange={setProofOpen}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden bg-[#111118] border-white/[0.08]">
+        <DialogContent className={cn("max-w-sm p-0 overflow-hidden", pt('bg-[#111118] border-white/[0.08]', 'bg-white border-gray-200'))}>
           <div className="bg-gradient-to-r from-[#00E5A0] to-[#00C4FF] p-4 text-black">
             <div className="flex items-center justify-between">
               <div>
@@ -193,11 +198,11 @@ export function GymPortalMembership({ memberId, member }: GymPortalMembershipPro
             </div>
           </div>
           {proofSub?.pop_url ? (
-            <div className="p-3 bg-black/20"><p className="text-xs text-white/30 mb-2 font-medium">Payment Receipt Photo</p><img src={proofSub.pop_url} alt="Payment receipt" className="w-full rounded-lg border border-white/[0.08] object-contain max-h-64" /></div>
+            <div className={cn("p-3", pt('bg-black/20', 'bg-gray-50'))}><p className="text-xs mb-2 font-medium" style={{ color: 'var(--portal-text-dimmed)' }}>Payment Receipt Photo</p><img src={proofSub.pop_url} alt="Payment receipt" className={cn("w-full rounded-lg border object-contain max-h-64", pt('border-white/[0.08]', 'border-gray-200'))} /></div>
           ) : (
-            <div className="p-4 text-center"><CheckCircle2 className="h-10 w-10 text-[#00E5A0] mx-auto mb-2" /><p className="text-sm font-semibold text-white">Payment on Record</p><p className="text-xs text-white/30 mt-1">No receipt photo attached yet.</p></div>
+            <div className="p-4 text-center"><CheckCircle2 className="h-10 w-10 text-[#00E5A0] mx-auto mb-2" /><p className="text-sm font-semibold" style={{ color: 'rgb(var(--portal-text))' }}>Payment on Record</p><p className="text-xs mt-1" style={{ color: 'var(--portal-text-dimmed)' }}>No receipt photo attached yet.</p></div>
           )}
-          <div className="p-3 border-t border-white/[0.06]"><p className="text-xs text-center text-white/30">Present this screen to gym staff as proof of payment</p></div>
+          <div className="p-3" style={{ borderTop: '1px solid var(--portal-divider)' }}><p className="text-xs text-center" style={{ color: 'var(--portal-text-dimmed)' }}>Present this screen to gym staff as proof of payment</p></div>
         </DialogContent>
       </Dialog>
     </div>
