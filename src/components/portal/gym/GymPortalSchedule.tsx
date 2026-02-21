@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Clock, Users, CheckCircle2, XCircle, ChevronDown, ChevronUp, CalendarX } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 
 interface ClassSchedule {
@@ -25,7 +25,6 @@ interface Booking {
   schedule_id: string;
   status: string;
   booked_at: string;
-  // joined
   class_name?: string;
   day_of_week?: number;
   start_time?: string;
@@ -46,8 +45,6 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [selected, setSelected] = useState<ClassSchedule | null>(null);
-
-  // Booking state
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -82,7 +79,6 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
       });
   }, [ownerId]);
 
-  // Load booking counts per schedule (active bookings)
   const fetchBookingCounts = useCallback(async () => {
     const { data } = await (supabase as any)
       .from('gym_class_bookings')
@@ -99,7 +95,6 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
     }
   }, [ownerId]);
 
-  // Load member's own bookings
   const fetchMyBookings = useCallback(async () => {
     if (!memberId) return;
     setBookingLoading(true);
@@ -174,7 +169,7 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-[#00E5A0]" />
       </div>
     );
   }
@@ -187,20 +182,22 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
   return (
     <div className="space-y-4 pb-6">
       <div className="px-4 pt-4">
-        <h2 className="text-lg font-bold text-foreground">Class Schedule</h2>
+        <h2 className="text-lg font-bold text-white">Class Schedule</h2>
       </div>
 
-      {/* Day Selector */}
+      {/* Day Selector — mint pill strip */}
       <div className="flex gap-1.5 px-4 overflow-x-auto pb-1 scrollbar-hide">
         {DAYS.map((day, i) => (
           <button
             key={i}
             onClick={() => setSelectedDay(i)}
-            className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-xs font-medium transition-colors min-w-[44px]
-              ${selectedDay === i
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
+            className={cn(
+              'flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-xs font-medium transition-all min-w-[44px]',
+              selectedDay === i
+                ? 'text-gray-950 font-bold'
+                : 'bg-white/5 text-white/40 hover:bg-white/10'
+            )}
+            style={selectedDay === i ? { background: 'linear-gradient(135deg, #00E5A0, #00C4FF)' } : undefined}
           >
             {day}
           </button>
@@ -209,13 +206,11 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
 
       {/* Classes for Selected Day */}
       <div className="px-4 space-y-3">
-        <p className="text-sm text-muted-foreground font-medium">{FULL_DAYS[selectedDay]}</p>
+        <p className="text-sm text-white/40 font-medium">{FULL_DAYS[selectedDay]}</p>
         {dayClasses.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              <p className="text-sm">No classes scheduled for {FULL_DAYS[selectedDay]}.</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl border border-white/[0.06] p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <p className="text-sm text-white/40">No classes scheduled for {FULL_DAYS[selectedDay]}.</p>
+          </div>
         ) : (
           dayClasses.map(cls => {
             const booked = myBookedScheduleIds.has(cls.id);
@@ -223,46 +218,57 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
             const full = cls.capacity ? count >= cls.capacity : false;
 
             return (
-              <Card
+              <div
                 key={cls.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="rounded-2xl border border-white/[0.06] p-4 cursor-pointer hover:border-[#00E5A0]/20 transition-all"
+                style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(12px)' }}
                 onClick={() => setSelected(cls)}
               >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-foreground">{cls.class_name}</p>
-                    {booked && (
-                          <Badge variant="outline" className="text-xs text-primary border-primary/40 bg-primary/10">
-                            Booked ✓
-                          </Badge>
-                        )}
-                      </div>
-                      {cls.instructor_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">with {cls.instructor_name}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-white">{cls.class_name}</p>
+                      {booked && (
+                        <Badge className="text-xs text-[#00E5A0] border-[#00E5A0]/30 bg-[#00E5A0]/10">
+                          Booked ✓
+                        </Badge>
                       )}
                     </div>
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      {cls.start_time.slice(0, 5)}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    {cls.duration_minutes && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />{cls.duration_minutes} min
-                      </span>
-                    )}
-                    {cls.capacity && (
-                      <span className={`flex items-center gap-1 ${full ? 'text-destructive' : ''}`}>
-                        <Users className="h-3 w-3" />
-                        {count} / {cls.capacity} spots
-                        {full && <span className="font-medium">· Full</span>}
-                      </span>
+                    {cls.instructor_name && (
+                      <p className="text-xs text-white/30 mt-0.5">with {cls.instructor_name}</p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className="text-xs shrink-0 bg-white/5 text-white/50 border-white/10">
+                    {cls.start_time.slice(0, 5)}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-white/30">
+                  {cls.duration_minutes && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />{cls.duration_minutes} min
+                    </span>
+                  )}
+                  {cls.capacity && (
+                    <span className={cn('flex items-center gap-1', full && 'text-red-400')}>
+                      <Users className="h-3 w-3" />
+                      {count} / {cls.capacity} spots
+                      {full && <span className="font-medium">· Full</span>}
+                    </span>
+                  )}
+                </div>
+                {/* Capacity progress bar */}
+                {cls.capacity && (
+                  <div className="mt-2 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min((count / cls.capacity) * 100, 100)}%`,
+                        background: full ? '#ef4444' : 'linear-gradient(90deg, #00E5A0, #00C4FF)',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             );
           })
         )}
@@ -275,101 +281,102 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
             className="flex items-center justify-between w-full"
             onClick={() => setShowMyBookings(p => !p)}
           >
-            <p className="text-sm font-semibold text-foreground">My Bookings</p>
+            <p className="text-sm font-semibold text-white">My Bookings</p>
             {showMyBookings ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              <ChevronUp className="h-4 w-4 text-white/30" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-white/30" />
             )}
           </button>
 
           {showMyBookings && (
             bookingLoading ? (
               <div className="flex items-center justify-center h-16">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <Loader2 className="h-4 w-4 animate-spin text-[#00E5A0]" />
               </div>
             ) : myBookings.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center text-muted-foreground">
-                  <CalendarX className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">No upcoming bookings.</p>
-                  <p className="text-xs mt-1">Tap a class above to book your spot.</p>
-                </CardContent>
-              </Card>
+              <div className="rounded-2xl border border-white/[0.06] p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <CalendarX className="h-8 w-8 mx-auto mb-2 text-white/15" />
+                <p className="text-sm text-white/40">No upcoming bookings.</p>
+                <p className="text-xs mt-1 text-white/25">Tap a class above to book your spot.</p>
+              </div>
             ) : (
               myBookings.map(booking => (
-                <Card key={booking.id} className="border border-border">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{booking.class_name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {booking.day_of_week !== undefined ? FULL_DAYS[booking.day_of_week] : ''}
-                          {booking.start_time ? ` · ${booking.start_time.slice(0, 5)}` : ''}
-                        </p>
-                        {booking.instructor_name && (
-                          <p className="text-xs text-muted-foreground">with {booking.instructor_name}</p>
-                        )}
-                      </div>
-                      <button
-                        className="text-xs text-destructive flex items-center gap-1 shrink-0 mt-0.5"
-                        onClick={() => handleCancel(booking.id, booking.class_name)}
-                        disabled={actionLoading === booking.id}
-                      >
-                        {actionLoading === booking.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <XCircle className="h-3 w-3" />
-                        )}
-                        Cancel
-                      </button>
+                <div
+                  key={booking.id}
+                  className="rounded-2xl border border-[#00E5A0]/10 p-4"
+                  style={{ background: 'rgba(0,229,160,0.03)' }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-white text-sm">{booking.class_name}</p>
+                      <p className="text-xs text-white/30 mt-0.5">
+                        {booking.day_of_week !== undefined ? FULL_DAYS[booking.day_of_week] : ''}
+                        {booking.start_time ? ` · ${booking.start_time.slice(0, 5)}` : ''}
+                      </p>
+                      {booking.instructor_name && (
+                        <p className="text-xs text-white/25">with {booking.instructor_name}</p>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    <button
+                      className="text-xs text-red-400 flex items-center gap-1 shrink-0 mt-0.5"
+                      onClick={() => handleCancel(booking.id, booking.class_name)}
+                      disabled={actionLoading === booking.id}
+                    >
+                      {actionLoading === booking.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <XCircle className="h-3 w-3" />
+                      )}
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ))
             )
           )}
         </div>
       )}
 
-      {/* Class Detail Bottom Sheet */}
+      {/* Class Detail Bottom Sheet — dark glass */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-end"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end"
           onClick={() => setSelected(null)}
         >
           <div
-            className="bg-card rounded-t-2xl w-full max-w-md mx-auto p-5 space-y-3"
+            className="rounded-t-2xl w-full max-w-md mx-auto p-5 space-y-3 border-t border-white/[0.06]"
+            style={{ background: 'linear-gradient(180deg, #1a1a2e 0%, #111827 100%)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-2" />
+            <div className="w-10 h-1 bg-white/10 rounded-full mx-auto mb-2" />
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-bold text-foreground">{selected.class_name}</h3>
-              <Badge variant="secondary">{selected.start_time.slice(0, 5)} — {selected.end_time.slice(0, 5)}</Badge>
+              <h3 className="text-lg font-bold text-white">{selected.class_name}</h3>
+              <Badge className="bg-white/5 text-white/50 border-white/10">{selected.start_time.slice(0, 5)} — {selected.end_time.slice(0, 5)}</Badge>
             </div>
-            {selected.instructor_name && <p className="text-sm text-muted-foreground">Instructor: {selected.instructor_name}</p>}
-            {selected.location && <p className="text-sm text-muted-foreground">Location: {selected.location}</p>}
-            {selected.duration_minutes && <p className="text-sm text-muted-foreground">Duration: {selected.duration_minutes} minutes</p>}
+            {selected.instructor_name && <p className="text-sm text-white/40">Instructor: {selected.instructor_name}</p>}
+            {selected.location && <p className="text-sm text-white/40">Location: {selected.location}</p>}
+            {selected.duration_minutes && <p className="text-sm text-white/40">Duration: {selected.duration_minutes} minutes</p>}
             {selected.capacity && (
-              <p className={`text-sm ${selectedFull ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+              <p className={cn('text-sm', selectedFull ? 'text-red-400 font-medium' : 'text-white/40')}>
                 Spots: {selectedCount} / {selected.capacity} filled
                 {selectedFull && ' — Class Full'}
               </p>
             )}
-            {selected.description && <p className="text-sm text-foreground">{selected.description}</p>}
+            {selected.description && <p className="text-sm text-white/70">{selected.description}</p>}
 
             {/* Booking action */}
             {memberId && (
               <div className="pt-2">
                 {selectedBooked ? (
                   <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-primary">
+                    <div className="flex items-center gap-2 text-[#00E5A0]">
                       <CheckCircle2 className="h-4 w-4" />
                       <span className="text-sm font-medium">You're booked into this class!</span>
                     </div>
                     <Button
                       variant="outline"
-                      className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                      className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 bg-transparent"
                       onClick={() => selectedBooking && handleCancel(selectedBooking.id, selected.class_name)}
                       disabled={actionLoading !== null}
                     >
@@ -380,12 +387,13 @@ export function GymPortalSchedule({ ownerId, member }: GymPortalScheduleProps) {
                     </Button>
                   </div>
                 ) : selectedFull ? (
-                  <Button className="w-full" disabled>
+                  <Button className="w-full bg-white/10 text-white/40" disabled>
                     Class Full
                   </Button>
                 ) : (
                   <Button
-                    className="w-full"
+                    className="w-full text-gray-950 font-bold"
+                    style={{ background: 'linear-gradient(135deg, #00E5A0, #00C4FF)' }}
                     onClick={() => handleBook(selected)}
                     disabled={actionLoading !== null}
                   >

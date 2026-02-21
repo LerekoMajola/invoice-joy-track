@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -38,6 +37,7 @@ export function PortalMessaging({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isGym = portalType === 'gym';
 
   useEffect(() => {
     fetchMessages();
@@ -109,7 +109,7 @@ export function PortalMessaging({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className={cn("h-5 w-5 animate-spin", isGym ? "text-[#00E5A0]" : "text-muted-foreground")} />
       </div>
     );
   }
@@ -117,10 +117,15 @@ export function PortalMessaging({
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border bg-card">
+      <div className={cn(
+        "px-4 py-3 border-b",
+        isGym ? "border-white/[0.06] bg-gray-900/50" : "border-border bg-card"
+      )}>
         <div className="flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-primary" />
-          <span className="font-medium text-sm text-foreground">Messages with {businessName}</span>
+          <MessageCircle className={cn("h-4 w-4", isGym ? "text-[#00E5A0]" : "text-primary")} />
+          <span className={cn("font-medium text-sm", isGym ? "text-white" : "text-foreground")}>
+            Messages with {businessName}
+          </span>
         </div>
       </div>
 
@@ -128,9 +133,9 @@ export function PortalMessaging({
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="text-center py-12">
-            <MessageCircle className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No messages yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Send a message to get started.</p>
+            <MessageCircle className={cn("h-10 w-10 mx-auto mb-3", isGym ? "text-white/10" : "text-muted-foreground/30")} />
+            <p className={cn("text-sm", isGym ? "text-white/40" : "text-muted-foreground")}>No messages yet.</p>
+            <p className={cn("text-xs mt-1", isGym ? "text-white/25" : "text-muted-foreground")}>Send a message to get started.</p>
           </div>
         ) : (
           messages.map(msg => {
@@ -139,14 +144,26 @@ export function PortalMessaging({
               <div key={msg.id} className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}>
                 <div className={cn(
                   'max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm',
+                  isGym
+                    ? isOwn
+                      ? 'rounded-br-sm text-gray-950 font-medium'
+                      : 'rounded-bl-sm text-white border border-white/[0.06]'
+                    : isOwn
+                      ? 'bg-primary text-primary-foreground rounded-br-sm'
+                      : 'bg-muted text-foreground rounded-bl-sm'
+                )}
+                style={isGym ? (
                   isOwn
-                    ? 'bg-primary text-primary-foreground rounded-br-sm'
-                    : 'bg-muted text-foreground rounded-bl-sm'
-                )}>
+                    ? { background: 'linear-gradient(135deg, #00E5A0, #00C4FF)' }
+                    : { background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }
+                ) : undefined}
+                >
                   <p className="leading-relaxed">{msg.message}</p>
                   <p className={cn(
                     'text-[10px] mt-1 text-right',
-                    isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                    isGym
+                      ? isOwn ? 'text-gray-950/50' : 'text-white/30'
+                      : isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
                   )}>
                     {format(new Date(msg.created_at), 'h:mm a')}
                   </p>
@@ -159,24 +176,35 @@ export function PortalMessaging({
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-border bg-card">
+      <div className={cn(
+        "px-4 py-3 border-t",
+        isGym ? "border-white/[0.06] bg-gray-900/50" : "border-border bg-card"
+      )}>
         <div className="flex gap-2">
           <Input
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 h-10"
+            className={cn(
+              "flex-1 h-10",
+              isGym && "bg-white/5 border-white/10 text-white placeholder:text-white/25 focus-visible:ring-[#00E5A0]/30"
+            )}
             disabled={sending}
           />
-          <Button
-            size="icon"
-            className="h-10 w-10 shrink-0"
+          <button
+            className={cn(
+              "h-10 w-10 shrink-0 rounded-lg flex items-center justify-center transition-all",
+              isGym
+                ? "text-gray-950 disabled:opacity-40"
+                : "bg-primary text-primary-foreground disabled:opacity-50"
+            )}
+            style={isGym ? { background: (!text.trim() || sending) ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #00E5A0, #00C4FF)' } : undefined}
             onClick={sendMessage}
             disabled={!text.trim() || sending}
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
