@@ -213,7 +213,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       </div>
 
       {/* ── QUOTE ─────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col justify-center px-5 py-5 min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-5 min-h-0 text-center">
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/20 mb-3">
           Today's Motivation
         </p>
