@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, startOfDay, startOfMonth, subDays, differenceInDays, getDayOfYear } from 'date-fns';
-import { Loader2, Zap, Flame, Trophy } from 'lucide-react';
+import { Loader2, Zap, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GymPortalMember } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
@@ -51,7 +51,6 @@ function getGreeting(): { word: string; emoji: string } {
 interface HomeData {
   todayRecord: { id: string; check_in: string } | null;
   monthlyCount: number;
-  allTimeCount: number;
   streak: number;
   gymName: string;
   planName: string | null;
@@ -95,10 +94,9 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       const monthStart = startOfMonth(new Date()).toISOString();
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
 
-      const [todayRes, monthRes, allTimeRes, historyRes, gymRes, subRes] = await Promise.all([
+      const [todayRes, monthRes, historyRes, gymRes, subRes] = await Promise.all([
         supabase.from('gym_attendance').select('id, check_in').eq('member_id', member.id).gte('check_in', todayStart).maybeSingle(),
         supabase.from('gym_attendance').select('id', { count: 'exact', head: true }).eq('member_id', member.id).gte('check_in', monthStart),
-        supabase.from('gym_attendance').select('id', { count: 'exact', head: true }).eq('member_id', member.id),
         supabase.from('gym_attendance').select('check_in').eq('member_id', member.id).gte('check_in', thirtyDaysAgo).order('check_in', { ascending: false }),
         supabase.from('company_profiles').select('company_name').eq('user_id', ownerUserId).maybeSingle(),
         supabase.from('gym_member_subscriptions').select('plan_name, end_date').eq('member_id', member.id).in('status', ['active', 'frozen']).maybeSingle(),
@@ -114,7 +112,6 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       setData({
         todayRecord: todayRes.data as { id: string; check_in: string } | null,
         monthlyCount: monthRes.count ?? 0,
-        allTimeCount: allTimeRes.count ?? 0,
         streak,
         gymName: gymRes.data?.company_name ?? 'Your Gym',
         planName: (subRes.data as any)?.plan_name ?? null,
@@ -185,7 +182,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       </div>
 
       {/* ── STATS CARDS — frosted glass ───────────────────────────── */}
-      <div className="flex-shrink-0 grid grid-cols-3 gap-3 px-4 py-4">
+      <div className="flex-shrink-0 grid grid-cols-2 gap-3 px-4 py-4">
         {[
           {
             color: '#00E5A0',
@@ -201,24 +198,16 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
             max: 30,
             label: 'day\nstreak',
           },
-          {
-            color: '#FFD700',
-            icon: Trophy,
-            value: data?.allTimeCount ?? 0,
-            max: Math.max(data?.allTimeCount ?? 1, 100),
-            label: 'all\ntime',
-          },
         ].map(({ color, icon: Icon, value, max, label }) => (
-          <div key={label} className="relative bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] shadow-lg flex flex-col items-center pt-4 pb-3.5 px-2 gap-1">
-            {/* Ring + value overlay */}
-            <div className="relative h-[72px] w-[72px] flex items-center justify-center">
-              <ProgressRing value={value} max={max} color={color} size={72} />
+          <div key={label} className="relative bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/[0.06] shadow-lg flex flex-col items-center pt-5 pb-4 px-2 gap-1.5">
+            <div className="relative h-[96px] w-[96px] flex items-center justify-center">
+              <ProgressRing value={value} max={max} color={color} size={96} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Icon className="h-3.5 w-3.5 mb-0.5" style={{ color }} strokeWidth={0} fill={color} />
-                <p className="text-lg font-black text-white leading-none">{value}</p>
+                <Icon className="h-4 w-4 mb-0.5" style={{ color }} strokeWidth={0} fill={color} />
+                <p className="text-2xl font-black text-white leading-none">{value}</p>
               </div>
             </div>
-            <p className="text-[10px] font-medium text-white/40 text-center leading-tight whitespace-pre-line">{label}</p>
+            <p className="text-[11px] font-medium text-white/40 text-center leading-tight whitespace-pre-line">{label}</p>
           </div>
         ))}
       </div>

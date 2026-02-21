@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
@@ -17,6 +17,16 @@ import { Loader2 } from 'lucide-react';
 export default function Portal() {
   const { user, portalType, gymMember, schoolStudent, loading } = usePortalSession();
   const [activeTab, setActiveTab] = useState<PortalTab>('home');
+  const [gymName, setGymName] = useState<string | undefined>();
+
+  // Fetch gym name for the header
+  useEffect(() => {
+    if (portalType === 'gym' && gymMember) {
+      const ownerId = gymMember.owner_user_id ?? gymMember.user_id;
+      supabase.from('company_profiles').select('company_name').eq('user_id', ownerId).maybeSingle()
+        .then(({ data }) => { if (data) setGymName(data.company_name); });
+    }
+  }, [portalType, gymMember]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -68,7 +78,7 @@ export default function Portal() {
     };
 
     return (
-      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="gym" onSignOut={handleSignOut}>
+      <PortalLayout activeTab={activeTab} onTabChange={setActiveTab} portalType="gym" onSignOut={handleSignOut} gymName={gymName}>
         {renderGymTab()}
       </PortalLayout>
     );
