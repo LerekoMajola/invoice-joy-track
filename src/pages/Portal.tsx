@@ -11,7 +11,7 @@ import { GymPortalProgress } from '@/components/portal/gym/GymPortalProgress';
 import { SchoolParentPortal } from '@/components/portal/school/SchoolParentPortal';
 import { SchoolPortalFees } from '@/components/portal/school/SchoolPortalFees';
 import { SchoolPortalTimetable } from '@/components/portal/school/SchoolPortalTimetable';
-import { PortalMessaging } from '@/components/portal/shared/PortalMessaging';
+
 import { Loader2 } from 'lucide-react';
 
 export default function Portal() {
@@ -58,20 +58,8 @@ export default function Portal() {
           return <GymPortalMembership memberId={gymMember.id} member={gymMember} />;
         case 'classes':
           return <GymPortalSchedule ownerId={ownerUserId} member={gymMember} />;
-        case 'progress':
-          return <GymPortalProgress member={gymMember} />;
         case 'check-in':
           return <GymPortalAttendance member={gymMember} user={user} />;
-        case 'messages':
-          return (
-            <PortalMessaging
-              user={user}
-              referenceId={gymMember.id}
-              recipientOwnerId={ownerUserId}
-              portalType="gym"
-              senderType="member"
-            />
-          );
         default:
           return <GymMemberPortal member={gymMember} user={user} />;
       }
@@ -95,16 +83,6 @@ export default function Portal() {
           return <SchoolPortalFees studentId={schoolStudent.id} ownerId={ownerUserId} />;
         case 'timetable':
           return <SchoolPortalTimetable classId={schoolStudent.class_id} ownerId={ownerUserId} />;
-        case 'messages':
-          return (
-            <PortalMessaging
-              user={user}
-              referenceId={schoolStudent.id}
-              recipientOwnerId={ownerUserId}
-              portalType="school"
-              senderType="guardian"
-            />
-          );
         default:
           return <SchoolParentPortal student={schoolStudent} user={user} />;
       }

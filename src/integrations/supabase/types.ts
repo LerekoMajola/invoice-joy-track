@@ -3672,6 +3672,47 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          member_id: string | null
+          message: string
+          portal_user_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          member_id?: string | null
+          message: string
+          portal_user_id: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          member_id?: string | null
+          message?: string
+          portal_user_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_notifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gym_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
