@@ -1,43 +1,52 @@
 
 
-## Portal UI Cleanup & Gym Name in Header
+## Center Quote & Power-Up Check-In Animation
 
-### Changes
+### 1. Center the "Today's Motivation" section (GymMemberPortal.tsx)
 
-**1. Home tab -- remove "All Time" stat, make the two key stats bigger**
+- Add `text-center items-center` to the quote container
+- Center the label, blockquote, and author text
 
-In `GymMemberPortal.tsx`:
-- Remove the third stat card (All Time / Trophy)
-- Switch from `grid-cols-3` to `grid-cols-2`
-- Make the two remaining cards (Monthly Visits + Day Streak) larger with bigger progress rings (size 96 instead of 72) and bolder numbers
-- Remove the `allTimeCount` query and data field since it's no longer needed
-- Remove the `Trophy` import
+### 2. Epic Check-In Animation (GymPortalAttendance.tsx)
 
-**2. Check-in tab -- remove shareable card and share button**
+Transform the check-in experience into a "power-up" moment:
 
-In `GymPortalAttendance.tsx`:
-- Remove the entire "Shareable Workout Card" section (the gradient card with screenshot prompt, lines 149-198)
-- Remove the "Check in first" placeholder card for the share section (lines 201-207)
-- Remove the `Share2`, `Camera` imports and the `cardRef` ref
-- Remove the `handleShare` function and `gymInfo` state/fetch
-- Keep the check-in button, confirmation, and the 3-stat strip (visits, streak, rank)
+**Before check-in:**
+- Pulsing outer ring with a breathing glow effect
+- Rotating energy ring around the button (CSS keyframe)
 
-**3. Add gym name to the portal header**
+**On tap (during check-in):**
+- Button scales down then bursts outward
+- Spinner with energy effect
 
-In `PortalLayout.tsx`:
-- Accept a new optional `gymName` prop
-- Display it in the header next to "Member Portal" (or replace "Member Portal" with the gym name)
+**After check-in (the dopamine hit):**
+- Expanding shockwave ring that fades out
+- The checkmark icon scales up with a bounce
+- Radial burst lines (8 energy rays) that shoot outward and fade
+- Stats below get a staggered fade-in
+- Green glow pulse behind the confirmed state
 
-In `Portal.tsx`:
-- Fetch the gym's company name using the `owner_user_id` from `company_profiles`
-- Pass it down to `PortalLayout` as the `gymName` prop
+**CSS additions to index.css:**
+- `@keyframes power-ring-spin` -- rotating dashed ring around the button
+- `@keyframes shockwave` -- expanding ring on successful check-in
+- `@keyframes burst-ray` -- energy lines shooting outward
+- `@keyframes bounce-in` -- bouncy scale for the checkmark
+- `@keyframes glow-pulse` -- breathing glow behind confirmed state
+
+### 3. Stats strip cleanup (GymPortalAttendance.tsx)
+
+- Remove the "rank" stat (3rd column) to match home tab
+- Switch to `grid-cols-2` for consistency
 
 ### Files to Change
 
 | File | Change |
 |------|--------|
-| `src/components/portal/gym/GymMemberPortal.tsx` | Remove all-time stat, switch to 2-col grid, enlarge remaining stat cards |
-| `src/components/portal/gym/GymPortalAttendance.tsx` | Remove shareable workout card, share button, screenshot placeholder |
-| `src/components/portal/PortalLayout.tsx` | Add optional `gymName` prop, display gym name in the header |
-| `src/pages/Portal.tsx` | Fetch gym name from `company_profiles` and pass to `PortalLayout` |
+| `src/index.css` | Add power-up animation keyframes |
+| `src/components/portal/gym/GymMemberPortal.tsx` | Center the quote section |
+| `src/components/portal/gym/GymPortalAttendance.tsx` | Power-up check-in animation with shockwave, burst rays, bounce-in checkmark, and staggered stat reveals |
+
+### Technical Details
+
+The animations are pure CSS (no JS animation libraries needed). State-driven: a `justCheckedIn` boolean triggers the burst animations for 1.5 seconds after successful check-in, then settles into the calm confirmed state. The rotating energy ring uses a dashed SVG circle with CSS animation for the pre-check-in idle state.
 
