@@ -49,7 +49,7 @@ function getGreeting(): { word: string; emoji: string } {
 }
 
 interface HomeData {
-  todayRecord: { id: string; check_in: string } | null;
+  latestCheckIn: { id: string; check_in: string } | null;
   monthlyCount: number;
   streak: number;
   gymName: string;
@@ -95,7 +95,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
 
       const [todayRes, monthRes, historyRes, gymRes, subRes] = await Promise.all([
-        supabase.from('gym_attendance').select('id, check_in').eq('member_id', member.id).gte('check_in', todayStart).maybeSingle(),
+        supabase.from('gym_attendance').select('id, check_in').eq('member_id', member.id).gte('check_in', todayStart).order('check_in', { ascending: false }).limit(1),
         supabase.from('gym_attendance').select('id', { count: 'exact', head: true }).eq('member_id', member.id).gte('check_in', monthStart),
         supabase.from('gym_attendance').select('check_in').eq('member_id', member.id).gte('check_in', thirtyDaysAgo).order('check_in', { ascending: false }),
         supabase.from('company_profiles').select('company_name').eq('user_id', ownerUserId).maybeSingle(),
@@ -109,8 +109,9 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         while (uniqueDays.has(format(d, 'yyyy-MM-dd'))) { streak++; d = subDays(d, 1); }
       }
 
+      const latestCheckIn = todayRes.data && todayRes.data.length > 0 ? todayRes.data[0] as { id: string; check_in: string } : null;
       setData({
-        todayRecord: todayRes.data as { id: string; check_in: string } | null,
+        latestCheckIn,
         monthlyCount: monthRes.count ?? 0,
         streak,
         gymName: gymRes.data?.company_name ?? 'Your Gym',
@@ -133,7 +134,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
   const today = new Date();
   const greeting = getGreeting();
   const quote = QUOTES[getDayOfYear(today) % QUOTES.length];
-  const checkInTime = data?.todayRecord ? format(parseISO(data.todayRecord.check_in), 'h:mm a') : null;
+  const checkInTime = data?.latestCheckIn ? format(parseISO(data.latestCheckIn.check_in), 'h:mm a') : null;
   const daysLeft = data?.planEnd ? Math.max(differenceInDays(parseISO(data.planEnd), today), 0) : null;
 
   return (
@@ -168,7 +169,7 @@ export function GymMemberPortal({ member }: GymMemberPortalProps) {
         </h1>
 
         {/* Today status pill */}
-        {data?.todayRecord ? (
+        {data?.latestCheckIn ? (
           <div className="relative flex items-center gap-2 bg-black/20 backdrop-blur-sm border border-black/10 rounded-xl px-3.5 py-2.5 w-fit">
             <span className="text-sm leading-none">✅</span>
             <span className="text-xs font-semibold text-black/80">Checked in at {checkInTime}</span>
