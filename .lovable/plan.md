@@ -1,60 +1,46 @@
 
 
-## Direct App Download (APK Hosting)
+## Unified Login Page
 
-### What's Being Built
+### What Changes
 
-Since the app isn't on the Play Store or App Store yet, we'll host the Android APK file directly on your platform and let users download and install it from the website. For iOS, since Apple doesn't allow sideloading APKs, we'll show instructions to install the PWA (Add to Home Screen via Safari).
+Right now there are two login screens:
+- `/auth` -- for gym owners / business users
+- `/portal` -- has its own separate login form (PortalLogin component)
 
-### How It Works
+The goal: **everyone logs in at `/auth`**. After login, the system automatically sends them to the right place based on their account type. No user action needed -- it just works.
 
-**For Admin (you):**
-- A new **"App Distribution"** card in Admin Settings where you upload the latest APK file
-- The APK gets stored in your backend file storage
-- You can replace it anytime with a newer version and add a version label (e.g. "v1.0.2")
+### How Users Experience It
 
-**For Visitors:**
-- A **"Download the App"** section on the Landing page (below the hero CTA) and About page
-- Android users see a **"Download for Android"** button that downloads the APK directly
-- iPhone users see an **"Install on iPhone"** button that opens a popover with step-by-step Safari PWA instructions
-- The Footer gets a "Download" column with the same links
+1. A gym owner opens the app and lands on `/auth` -- logs in -- goes to the business dashboard
+2. A gym member opens the app and lands on `/auth` -- logs in with their portal credentials -- goes to the member portal
+3. No confusion, no separate URLs to remember
 
-### Reusable Component
+### Technical Changes
 
-**`src/components/shared/AppDownloadButtons.tsx`** -- renders both buttons with two variants:
-- `variant="hero"` -- white/light buttons for dark gradient backgrounds
-- `variant="default"` -- standard themed buttons for light backgrounds
+**File: `src/pages/Portal.tsx`**
+- When no user is authenticated, instead of rendering the `<PortalLogin />` component, redirect to `/auth`
+- This means visiting `/portal` without being logged in takes you to the unified login page
+- Once logged in, portal users still land on `/portal` as before (the Auth.tsx redirect already handles this)
 
-The component fetches the APK URL from a `platform_settings` row (`android_apk_url`) and shows/hides the Android button based on whether an APK has been uploaded.
+**File: `src/pages/Auth.tsx`**
+- No changes needed -- the post-login redirect on lines 50-59 already checks `user.user_metadata?.portal_type` and sends portal users to `/portal`
 
-### File Changes
+**File: `src/components/portal/PortalLogin.tsx`**
+- No deletion needed, but it will no longer be rendered (can be cleaned up later)
 
-**New files:**
-- `src/components/shared/AppDownloadButtons.tsx` -- reusable download buttons
-- `src/components/admin/AppDistributionSettings.tsx` -- admin APK upload card
+### What Stays the Same
 
-**Modified files:**
-- `src/components/landing/Hero.tsx` -- add download buttons below CTA row
-- `src/pages/About.tsx` -- add "Get the App" section before Footer
-- `src/components/landing/Footer.tsx` -- add "Download" column
-- `src/components/admin/AdminSettingsTab.tsx` -- include the AppDistributionSettings card
+- The `create-portal-account` Edge Function still provisions portal accounts with `portal_type` in metadata
+- `ProtectedRoute.tsx` still blocks portal users from accessing business routes
+- `usePortalSession.tsx` still resolves the correct member/student record after login
+- The member portal UI at `/portal` is unchanged for authenticated users
 
-### Technical Details
+### Summary of Edits
 
-**Storage:** The APK file will be uploaded to a `app-releases` storage bucket (public, max 100MB). The admin uploads the file, and the public URL is saved to `platform_settings` with key `android_apk_url`. A second key `android_apk_version` stores the version label.
+| File | Change |
+|------|--------|
+| `src/pages/Portal.tsx` | Replace `<PortalLogin />` with `<Navigate to="/auth" />` |
 
-**Database:** No new tables -- reuses the existing `platform_settings` table (same pattern as favicon/app icon settings).
-
-**Storage bucket creation:** A migration will create the `app-releases` bucket if it doesn't exist.
-
-**iOS handling:** Since iOS doesn't support APK sideloading, the iPhone button will use a Popover showing: "1. Open this site in Safari  2. Tap the Share icon  3. Tap 'Add to Home Screen'". This installs the PWA which behaves like a native app.
-
-**Admin upload flow:**
-1. Admin clicks "Upload APK" in Settings
-2. File picker opens (accepts `.apk` files only)
-3. File uploads to `app-releases/orion-labs-latest.apk`
-4. Public URL saved to `platform_settings`
-5. Visitors can now download it
-
-**Android install note:** The download buttons will include a small note: "You may need to enable 'Install from unknown sources' in your phone settings."
+One line change. The separation logic is already built -- we just need to funnel everyone through the same door.
 
