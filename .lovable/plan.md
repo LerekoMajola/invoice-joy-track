@@ -1,82 +1,70 @@
 
 
-## Fix: Portal Light Mode Contrast
+## Replace Messages with Notifications in Portal Header
 
-### Problem
+### What Changes
 
-The portal layout has a working dark/light toggle, but all five content tabs use hardcoded dark-theme colors (e.g., `text-white`, `bg-white/[0.04]`, `text-white/30`). In light mode the background is `bg-gray-50` (near-white), making all white text invisible.
+1. **Remove "Messages" tab** from the bottom navigation bar (both gym and school portals)
+2. **Add a bell icon** with unread badge to the top header bar (next to the theme toggle)
+3. **Create a notification dropdown/sheet** that shows reminders like payment due, membership expiring, etc.
+4. **Create a `portal_notifications` table** to store portal-specific notifications (payment reminders, membership expiry alerts, welcome messages)
+5. **Remove the Messages tab case** from the Portal page router
 
-### Approach
+### How It Works
 
-Instead of rewriting every component with conditional classes, create a theme-aware wrapper using CSS variables scoped to `[data-portal-theme="light"]` and `[data-portal-theme="dark"]`. Each component will use these semantic CSS variables, applied via a small set of utility classes.
-
-**Add portal theme CSS variables** in `src/index.css`:
-
-```css
-[data-portal-theme="dark"] {
-  --portal-text: 255 255 255;
-  --portal-card-bg: rgba(255,255,255,0.04);
-  --portal-card-border: rgba(255,255,255,0.06);
-  --portal-text-muted: rgba(255,255,255,0.40);
-  --portal-text-dimmed: rgba(255,255,255,0.20);
-  --portal-text-secondary: rgba(255,255,255,0.60);
-}
-
-[data-portal-theme="light"] {
-  --portal-text: 17 17 17;
-  --portal-card-bg: rgba(0,0,0,0.03);
-  --portal-card-border: rgba(0,0,0,0.08);
-  --portal-text-muted: rgba(0,0,0,0.50);
-  --portal-text-dimmed: rgba(0,0,0,0.25);
-  --portal-text-secondary: rgba(0,0,0,0.65);
-}
-```
-
-Then update each component to swap hardcoded colors for theme-aware ones. The key substitutions across all files:
-
-| Dark-only class | Light-mode equivalent |
-|---|---|
-| `text-white` | `text-[rgb(var(--portal-text))]` or simpler: conditional class via a shared helper |
-| `text-white/40` | `text-[var(--portal-text-muted)]` |
-| `text-white/30`, `text-white/20` | `text-[var(--portal-text-dimmed)]` |
-| `bg-white/[0.04]` | `bg-[var(--portal-card-bg)]` |
-| `border-white/[0.06]` | `border-[var(--portal-card-border)]` |
-
-**To keep changes manageable**, I will create a small `usePortalTheme()` hook that reads the `data-portal-theme` attribute and returns a boolean `isDark`, plus a helper `pt(dark, light)` function. Components will use this to conditionally apply classes where CSS variables alone are insufficient (e.g., the gradient hero on the Home tab).
+The portal header will have a bell icon. Tapping it opens a slide-up sheet listing notifications sorted by date. Notifications include:
+- Membership payment due / overdue reminders
+- Membership expiring soon alerts
+- Welcome messages
+- Any admin-sent alerts
 
 ### Files to Change
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Add `[data-portal-theme]` CSS variable blocks for both themes |
-| `src/hooks/usePortalTheme.ts` | **New** -- tiny hook returning `isDark` boolean from nearest `[data-portal-theme]` attribute |
-| `src/components/portal/gym/GymMemberPortal.tsx` | Replace all hardcoded `text-white*` / `bg-white*` classes with theme-aware variants; adjust hero gradient for light mode |
-| `src/components/portal/gym/GymPortalAttendance.tsx` | Same pattern -- swap all color classes to be theme-aware |
-| `src/components/portal/gym/GymPortalProgress.tsx` | Same pattern for stat cards, sparklines, milestones, workout section, and log drawer |
-| `src/components/portal/gym/GymPortalMembership.tsx` | Same pattern for plan card, history list, and proof modal |
-| `src/components/portal/gym/GymPortalSchedule.tsx` | Same pattern for day pills, class cards, booking list, and bottom sheet |
-| `src/components/portal/shared/PortalMessaging.tsx` | Same pattern if it uses hardcoded dark colors |
+| **Migration** | Create `portal_notifications` table with RLS policies for portal users; seed a trigger or function to auto-generate payment-due notifications |
+| `src/components/portal/PortalLayout.tsx` | Remove `messages` from `gymNav` and `schoolNav`; add Bell icon with unread count badge to header; add notification sheet |
+| `src/pages/Portal.tsx` | Remove the `case 'messages'` blocks and `PortalMessaging` imports |
+| `src/components/portal/PortalLayout.tsx` (type) | Remove `'messages'` from `PortalTab` type |
 
-### Key Design Decisions
+### Technical Details
 
-- **Light mode card style**: `bg-white shadow-sm border border-gray-200` instead of the translucent dark glass
-- **Light mode text**: `text-gray-900` for primary, `text-gray-500` for muted, `text-gray-400` for dimmed
-- **Hero gradient on Home tab (light)**: Keeps the mint-cyan gradient but with slightly lighter tones
-- **Progress ring SVG track**: Changes from `rgba(255,255,255,0.06)` to `rgba(0,0,0,0.06)` in light mode
-- **Drawers and modals**: Switch from dark backgrounds (`bg-[#12121a]`) to white (`bg-white`) in light mode
-- **Accent colors** (#00E5A0, #00C4FF, #FFB800, etc.) remain the same in both modes -- they have good contrast on both dark and light backgrounds
+**New table: `portal_notifications`**
 
-### Implementation Pattern
+```sql
+CREATE TABLE public.portal_notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  portal_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  member_id uuid REFERENCES public.gym_members(id) ON DELETE CASCADE,
+  type text NOT NULL DEFAULT 'system',  -- 'payment_due', 'membership_expiry', 'system', 'welcome'
+  title text NOT NULL,
+  message text NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-Each component will import `usePortalTheme` and use a `pt()` helper for conditional classes:
+-- RLS: portal users can only read/update their own notifications
+ALTER TABLE public.portal_notifications ENABLE ROW LEVEL SECURITY;
 
-```typescript
-const { isDark } = usePortalTheme();
-const pt = (dark: string, light: string) => isDark ? dark : light;
+CREATE POLICY "Portal users read own notifications"
+  ON public.portal_notifications FOR SELECT
+  USING (portal_user_id = auth.uid());
 
-// Usage:
-<p className={pt('text-white', 'text-gray-900')}>Hello</p>
-<div className={pt('bg-white/[0.04] border-white/[0.06]', 'bg-white border-gray-200 shadow-sm')}>
+CREATE POLICY "Portal users mark own as read"
+  ON public.portal_notifications FOR UPDATE
+  USING (portal_user_id = auth.uid());
 ```
 
-This keeps the premium dark theme exactly as-is while adding proper contrast for light mode.
+**Header notification bell:**
+- Bell icon with a small red dot/count badge when unread notifications exist
+- Tapping opens a bottom sheet (mobile-friendly) listing notifications
+- Each notification can be tapped to mark as read
+- Theme-aware styling using `pt()` helper (dark glass vs white cards)
+
+**Bottom nav after change (gym):**
+- Home | Progress | Check In | Plan (4 tabs instead of 5)
+
+**Bottom nav after change (school):**
+- Home | Fees | Timetable (3 tabs instead of 4)
+
+**Payment due notifications** will be generated by checking `gym_member_subscriptions` where `payment_status = 'pending'` or `end_date` is approaching. A database function will insert these notifications, and they can also be triggered manually by the gym owner.
