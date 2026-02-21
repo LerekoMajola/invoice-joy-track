@@ -1,80 +1,91 @@
 
 
-## Premium Dark Gym Portal Redesign
+## Body Stats & Vitals Tracker
 
-Inspired by the reference image, the entire member portal will be transformed into a dark, immersive fitness experience with mint/cyan accents, bold typography, and an addictive mobile-native feel.
+A new "Progress" tab in the member portal where members obsessively track their body transformation journey. This is the feature that makes them open the app daily -- watching their numbers change over time.
 
-### Design Language
+### What Members See
 
-- **Dark Mode**: Deep charcoal-to-black backgrounds (not the main app's light theme -- scoped only to the portal)
-- **Accent Colors**: Mint/cyan gradient (`#00E5A0` to `#00C4FF`) replacing the current indigo primary
-- **Typography**: Extra-bold headings, tight tracking, uppercase micro-labels
-- **Cards**: Frosted glass effect with subtle white/mint borders on dark backgrounds
-- **Bottom Nav**: Glassmorphic dark bar with glowing active indicator (dot + color shift)
-- **Animations**: Smooth fade-ins, scale-on-tap, pulse effects on key actions
+A dark, immersive screen with:
 
----
+**Body Stats Hero** -- Latest measurements displayed as glowing metric cards:
+- Weight (kg/lbs)
+- Height (cm)
+- Body Fat % (with color-coded zones: green/amber/red)
+- BMI (auto-calculated from height + weight)
+- Muscle Mass (kg)
+- Waist circumference (cm)
 
-### Screen-by-Screen Breakdown
+**Progress Charts** -- Mini sparkline graphs showing trends over time for weight and body fat %. Members can see their transformation visually -- this is the addictive part. Seeing the line go down (or up for muscle) triggers dopamine.
 
-**1. Portal Layout (shell)**
-- Full dark background (`bg-gray-950`) scoped to the portal container
-- Header: transparent/blur with mint accent icon
-- Bottom nav: dark glass bar, active tab gets a glowing mint dot above the icon + mint icon color
-- Haptic feedback on tab switches
+**Milestone Badges** -- Auto-awarded achievements:
+- "First Log" -- logged your first measurement
+- "7-Day Streak" -- logged 7 days in a row
+- "5kg Down" -- lost 5kg from starting weight
+- "Consistency King" -- 30+ logs total
 
-**2. Home Tab (GymMemberPortal)**
-- Dark gradient hero with member name in huge bold white text
-- Greeting row with subtle animated emoji
-- Status pill: frosted glass chip showing check-in status or membership status
-- 3 stat cards in frosted dark glass: Monthly Visits (mint ring), Streak (orange glow), All-Time (gold glow)
-- Each stat card uses a circular progress indicator instead of flat numbers
-- Motivational quote section with large italic serif-style text on dark background
-- Active plan strip at the bottom with days-left countdown and thin mint progress bar
+**Log Entry** -- A sleek bottom-sheet with number inputs to quickly log today's stats. One tap, enter numbers, done. The ease of logging is what creates the habit.
 
-**3. Plan Tab (GymPortalMembership)**
-- Keep the existing dark hero card but enhance with mint gradient accents instead of primary
-- Progress bar uses mint-to-cyan gradient
-- Receipt chip gets a glowing mint border
-- Past plans section uses frosted dark cards
+**Before/After Comparison** -- Shows your first-ever log vs latest side by side with percentage changes highlighted in mint/red.
 
-**4. Classes Tab (GymPortalSchedule)**
-- Day selector: horizontal pill strip with mint active state on dark background
-- Class cards: dark frosted glass with mint accent borders
-- Capacity indicator: thin mint progress bar
-- Bottom sheet detail: dark glass panel with mint "Book Class" button
-- My Bookings section: dark cards with subtle glow on booked items
+### How It Works
 
-**5. Check-In Tab (GymPortalAttendance)**
-- Big circular check-in button with pulsing mint glow ring (instead of current primary)
-- Post-check-in: large animated checkmark with particle burst effect (CSS only)
-- Shareable workout card: dark gradient with mint accents, designed for screenshots
-- Stats strip: 3 dark frosted glass cards matching home style
+**New database table: `gym_member_vitals`**
+- `id` (uuid, PK)
+- `member_id` (FK to gym_members)
+- `user_id` (text, the gym owner)
+- `logged_at` (timestamp, defaults to now)
+- `weight_kg` (numeric, nullable)
+- `height_cm` (numeric, nullable)
+- `body_fat_pct` (numeric, nullable)
+- `muscle_mass_kg` (numeric, nullable)
+- `waist_cm` (numeric, nullable)
+- `chest_cm` (numeric, nullable)
+- `arm_cm` (numeric, nullable)
+- `hip_cm` (numeric, nullable)
+- `thigh_cm` (numeric, nullable)
+- `notes` (text, nullable)
+- `created_at` (timestamp)
 
-**6. Messages Tab (PortalMessaging)**
-- Dark background chat interface
-- Own messages: mint gradient bubble
-- Received messages: dark frosted glass bubble
-- Input bar: dark glass with mint send button
+RLS policies: Members can read/insert their own vitals (matched via `member_id` to their `portal_user_id` in `gym_members`). Gym owners can read/write vitals for their members.
 
----
+### Navigation Change
 
-### Files to Change
+The bottom nav currently has 5 tabs (Home, Plan, Classes, Check In, Messages). We'll replace the nav structure to fit 5 tabs still but swap the layout to use a "More" pattern or reorder:
+
+- Home
+- Progress (NEW -- replaces the middle position)
+- Check In
+- Plan
+- Messages
+
+Classes moves into a sub-section accessible from Home or the Plan tab. This puts Progress front-and-center which drives daily engagement.
+
+### File Changes
 
 | File | Change |
 |------|--------|
-| `src/components/portal/PortalLayout.tsx` | Dark theme shell, redesigned glassmorphic bottom nav with glow effects |
-| `src/components/portal/gym/GymMemberPortal.tsx` | Complete visual overhaul -- dark hero, frosted stat cards, circular indicators |
-| `src/components/portal/gym/GymPortalMembership.tsx` | Mint accent swap, enhanced frosted glass cards |
-| `src/components/portal/gym/GymPortalSchedule.tsx` | Dark frosted class cards, mint day selector, dark bottom sheet |
-| `src/components/portal/gym/GymPortalAttendance.tsx` | Mint glow check-in button, dark shareable card, frosted stats |
-| `src/components/portal/shared/PortalMessaging.tsx` | Dark chat bubbles, mint own-message gradient |
+| **Migration** | Create `gym_member_vitals` table with RLS policies |
+| `src/components/portal/gym/GymPortalProgress.tsx` | **New** -- the full Progress tab with stats, charts, milestones, and log sheet |
+| `src/components/portal/PortalLayout.tsx` | Update gym nav to include "Progress" tab with Activity/chart icon |
+| `src/pages/Portal.tsx` | Wire up the new `progress` tab to render `GymPortalProgress` |
 
-### Technical Approach
+### Technical Details
 
-- All dark styling is **scoped to the portal container** using Tailwind classes (no global CSS changes needed)
-- The portal wrapper div gets `bg-gray-950 text-white` which cascades to all children
-- Existing data fetching hooks and logic remain completely unchanged
-- Only visual/JSX changes -- no database or backend modifications
-- Uses existing Tailwind utilities plus inline styles for specific gradients
+**Progress tab component structure:**
+- Fetches all vitals for the member, ordered by `logged_at desc`
+- Latest entry populates the hero stat cards
+- Historical entries feed into Recharts sparkline/area charts (already installed)
+- BMI is calculated client-side: `weight / (height/100)^2`
+- Milestone badges are computed client-side from the vitals array (no separate table needed)
+- "Log Stats" button opens a Sheet (vaul drawer) with numeric inputs
+- The before/after comparison uses first and last entries from the array
+
+**Addictive design elements:**
+- Animated number counters when stats load
+- Color-coded body fat zones (green < 20%, amber 20-30%, red > 30%)
+- Streak counter for consecutive days with logs
+- "Personal Best" highlights (lowest weight, highest muscle mass)
+- Confetti-style animation when a new milestone is unlocked
+- Trend arrows (up/down) next to each metric showing direction vs last log
 
