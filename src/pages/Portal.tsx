@@ -54,6 +54,8 @@ export default function Portal() {
       switch (activeTab) {
         case 'home':
           return <GymMemberPortal member={gymMember} user={user} />;
+        case 'progress':
+          return <GymPortalProgress member={gymMember} />;
         case 'membership':
           return <GymPortalMembership memberId={gymMember.id} member={gymMember} />;
         case 'classes':
