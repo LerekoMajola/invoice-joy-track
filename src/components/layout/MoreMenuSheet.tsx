@@ -19,7 +19,7 @@ const allMenuItems = [
   // Business-specific
   { icon: Kanban, label: 'CRM', path: '/crm', description: 'Sales pipeline', moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
   { icon: Briefcase, label: 'Tenders', path: '/tenders', description: 'Track opportunities', moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
-  { icon: Truck, label: 'Delivery Notes', path: '/delivery-notes', description: 'Track deliveries', moduleKey: 'delivery_notes', systemTypes: ['business'], optionalFeature: null },
+  
   // Workshop-specific
   { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
   // Hire-specific
@@ -42,7 +42,7 @@ const allMenuItems = [
   { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks', systemTypes: null, optionalFeature: null },
   { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting', systemTypes: null, optionalFeature: null },
   { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff', systemTypes: null, optionalFeature: null },
-  { icon: TrendingUp, label: 'Profitability', path: '/profitability', description: 'Margins & costs', moduleKey: 'profitability', systemTypes: ['business', 'workshop'], optionalFeature: null },
+  
   { icon: FolderOpen, label: 'Drafts', path: '/drafts', description: 'Saved drafts', moduleKey: null, systemTypes: null, optionalFeature: 'drafts' as const },
   { icon: Settings, label: 'Settings', path: '/settings', description: 'Company profile', moduleKey: null, systemTypes: null, optionalFeature: null },
   { icon: CreditCard, label: 'Billing', path: '/billing', description: 'Subscription & plans', moduleKey: null, systemTypes: null, optionalFeature: null },
