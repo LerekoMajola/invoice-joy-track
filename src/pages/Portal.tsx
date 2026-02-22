@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // portal v2
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
