@@ -307,13 +307,13 @@ export default function Auth() {
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
           <div className="w-full max-w-md animate-slide-up">
             <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <PlatformLogo className="h-12 w-auto" />
-              </div>
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+              <Link to="/" className="flex justify-center mb-4">
+                <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
+              </Link>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
                 Review your selection
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm">
+              <p className="text-white/70 mt-2 text-sm">
                 Confirm your package before creating your account
               </p>
             </div>
