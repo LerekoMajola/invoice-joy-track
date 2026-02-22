@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useGymMemberSubscriptions } from '@/hooks/useGymMemberSubscriptions';
+import { useGymMemberSubscriptions, GymMemberSubscription } from '@/hooks/useGymMemberSubscriptions';
 import { useGymMembers } from '@/hooks/useGymMembers';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   ChevronLeft, ChevronRight, Search, CheckCircle2, AlertCircle,
-  TrendingUp, DollarSign, Users, Clock, CheckCheck
+  TrendingUp, DollarSign, Users, Clock, CheckCheck, ImageIcon
 } from 'lucide-react';
 import {
   format, parseISO,
@@ -57,6 +58,8 @@ export default function GymPayments() {
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [search, setSearch] = useState('');
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [selectedSub, setSelectedSub] = useState<GymMemberSubscription | null>(null);
+  const [popDialogOpen, setPopDialogOpen] = useState(false);
 
   const memberMap = useMemo(() => {
     const map = new Map<string, { name: string; memberId?: string }>();
@@ -106,6 +109,11 @@ export default function GymPayments() {
     try { return format(parseISO(d), 'd MMM yyyy'); } catch { return d; }
   };
 
+  const handleCardClick = (sub: GymMemberSubscription) => {
+    setSelectedSub(sub);
+    setPopDialogOpen(true);
+  };
+
   const isCurrentPeriod = (() => {
     const now = new Date();
     const { start, end } = getPeriodBounds(now, granularity);
@@ -125,12 +133,7 @@ export default function GymPayments() {
         {/* Period Navigator */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 flex-1 bg-muted/40 rounded-xl px-1 py-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setAnchor(a => stepBack(a, granularity))}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAnchor(a => stepBack(a, granularity))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1 text-center">
@@ -138,24 +141,15 @@ export default function GymPayments() {
                 {formatPeriodLabel(anchor, granularity)}
               </span>
               {isCurrentPeriod && (
-                <span className="ml-2 text-[10px] font-medium bg-primary/10 text-primary rounded-full px-2 py-0.5">
-                  Current
-                </span>
+                <span className="ml-2 text-[10px] font-medium bg-primary/10 text-primary rounded-full px-2 py-0.5">Current</span>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setAnchor(a => stepForward(a, granularity))}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAnchor(a => stepForward(a, granularity))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
           <Select value={granularity} onValueChange={v => setGranularity(v as Granularity)}>
-            <SelectTrigger className="w-28 h-10">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-28 h-10"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="month">Monthly</SelectItem>
               <SelectItem value="week">Weekly</SelectItem>
@@ -166,30 +160,10 @@ export default function GymPayments() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            {
-              label: 'Collected',
-              icon: <TrendingUp className="h-3.5 w-3.5" />,
-              value: isLoading ? null : fc(collected),
-              color: 'text-foreground',
-            },
-            {
-              label: 'Outstanding',
-              icon: <DollarSign className="h-3.5 w-3.5" />,
-              value: isLoading ? null : fc(outstanding),
-              color: outstanding > 0 ? 'text-destructive' : 'text-foreground',
-            },
-            {
-              label: 'Paid Members',
-              icon: <Users className="h-3.5 w-3.5 text-[hsl(var(--chart-2))]" />,
-              value: isLoading ? null : String(paidCount),
-              color: 'text-[hsl(var(--chart-2))]',
-            },
-            {
-              label: 'Unpaid',
-              icon: <Clock className="h-3.5 w-3.5 text-[hsl(var(--chart-4))]" />,
-              value: isLoading ? null : String(unpaidCount),
-              color: unpaidCount > 0 ? 'text-[hsl(var(--chart-4))]' : 'text-foreground',
-            },
+            { label: 'Collected', icon: <TrendingUp className="h-3.5 w-3.5" />, value: isLoading ? null : fc(collected), color: 'text-foreground' },
+            { label: 'Outstanding', icon: <DollarSign className="h-3.5 w-3.5" />, value: isLoading ? null : fc(outstanding), color: outstanding > 0 ? 'text-destructive' : 'text-foreground' },
+            { label: 'Paid Members', icon: <Users className="h-3.5 w-3.5 text-[hsl(142,71%,45%)]" />, value: isLoading ? null : String(paidCount), color: 'text-[hsl(142,71%,45%)]' },
+            { label: 'Unpaid', icon: <Clock className="h-3.5 w-3.5 text-destructive" />, value: isLoading ? null : String(unpaidCount), color: unpaidCount > 0 ? 'text-destructive' : 'text-foreground' },
           ].map(stat => (
             <Card key={stat.label}>
               <CardContent className="px-4 py-3">
@@ -209,12 +183,7 @@ export default function GymPayments() {
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search member or plan..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Search member or plan..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
 
         {/* Content */}
@@ -235,8 +204,8 @@ export default function GymPayments() {
             {unpaid.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm font-semibold text-destructive uppercase tracking-wide">
+                  <AlertCircle className="h-4 w-4 text-[hsl(0,84%,60%)]" />
+                  <span className="text-sm font-semibold text-[hsl(0,84%,60%)] uppercase tracking-wide">
                     Unpaid ({unpaid.length})
                   </span>
                 </div>
@@ -245,28 +214,29 @@ export default function GymPayments() {
                     const info = memberMap.get(sub.memberId);
                     const name = info?.name ?? 'Unknown Member';
                     return (
-                      <Card key={sub.id} className="border-destructive/20 bg-destructive/5">
+                      <Card
+                        key={sub.id}
+                        className="border-[hsl(0,84%,60%,0.3)] bg-[hsl(0,84%,95%)] dark:bg-[hsl(0,40%,15%)] cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => handleCardClick(sub)}
+                      >
                         <CardContent className="p-3">
                           <div className="flex items-center gap-3">
-                            {/* Avatar */}
-                            <div className="h-9 w-9 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
-                              <span className="text-xs font-bold text-destructive">{getInitials(name)}</span>
+                            <div className="h-9 w-9 rounded-full bg-[hsl(0,84%,60%,0.15)] flex items-center justify-center shrink-0">
+                              <span className="text-xs font-bold text-[hsl(0,84%,60%)]">{getInitials(name)}</span>
                             </div>
-                            {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-foreground text-sm truncate">{name}</p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {sub.planName ?? '—'} · {fmtDate(sub.startDate)} → {fmtDate(sub.endDate)}
                               </p>
                             </div>
-                            {/* Amount + Action */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
-                              <p className="font-bold text-foreground text-sm">{fc(sub.amountPaid || sub.planPrice || 0)}</p>
+                              <p className="font-bold text-[hsl(0,84%,60%)] text-sm">{fc(sub.amountPaid || sub.planPrice || 0)}</p>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs gap-1 border-[hsl(var(--chart-2)/0.5)] text-[hsl(var(--chart-2))] hover:bg-[hsl(var(--chart-2)/0.1)] hover:border-[hsl(var(--chart-2))]"
-                                onClick={() => handleMarkPaid(sub.id)}
+                                className="h-7 text-xs gap-1 border-[hsl(142,71%,45%,0.5)] text-[hsl(142,71%,45%)] hover:bg-[hsl(142,71%,45%,0.1)] hover:border-[hsl(142,71%,45%)]"
+                                onClick={(e) => { e.stopPropagation(); handleMarkPaid(sub.id); }}
                                 disabled={markingPaid === sub.id}
                               >
                                 <CheckCheck className="h-3.5 w-3.5" />
@@ -274,9 +244,8 @@ export default function GymPayments() {
                               </Button>
                             </div>
                           </div>
-                          {/* Status badges */}
                           <div className="flex gap-1.5 mt-2 ml-12">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-[hsl(0,84%,60%,0.1)] text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%,0.3)]">
                               {sub.paymentStatus === 'overdue' ? 'Overdue' : 'Pending'}
                             </Badge>
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border-border capitalize">
@@ -295,8 +264,8 @@ export default function GymPayments() {
             {paid.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--chart-2))]" />
-                  <span className="text-sm font-semibold text-[hsl(var(--chart-2))] uppercase tracking-wide">
+                  <CheckCircle2 className="h-4 w-4 text-[hsl(142,71%,45%)]" />
+                  <span className="text-sm font-semibold text-[hsl(142,71%,45%)] uppercase tracking-wide">
                     Paid ({paid.length})
                   </span>
                 </div>
@@ -305,34 +274,39 @@ export default function GymPayments() {
                     const info = memberMap.get(sub.memberId);
                     const name = info?.name ?? 'Unknown Member';
                     return (
-                      <Card key={sub.id} className="border-[hsl(var(--chart-2)/0.2)] bg-[hsl(var(--chart-2)/0.04)]">
+                      <Card
+                        key={sub.id}
+                        className="border-[hsl(142,71%,45%,0.3)] bg-[hsl(142,76%,95%)] dark:bg-[hsl(142,30%,15%)] cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => handleCardClick(sub)}
+                      >
                         <CardContent className="p-3">
                           <div className="flex items-center gap-3">
-                            {/* Avatar */}
-                            <div className="h-9 w-9 rounded-full bg-[hsl(var(--chart-2)/0.15)] flex items-center justify-center shrink-0">
-                              <span className="text-xs font-bold text-[hsl(var(--chart-2))]">{getInitials(name)}</span>
+                            <div className="h-9 w-9 rounded-full bg-[hsl(142,71%,45%,0.15)] flex items-center justify-center shrink-0">
+                              <span className="text-xs font-bold text-[hsl(142,71%,45%)]">{getInitials(name)}</span>
                             </div>
-                            {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-foreground text-sm truncate">{name}</p>
                               <p className="text-xs text-muted-foreground truncate">
                                 {sub.planName ?? '—'} · {fmtDate(sub.startDate)} → {fmtDate(sub.endDate)}
                               </p>
                             </div>
-                            {/* Amount + Check */}
                             <div className="flex flex-col items-end gap-1 shrink-0">
-                              <p className="font-bold text-foreground text-sm">{fc(sub.amountPaid)}</p>
-                              <div className="flex items-center gap-1 text-[hsl(var(--chart-2))]">
+                              <p className="font-bold text-[hsl(142,71%,45%)] text-sm">{fc(sub.amountPaid)}</p>
+                              <div className="flex items-center gap-1 text-[hsl(142,71%,45%)]">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 <span className="text-xs font-medium">Paid</span>
                               </div>
                             </div>
                           </div>
-                          {/* Sub status badge */}
                           <div className="flex gap-1.5 mt-2 ml-12">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-[hsl(var(--chart-2)/0.1)] text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2)/0.3)]">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-[hsl(142,71%,45%,0.1)] text-[hsl(142,71%,45%)] border-[hsl(142,71%,45%,0.3)]">
                               Paid
                             </Badge>
+                            {sub.popUrl && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-[hsl(142,71%,45%,0.1)] text-[hsl(142,71%,45%)] border-[hsl(142,71%,45%,0.3)]">
+                                POP ✓
+                              </Badge>
+                            )}
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border-border capitalize">
                               {sub.status}
                             </Badge>
@@ -348,6 +322,64 @@ export default function GymPayments() {
           </div>
         )}
       </div>
+
+      {/* POP Dialog */}
+      <Dialog open={popDialogOpen} onOpenChange={setPopDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {selectedSub ? (memberMap.get(selectedSub.memberId)?.name ?? 'Member') : 'Payment Details'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSub && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Plan</p>
+                  <p className="font-medium">{selectedSub.planName ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Amount</p>
+                  <p className="font-medium">{fc(selectedSub.amountPaid || selectedSub.planPrice || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Period</p>
+                  <p className="font-medium">{fmtDate(selectedSub.startDate)} → {fmtDate(selectedSub.endDate)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Status</p>
+                  <Badge
+                    variant="outline"
+                    className={selectedSub.paymentStatus === 'paid'
+                      ? 'bg-[hsl(142,71%,45%,0.1)] text-[hsl(142,71%,45%)] border-[hsl(142,71%,45%,0.3)]'
+                      : 'bg-[hsl(0,84%,60%,0.1)] text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%,0.3)]'
+                    }
+                  >
+                    {selectedSub.paymentStatus === 'paid' ? 'Paid' : selectedSub.paymentStatus === 'overdue' ? 'Overdue' : 'Pending'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Proof of Payment</p>
+                {selectedSub.popUrl ? (
+                  <img
+                    src={selectedSub.popUrl}
+                    alt="Proof of payment"
+                    className="w-full rounded-lg border border-border object-contain max-h-72"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
+                    <ImageIcon className="h-8 w-8 mb-2 opacity-30" />
+                    <p className="text-sm font-medium">No receipt attached</p>
+                    <p className="text-xs mt-1">The member hasn't uploaded a proof of payment yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

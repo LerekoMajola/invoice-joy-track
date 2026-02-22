@@ -18,6 +18,7 @@ export interface GymMemberSubscription {
   amountPaid: number;
   autoRenew: boolean;
   notes: string | null;
+  popUrl: string | null;
   createdAt: string;
   updatedAt: string;
   // joined fields
@@ -76,6 +77,7 @@ export function useGymMemberSubscriptions(memberId?: string) {
         amountPaid: Number(s.amount_paid),
         autoRenew: s.auto_renew,
         notes: s.notes,
+        popUrl: s.pop_url,
         createdAt: s.created_at,
         updatedAt: s.updated_at,
         planName: s.gym_membership_plans?.name,
