@@ -213,7 +213,7 @@ export default function Auth() {
     }
   };
 
-  const handleModulesComplete = async (selectedModuleIds: string[]) => {
+  const handleModulesComplete = async (selectedModuleIds: string[], isTrial: boolean) => {
     setSavingModules(true);
     try {
       const { data: modules } = await supabase
@@ -223,7 +223,7 @@ export default function Auth() {
 
       const keys = (modules || []).map(m => m.key);
       setSelectedModuleKeys(keys);
-      setSelectedTier('Custom');
+      setSelectedTier(isTrial ? 'Custom (Trial)' : 'Custom');
       setSelectedTierId(null);
       setSignupStep('review');
     } catch {
