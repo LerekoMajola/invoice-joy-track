@@ -165,6 +165,9 @@ export function useSubscription() {
   // Package tier ID from subscription
   const packageTierId: string | null = (subscription as any)?.package_tier_id || null;
 
+  // Multi-company feature flag (admin-controlled per tenant)
+  const multiCompanyEnabled: boolean = (subscription as any)?.multi_company_enabled || false;
+
   return {
     subscription,
     usage,
@@ -184,5 +187,6 @@ export function useSubscription() {
     paymentReference,
     systemType,
     packageTierId,
+    multiCompanyEnabled,
   };
 }

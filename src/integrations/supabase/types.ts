@@ -4649,6 +4649,7 @@ export type Database = {
           current_period_start: string | null
           deleted_at: string | null
           id: string
+          multi_company_enabled: boolean | null
           package_tier_id: string | null
           payment_method: string | null
           payment_reference: string | null
@@ -4667,6 +4668,7 @@ export type Database = {
           current_period_start?: string | null
           deleted_at?: string | null
           id?: string
+          multi_company_enabled?: boolean | null
           package_tier_id?: string | null
           payment_method?: string | null
           payment_reference?: string | null
@@ -4685,6 +4687,7 @@ export type Database = {
           current_period_start?: string | null
           deleted_at?: string | null
           id?: string
+          multi_company_enabled?: boolean | null
           package_tier_id?: string | null
           payment_method?: string | null
           payment_reference?: string | null

@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { CompanyProfile } from '@/hooks/useCompanyProfile';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface ActiveCompanyContextType {
   companies: CompanyProfile[];
@@ -24,6 +25,7 @@ const MAX_COMPANIES = 5;
 export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { multiCompanyEnabled } = useSubscription();
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,7 +142,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       isLoading,
       switchCompany,
       addCompany,
-      canAddMore: companies.length < MAX_COMPANIES,
+      canAddMore: multiCompanyEnabled && companies.length < MAX_COMPANIES,
       refetchCompanies: fetchCompanies,
     }}>
       {children}
