@@ -160,7 +160,7 @@ export function PricingTable() {
         )}
 
         <div className="text-center mt-12">
-          <Link to="/auth" className="text-sm text-primary hover:underline underline-offset-4 font-medium">
+          <Link to={`/auth?system=${activeSystem}&custom=true`} className="text-sm text-primary hover:underline underline-offset-4 font-medium">
             Or build your own custom package →
           </Link>
         </div>
