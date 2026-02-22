@@ -52,6 +52,16 @@ export function useLegalCaseExpenses(caseId?: string) {
 
   useEffect(() => { fetchExpenses(); }, [user, caseId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('legal-case-expenses-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'legal_case_expenses' }, () => {
+        fetchExpenses();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, caseId]);
+
   const createExpense = async (expense: Omit<LegalCaseExpense, 'id' | 'createdAt' | 'isInvoiced' | 'invoiceId'>) => {
     if (!user) return false;
     const { error } = await supabase.from('legal_case_expenses').insert({

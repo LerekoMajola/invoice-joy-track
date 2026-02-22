@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -40,6 +41,16 @@ export function useTaxClearances() {
     },
     enabled: !!user?.id,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('tax-clearance-documents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tax_clearance_documents' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['tax-clearances'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const addTaxClearance = useMutation({
     mutationFn: async (input: TaxClearanceInput) => {

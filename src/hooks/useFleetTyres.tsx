@@ -63,6 +63,16 @@ export function useFleetTyres(vehicleId?: string) {
 
   useEffect(() => { fetchTyres(); }, [user, vehicleId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet-tyres-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_tyres' }, () => {
+        fetchTyres();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
+
   const createTyre = async (t: FleetTyreInsert): Promise<boolean> => {
     if (!user) return false;
     try {

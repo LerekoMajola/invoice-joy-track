@@ -57,6 +57,16 @@ export function useClientDocuments(clientId: string | undefined) {
     fetchDocuments();
   }, [user, clientId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-documents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_documents' }, () => {
+        fetchDocuments();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, clientId]);
+
   const uploadDocument = async (file: File, title?: string) => {
     if (!user || !clientId) {
       toast.error('You must be logged in');

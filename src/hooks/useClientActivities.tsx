@@ -65,6 +65,16 @@ export function useClientActivities(clientId?: string) {
     fetchActivities();
   }, [user, clientId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-activities-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_activities' }, () => {
+        fetchActivities();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, clientId]);
+
   const createActivity = async (activity: ClientActivityInsert) => {
     if (!user) return null;
 

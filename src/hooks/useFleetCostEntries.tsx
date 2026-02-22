@@ -55,6 +55,16 @@ export function useFleetCostEntries(vehicleId?: string) {
 
   useEffect(() => { fetchEntries(); }, [user, vehicleId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet-cost-entries-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_cost_entries' }, () => {
+        fetchEntries();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
+
   const createEntry = async (entry: FleetCostEntryInsert): Promise<boolean> => {
     if (!user) return false;
     try {

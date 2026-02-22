@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -60,6 +61,16 @@ export function useModules() {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('user-modules-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_modules' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['user-modules'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   // Check if user has a specific module by key
   const hasModule = (moduleKey: string): boolean => {

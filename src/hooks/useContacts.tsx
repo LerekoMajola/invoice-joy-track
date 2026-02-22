@@ -78,6 +78,16 @@ export function useContacts(clientId?: string, leadId?: string) {
     fetchContacts();
   }, [user, clientId, leadId, activeCompanyId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('contacts-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
+        fetchContacts();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, clientId, leadId, activeCompanyId]);
+
   const createContact = async (contact: ContactInsert) => {
     if (!user) return null;
 

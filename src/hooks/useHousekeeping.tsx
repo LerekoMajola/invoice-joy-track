@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -33,6 +34,16 @@ export function useHousekeeping() {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('housekeeping-tasks-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'housekeeping_tasks' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['housekeeping'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const createTask = useMutation({
     mutationFn: async (task: Omit<HousekeepingTask, 'id' | 'user_id' | 'created_at' | 'rooms'>) => {

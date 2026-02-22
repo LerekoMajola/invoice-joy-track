@@ -67,6 +67,16 @@ export function useRecurringDocuments() {
 
   useEffect(() => { fetchRecurringDocs(); }, [fetchRecurringDocs]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('recurring-documents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_documents' }, () => {
+        fetchRecurringDocs();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchRecurringDocs]);
+
   const setRecurring = async (sourceType: 'invoice' | 'quote', sourceId: string, frequency: Frequency) => {
     if (!user) return null;
     // Check if already exists

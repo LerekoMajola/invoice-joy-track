@@ -63,6 +63,16 @@ export function useLeadActivities(leadId?: string) {
     fetchActivities();
   }, [user, leadId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('lead-activities-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_activities' }, () => {
+        fetchActivities();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, leadId]);
+
   const createActivity = async (activity: LeadActivityInsert) => {
     if (!user) return null;
 
