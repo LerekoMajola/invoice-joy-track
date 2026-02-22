@@ -32,11 +32,22 @@ function getIcon(iconName: string) {
   return Icon || Package;
 }
 
+const SYSTEM_ALLOWED_SHARED_KEYS: Record<string, string[]> = {
+  legal:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  business:   ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'accounting', 'staff', 'fleet', 'tenders'],
+  workshop:   ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
+  school:     ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  hire:       ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
+  guesthouse: ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  fleet:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff', 'fleet'],
+  gym:        ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+};
+
 export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelectorProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: modules = [], isLoading } = useQuery({
-    queryKey: ['platform-modules-signup'],
+    queryKey: ['platform-modules-signup', systemType],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_modules')
@@ -44,12 +55,15 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
         .eq('is_active', true)
         .order('sort_order');
       if (error) throw error;
-      // Filter by system_type if provided
       const allModules = data as (PlatformModule & { system_type?: string })[];
       if (systemType) {
-        return allModules.filter(
-          (m) => !m.system_type || m.system_type === 'shared' || m.system_type === systemType
-        );
+        const allowedSharedKeys = SYSTEM_ALLOWED_SHARED_KEYS[systemType] || [];
+        return allModules.filter((m) => {
+          if (!m.system_type || m.system_type === 'shared') {
+            return allowedSharedKeys.includes(m.key);
+          }
+          return m.system_type === systemType;
+        });
       }
       return allModules;
     },

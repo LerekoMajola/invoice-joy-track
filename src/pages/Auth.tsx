@@ -213,9 +213,6 @@ export default function Auth() {
   };
 
   const handleModulesComplete = async (selectedModuleIds: string[]) => {
-    // Custom build: user already selected module IDs directly
-    // We still need credentials, so save module IDs and go to credentials
-    // But we need the module keys for saving - let's look them up
     setSavingModules(true);
     try {
       const { data: modules } = await supabase
@@ -225,7 +222,9 @@ export default function Auth() {
 
       const keys = (modules || []).map(m => m.key);
       setSelectedModuleKeys(keys);
-      setSignupStep('credentials');
+      setSelectedTier('Custom');
+      setSelectedTierId(null);
+      setSignupStep('review');
     } catch {
       toast.error('Something went wrong');
     } finally {
