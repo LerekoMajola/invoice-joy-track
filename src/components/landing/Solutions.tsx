@@ -3,12 +3,7 @@ import { Button } from '@/components/ui/button';
 import { 
   ArrowRight, 
   Briefcase, 
-  Wrench, 
-  GraduationCap, 
   Scale, 
-  Hammer,
-  Hotel,
-  Car,
   Dumbbell,
   CheckCircle2
 } from 'lucide-react';
@@ -19,24 +14,8 @@ const industries = [
     name: 'BizPro',
     system: 'business',
     gradient: 'from-primary to-violet',
-    features: ['Quotes & Invoices', 'Client CRM & Pipeline', 'Delivery Notes', 'Profitability Tracking'],
+    features: ['Quotes & Invoices', 'Client CRM & Pipeline', 'Delivery Notes', 'Profitability Tracking', 'Workshop, Fleet, Hire & more as add-ons'],
     price: 'M350/mo',
-  },
-  {
-    icon: Wrench,
-    name: 'ShopPro',
-    system: 'workshop',
-    gradient: 'from-coral to-warning',
-    features: ['Job Cards & Tracking', 'Parts & Labour Costing', 'Vehicle History', 'Technician Assignment'],
-    price: 'M450/mo',
-  },
-  {
-    icon: GraduationCap,
-    name: 'EduPro',
-    system: 'school',
-    gradient: 'from-info to-cyan',
-    features: ['Student Records', 'Fee Tracking & Invoicing', 'Class Management', 'Announcements'],
-    price: 'M720/mo',
   },
   {
     icon: Scale,
@@ -44,30 +23,6 @@ const industries = [
     system: 'legal',
     gradient: 'from-violet to-primary',
     features: ['Case Management', 'Time & Billing', 'Court Calendar', 'Legal Documents'],
-    price: 'M500/mo',
-  },
-  {
-    icon: Hammer,
-    name: 'HirePro',
-    system: 'hire',
-    gradient: 'from-success to-info',
-    features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage Tracking'],
-    price: 'M400/mo',
-  },
-  {
-    icon: Hotel,
-    name: 'StayPro',
-    system: 'guesthouse',
-    gradient: 'from-rose-500 to-pink-500',
-    features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings'],
-    price: 'M650/mo',
-  },
-  {
-    icon: Car,
-    name: 'FleetPro',
-    system: 'fleet',
-    gradient: 'from-slate-600 to-zinc-800',
-    features: ['Vehicle Registry & Health', 'Maintenance Tracking', 'Cost Intelligence', 'Replace-or-Keep Advisor'],
     price: 'M500/mo',
   },
   {
@@ -86,18 +41,18 @@ export function Solutions() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-            8 Industries, 1 Platform
+            3 Solutions, 1 Platform
           </div>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Solutions for Every Industry
+            Built for Your Industry
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Pick the system that fits your business. Each comes with tailored modules, 
+            Pick the solution that fits your business. Each comes with tailored modules, 
             shared core features, and a 7-day free trial.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {industries.map((ind, index) => (
             <div
               key={ind.system}

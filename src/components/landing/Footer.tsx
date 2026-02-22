@@ -10,7 +10,7 @@ export function Footer() {
           <div className="md:col-span-1">
             <PlatformLogo className="h-20 w-20 rounded-full p-4 bg-white shadow-sm mb-4 object-contain" />
             <p className="text-primary-foreground/70 text-sm">
-              The modular platform for businesses, workshops, schools, law firms, rental companies, and guest houses across Africa.
+              The modular platform for businesses, law firms, and fitness centres across Africa.
             </p>
           </div>
 
@@ -19,12 +19,7 @@ export function Footer() {
             <h4 className="font-display font-semibold mb-4">Solutions</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
               <li><Link to="/auth?system=business" className="hover:text-primary-foreground transition-colors">BizPro</Link></li>
-              <li><Link to="/auth?system=workshop" className="hover:text-primary-foreground transition-colors">ShopPro</Link></li>
-              <li><Link to="/auth?system=school" className="hover:text-primary-foreground transition-colors">EduPro</Link></li>
               <li><Link to="/auth?system=legal" className="hover:text-primary-foreground transition-colors">LawPro</Link></li>
-              <li><Link to="/auth?system=hire" className="hover:text-primary-foreground transition-colors">HirePro</Link></li>
-              <li><Link to="/auth?system=guesthouse" className="hover:text-primary-foreground transition-colors">StayPro</Link></li>
-              <li><Link to="/auth?system=fleet" className="hover:text-primary-foreground transition-colors">FleetPro</Link></li>
               <li><Link to="/auth?system=gym" className="hover:text-primary-foreground transition-colors">GymPro</Link></li>
             </ul>
           </div>
