@@ -251,7 +251,7 @@ async function exportUserData(
 
   try {
     const emailResponse = await resend.emails.send({
-      from: "Data Backup <onboarding@resend.dev>",
+      from: "Data Backup <updates@updates.orionlabslesotho.com>",
       to: [userEmail],
       subject: `Your ${label} Data Backup - ${dateStr}`,
       html: emailBody,
