@@ -53,7 +53,7 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
     <div className="w-full max-w-3xl mx-auto animate-slide-up">
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4">
-          <PlatformLogo className="h-12 w-auto" />
+          <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
         </div>
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
           What are you managing?
