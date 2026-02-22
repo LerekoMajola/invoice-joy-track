@@ -1,78 +1,61 @@
 
 
-## Consolidate to 3 Verticals: BizPro, LawPro, GymPro
+## Reflect 3-Vertical Consolidation Across All Public Pages
 
-### Overview
+### Summary
 
-Remove ShopPro (workshop), EduPro (school), HirePro (hire), StayPro (guesthouse), and FleetPro (fleet) as standalone verticals. Their functionality becomes optional add-on modules available in BizPro's custom package builder.
-
-**Existing users impact**: There are currently 3 workshop, 1 school, and 1 hire subscribers. Their `system_type` will be migrated to `business`, and their existing modules will continue to work since navigation is already module-gated.
+Multiple landing page components, the About page, auth branding panel, footer, and testimonials data still reference the old 8-vertical structure. This plan updates all copy, icons, data arrays, and layouts to consistently present only **BizPro, LawPro, and GymPro** -- while highlighting that BizPro offers optional add-on modules (workshop, hire, school, guesthouse, fleet).
 
 ---
 
-### Changes
+### Files to Change
 
-#### 1. Database Updates
+#### 1. `src/components/landing/Hero.tsx`
+- Reduce `industries` array from 8 to 3 (BizPro, LawPro, GymPro)
+- Remove unused icon imports (Wrench, GraduationCap, Hammer, Hotel, Car)
+- Change heading from "One Platform, Every Industry" to "One Platform, Three Solutions"
+- Update subtitle from listing all 8 names to: "BizPro, LawPro & GymPro -- modular business management for companies, law firms, and fitness centres."
 
-- **Update `subscriptions_system_type_check` constraint** to only allow `business`, `legal`, `gym`
-- **Migrate existing subscribers** on removed verticals (`workshop`, `school`, `hire`, `guesthouse`, `fleet`) to `system_type = 'business'`
-- **Update `platform_modules`**: Change `system_type` for workshop/school/hire/guesthouse modules from their vertical-specific type to `shared` (so they appear as selectable modules under BizPro custom builder)
-- **Deactivate `package_tiers`** for removed verticals (workshop, school, hire, guesthouse, fleet)
+#### 2. `src/components/landing/Solutions.tsx`
+- Reduce `industries` array from 8 to 3 cards (BizPro, LawPro, GymPro)
+- Expand BizPro features list to mention add-on modules (e.g. "Workshop, Fleet, Hire & more available as add-ons")
+- Change badge from "8 Industries, 1 Platform" to "3 Solutions, 1 Platform"
+- Update heading/subtitle copy accordingly
+- Change grid from 5 columns to 3 columns
+- Remove unused icon imports
 
-#### 2. Signup Flow (SystemSelector)
+#### 3. `src/components/landing/Footer.tsx`
+- Remove ShopPro, EduPro, HirePro, StayPro, FleetPro links from "Solutions" column
+- Keep only BizPro, LawPro, GymPro links
+- Update brand description to: "The modular platform for businesses, law firms, and fitness centres across Africa."
 
-Remove the 5 cards for ShopPro, EduPro, HirePro, StayPro, FleetPro. Keep only BizPro, LawPro, GymPro.
+#### 4. `src/components/auth/AuthBrandingPanel.tsx`
+- Reduce `industries` array from 8 to 3 pills (BizPro, LawPro, GymPro)
+- Change heading from "One Platform, Eight Industries" to "One Platform, Three Solutions"
+- Update subtitle to list only the 3 verticals
+- Remove unused icon imports
 
-#### 3. Landing Page Pricing (PricingTable)
+#### 5. `src/pages/About.tsx`
+- Replace the 6-item `industries` array with 3 entries: BizPro (with expanded description noting add-on modules), LawPro, GymPro
+- Change badge from "6 Industries, 1 Platform" to "3 Solutions, 1 Platform"
+- Update hero subtitle to reference only the 3 verticals
+- Update "What Is Orion Labs?" body copy to reflect the 3-vertical model with BizPro add-ons
+- Update pricing table to show only 3 rows
+- Remove unused icon imports (Wrench, GraduationCap, Hammer, Hotel)
 
-Remove the 5 tabs for removed verticals. Keep only BizPro, LawPro, GymPro tabs.
-
-#### 4. Auth Flow (Auth.tsx)
-
-- Update valid system types list to `['business', 'legal', 'gym']`
-- Remove SYSTEM_META entries for removed verticals (keep them only as fallbacks for legacy users)
-- Update `ModuleSelector` allowed keys: BizPro's `SYSTEM_ALLOWED_SHARED_KEYS` will now include workshop, hire, school, guesthouse, and fleet module keys
-
-#### 5. Navigation (Sidebar + BottomNav)
-
-Update `systemTypes` for removed vertical nav items to include `'business'`. For example:
-- Workshop nav: `systemTypes: ['business']` (was `['workshop']`)
-- Hire nav items: `systemTypes: ['business']` (was `['hire']`)
-- School nav items: `systemTypes: ['business']` (was `['school']`)
-- Guesthouse nav items: `systemTypes: ['business']` (was `['guesthouse']`)
-- Fleet nav: already shows for `['fleet']`, change to `['business']`
-
-These items will only appear when the user has the corresponding module active (the `moduleKey` gating already handles this).
-
-#### 6. Dashboard Routing
-
-Update `Dashboard.tsx` so that BizPro users get the BusinessDashboard regardless. Remove the `case 'workshop'`, `case 'school'`, `case 'hire'`, `case 'guesthouse'`, `case 'fleet'` cases. All migrated users will see the BusinessDashboard.
-
-#### 7. Module Selector (Custom Builder)
-
-Update `SYSTEM_ALLOWED_SHARED_KEYS` for `business` to include all module keys from the removed verticals:
-- `workshop`, `hire_equipment`, `hire_orders`, `hire_calendar`, `hire_returns`, `school_admin`, `students`, `school_fees`, `gh_rooms`, `gh_bookings`, `gh_housekeeping`, `gh_reviews`, `fleet`
+#### 6. `src/data/testimonials.ts`
+- Re-brand the ShopPro, EduPro, HirePro, StayPro, FleetPro testimonials to show "BizPro" as the product (since those are now BizPro modules)
+- Update their `accentColor` and `cardBg` to match BizPro's indigo theme
+- Keep the testimonial quotes but adjust wording slightly (e.g. "ShopPro" becomes "the Workshop module", "EduPro" becomes "the School module", etc.)
 
 ---
 
-### Files to Modify
+### What Stays Unchanged
 
-| File | Change |
+| File | Reason |
 |------|--------|
-| **Database migration** | Update constraint, migrate subscribers, update module system_types, deactivate tiers |
-| `src/components/auth/SystemSelector.tsx` | Remove 5 vertical cards |
-| `src/components/landing/PricingTable.tsx` | Remove 5 tabs |
-| `src/pages/Auth.tsx` | Update valid system types, clean up SYSTEM_META |
-| `src/components/auth/ModuleSelector.tsx` | Expand BizPro allowed module keys |
-| `src/components/layout/Sidebar.tsx` | Change removed vertical nav `systemTypes` to `['business']` |
-| `src/components/layout/BottomNav.tsx` | Same navigation changes |
-| `src/pages/Dashboard.tsx` | Remove removed vertical dashboard cases |
-| `src/hooks/useSubscription.tsx` | Update `SystemType` to 3 values |
-
-### Risk Mitigation
-
-- All routes (e.g., `/workshop`, `/equipment`, `/students`) remain functional -- they're just accessible under BizPro now
-- Module gating in navigation means users only see features they've subscribed to
-- Existing users keep their modules; only their `system_type` label changes to `business`
-- The individual dashboard pages (WorkshopDashboard, SchoolDashboard, etc.) are kept in the codebase but won't be the default landing -- users will get BusinessDashboard
+| `Features.tsx` | Generic platform features, no vertical references |
+| `Coverage.tsx` | Geographic coverage, no vertical references |
+| `PricingTable.tsx` | Already updated to 3 tabs |
+| `Testimonials.tsx` | Just renders from data, no structural change needed |
 
