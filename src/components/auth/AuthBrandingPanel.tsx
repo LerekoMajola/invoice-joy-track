@@ -1,6 +1,7 @@
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 import { Quote, Briefcase, Scale, Dumbbell } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { testimonials } from '@/data/testimonials';
 
 const industries = [
@@ -29,9 +30,9 @@ export function AuthBrandingPanel() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl" />
 
       <div className="relative max-w-md text-center animate-slide-up">
-        <div className="flex items-center justify-center mb-8 animate-bounce-in">
+        <Link to="/" className="flex items-center justify-center mb-8 animate-bounce-in">
           <PlatformLogo className="h-32 w-32 rounded-full p-6 bg-white shadow-sm object-contain" />
-        </div>
+        </Link>
           <h2 className="font-display text-3xl font-bold text-white mb-4">
             One Platform, Three Solutions
           </h2>

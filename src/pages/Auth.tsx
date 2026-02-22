@@ -411,12 +411,14 @@ export default function Auth() {
     // Credentials step (step 3)
     if (signupStep === 'credentials' && selectedSystem && selectedModuleKeys.length > 0) {
       return (
-        <div className="min-h-screen bg-background flex">
+        <div className="min-h-screen bg-gradient-hero flex">
           <AuthBrandingPanel />
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-md bg-card/80 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-8">
               <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
-                <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+                <Link to="/">
+                  <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+                </Link>
               </div>
 
               <div className="text-center mb-8 animate-slide-up">
@@ -568,12 +570,14 @@ export default function Auth() {
 
   // Login form
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-gradient-hero flex">
       <AuthBrandingPanel />
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md bg-card/80 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-8">
           <div className="lg:hidden flex items-center justify-center mb-8 animate-bounce-in">
-            <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+            <Link to="/">
+              <PlatformLogo className="h-20 w-auto rounded-2xl p-5 bg-white shadow-lg" />
+            </Link>
           </div>
 
           <div className="text-center mb-8 animate-slide-up">
