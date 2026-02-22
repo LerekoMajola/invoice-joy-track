@@ -43,6 +43,7 @@ export function Footer() {
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Sign In</Link></li>
               <li><Link to="/auth" className="hover:text-primary-foreground transition-colors">Start Free Trial</Link></li>
               <li><a href="mailto:support@orionlabs.com" className="hover:text-primary-foreground transition-colors">Contact Us</a></li>
+              <li><Link to="/privacy-policy" className="hover:text-primary-foreground transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>
