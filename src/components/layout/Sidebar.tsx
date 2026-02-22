@@ -51,8 +51,7 @@ const navigation = [
   { name: 'CRM', href: '/crm', icon: Kanban, moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
   { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes', systemTypes: ['business', 'workshop'], optionalFeature: null },
   { name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null, optionalFeature: 'drafts' as const },
-  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null, optionalFeature: 'invoices' as const },
-  { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null, optionalFeature: null },
   { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
   // Workshop
   { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
@@ -85,7 +84,7 @@ const navigation = [
   // Shared
   { name: 'Tasks', href: '/tasks', icon: CheckSquare, moduleKey: 'tasks', systemTypes: null, optionalFeature: null },
   { name: 'Staff', href: '/staff', icon: UserPlus, moduleKey: 'staff', systemTypes: null, optionalFeature: null },
-  { name: 'Profitability', href: '/profitability', icon: TrendingUp, moduleKey: 'profitability', systemTypes: ['business', 'workshop'], optionalFeature: null },
+  
   { name: 'Accounting', href: '/accounting', icon: Calculator, moduleKey: 'accounting', systemTypes: null, optionalFeature: null },
   { name: 'Settings', href: '/settings', icon: Settings, moduleKey: null, systemTypes: null, optionalFeature: null },
   { name: 'Billing', href: '/billing', icon: CreditCard, moduleKey: null, systemTypes: null, optionalFeature: null },

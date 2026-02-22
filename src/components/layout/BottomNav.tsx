@@ -37,7 +37,7 @@ const allNavItems = [
   // Gym
   { icon: Wallet, label: 'Payments', path: '/gym-payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   // Shared
-  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null, optionalFeature: 'invoices' as const },
+  { icon: Receipt, label: 'Invoices', path: '/invoices', moduleKey: 'invoices', systemTypes: null, optionalFeature: null },
 ];
 
 export function BottomNav() {
@@ -68,7 +68,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
   
   // Check if current path is in "more" menu
-  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/delivery-notes', '/crm', '/profitability', '/legal-documents', '/equipment', '/hire-orders', '/hire-calendar', '/housekeeping', '/guest-reviews', '/fleet', '/gym-members', '/gym-classes', '/gym-attendance', '/gym-payments', '/drafts', '/invoices'];
+  const moreRoutes = ['/tasks', '/accounting', '/staff', '/school-admin', '/timetable', '/billing', '/settings', '/tenders', '/crm', '/legal-documents', '/equipment', '/hire-orders', '/hire-calendar', '/housekeeping', '/guest-reviews', '/fleet', '/gym-members', '/gym-classes', '/gym-attendance', '/gym-payments', '/drafts', '/invoices'];
   const isMoreActive = moreRoutes.some(route => location.pathname === route);
 
   return (
