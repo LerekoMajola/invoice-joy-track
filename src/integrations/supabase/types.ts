@@ -4654,8 +4654,10 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
+          due_time: string | null
           id: string
           priority: string | null
+          reminder_minutes_before: number | null
           sort_order: number | null
           status: string | null
           title: string
@@ -4669,8 +4671,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           priority?: string | null
+          reminder_minutes_before?: number | null
           sort_order?: number | null
           status?: string | null
           title: string
@@ -4684,8 +4688,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           priority?: string | null
+          reminder_minutes_before?: number | null
           sort_order?: number | null
           status?: string | null
           title?: string

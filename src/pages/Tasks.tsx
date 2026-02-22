@@ -43,6 +43,8 @@ export default function Tasks() {
     title: '',
     description: '',
     dueDate: undefined as Date | undefined,
+    dueTime: '',
+    reminderMinutesBefore: 15 as number | null,
     priority: 'medium' as TaskPriority,
     assignedTo: '' as string,
   });
@@ -121,12 +123,14 @@ export default function Tasks() {
       title: newTask.title.trim(),
       description: newTask.description.trim() || undefined,
       due_date: newTask.dueDate ? format(newTask.dueDate, 'yyyy-MM-dd') : undefined,
+      due_time: newTask.dueTime || undefined,
+      reminder_minutes_before: newTask.reminderMinutesBefore,
       priority: newTask.priority,
       assigned_to: selectedStaff?.id,
       assigned_to_name: selectedStaff?.name,
     });
 
-    setNewTask({ title: '', description: '', dueDate: undefined, priority: 'medium', assignedTo: '' });
+    setNewTask({ title: '', description: '', dueDate: undefined, dueTime: '', reminderMinutesBefore: 15, priority: 'medium', assignedTo: '' });
     setIsOpen(false);
   };
 
@@ -362,6 +366,34 @@ export default function Tasks() {
                    />
                  </PopoverContent>
                </Popover>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="dueTime">Due Time (optional)</Label>
+              <Input
+                id="dueTime"
+                type="time"
+                value={newTask.dueTime}
+                onChange={(e) => setNewTask({ ...newTask, dueTime: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Reminder</Label>
+              <Select
+                value={newTask.reminderMinutesBefore === null ? 'none' : String(newTask.reminderMinutesBefore)}
+                onValueChange={(v) => setNewTask({ ...newTask, reminderMinutesBefore: v === 'none' ? null : Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No reminder</SelectItem>
+                  <SelectItem value="0">At the time</SelectItem>
+                  <SelectItem value="5">5 minutes before</SelectItem>
+                  <SelectItem value="15">15 minutes before</SelectItem>
+                  <SelectItem value="30">30 minutes before</SelectItem>
+                  <SelectItem value="60">1 hour before</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label>Priority</Label>

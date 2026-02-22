@@ -177,34 +177,70 @@ export function TaskDetailPanel({
              </div>
            </div>
  
-           {/* Due Date */}
-           <div>
-             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-               Due Date
-             </label>
-             <Popover>
-               <PopoverTrigger asChild>
-                 <Button
-                   variant="outline"
-                   className={cn(
-                     'w-full justify-start text-left font-normal mt-2',
-                     !task.due_date && 'text-muted-foreground'
-                   )}
-                 >
-                   <CalendarIcon className="mr-2 h-4 w-4" />
-                   {task.due_date ? format(parseISO(task.due_date), 'PPP') : 'No due date'}
-                 </Button>
-               </PopoverTrigger>
-               <PopoverContent className="w-auto p-0" align="start">
-                 <Calendar
-                   mode="single"
-                   selected={task.due_date ? parseISO(task.due_date) : undefined}
-                   onSelect={handleDueDateChange}
-                   initialFocus
-                 />
-               </PopoverContent>
-             </Popover>
-           </div>
+            {/* Due Date */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Due Date
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal mt-2',
+                      !task.due_date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {task.due_date ? format(parseISO(task.due_date), 'PPP') : 'No due date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={task.due_date ? parseISO(task.due_date) : undefined}
+                    onSelect={handleDueDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Due Time */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Due Time
+              </label>
+              <Input
+                type="time"
+                value={task.due_time?.slice(0, 5) || ''}
+                onChange={(e) => onUpdate({ due_time: e.target.value || null })}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Reminder */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Reminder
+              </label>
+              <Select
+                value={task.reminder_minutes_before === null ? 'none' : String(task.reminder_minutes_before)}
+                onValueChange={(v) => onUpdate({ reminder_minutes_before: v === 'none' ? null : Number(v) })}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No reminder</SelectItem>
+                  <SelectItem value="0">At the time</SelectItem>
+                  <SelectItem value="5">5 minutes before</SelectItem>
+                  <SelectItem value="15">15 minutes before</SelectItem>
+                  <SelectItem value="30">30 minutes before</SelectItem>
+                  <SelectItem value="60">1 hour before</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
  
             {/* Assigned To */}
             <div>

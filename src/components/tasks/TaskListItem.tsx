@@ -29,12 +29,21 @@ import { cn } from '@/lib/utils';
    },
  };
  
- function formatDueDate(dateStr: string | null): string {
-   if (!dateStr) return '';
-   const date = parseISO(dateStr);
-   if (isToday(date)) return 'Today';
-   return format(date, 'MMM d');
- }
+function formatTime(timeStr: string | null): string {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function formatDueDate(dateStr: string | null, timeStr: string | null): string {
+  if (!dateStr) return '';
+  const date = parseISO(dateStr);
+  const datePart = isToday(date) ? 'Today' : format(date, 'MMM d');
+  const timePart = formatTime(timeStr);
+  return timePart ? `${datePart} at ${timePart}` : datePart;
+}
  
  function getDueDateColor(dateStr: string | null, status: string): string {
    if (!dateStr || status === 'done') return 'text-muted-foreground';
@@ -95,8 +104,8 @@ import { cn } from '@/lib/utils';
                getDueDateColor(task.due_date, task.status)
              )}
            >
-             <CalendarIcon className="h-3 w-3" />
-             {formatDueDate(task.due_date)}
+              <CalendarIcon className="h-3 w-3" />
+              {formatDueDate(task.due_date, task.due_time)}
            </span>
           )}
           {task.assigned_to_name && (
