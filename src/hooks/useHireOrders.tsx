@@ -272,12 +272,82 @@ export function useHireOrders() {
           .eq('id', item.id);
         if (itemError) throw itemError;
       }
+
+      // Update linked draft invoice with actual return data
+      try {
+        // Get the order to find order_number and hire_start
+        const { data: orderData } = await supabase
+          .from('hire_orders')
+          .select('order_number, hire_start')
+          .eq('id', input.orderId)
+          .single();
+
+        if (orderData) {
+          const { data: linkedInvoice } = await supabase
+            .from('invoices')
+            .select('id')
+            .eq('description', `Hire Order ${orderData.order_number}`)
+            .single();
+
+          if (linkedInvoice) {
+            // Update invoice total
+            await supabase
+              .from('invoices')
+              .update({ total: input.adjustedTotal })
+              .eq('id', linkedInvoice.id);
+
+            // Delete old line items
+            await supabase
+              .from('invoice_line_items')
+              .delete()
+              .eq('invoice_id', linkedInvoice.id);
+
+            // Calculate actual hire days
+            const actualDays = Math.max(1, Math.ceil(
+              (new Date(input.actualReturnDate).getTime() - new Date(orderData.hire_start).getTime()) / (1000 * 60 * 60 * 24)
+            ));
+
+            // Get full item details for line items
+            const { data: orderItems } = await supabase
+              .from('hire_order_items')
+              .select('*')
+              .eq('hire_order_id', input.orderId);
+
+            if (orderItems) {
+              const newLineItems = orderItems.map((oi) => ({
+                invoice_id: linkedInvoice.id,
+                description: `${oi.equipment_name} (${actualDays} day${actualDays !== 1 ? 's' : ''} @ ${oi.daily_rate}/day)`,
+                quantity: oi.quantity,
+                unit_price: oi.daily_rate * actualDays,
+                cost_price: 0,
+              }));
+
+              // Add damage charge line if any
+              const totalDamage = input.items.reduce((sum, i) => sum + i.damage_charge, 0);
+              if (totalDamage > 0) {
+                newLineItems.push({
+                  invoice_id: linkedInvoice.id,
+                  description: 'Damage charges',
+                  quantity: 1,
+                  unit_price: totalDamage,
+                  cost_price: 0,
+                });
+              }
+
+              await supabase.from('invoice_line_items').insert(newLineItems);
+            }
+          }
+        }
+      } catch (invoiceErr) {
+        console.error('Invoice update on return failed:', invoiceErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
       queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
-      toast.success('Return processed successfully');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Return processed & invoice updated');
     },
     onError: () => toast.error('Failed to process return'),
   });
