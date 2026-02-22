@@ -3490,6 +3490,54 @@ export type Database = {
           },
         ]
       }
+      package_tiers: {
+        Row: {
+          bundle_price: number
+          created_at: string
+          description: string | null
+          display_name: string
+          features: Json
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          module_keys: string[]
+          name: string
+          sort_order: number
+          system_type: string
+          updated_at: string
+        }
+        Insert: {
+          bundle_price?: number
+          created_at?: string
+          description?: string | null
+          display_name: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          module_keys?: string[]
+          name: string
+          sort_order?: number
+          system_type: string
+          updated_at?: string
+        }
+        Update: {
+          bundle_price?: number
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          module_keys?: string[]
+          name?: string
+          sort_order?: number
+          system_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payslips: {
         Row: {
           allowances: Json | null
@@ -4601,6 +4649,7 @@ export type Database = {
           current_period_start: string | null
           deleted_at: string | null
           id: string
+          package_tier_id: string | null
           payment_method: string | null
           payment_reference: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
@@ -4618,6 +4667,7 @@ export type Database = {
           current_period_start?: string | null
           deleted_at?: string | null
           id?: string
+          package_tier_id?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
@@ -4635,6 +4685,7 @@ export type Database = {
           current_period_start?: string | null
           deleted_at?: string | null
           id?: string
+          package_tier_id?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
@@ -4644,7 +4695,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_package_tier_id_fkey"
+            columns: ["package_tier_id"]
+            isOneToOne: false
+            referencedRelation: "package_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {

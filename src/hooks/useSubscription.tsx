@@ -162,6 +162,9 @@ export function useSubscription() {
   // System type from subscription
   const systemType: SystemType = (subscription as any)?.system_type || 'business';
 
+  // Package tier ID from subscription
+  const packageTierId: string | null = (subscription as any)?.package_tier_id || null;
+
   return {
     subscription,
     usage,
@@ -180,5 +183,6 @@ export function useSubscription() {
     needsPayment,
     paymentReference,
     systemType,
+    packageTierId,
   };
 }

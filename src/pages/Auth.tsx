@@ -30,6 +30,7 @@ export default function Auth() {
   const [signupStep, setSignupStep] = useState<SignupStep>('system');
   const [selectedSystem, setSelectedSystem] = useState<SystemType | null>(null);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null);
   const [selectedModuleKeys, setSelectedModuleKeys] = useState<string[]>([]);
   const [savingModules, setSavingModules] = useState(false);
   const navigate = useNavigate();
@@ -75,8 +76,9 @@ export default function Auth() {
     return true;
   };
 
-  const handleTierSelect = async (tierName: string, moduleKeys: string[]) => {
+  const handleTierSelect = async (tierName: string, moduleKeys: string[], tierId: string) => {
     setSelectedTier(tierName);
+    setSelectedTierId(tierId);
     setSelectedModuleKeys(moduleKeys);
     setSignupStep('review');
   };
@@ -181,17 +183,19 @@ export default function Auth() {
         if (error) throw error;
       }
 
-      // Save system_type to subscription
+      // Save system_type and package_tier_id to subscription
       if (selectedSystem) {
+        const updateData: any = { system_type: selectedSystem };
+        if (selectedTierId) {
+          updateData.package_tier_id = selectedTierId;
+        }
         const { error: subError } = await supabase
           .from('subscriptions')
-          .update({ system_type: selectedSystem } as any)
+          .update(updateData)
           .eq('user_id', userId);
 
-        // If no subscription row exists yet, it'll be created by the trigger/default
-        // Try upsert approach if update affected 0 rows
         if (subError) {
-          console.error('Error updating subscription system_type:', subError);
+          console.error('Error updating subscription:', subError);
         }
       }
 
