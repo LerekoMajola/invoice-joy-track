@@ -1,35 +1,26 @@
 
 
-## Fix Phone Input Country Selection
+## Auto-Create Invoice on Hire Order Creation
 
-### Problem
-When selecting a country code in the phone input (e.g., South Africa +27), if no phone number has been typed yet, the selection immediately reverts back to Lesotho. This happens because the component sends an empty string `''` when there are no digits, and on re-render it falls back to the default country (Lesotho).
+### Overview
+When a hire order is successfully created, the system will automatically generate a corresponding draft invoice with all the hire order line items.
 
-### Root Cause
-In `src/components/ui/phone-input.tsx`, the `handleCountrySelect` function (line 105) only stores the dial code when digits exist:
-```
-onChange(digits ? `${country.dial}${digits}` : '');
-```
-When `digits` is empty, it sends `''`, which causes the component to fall back to `defaultCountry` (Lesotho).
+### Changes
 
-The same issue exists in `handleLocalChange` (line 96) -- clearing the input resets the country.
+**Single file change: `src/hooks/useHireOrders.tsx`**
 
-### Fix
-**File: `src/components/ui/phone-input.tsx`**
+Inside the `createOrder` mutation, after hire order items are inserted:
 
-1. In `handleCountrySelect`: Always store the dial code, even with no digits typed:
-   - Change to: `onChange(country.dial + digits)`
-   - This keeps the selected country code in the value at all times
+1. Query the latest invoice number to generate the next sequential one (e.g. INV-0045)
+2. Insert a new `invoices` row with:
+   - Same `user_id`, `company_profile_id`, `client_id`, `client_name`
+   - `date` = today, `due_date` = today + 30 days
+   - `total` = order total, `tax_rate` = 0, `status` = 'draft'
+   - `description` = "Hire Order HO-XXX"
+3. Insert `invoice_line_items` for each equipment item with description like "Excavator (5 days @ 200/day)", quantity, and unit_price = daily_rate x days
+4. Wrap in try/catch so invoice failure does not block the hire order
+5. Invalidate the `invoices` query cache
+6. Update success toast to "Hire order created & invoice generated"
 
-2. In `handleLocalChange`: Preserve the dial code when clearing digits:
-   - Change to: `onChange(selectedCountry.dial + digits)` instead of `onChange('')`
-
-These two small changes ensure the country selection persists regardless of whether a phone number has been entered.
-
-### Technical Details
-
-| Location | Current | Fixed |
-|----------|---------|-------|
-| `handleCountrySelect` (line 105) | `onChange(digits ? ... : '')` | `onChange(country.dial + digits)` |
-| `handleLocalChange` (line 96) | `onChange(digits ? ... : '')` | `onChange(selectedCountry.dial + digits)` |
+No database migration needed -- uses existing `invoices` and `invoice_line_items` tables.
 
