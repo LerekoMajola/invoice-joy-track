@@ -1,62 +1,30 @@
 
+## Fix "Build Your Own Custom Package" Link on Landing Page
 
-## Fix Custom Package Builder for LawPro (and All Verticals)
+### Problem
 
-### Problems Found
+The "Or build your own custom package" link on the landing/pricing page navigates to `/auth` with no query parameters. This lands the user on the login form instead of the signup flow's custom module builder.
 
-1. **Irrelevant modules showing in custom builder** -- When a LawPro user clicks "Build your own custom package", they see shared modules like "Delivery Notes", "Profitability", and "Fleet Management" that don't apply to law firms. This makes the builder feel broken or confusing.
+### Fix
 
-2. **No review step for custom builds** -- When selecting a pre-built tier (Starter/Professional/Enterprise), users see a review screen before creating their account. But custom builds skip this and go straight to the credentials form. This inconsistency may make users feel something went wrong.
+**File: `src/components/landing/PricingTable.tsx` (line 163)**
 
-### Changes
+Change the link to pass the currently selected system type AND a `custom=true` parameter:
+```
+/auth?system=business&custom=true
+```
+The `activeSystem` state already tracks which vertical tab is selected, so this will be dynamic (e.g., `/auth?system=legal&custom=true`).
 
-**1. Filter modules per vertical relevance**
+**File: `src/pages/Auth.tsx` (around line 41-48)**
 
-Update `ModuleSelector.tsx` to only show modules that are relevant to the selected system type. Each vertical will have a curated list of allowed shared modules:
-
-- **Legal**: Core CRM, Invoices, Tasks, Accounting, Staff + all legal-specific modules. Exclude: Quotes, Delivery Notes, Profitability, Fleet, Tenders.
-- Other verticals get similar curated lists.
-
-This is done by adding a mapping of which shared modules each system type can access.
-
-**2. Add review step for custom builds**
-
-Update `Auth.tsx` so custom builds also pass through the review step before credentials:
-- After selecting modules in the custom builder, set `selectedTier` to "Custom" and go to the review step
-- The review step already handles showing the selected modules
+Update the `useEffect` that reads URL params to also check for `custom=true`. When present:
+- Set `isLogin` to `false` (signup mode)
+- Set the `selectedSystem` from the `system` param
+- Set `signupStep` to `'custom-modules'` (skip straight to the module builder)
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/auth/ModuleSelector.tsx` | Add a `SYSTEM_ALLOWED_SHARED_KEYS` mapping to filter out irrelevant shared modules per vertical |
-| `src/pages/Auth.tsx` | Update `handleModulesComplete` to set `selectedTier` to "Custom" and go to the review step instead of skipping to credentials |
-
-### Technical Details
-
-**Module filtering logic in `ModuleSelector.tsx`:**
-
-```text
-SYSTEM_ALLOWED_SHARED_KEYS = {
-  legal:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  business:   ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'accounting', 'staff', 'fleet', 'tenders'],
-  workshop:   ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
-  school:     ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  hire:       ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
-  guesthouse: ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  fleet:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff', 'fleet'],
-  gym:        ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-}
-```
-
-After fetching modules, filter: show the vertical's own modules + only the allowed shared modules for that vertical.
-
-**Auth.tsx custom flow fix:**
-
-In `handleModulesComplete`, after looking up module keys:
-- Set `selectedTier` to `"Custom"`
-- Set `selectedTierId` to `null`
-- Set `signupStep` to `"review"` instead of `"credentials"`
-
-This gives users the same review screen as pre-built tiers, showing their selected modules before account creation.
-
+| `src/components/landing/PricingTable.tsx` | Update the Link `to` prop to include `system={activeSystem}&custom=true` |
+| `src/pages/Auth.tsx` | Read `custom` search param; if true, jump to `custom-modules` step instead of `package` |
