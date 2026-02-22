@@ -2117,6 +2117,44 @@ export type Database = {
           },
         ]
       }
+      gym_invoice_logs: {
+        Row: {
+          billing_month: string
+          company_profile_id: string | null
+          id: string
+          member_id: string
+          sent_at: string
+          subscription_id: string
+          user_id: string
+        }
+        Insert: {
+          billing_month: string
+          company_profile_id?: string | null
+          id?: string
+          member_id: string
+          sent_at?: string
+          subscription_id: string
+          user_id: string
+        }
+        Update: {
+          billing_month?: string
+          company_profile_id?: string | null
+          id?: string
+          member_id?: string
+          sent_at?: string
+          subscription_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_invoice_logs_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_member_subscriptions: {
         Row: {
           amount_paid: number
