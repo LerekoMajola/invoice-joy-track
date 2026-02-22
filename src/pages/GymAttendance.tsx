@@ -7,19 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useGymAttendance } from '@/hooks/useGymAttendance';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useGymAttendance, GymAttendanceRecord } from '@/hooks/useGymAttendance';
 import { useGymMembers } from '@/hooks/useGymMembers';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   UserCheck, Users, CalendarDays, TrendingUp,
-  Search, LogIn, LogOut, CalendarIcon, Clock
+  Search, LogIn, LogOut, CalendarIcon, Clock, ChevronDown
 } from 'lucide-react';
 
 export default function GymAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
   const {
     attendance, isLoading, todayCheckins, currentlyInGym,
@@ -29,6 +31,17 @@ export default function GymAttendance() {
   const { members } = useGymMembers();
 
   const isToday = selectedDate.toDateString() === new Date().toDateString();
+
+  // Group attendance by member
+  const grouped = useMemo(() => {
+    const map = new Map<string, GymAttendanceRecord[]>();
+    attendance.forEach(r => {
+      const list = map.get(r.member_id) || [];
+      list.push(r);
+      map.set(r.member_id, list);
+    });
+    return Array.from(map.entries());
+  }, [attendance]);
 
   // Filter active members for quick check-in search
   const filteredMembers = useMemo(() => {
@@ -153,7 +166,7 @@ export default function GymAttendance() {
 
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
-        ) : attendance.length === 0 ? (
+        ) : grouped.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <UserCheck className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
@@ -162,48 +175,89 @@ export default function GymAttendance() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {attendance.map(record => {
-              const member = record.gym_members;
-              const isActive = !record.check_out;
+            {grouped.map(([memberId, records]) => {
+              const member = records[0].gym_members;
+              const hasActive = records.some(r => !r.check_out);
+              const isExpanded = expandedMember === memberId;
+              const activeRecord = records.find(r => !r.check_out);
+
               return (
-                <Card key={record.id} className={cn(isActive && 'border-green-200 dark:border-green-800/50')}>
-                  <CardContent className="p-3.5 flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn(
-                        'h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold',
-                        isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'
-                      )}>
-                        {member?.first_name?.[0]}{member?.last_name?.[0]}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {member?.first_name} {member?.last_name}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{member?.member_number}</span>
-                          <span>•</span>
-                          <Clock className="h-3 w-3" />
-                          <span>{format(new Date(record.check_in), 'HH:mm')}</span>
-                          {record.check_out && (
-                            <>
-                              <span>→</span>
-                              <span>{format(new Date(record.check_out), 'HH:mm')}</span>
-                            </>
+                <Collapsible
+                  key={memberId}
+                  open={isExpanded}
+                  onOpenChange={open => setExpandedMember(open ? memberId : null)}
+                >
+                  <Card className={cn(hasActive && 'border-green-200 dark:border-green-800/50')}>
+                    <CardContent className="p-3.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={cn(
+                            'h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold',
+                            hasActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'
+                          )}>
+                            {member?.first_name?.[0]}{member?.last_name?.[0]}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {member?.first_name} {member?.last_name}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{member?.member_number}</span>
+                              <span>•</span>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {records.length} {records.length === 1 ? 'session' : 'sessions'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {hasActive && isToday && activeRecord && (
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); checkOut(activeRecord.id); }}>
+                              <LogOut className="h-3.5 w-3.5 mr-1" />Out
+                            </Button>
                           )}
+                          {!hasActive && (
+                            <Badge variant="secondary" className="text-xs">Done</Badge>
+                          )}
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
+                            </Button>
+                          </CollapsibleTrigger>
                         </div>
                       </div>
-                    </div>
-                    {isActive && isToday ? (
-                      <Button variant="outline" size="sm" onClick={() => checkOut(record.id)}>
-                        <LogOut className="h-3.5 w-3.5 mr-1" />Out
-                      </Button>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        {record.check_out ? 'Done' : 'Active'}
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      <CollapsibleContent className="mt-3 space-y-1.5 border-t border-border pt-3">
+                        {records.map(record => {
+                          const isActive = !record.check_out;
+                          return (
+                            <div key={record.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/40 text-xs">
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                <span>{format(new Date(record.check_in), 'HH:mm')}</span>
+                                {record.check_out ? (
+                                  <>
+                                    <span>→</span>
+                                    <span>{format(new Date(record.check_out), 'HH:mm')}</span>
+                                  </>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                    Active
+                                  </Badge>
+                                )}
+                              </div>
+                              {isActive && isToday && (
+                                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => checkOut(record.id)}>
+                                  <LogOut className="h-3 w-3 mr-1" />Out
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
               );
             })}
           </div>
