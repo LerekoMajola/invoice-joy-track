@@ -1,50 +1,29 @@
 
 
-## Admin Usage Analytics Tab
+## Brand the Auth Login Page
 
-### What You'll Get
+### Changes
 
-A new "Usage" tab in the Admin dashboard showing how tenants are actually using the platform -- which features they use most, activity trends over time, and per-tenant engagement scores. This helps you spot patterns like which modules drive retention, which tenants are at risk of churning, and what features are most popular.
+**File: `src/pages/Auth.tsx`**
 
-### What It Shows
+1. **Gradient background on login view**: Change the login form's outer `div` from plain `bg-background` to use the platform's hero gradient (`bg-gradient-hero`) for the right panel, giving it the Electric Indigo / Violet / Cyan feel.
 
-**Platform-Wide Activity Summary**
-- Total records created across all tenants (invoices, quotes, clients, tasks, leads, job cards, etc.)
-- Activity trend chart showing records created per month (last 6 months)
-- Feature popularity breakdown: bar chart showing which modules are used most (e.g. "Invoices: 8, Quotes: 17, Leads: 9")
+2. **Make the logo clickable**: Wrap the mobile `PlatformLogo` in a `Link` to `"/"` so tapping it navigates back to the landing page. Also wrap the "Back to home" text link's logo (if visible on desktop via AuthBrandingPanel) -- but the main fix is the mobile logo at the top of the login form.
 
-**Per-Tenant Usage Table**
-- Sortable table of all tenants with columns: Tenant name, System type, Invoices, Quotes, Clients, Tasks, Leads, Staff, Last Active, Engagement Score
-- Engagement score = weighted composite (clients + invoices + quotes + tasks + leads + staff)
-- Color-coded engagement badges: High / Medium / Low / Inactive
-- "Last Active" based on most recent record created across all tables
+3. **Style the login card**: Add a frosted glass card (`bg-card/80 backdrop-blur border rounded-2xl shadow-xl p-8`) around the form content so it sits cleanly on the gradient background, similar to how the screenshot shows a contained card.
 
-**Module Adoption Chart**
-- Shows how many tenants have used each feature (e.g. "12 tenants created invoices, 8 created leads, 3 used job cards")
-- Helps identify which add-on modules are worth promoting
+4. **Gradient Sign In button**: Already uses `variant="gradient"` -- no change needed.
 
----
+5. **Apply same treatment to the signup credentials step** (line 414) for consistency.
 
 ### Technical Details
 
-**New edge function: `admin-get-usage-analytics`**
-- Requires super_admin role (same auth pattern as existing admin functions)
-- Queries counts from: invoices, quotes, clients, tasks, leads, job_cards, legal_cases, gym_members, delivery_notes, staff_members, hire_orders, bookings, fleet_vehicles, students, expenses
-- Groups by user_id to produce per-tenant usage stats
-- Computes monthly activity trend by aggregating created_at across all tables
-- Returns: `{ tenantUsage[], featurePopularity[], monthlyActivity[], summary }`
+| Area | Current | After |
+|------|---------|-------|
+| Login background | `bg-background` (plain gray) | `bg-gradient-hero` or subtle gradient overlay |
+| Mobile logo | Static `PlatformLogo` | Wrapped in `<Link to="/">` |
+| Form container | No card wrapper | Glass card with shadow and rounded corners |
+| Desktop logo (AuthBrandingPanel) | Not clickable | Wrap in `<Link to="/">` in AuthBrandingPanel |
 
-**New files:**
-| File | Purpose |
-|------|---------|
-| `supabase/functions/admin-get-usage-analytics/index.ts` | Edge function aggregating usage data |
-| `src/hooks/useAdminUsageAnalytics.tsx` | Hook to call the edge function |
-| `src/components/admin/UsageAnalyticsTab.tsx` | Full tab UI with charts and table |
+Only two files change: `src/pages/Auth.tsx` and `src/components/auth/AuthBrandingPanel.tsx`.
 
-**Modified files:**
-| File | Change |
-|------|--------|
-| `src/pages/Admin.tsx` | Add "Usage" tab trigger and content |
-| `src/components/admin/index.ts` | Export new tab component |
-
-**No database changes needed** -- all data is already in existing tables; the edge function just reads and aggregates it using the service role key.
