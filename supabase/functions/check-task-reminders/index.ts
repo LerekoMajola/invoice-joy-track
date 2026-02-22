@@ -66,108 +66,121 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Group tasks by user
-    const tasksByUser: Record<string, typeof eligibleTasks> = {};
-    for (const task of eligibleTasks) {
-      if (!tasksByUser[task.user_id]) tasksByUser[task.user_id] = [];
-      tasksByUser[task.user_id].push(task);
-    }
-
-    const userIds = Object.keys(tasksByUser);
-
-    // Find users with push subscriptions
-    const { data: subscriptions, error: subError } = await supabase
-      .from('push_subscriptions')
-      .select('user_id')
-      .in('user_id', userIds);
-    if (subError) throw subError;
-    const usersWithPush = new Set(subscriptions?.map(s => s.user_id) || []);
-
-    // Create in-app notifications
-    const inAppNotifications: Array<{
+    // Build notifications with unique reference_ids
+    const notifications: Array<{
       user_id: string; type: string; title: string; message: string;
       link: string; reference_id: string; reference_type: string;
     }> = [];
 
-    for (const userId of userIds) {
-      const userTasks = tasksByUser[userId];
-      const overdueTasks = userTasks.filter(t => t.due_date < todayStr);
-      const dueTodayTasks = userTasks.filter(t => t.due_date === todayStr);
+    const pushTargets: Array<{ user_id: string; title: string; body: string; url: string }> = [];
 
-      for (const task of overdueTasks) {
-        inAppNotifications.push({
-          user_id: userId, type: 'task', title: 'Overdue Task',
-          message: `"${task.title}" was due on ${task.due_date}`,
-          link: '/tasks', reference_id: task.id, reference_type: 'task',
-        });
-      }
-      for (const task of dueTodayTasks) {
-        const timeStr = task.due_time ? ` at ${task.due_time.slice(0, 5)}` : '';
-        inAppNotifications.push({
-          user_id: userId, type: 'task', title: 'Task Due Today',
-          message: `"${task.title}" is due today${timeStr}`,
-          link: '/tasks', reference_id: task.id, reference_type: 'task',
-        });
-      }
+    for (const task of eligibleTasks) {
+      const isOverdue = task.due_date < todayStr;
+      const timeStr = task.due_time ? ` at ${task.due_time.slice(0, 5)}` : '';
+
+      const title = isOverdue ? 'Overdue Task' : 'Task Due Today';
+      const message = isOverdue
+        ? `"${task.title}" was due on ${task.due_date}`
+        : `"${task.title}" is due today${timeStr}`;
+
+      notifications.push({
+        user_id: task.user_id,
+        type: 'task',
+        title,
+        message,
+        link: '/tasks',
+        reference_id: task.id,
+        reference_type: `task_reminder_${task.due_date}`,
+      });
     }
 
-    let inAppNotificationsCreated = 0;
-    if (inAppNotifications.length > 0) {
-      const { error: insertError } = await supabase.from('notifications').insert(inAppNotifications);
+    if (notifications.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No notifications to create', notificationsSent: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Deduplicate — check which (reference_id, reference_type) combos already exist
+    const refIds = [...new Set(notifications.map(n => n.reference_id))];
+    const refTypes = [...new Set(notifications.map(n => n.reference_type))];
+    const { data: existing, error: existError } = await supabase
+      .from('notifications')
+      .select('reference_id, reference_type')
+      .in('reference_id', refIds)
+      .in('reference_type', refTypes);
+
+    if (existError) throw existError;
+
+    const existingKeys = new Set((existing || []).map(e => `${e.reference_id}::${e.reference_type}`));
+    const newNotifications = notifications.filter(n => !existingKeys.has(`${n.reference_id}::${n.reference_type}`));
+
+    console.log(`${newNotifications.length} new notifications (${existingKeys.size} duplicates skipped)`);
+
+    // Insert in-app notifications
+    let inAppCreated = 0;
+    if (newNotifications.length > 0) {
+      const { error: insertError } = await supabase.from('notifications').insert(newNotifications);
       if (insertError) {
         console.error('Failed to create in-app notifications:', insertError);
       } else {
-        inAppNotificationsCreated = inAppNotifications.length;
-        console.log(`Created ${inAppNotificationsCreated} in-app notifications`);
+        inAppCreated = newNotifications.length;
+        console.log(`Created ${inAppCreated} in-app notifications`);
       }
     }
 
-    // Send push notifications
-    let notificationsSent = 0;
-    const results: Array<{ userId: string; status: string; result?: unknown; error?: string }> = [];
+    // Send push notifications for new notifications only
+    const userIds = [...new Set(newNotifications.map(n => n.user_id))];
+    let usersWithPush = new Set<string>();
 
+    if (userIds.length > 0) {
+      const { data: subscriptions, error: subError } = await supabase
+        .from('push_subscriptions')
+        .select('user_id')
+        .in('user_id', userIds);
+      if (subError) throw subError;
+      usersWithPush = new Set(subscriptions?.map(s => s.user_id) || []);
+    }
+
+    // Group new notifications by user for push
+    const tasksByUser: Record<string, typeof newNotifications> = {};
+    for (const n of newNotifications) {
+      if (!tasksByUser[n.user_id]) tasksByUser[n.user_id] = [];
+      tasksByUser[n.user_id].push(n);
+    }
+
+    let pushSent = 0;
     for (const userId of userIds) {
       if (!usersWithPush.has(userId)) continue;
 
-      const userTasks = tasksByUser[userId];
-      const overdueTasks = userTasks.filter(t => t.due_date < todayStr);
-      const dueTodayTasks = userTasks.filter(t => t.due_date === todayStr);
-      const highPriorityTasks = userTasks.filter(t => t.priority === 'high');
+      const userNotifs = tasksByUser[userId];
+      const overdueCount = userNotifs.filter(n => n.title === 'Overdue Task').length;
+      const dueTodayCount = userNotifs.filter(n => n.title === 'Task Due Today').length;
 
-      let title = '';
-      let body = '';
+      let pushTitle = '';
+      let pushBody = '';
 
-      if (overdueTasks.length > 0) {
-        title = `⚠️ ${overdueTasks.length} Overdue Task${overdueTasks.length > 1 ? 's' : ''}`;
-        body = overdueTasks.slice(0, 3).map(t => t.title).join(', ');
-        if (overdueTasks.length > 3) body += ` and ${overdueTasks.length - 3} more`;
-      } else if (highPriorityTasks.length > 0) {
-        title = `🔴 ${highPriorityTasks.length} High Priority Task${highPriorityTasks.length > 1 ? 's' : ''} Due`;
-        body = highPriorityTasks.slice(0, 3).map(t => t.title).join(', ');
-        if (highPriorityTasks.length > 3) body += ` and ${highPriorityTasks.length - 3} more`;
-      } else if (dueTodayTasks.length > 0) {
-        title = `📋 ${dueTodayTasks.length} Task${dueTodayTasks.length > 1 ? 's' : ''} Due Today`;
-        body = dueTodayTasks.slice(0, 3).map(t => t.title).join(', ');
-        if (dueTodayTasks.length > 3) body += ` and ${dueTodayTasks.length - 3} more`;
+      if (overdueCount > 0) {
+        pushTitle = `⚠️ ${overdueCount} Overdue Task${overdueCount > 1 ? 's' : ''}`;
+        pushBody = userNotifs.filter(n => n.title === 'Overdue Task').slice(0, 3).map(n => n.message).join('; ');
+      } else if (dueTodayCount > 0) {
+        pushTitle = `📋 ${dueTodayCount} Task${dueTodayCount > 1 ? 's' : ''} Due Today`;
+        pushBody = userNotifs.filter(n => n.title === 'Task Due Today').slice(0, 3).map(n => n.message).join('; ');
       }
 
-      if (title && body) {
+      if (pushTitle && pushBody) {
         try {
-          const response = await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+          await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${supabaseServiceKey}`,
             },
-            body: JSON.stringify({ user_id: userId, title, body, url: '/tasks' }),
+            body: JSON.stringify({ user_id: userId, title: pushTitle, body: pushBody, url: '/tasks' }),
           });
-          const result = await response.json();
-          results.push({ userId, status: 'sent', result });
-          notificationsSent++;
+          pushSent++;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error(`Failed to send notification to user ${userId}:`, error);
-          results.push({ userId, status: 'failed', error: errorMessage });
+          console.error(`Push failed for user ${userId}:`, error);
         }
       }
     }
@@ -175,12 +188,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         message: 'Task reminder check complete',
-        totalTasksDue: eligibleTasks.length,
-        usersWithTasks: userIds.length,
-        usersWithPush: usersWithPush.size,
-        notificationsSent,
-        inAppNotificationsCreated,
-        results,
+        totalEligible: eligibleTasks.length,
+        inAppCreated,
+        pushSent,
+        duplicatesSkipped: existingKeys.size,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
