@@ -190,8 +190,8 @@ export default function Settings() {
     );
   }
 
-  const profileLabel = systemType === 'legal' ? 'LawPro Profile' : systemType === 'school' ? 'EduPro Profile' : systemType === 'workshop' ? 'ShopPro Profile' : systemType === 'hire' ? 'HirePro Profile' : systemType === 'guesthouse' ? 'StayPro Profile' : systemType === 'fleet' ? 'FleetPro Profile' : systemType === 'gym' ? 'GymPro Profile' : 'BizPro Profile';
-  const companyLabel = systemType === 'legal' ? 'Firm Name' : systemType === 'school' ? 'School Name' : systemType === 'workshop' ? 'Workshop Name' : systemType === 'hire' ? 'Business Name' : systemType === 'gym' ? 'Gym Name' : 'Company Name';
+  const profileLabel = systemType === 'legal' ? 'LawPro Profile' : systemType === 'gym' ? 'GymPro Profile' : 'BizPro Profile';
+  const companyLabel = systemType === 'legal' ? 'Firm Name' : systemType === 'gym' ? 'Gym Name' : 'Company Name';
 
   return (
     <DashboardLayout>

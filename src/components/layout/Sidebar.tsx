@@ -53,29 +53,29 @@ const navigation = [
   { name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null, optionalFeature: 'drafts' as const },
   { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null, optionalFeature: null },
   { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
-  // Workshop
-  { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
+  // Workshop (now a BizPro module)
+  { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['business'], optionalFeature: null },
   // Legal
   { name: 'Cases', href: '/legal-cases', icon: Scale, moduleKey: 'legal_cases', systemTypes: ['legal'], optionalFeature: null },
   { name: 'Time Tracking', href: '/legal-time-tracking', icon: Timer, moduleKey: 'legal_billing', systemTypes: ['legal'], optionalFeature: null },
   { name: 'Legal Docs', href: '/legal-documents', icon: FolderOpen, moduleKey: 'legal_documents', systemTypes: ['legal'], optionalFeature: null },
   { name: 'Court Calendar', href: '/legal-calendar', icon: CalendarDays, moduleKey: 'legal_calendar', systemTypes: ['legal'], optionalFeature: null },
-  // Hire
-  { name: 'Equipment', href: '/equipment', icon: Hammer, moduleKey: 'hire_equipment', systemTypes: ['hire'], optionalFeature: null },
-  { name: 'Hire Orders', href: '/hire-orders', icon: ClipboardList, moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  { name: 'Availability', href: '/hire-calendar', icon: CalendarDays, moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  // Guest House
-  { name: 'Rooms', href: '/rooms', icon: BedDouble, moduleKey: 'gh_rooms', systemTypes: ['guesthouse'], optionalFeature: null },
-  { name: 'Bookings', href: '/bookings', icon: CalendarCheck, moduleKey: 'gh_bookings', systemTypes: ['guesthouse'], optionalFeature: null },
-  { name: 'Housekeeping', href: '/housekeeping', icon: Hotel, moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'], optionalFeature: null },
-  { name: 'Reviews', href: '/guest-reviews', icon: Star, moduleKey: 'gh_reviews', systemTypes: ['guesthouse'], optionalFeature: null },
-  // School
-  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['school'], optionalFeature: null },
-  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
-  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['school'], optionalFeature: null },
-  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
-  // Fleet
-  { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet', systemTypes: ['fleet'], optionalFeature: null },
+  // Hire (now a BizPro module)
+  { name: 'Equipment', href: '/equipment', icon: Hammer, moduleKey: 'hire_equipment', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Hire Orders', href: '/hire-orders', icon: ClipboardList, moduleKey: 'hire_orders', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Availability', href: '/hire-calendar', icon: CalendarDays, moduleKey: 'hire_orders', systemTypes: ['business'], optionalFeature: null },
+  // Guest House (now a BizPro module)
+  { name: 'Rooms', href: '/rooms', icon: BedDouble, moduleKey: 'gh_rooms', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Bookings', href: '/bookings', icon: CalendarCheck, moduleKey: 'gh_bookings', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Housekeeping', href: '/housekeeping', icon: Hotel, moduleKey: 'gh_housekeeping', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Reviews', href: '/guest-reviews', icon: Star, moduleKey: 'gh_reviews', systemTypes: ['business'], optionalFeature: null },
+  // School (now a BizPro module)
+  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['business'], optionalFeature: null },
+  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  // Fleet (now a BizPro module)
+  { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym
   { name: 'Members', href: '/gym-members', icon: Users, moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   { name: 'Classes', href: '/gym-classes', icon: Dumbbell, moduleKey: 'gym_classes', systemTypes: ['gym'], optionalFeature: null },

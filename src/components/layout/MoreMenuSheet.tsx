@@ -20,22 +20,22 @@ const allMenuItems = [
   { icon: Kanban, label: 'CRM', path: '/crm', description: 'Sales pipeline', moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
   { icon: Briefcase, label: 'Tenders', path: '/tenders', description: 'Track opportunities', moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
   
-  // Workshop-specific
-  { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
-  // Hire-specific
-  { icon: Hammer, label: 'Equipment', path: '/equipment', description: 'Tool catalogue', moduleKey: 'hire_equipment', systemTypes: ['hire'], optionalFeature: null },
-  { icon: ClipboardList, label: 'Hire Orders', path: '/hire-orders', description: 'Rental bookings', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  { icon: CalendarDays, label: 'Availability', path: '/hire-calendar', description: 'Booking calendar', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  // Guest House-specific
-  { icon: Hotel, label: 'Housekeeping', path: '/housekeeping', description: 'Room cleaning tasks', moduleKey: 'gh_housekeeping', systemTypes: ['guesthouse'], optionalFeature: null },
-  { icon: Star, label: 'Reviews', path: '/guest-reviews', description: 'Guest feedback', moduleKey: 'gh_reviews', systemTypes: ['guesthouse'], optionalFeature: null },
+  // Workshop (BizPro module)
+  { icon: Wrench, label: 'Workshop', path: '/workshop', description: 'Job cards', moduleKey: 'workshop', systemTypes: ['business'], optionalFeature: null },
+  // Hire (BizPro module)
+  { icon: Hammer, label: 'Equipment', path: '/equipment', description: 'Tool catalogue', moduleKey: 'hire_equipment', systemTypes: ['business'], optionalFeature: null },
+  { icon: ClipboardList, label: 'Hire Orders', path: '/hire-orders', description: 'Rental bookings', moduleKey: 'hire_orders', systemTypes: ['business'], optionalFeature: null },
+  { icon: CalendarDays, label: 'Availability', path: '/hire-calendar', description: 'Booking calendar', moduleKey: 'hire_orders', systemTypes: ['business'], optionalFeature: null },
+  // Guest House (BizPro module)
+  { icon: Hotel, label: 'Housekeeping', path: '/housekeeping', description: 'Room cleaning tasks', moduleKey: 'gh_housekeeping', systemTypes: ['business'], optionalFeature: null },
+  { icon: Star, label: 'Reviews', path: '/guest-reviews', description: 'Guest feedback', moduleKey: 'gh_reviews', systemTypes: ['business'], optionalFeature: null },
   // Legal-specific
   { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'], optionalFeature: null },
-  // School-specific
-  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
-  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['school'], optionalFeature: null },
-  // Fleet
-  { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet', systemTypes: ['fleet'], optionalFeature: null },
+  // School (BizPro module)
+  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  // Fleet (BizPro module)
+  { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym
   { icon: Wallet, label: 'Payments', path: '/gym-payments', description: 'Member payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   // Shared

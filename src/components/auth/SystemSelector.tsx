@@ -1,8 +1,8 @@
-import { Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell, ArrowRight } from 'lucide-react';
+import { Briefcase, Scale, Dumbbell, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'workshop' | 'school' | 'legal' | 'hire' | 'guesthouse' | 'fleet' | 'gym';
+export type SystemType = 'business' | 'legal' | 'gym';
 
 interface SystemOption {
   type: SystemType;
@@ -18,29 +18,11 @@ const systems: SystemOption[] = [
   {
     type: 'business',
     label: 'BizPro',
-    description: 'Quotes, invoices, CRM, tenders & accounting for service companies',
+    description: 'Quotes, invoices, CRM, tenders, accounting & more for service companies',
     startingPrice: 'M350',
     icon: Briefcase,
     gradient: 'from-primary to-violet',
     iconBg: 'bg-primary/10 text-primary',
-  },
-  {
-    type: 'workshop',
-    label: 'ShopPro',
-    description: 'Job cards, repairs, parts tracking & invoicing for auto workshops',
-    startingPrice: 'M450',
-    icon: Wrench,
-    gradient: 'from-coral to-warning',
-    iconBg: 'bg-coral/10 text-coral',
-  },
-  {
-    type: 'school',
-    label: 'EduPro',
-    description: 'Students, fee collection, terms & class management for schools',
-    startingPrice: 'M720',
-    icon: GraduationCap,
-    gradient: 'from-info to-cyan',
-    iconBg: 'bg-info/10 text-info',
   },
   {
     type: 'legal',
@@ -50,33 +32,6 @@ const systems: SystemOption[] = [
     icon: Scale,
     gradient: 'from-emerald-500 to-teal-500',
     iconBg: 'bg-emerald-500/10 text-emerald-600',
-  },
-  {
-    type: 'hire',
-    label: 'HirePro',
-    description: 'Equipment rental, hire orders, availability tracking & returns for rental companies',
-    startingPrice: 'M400',
-    icon: Hammer,
-    gradient: 'from-amber-500 to-orange-500',
-    iconBg: 'bg-amber-500/10 text-amber-600',
-  },
-  {
-    type: 'guesthouse',
-    label: 'StayPro',
-    description: 'Room management, bookings, housekeeping, meal plans & guest reviews for hospitality',
-    startingPrice: 'M650',
-    icon: Hotel,
-    gradient: 'from-rose-500 to-pink-500',
-    iconBg: 'bg-rose-500/10 text-rose-600',
-  },
-  {
-    type: 'fleet',
-    label: 'FleetPro',
-    description: 'Vehicle management, maintenance tracking, cost intelligence & health scoring for fleets',
-    startingPrice: 'M500',
-    icon: Car,
-    gradient: 'from-slate-600 to-zinc-800',
-    iconBg: 'bg-slate-600/10 text-slate-700',
   },
   {
     type: 'gym',

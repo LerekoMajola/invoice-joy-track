@@ -41,7 +41,7 @@ export default function Auth() {
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
     const isCustom = searchParams.get('custom') === 'true';
-    if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'legal', 'gym'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep(isCustom ? 'custom-modules' : 'package');
       setIsLogin(false);
@@ -281,14 +281,9 @@ export default function Auth() {
     }
 
     if (signupStep === 'review' && selectedTier) {
-      const SYSTEM_META: Record<SystemType, { label: string; icon: React.ReactNode; gradient: string }> = {
+      const SYSTEM_META: Record<string, { label: string; icon: React.ReactNode; gradient: string }> = {
         business: { label: 'BizPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
-        workshop: { label: 'ShopPro', icon: <Wrench className="h-6 w-6" />, gradient: 'from-coral to-warning' },
-        school: { label: 'EduPro', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-info to-cyan' },
         legal: { label: 'LawPro', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
-        hire: { label: 'HirePro', icon: <Hammer className="h-6 w-6" />, gradient: 'from-amber-500 to-orange-500' },
-        guesthouse: { label: 'StayPro', icon: <Hotel className="h-6 w-6" />, gradient: 'from-rose-500 to-pink-500' },
-        fleet: { label: 'FleetPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-slate-600 to-zinc-800' },
         gym: { label: 'GymPro', icon: <Dumbbell className="h-6 w-6" />, gradient: 'from-lime-500 to-green-600' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
