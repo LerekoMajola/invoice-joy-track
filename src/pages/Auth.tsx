@@ -249,7 +249,7 @@ export default function Auth() {
   if (!isLogin) {
     if (signupStep === 'system') {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
           <SystemSelector onSelect={(system) => {
             setSelectedSystem(system);
             setSignupStep('package');
@@ -269,7 +269,7 @@ export default function Auth() {
 
     if (signupStep === 'package' && selectedSystem) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
           <PackageTierSelector
             systemType={selectedSystem}
             onSelect={handleTierSelect}
@@ -304,7 +304,7 @@ export default function Auth() {
       };
 
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
           <div className="w-full max-w-md animate-slide-up">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
@@ -390,7 +390,7 @@ export default function Auth() {
 
     if (signupStep === 'custom-modules') {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
           <div className="w-full">
             <ModuleSelector onComplete={handleModulesComplete} loading={savingModules} systemType={selectedSystem || undefined} />
             <div className="text-center mt-4">
@@ -559,7 +559,7 @@ export default function Auth() {
 
     // Fallback: redirect to system selection
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-8">
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-8">
         <SystemSelector onSelect={(system) => {
           setSelectedSystem(system);
           setSignupStep('package');
