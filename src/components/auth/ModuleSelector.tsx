@@ -137,7 +137,7 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
               className={cn(
                 'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-left',
                 selected
-                  ? 'border-primary bg-primary/5 shadow-md'
+                  ? 'border-primary bg-card shadow-md'
                   : 'border-border bg-card hover:border-primary/40 hover:bg-muted/50',
                 mod.is_core && 'cursor-default'
               )}
