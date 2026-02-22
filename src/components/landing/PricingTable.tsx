@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Minus, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Truck, Dumbbell } from 'lucide-react';
+import { Check, Minus, Briefcase, Scale, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGeoPricing, formatGeoPrice } from '@/hooks/useGeoPricing';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,12 +18,7 @@ interface SystemTab {
 
 const systemTabs: SystemTab[] = [
   { key: 'business', label: 'BizPro', icon: <Briefcase className="h-4 w-4" />, gradient: 'from-primary to-violet', subtitle: 'For companies & professionals' },
-  { key: 'workshop', label: 'ShopPro', icon: <Wrench className="h-4 w-4" />, gradient: 'from-coral to-warning', subtitle: 'For auto shops & service centres' },
-  { key: 'school', label: 'EduPro', icon: <GraduationCap className="h-4 w-4" />, gradient: 'from-info to-cyan', subtitle: 'For private schools & academies' },
   { key: 'legal', label: 'LawPro', icon: <Scale className="h-4 w-4" />, gradient: 'from-emerald-500 to-teal-500', subtitle: 'For law firms & practitioners' },
-  { key: 'hire', label: 'HirePro', icon: <Hammer className="h-4 w-4" />, gradient: 'from-amber-500 to-orange-500', subtitle: 'For equipment rental companies' },
-  { key: 'guesthouse', label: 'StayPro', icon: <Hotel className="h-4 w-4" />, gradient: 'from-rose-500 to-pink-500', subtitle: 'For guest houses & lodges' },
-  { key: 'fleet', label: 'FleetPro', icon: <Truck className="h-4 w-4" />, gradient: 'from-slate-600 to-zinc-800', subtitle: 'For vehicle fleets & logistics' },
   { key: 'gym', label: 'GymPro', icon: <Dumbbell className="h-4 w-4" />, gradient: 'from-lime-500 to-green-600', subtitle: 'For gyms & fitness centres' },
 ];
 

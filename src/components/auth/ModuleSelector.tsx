@@ -33,14 +33,15 @@ function getIcon(iconName: string) {
 }
 
 const SYSTEM_ALLOWED_SHARED_KEYS: Record<string, string[]> = {
-  legal:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  business:   ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'accounting', 'staff', 'fleet', 'tenders'],
-  workshop:   ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
-  school:     ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  hire:       ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
-  guesthouse: ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
-  fleet:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff', 'fleet'],
-  gym:        ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  legal:    ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  business: [
+    'core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'accounting', 'staff', 'fleet', 'tenders',
+    // Modules from consolidated verticals (workshop, school, hire, guesthouse, fleet)
+    'workshop', 'hire_equipment', 'hire_orders', 'hire_calendar', 'hire_returns',
+    'school_admin', 'students', 'school_fees',
+    'gh_rooms', 'gh_bookings', 'gh_housekeeping', 'gh_reviews',
+  ],
+  gym:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
 };
 
 export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelectorProps) {

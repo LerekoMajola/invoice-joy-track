@@ -7,13 +7,8 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-const SchoolDashboard = lazy(() => import('@/pages/SchoolDashboard'));
 const BusinessDashboard = lazy(() => import('@/pages/BusinessDashboard'));
-const WorkshopDashboard = lazy(() => import('@/pages/WorkshopDashboard'));
 const LegalDashboard = lazy(() => import('@/pages/LegalDashboard'));
-const HireDashboard = lazy(() => import('@/pages/HireDashboard'));
-const GuestHouseDashboard = lazy(() => import('@/pages/GuestHouseDashboard'));
-const FleetDashboard = lazy(() => import('@/pages/FleetDashboard'));
 const GymDashboard = lazy(() => import('@/pages/GymDashboard'));
 
 export default function Dashboard() {
@@ -45,18 +40,8 @@ export default function Dashboard() {
 
   const renderDashboard = () => {
     switch (systemType) {
-      case 'workshop':
-        return <WorkshopDashboard />;
-      case 'school':
-        return <SchoolDashboard />;
       case 'legal':
         return <LegalDashboard />;
-      case 'hire':
-        return <HireDashboard />;
-      case 'guesthouse':
-        return <GuestHouseDashboard />;
-      case 'fleet':
-        return <FleetDashboard />;
       case 'gym':
         return <GymDashboard />;
       case 'business':

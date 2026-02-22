@@ -33,14 +33,9 @@ const onboardingSchema = z.object({
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
-const SYSTEM_CONFIG: Record<SystemType, { icon: React.ElementType; title: string; entityLabel: string }> = {
+const SYSTEM_CONFIG: Record<string, { icon: React.ElementType; title: string; entityLabel: string }> = {
   business: { icon: Building2, title: "Let's set up your business", entityLabel: 'Company' },
-  workshop: { icon: Wrench, title: "Let's set up your workshop", entityLabel: 'Workshop' },
-  school: { icon: GraduationCap, title: "Let's set up your school", entityLabel: 'School' },
   legal: { icon: Scale, title: "Let's set up your practice", entityLabel: 'Firm' },
-  hire: { icon: Hammer, title: "Let's set up your rental business", entityLabel: 'Business' },
-  guesthouse: { icon: Hotel, title: "Let's set up your guest house", entityLabel: 'Guest House' },
-  fleet: { icon: Building2, title: "Let's set up your fleet operations", entityLabel: 'Company' },
   gym: { icon: Building2, title: "Let's set up your gym", entityLabel: 'Gym' },
 };
 

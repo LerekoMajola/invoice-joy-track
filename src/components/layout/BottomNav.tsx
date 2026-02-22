@@ -15,25 +15,23 @@ const allNavItems = [
   // Business
   { icon: Users, label: 'Clients', path: '/clients', moduleKey: 'core_crm', systemTypes: ['business'], optionalFeature: null },
   { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['business'], optionalFeature: null },
-  // Workshop
-  { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['workshop'], optionalFeature: null },
-  { icon: FileText, label: 'Quotes', path: '/quotes', moduleKey: 'quotes', systemTypes: ['workshop'], optionalFeature: null },
-  // Hire
-  { icon: Hammer, label: 'Equipment', path: '/equipment', moduleKey: 'hire_equipment', systemTypes: ['hire'], optionalFeature: null },
-  { icon: ClipboardList, label: 'Orders', path: '/hire-orders', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  { icon: CalendarDays, label: 'Calendar', path: '/hire-calendar', moduleKey: 'hire_orders', systemTypes: ['hire'], optionalFeature: null },
-  // Guest House
-  { icon: BedDouble, label: 'Rooms', path: '/rooms', moduleKey: 'gh_rooms', systemTypes: ['guesthouse'], optionalFeature: null },
-  { icon: CalendarCheck, label: 'Bookings', path: '/bookings', moduleKey: 'gh_bookings', systemTypes: ['guesthouse'], optionalFeature: null },
+  // Workshop (BizPro module)
+  { icon: Wrench, label: 'Workshop', path: '/workshop', moduleKey: 'workshop', systemTypes: ['business'], optionalFeature: null },
+  // Hire (BizPro module)
+  { icon: Hammer, label: 'Equipment', path: '/equipment', moduleKey: 'hire_equipment', systemTypes: ['business'], optionalFeature: null },
+  { icon: ClipboardList, label: 'Orders', path: '/hire-orders', moduleKey: 'hire_orders', systemTypes: ['business'], optionalFeature: null },
+  // Guest House (BizPro module)
+  { icon: BedDouble, label: 'Rooms', path: '/rooms', moduleKey: 'gh_rooms', systemTypes: ['business'], optionalFeature: null },
+  { icon: CalendarCheck, label: 'Bookings', path: '/bookings', moduleKey: 'gh_bookings', systemTypes: ['business'], optionalFeature: null },
   // Legal
   { icon: Scale, label: 'Cases', path: '/legal-cases', moduleKey: 'legal_cases', systemTypes: ['legal'], optionalFeature: null },
   { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'], optionalFeature: null },
   { icon: CalendarDays, label: 'Calendar', path: '/legal-calendar', moduleKey: 'legal_calendar', systemTypes: ['legal'], optionalFeature: null },
-  // School
-  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['school'], optionalFeature: null },
-  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['school'], optionalFeature: null },
-  // Fleet
-  { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['fleet'], optionalFeature: null },
+  // School (BizPro module)
+  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['business'], optionalFeature: null },
+  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['business'], optionalFeature: null },
+  // Fleet (BizPro module)
+  { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym
   { icon: Wallet, label: 'Payments', path: '/gym-payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   // Shared
