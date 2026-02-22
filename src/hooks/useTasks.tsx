@@ -14,6 +14,8 @@ export interface Task {
   title: string;
   description: string | null;
   due_date: string | null;
+  due_time: string | null;
+  reminder_minutes_before: number | null;
   priority: TaskPriority;
   status: TaskStatus;
   sort_order: number;
@@ -27,6 +29,8 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   due_date?: string;
+  due_time?: string;
+  reminder_minutes_before?: number | null;
   priority?: TaskPriority;
   status?: TaskStatus;
   assigned_to?: string;
@@ -38,6 +42,8 @@ export interface UpdateTaskInput {
   title?: string;
   description?: string | null;
   due_date?: string | null;
+  due_time?: string | null;
+  reminder_minutes_before?: number | null;
   priority?: TaskPriority;
   status?: TaskStatus;
   sort_order?: number;
@@ -93,6 +99,8 @@ export function useTasks() {
           sort_order: maxOrder + 1,
           assigned_to: input.assigned_to || null,
           assigned_to_name: input.assigned_to_name || null,
+          due_time: input.due_time || null,
+          reminder_minutes_before: input.reminder_minutes_before ?? 15,
           company_profile_id: activeCompanyId,
         })
         .select()
