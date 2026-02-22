@@ -40,9 +40,10 @@ export default function Auth() {
   // Pre-select system from URL query param (e.g. /auth?system=business)
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
+    const isCustom = searchParams.get('custom') === 'true';
     if (systemParam && ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
-      setSignupStep('package');
+      setSignupStep(isCustom ? 'custom-modules' : 'package');
       setIsLogin(false);
     }
   }, [searchParams]);
