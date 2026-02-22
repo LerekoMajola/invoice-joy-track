@@ -1,63 +1,41 @@
 
+## Fix: Task Reminders Not Sending (Missing Cron Job + Too Infrequent)
 
-## Attendance Page Improvements
+### The Problem
 
-### 1. Downloadable Proof of Payment (GymPayments)
+The task reminder system has two critical gaps:
 
-When viewing the POP image in the payment dialog, add a "Download" button that opens the image in a new tab / triggers a file download so the admin can save it locally.
+1. **No cron job exists for `check-task-reminders`** -- the function is deployed but never gets called automatically. That's why the 10am meeting didn't trigger any notification or email.
+2. **Needs frequent execution** -- since tasks can have specific due times (like 10:00 AM) with reminders set to fire minutes before, the cron must run frequently (every 5 minutes) to catch these windows accurately.
 
-**File: `src/pages/GymPayments.tsx`**
-- Add a Download button below the POP image in the dialog
-- Use `window.open(popUrl, '_blank')` or create an anchor with `download` attribute
+### The Fix
 
-### 2. Admin Check-in for Non-App Members
+**1. Add deduplication to prevent repeat notifications**
 
-The Quick Check-in search already lets admins search and check in any active member by name or member number -- this is how non-app members get checked in. No change needed here since it's already functional. The admin types the member's name and taps "Check In".
+The current `check-task-reminders` function doesn't track which reminders have already been sent. If it runs every 5 minutes, it would spam the same notification repeatedly. We need to add deduplication using `reference_id` checks (same pattern used by `check-hearing-reminders`).
 
-### 3. Grouped Attendance Log (One Card Per Member Per Day)
+**File: `supabase/functions/check-task-reminders/index.ts`**
+- Before inserting notifications, query existing notifications to check for duplicates using `reference_id` (e.g., `task-reminder-{task.id}-{due_date}`)
+- Add `reference_id` and `reference_type` fields to each notification insert
+- Skip any notification whose `reference_id` already exists in the `notifications` table
 
-Currently every check-in creates a separate card (as seen in the screenshot with 9 separate Lereko Majola cards). This will be consolidated:
+**2. Schedule the cron job (every 5 minutes)**
 
-**File: `src/pages/GymAttendance.tsx`**
-- Group attendance records by `member_id` using `useMemo` to create a `Map<string, GymAttendanceRecord[]>`
-- Render one card per member showing:
-  - Member initials, name, member number
-  - Session count badge (e.g., "3 sessions")
-  - Whether any session is currently active (green border) or all done
-  - Check-out button if there's an active session
-- Use a `Collapsible` component (already available from radix) to expand/collapse the individual check-in/out time entries underneath the main card
-- Each sub-entry shows: check-in time, check-out time (or "Active"), and a check-out button if active
+Run a SQL command to create the cron job:
+```
+cron.schedule('check-task-reminders', '*/5 * * * *', ...)
+```
 
-### Technical Details
+This ensures:
+- Reminders fire within a 5-minute window of the configured time
+- Time-specific tasks (like a 10:00 AM meeting with a "15 min before" reminder) get caught at ~9:45-9:50 AM
+- Deduplication prevents repeated notifications on subsequent runs
 
-**`src/pages/GymAttendance.tsx`** changes:
-- Import `Collapsible, CollapsibleContent, CollapsibleTrigger` from `@/components/ui/collapsible`
-- Import `ChevronDown, Download` from lucide-react
-- Add state: `expandedMember: string | null`
-- Create grouped data:
-  ```
-  const grouped = useMemo(() => {
-    const map = new Map<string, GymAttendanceRecord[]>();
-    attendance.forEach(r => {
-      const list = map.get(r.member_id) || [];
-      list.push(r);
-      map.set(r.member_id, list);
-    });
-    return Array.from(map.entries());
-  }, [attendance]);
-  ```
-- Replace the flat `attendance.map(...)` with `grouped.map(...)` rendering one collapsible card per member
-- Inside the collapsible content, list each session with times and check-out buttons
+### Why This Matters
 
-**`src/pages/GymPayments.tsx`** changes:
-- Add a download button/link next to the POP image:
-  ```
-  <a href={selectedSub.popUrl} target="_blank" rel="noopener noreferrer" download>
-    <Button variant="outline" size="sm">
-      <Download className="h-4 w-4 mr-1" /> Download
-    </Button>
-  </a>
-  ```
+Without this fix, **no task reminders are ever sent automatically** -- not in-app notifications, not push notifications, and not emails (since emails are triggered by the notification insert trigger). This affects all users relying on task reminders for meetings, deadlines, and follow-ups.
 
-No database changes needed.
+### Files Changed
 
+1. **`supabase/functions/check-task-reminders/index.ts`** -- add `reference_id` deduplication logic
+2. **Database** -- insert pg_cron job `check-task-reminders` running every 5 minutes
