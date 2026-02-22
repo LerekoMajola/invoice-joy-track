@@ -151,11 +151,70 @@ export function useHireOrders() {
         );
         if (itemsError) throw itemsError;
       }
+
+      // Auto-create draft invoice
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // Generate next invoice number
+        const { data: lastInv } = await supabase
+          .from('invoices')
+          .select('invoice_number')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        let lastNum = 0;
+        if (lastInv && lastInv.length > 0) {
+          const match = lastInv[0].invoice_number.match(/INV-(\d+)/);
+          if (match) lastNum = parseInt(match[1], 10);
+        }
+        const invoiceNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+
+        // Calculate hire days
+        const hireDays = Math.max(1, Math.ceil(
+          (new Date(input.hire_end).getTime() - new Date(input.hire_start).getTime()) / (1000 * 60 * 60 * 24)
+        ));
+
+        const { data: invoiceData, error: invError } = await supabase
+          .from('invoices')
+          .insert({
+            user_id: user.id,
+            company_profile_id: activeCompanyId || null,
+            invoice_number: invoiceNumber,
+            client_id: input.client_id || null,
+            client_name: input.client_name,
+            date: today,
+            due_date: dueDate,
+            total: input.total || 0,
+            tax_rate: 0,
+            status: 'draft',
+            description: `Hire Order ${orderNumber}`,
+          })
+          .select()
+          .single();
+
+        if (invError) throw invError;
+
+        // Insert invoice line items
+        const lineItems = input.items.map((item) => ({
+          invoice_id: invoiceData.id,
+          description: `${item.equipment_name} (${hireDays} day${hireDays !== 1 ? 's' : ''} @ ${item.daily_rate}/day)`,
+          quantity: item.quantity,
+          unit_price: item.daily_rate * hireDays,
+          cost_price: 0,
+        }));
+
+        await supabase.from('invoice_line_items').insert(lineItems);
+      } catch (invoiceErr) {
+        console.error('Auto-invoice creation failed:', invoiceErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
       queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
-      toast.success('Hire order created');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Hire order created & invoice generated');
     },
     onError: () => toast.error('Failed to create hire order'),
   });
