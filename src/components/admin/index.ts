@@ -9,3 +9,4 @@ export { RevenueChart } from './RevenueChart';
 export { AdminSettingsTab } from './AdminSettingsTab';
 export { AdminInvoicesTab } from './AdminInvoicesTab';
 export { AdminCRMTab } from './crm/AdminCRMTab';
+export { UsageAnalyticsTab } from './UsageAnalyticsTab';

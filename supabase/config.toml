@@ -39,3 +39,6 @@ verify_jwt = false
 
 [functions.generate-workout]
 verify_jwt = false
+
+[functions.admin-get-usage-analytics]
+verify_jwt = false
