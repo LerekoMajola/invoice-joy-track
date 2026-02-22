@@ -1,4 +1,5 @@
 import { Check, Minus, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,15 +34,14 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
     <div className="w-full max-w-5xl mx-auto animate-slide-up">
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4">
-          <PlatformLogo className="h-12 w-auto" />
+          <Link to="/">
+            <PlatformLogo className="h-12 w-auto" />
+          </Link>
         </div>
-        <h1 className={cn(
-          'font-display text-2xl sm:text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent mb-2',
-          meta.gradient
-        )}>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mb-2">
           {meta.label}
         </h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <p className="text-white/70 text-sm sm:text-base">
           Choose a package to start your 7-day free trial
         </p>
       </div>
@@ -121,7 +121,7 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
         <button
           type="button"
           onClick={onCustomBuild}
-          className="text-sm text-primary hover:underline underline-offset-4 font-medium"
+          className="text-sm text-white hover:underline underline-offset-4 font-medium"
         >
           Or build your own custom package →
         </button>
