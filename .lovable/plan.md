@@ -1,34 +1,51 @@
 
-## Hybrid Invoice: Draft on Creation + Update on Return
 
-### What Changes
+## Edit Hire Orders + Validation + Show Equipment on Cards
 
-**File: `src/hooks/useHireOrders.tsx`** -- `processReturn` mutation
+### 1. Show Equipment on Order Cards
 
-After updating the hire order status and item conditions, add logic to find and update the linked draft invoice:
+Each hire order card currently only shows order number, client, total, and dates. We will display the equipment items directly on each card by looking them up from the `allOrderItems` array (already fetched in `useHireOrders`).
 
-1. **Find the linked invoice** by matching `description = 'Hire Order HO-XXX'` for the order's `order_number`
-2. **Recalculate actual hire days** using `hire_start` to `actualReturnDate` (instead of the original `hire_end`)
-3. **Calculate total damage charges** from the returned items
-4. **Update the invoice** total to `adjustedTotal` (which already includes damage charges from the ProcessReturnDialog)
-5. **Delete old line items** and **insert new ones** reflecting:
-   - Actual days rented per equipment item
-   - A separate "Damage charge" line item if any damage charges exist
-6. **Invalidate the invoices cache** so the Invoices page reflects the update
+Below the client name, a list of equipment names with quantities will be shown, e.g.:
+- "Excavator x2, Generator x1"
 
-### Technical Details
+### 2. Add Edit Hire Order Dialog
 
-In `processReturn.mutationFn`, after the existing item updates (around line 274), add:
+Add an "Edit" button on each order card (only for `active` or `draft` status). Clicking it opens a dialog pre-populated with the order's current data (client, dates, deposit, notes) and its equipment items.
 
-```text
-1. Query: SELECT * FROM invoices WHERE description = 'Hire Order {orderNumber}'
-2. If found:
-   a. UPDATE invoice SET total = adjustedTotal
-   b. DELETE FROM invoice_line_items WHERE invoice_id = found.id
-   c. INSERT new line items with actual days and damage charges
-3. Invalidate ['invoices'] query cache in onSuccess
-```
+The edit dialog will:
+- Load existing order items via `getOrderItems()`
+- Allow changing client, dates, deposit, notes
+- Allow adding/removing/changing equipment items
+- Recalculate the total on save
+- Call a new `editOrder` mutation that updates the `hire_orders` row and replaces all `hire_order_items` (delete old, insert new)
+- Also update the linked draft invoice (same pattern as create)
 
-The `order_number` is retrieved by querying the hire order being returned. The `adjustedTotal` is already passed from the ProcessReturnDialog and includes any damage/late fees.
+### 3. Stricter Validation (Create + Edit)
 
-No database changes needed -- uses existing `invoices` and `invoice_line_items` tables.
+The "Create Order" and "Save" buttons will be disabled unless:
+- Client name is filled
+- Start and end dates are filled
+- At least one equipment item is added
+- Every equipment item has an equipment selected (non-empty `equipment_item_id`)
+- Total is greater than 0
+
+### Technical Changes
+
+**File: `src/pages/HireOrders.tsx`**
+- Import `Pencil` icon from lucide-react
+- Use `allOrderItems` from `useHireOrders` to show equipment names on each card
+- Add `editOpen` and `editingOrder` state variables
+- Add an "Edit" button on cards with `active`/`draft` status
+- When edit is clicked, load order items and populate the form
+- Reuse the same form fields for both create and edit (via a shared dialog or conditional title)
+- Add validation: disable submit if `orderItems.length === 0` or any item has empty `equipment_item_id` or `calculateTotal() <= 0`
+
+**File: `src/hooks/useHireOrders.tsx`**
+- Add a new `editOrder` mutation that:
+  1. Updates `hire_orders` row (client_name, client_id, client_phone, hire_start, hire_end, deposit_paid, total, notes)
+  2. Deletes all existing `hire_order_items` for that order
+  3. Inserts the new items
+  4. Finds and updates the linked invoice + line items (same pattern as create)
+- Export `editOrder` from the hook
+
