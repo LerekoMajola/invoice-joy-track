@@ -22,7 +22,7 @@ interface PlatformModule {
 }
 
 interface ModuleSelectorProps {
-  onComplete: (selectedModuleIds: string[]) => void;
+  onComplete: (selectedModuleIds: string[], isTrial: boolean) => void;
   loading?: boolean;
   systemType?: string;
 }
@@ -103,8 +103,8 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
   const addonsTotal = selectedAddons.reduce((sum, m) => sum + m.monthly_price, 0);
   const monthlyTotal = BASE_PRICE + addonsTotal;
 
-  const handleComplete = () => {
-    onComplete(Array.from(selectedIds));
+  const handleComplete = (isTrial: boolean) => {
+    onComplete(Array.from(selectedIds), isTrial);
   };
 
   if (isLoading) {
@@ -234,22 +234,33 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
               <span className="text-sm font-normal text-muted-foreground">/month</span>
             </p>
           </div>
-          <Button
-            variant="gradient"
-            size="lg"
-            onClick={handleComplete}
-            disabled={loading || selectedIds.size === 0}
-            className="rounded-xl px-8"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Setting up...
-              </>
-            ) : (
-              'Start Free Trial'
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="gradient"
+              size="lg"
+              onClick={() => handleComplete(true)}
+              disabled={loading || selectedIds.size === 0}
+              className="rounded-xl px-6"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                'Start Free Trial'
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleComplete(false)}
+              disabled={loading || selectedIds.size === 0}
+              className="rounded-xl px-6"
+            >
+              Subscribe
+            </Button>
+          </div>
         </div>
         <p className="text-[11px] text-muted-foreground text-center">
           7-day free trial • No credit card required • Cancel anytime
