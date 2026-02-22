@@ -1,38 +1,35 @@
 
 
-## Remove Multi-Company for Regular Users; Admin-Only Override
+## Fix Phone Input Country Selection
 
-### Overview
-By default, users will only be able to manage a single company. The "Add Company" option will be hidden. A new database column `multi_company_enabled` on the `subscriptions` table will let the admin toggle this feature on a per-tenant basis from the Admin dashboard.
+### Problem
+When selecting a country code in the phone input (e.g., South Africa +27), if no phone number has been typed yet, the selection immediately reverts back to Lesotho. This happens because the component sends an empty string `''` when there are no digits, and on re-render it falls back to the default country (Lesotho).
 
-### Changes
+### Root Cause
+In `src/components/ui/phone-input.tsx`, the `handleCountrySelect` function (line 105) only stores the dial code when digits exist:
+```
+onChange(digits ? `${country.dial}${digits}` : '');
+```
+When `digits` is empty, it sends `''`, which causes the component to fall back to `defaultCountry` (Lesotho).
 
-**1. Database Migration**
-- Add a `multi_company_enabled BOOLEAN DEFAULT false` column to the `subscriptions` table.
+The same issue exists in `handleLocalChange` (line 96) -- clearing the input resets the country.
 
-**2. `src/hooks/useSubscription.tsx`**
-- Expose `multiCompanyEnabled: boolean` from the subscription data (reads `multi_company_enabled` from the query result).
+### Fix
+**File: `src/components/ui/phone-input.tsx`**
 
-**3. `src/contexts/ActiveCompanyContext.tsx`**
-- Remove the hardcoded `MAX_COMPANIES = 5` constant.
-- Import `useSubscription` or accept a prop to check `multiCompanyEnabled`.
-- Set `canAddMore` to `false` unless `multiCompanyEnabled` is `true` (in which case allow up to 5).
+1. In `handleCountrySelect`: Always store the dial code, even with no digits typed:
+   - Change to: `onChange(country.dial + digits)`
+   - This keeps the selected country code in the value at all times
 
-**4. `src/components/layout/CompanySwitcher.tsx`**
-- When `canAddMore` is `false` and the user has only 1 company, render just the company name/logo as a static display (no dropdown, no "Add Company" option).
-- When `canAddMore` is `true`, show the full switcher with the "Add Company" menu item (existing behavior).
+2. In `handleLocalChange`: Preserve the dial code when clearing digits:
+   - Change to: `onChange(selectedCountry.dial + digits)` instead of `onChange('')`
 
-**5. Admin Dashboard -- Toggle per tenant**
-- In `src/components/admin/TenantDetailDialog.tsx` (or equivalent tenant management UI), add a toggle/switch labeled "Multi-Company Access" that updates the `multi_company_enabled` column on that tenant's subscription.
-- This gives admin case-by-case control.
+These two small changes ensure the country selection persists regardless of whether a phone number has been entered.
 
 ### Technical Details
 
-| Layer | File | Change |
-|-------|------|--------|
-| DB | Migration | `ALTER TABLE subscriptions ADD COLUMN multi_company_enabled BOOLEAN DEFAULT false` |
-| Hook | `useSubscription.tsx` | Expose `multiCompanyEnabled` field |
-| Context | `ActiveCompanyContext.tsx` | Use `multiCompanyEnabled` to gate `canAddMore` and `addCompany` |
-| UI | `CompanySwitcher.tsx` | Hide add/switch when disabled; show static branding only |
-| Admin | `TenantDetailDialog.tsx` | Add toggle to enable/disable per tenant |
+| Location | Current | Fixed |
+|----------|---------|-------|
+| `handleCountrySelect` (line 105) | `onChange(digits ? ... : '')` | `onChange(country.dial + digits)` |
+| `handleLocalChange` (line 96) | `onChange(digits ? ... : '')` | `onChange(selectedCountry.dial + digits)` |
 
