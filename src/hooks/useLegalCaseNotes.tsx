@@ -44,6 +44,16 @@ export function useLegalCaseNotes(caseId?: string) {
 
   useEffect(() => { fetchNotes(); }, [user, caseId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('legal-case-notes-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'legal_case_notes' }, () => {
+        fetchNotes();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, caseId]);
+
   const createNote = async (note: { caseId: string; content: string; noteType: string; isConfidential?: boolean }) => {
     if (!user) return false;
     const { error } = await supabase.from('legal_case_notes').insert({

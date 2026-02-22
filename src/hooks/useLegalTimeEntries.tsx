@@ -53,5 +53,15 @@ export function useLegalTimeEntries() {
 
   useEffect(() => { fetchEntries(); }, [user]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('legal-time-entries-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'legal_time_entries' }, () => {
+        fetchEntries();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   return { entries, isLoading, refetch: fetchEntries };
 }

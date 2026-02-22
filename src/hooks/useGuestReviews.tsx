@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -30,6 +31,16 @@ export function useGuestReviews() {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('guest-reviews-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_reviews' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['guest-reviews'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const createReview = useMutation({
     mutationFn: async (review: Omit<GuestReview, 'id' | 'user_id' | 'created_at' | 'bookings'>) => {

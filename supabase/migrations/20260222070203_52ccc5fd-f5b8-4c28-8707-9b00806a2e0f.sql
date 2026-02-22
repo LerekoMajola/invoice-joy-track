@@ -1,0 +1,30 @@
+
+-- Enable realtime for all tables that need real-time subscriptions
+ALTER PUBLICATION supabase_realtime ADD TABLE public.contacts;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.client_activities;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.client_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.clients;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.lead_activities;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.deal_tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.guest_reviews;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.housekeeping_tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.fleet_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.fleet_incidents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.fleet_maintenance_schedules;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.fleet_tyres;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.fleet_cost_entries;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.equipment_incidents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.equipment_service_logs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.legal_time_entries;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.legal_case_expenses;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.legal_case_notes;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.legal_calendar_events;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_attendance;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.recurring_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.tax_clearance_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.accounting_transactions;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.school_classes;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.academic_terms;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.tender_source_links;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.company_profiles;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.user_modules;

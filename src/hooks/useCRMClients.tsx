@@ -92,6 +92,16 @@ export function useCRMClients() {
     fetchClients();
   }, [user, activeCompanyId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('clients-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        fetchClients();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
+
   const createClient = async (client: ClientInsert): Promise<CRMClient | null> => {
     if (!user) {
       toast.error('You must be logged in to create a client');

@@ -68,6 +68,16 @@ export function useFleetMaintenanceSchedules(vehicleId?: string) {
 
   useEffect(() => { fetchSchedules(); }, [user, vehicleId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet-maintenance-schedules-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_maintenance_schedules' }, () => {
+        fetchSchedules();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
+
   const createSchedule = async (s: FleetMaintenanceScheduleInsert): Promise<boolean> => {
     if (!user) return false;
     try {

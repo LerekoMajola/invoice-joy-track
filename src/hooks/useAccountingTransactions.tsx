@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -82,6 +83,16 @@ export function useAccountingTransactions() {
     },
     enabled: !!user?.id,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('accounting-transactions-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounting_transactions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['accounting-transactions'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {

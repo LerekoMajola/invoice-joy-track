@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -54,6 +55,18 @@ export function useGymAttendance(selectedDate?: Date) {
     },
     enabled: !!user,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('gym-attendance-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gym_attendance' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['gym_attendance'] });
+        queryClient.invalidateQueries({ queryKey: ['gym_attendance_weekly'] });
+        queryClient.invalidateQueries({ queryKey: ['gym_attendance_monthly'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   // Weekly count
   const { data: weeklyCount = 0 } = useQuery({

@@ -57,5 +57,15 @@ export function useLegalCalendar() {
 
   useEffect(() => { fetchEvents(); }, [user]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('legal-calendar-events-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'legal_calendar_events' }, () => {
+        fetchEvents();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   return { events, isLoading, refetch: fetchEvents };
 }

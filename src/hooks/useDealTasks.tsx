@@ -53,11 +53,22 @@
      }
    };
  
-   useEffect(() => {
-     if (dealId) {
-       fetchTasks();
-     }
-   }, [user, dealId]);
+  useEffect(() => {
+    if (dealId) {
+      fetchTasks();
+    }
+  }, [user, dealId]);
+
+  useEffect(() => {
+    if (!dealId) return;
+    const channel = supabase
+      .channel('deal-tasks-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deal_tasks' }, () => {
+        fetchTasks();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, dealId]);
  
    const createTask = async (task: DealTaskInsert) => {
      if (!user) return null;

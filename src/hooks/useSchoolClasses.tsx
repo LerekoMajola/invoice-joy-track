@@ -101,6 +101,19 @@ export function useSchoolClasses() {
     fetchAll();
   }, [user, activeCompanyId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('school-classes-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'school_classes' }, () => {
+        fetchAll();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'academic_terms' }, () => {
+        fetchAll();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, activeCompanyId]);
+
   // ===== Classes CRUD =====
   const createClass = async (data: { name: string; gradeLevel?: string; classTeacherId?: string; capacity?: number }) => {
     const activeUser = await getActiveUser();

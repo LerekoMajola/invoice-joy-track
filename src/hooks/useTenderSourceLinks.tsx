@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -47,6 +48,16 @@ export function useTenderSourceLinks() {
     },
     enabled: !!user && !!session,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('tender-source-links-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tender_source_links' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['tender-source-links'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const createLink = useMutation({
     mutationFn: async (input: TenderSourceLinkInput) => {

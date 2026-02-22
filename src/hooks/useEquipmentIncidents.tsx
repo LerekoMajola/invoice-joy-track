@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -46,6 +47,16 @@ export function useEquipmentIncidents(equipmentItemId?: string) {
     },
     enabled: !!user && !!equipmentItemId,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('equipment-incidents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'equipment_incidents' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['equipment-incidents'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const createIncident = useMutation({
     mutationFn: async (input: CreateIncidentInput) => {

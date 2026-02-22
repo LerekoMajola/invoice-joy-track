@@ -50,6 +50,16 @@ export function useFleetDocuments(vehicleId?: string) {
 
   useEffect(() => { fetchDocuments(); }, [user, vehicleId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet-documents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_documents' }, () => {
+        fetchDocuments();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
+
   const uploadDocument = async (doc: FleetDocumentInsert): Promise<boolean> => {
     if (!user) return false;
     try {

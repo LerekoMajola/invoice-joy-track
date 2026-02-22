@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 
 export interface CompanyProfile {
@@ -74,6 +74,16 @@ export function useCompanyProfile() {
     },
     enabled: !!activeCompanyId,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('company-profiles-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'company_profiles' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['company-profile'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const saveProfile = useMutation({
     mutationFn: async (profileData: Partial<CompanyProfileInput>): Promise<CompanyProfile> => {

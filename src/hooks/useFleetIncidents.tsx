@@ -49,6 +49,16 @@ export function useFleetIncidents(vehicleId?: string) {
 
   useEffect(() => { fetchIncidents(); }, [user, vehicleId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fleet-incidents-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fleet_incidents' }, () => {
+        fetchIncidents();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, vehicleId]);
+
   const createIncident = async (inc: FleetIncidentInsert): Promise<boolean> => {
     if (!user) return false;
     try {
