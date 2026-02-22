@@ -35,7 +35,7 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4">
           <Link to="/">
-            <PlatformLogo className="h-12 w-auto" />
+            <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
           </Link>
         </div>
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-white mb-2">

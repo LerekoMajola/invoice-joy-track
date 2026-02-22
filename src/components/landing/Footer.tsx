@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <PlatformLogo className="h-20 w-20 rounded-full p-4 bg-white shadow-sm mb-4 object-contain" />
+            <PlatformLogo className="h-20 w-20 rounded-2xl p-4 bg-white shadow-sm mb-4 object-contain" />
             <p className="text-primary-foreground/70 text-sm">
               The modular platform for businesses, law firms, and fitness centres across Africa.
             </p>
