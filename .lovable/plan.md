@@ -1,58 +1,34 @@
 
 
-## Monthly Gym Invoice Emails (20th of Every Month)
+## Better Color-Coded Payment Cards + View Proof of Payment
 
-### Overview
-A scheduled backend function will run on the 20th of every month and automatically email an invoice to each active gym member with an active subscription. The email will include the member's name, plan details, amount due, and payment period.
+### 1. Stronger Color Coding
 
-### How It Works
+- **Unpaid cards**: Red-tinted border, red background wash, red avatar circle, and red amount text -- making it immediately obvious who hasn't paid.
+- **Paid cards**: Green-tinted border, green background wash, green avatar circle, and green "Paid" indicator -- a satisfying visual confirmation.
+- Section headers will also use matching green/red colors with bolder styling.
 
-1. A new backend function (`send-gym-invoices`) runs on the 20th of each month via a scheduled job
-2. It queries all active gym members who have active subscriptions
-3. For each member with an email address, it sends a professional invoice email via Resend showing their plan name, amount, and billing period
-4. A log record is kept to avoid sending duplicate invoices in the same month
+### 2. View Proof of Payment (POP) on Click
 
-### Technical Details
+When a paid member card is clicked, a dialog will open showing:
+- Member name and plan details
+- Payment amount and period
+- The uploaded Proof of Payment image (if available)
+- A "No receipt attached" message if no POP was uploaded
 
-**New Database Table: `gym_invoice_logs`**
-Tracks which invoices have been sent to prevent duplicates if the function runs more than once in a month:
-- `id` (uuid)
-- `user_id` (uuid) -- gym owner
-- `company_profile_id` (uuid)
-- `member_id` (uuid) -- references gym_members
-- `subscription_id` (uuid) -- references gym_member_subscriptions
-- `billing_month` (text) -- e.g. "2026-02"
-- `sent_at` (timestamptz)
-- RLS policy: users can read their own logs
+This uses the existing `pop_url` field on `gym_member_subscriptions` that members upload via the portal.
 
-**New Edge Function: `supabase/functions/send-gym-invoices/index.ts`**
-- Accepts a POST request (triggered by cron)
-- Queries all `gym_member_subscriptions` with `status = 'active'`
-- Joins `gym_members` (for name/email) and `gym_membership_plans` (for plan name/price)
-- Joins `company_profiles` (for gym business name, bank details, logo)
-- Skips members without an email address
-- Checks `gym_invoice_logs` to skip already-sent invoices for the current month
-- Sends a branded invoice email to each member via Resend
-- Logs each successful send to `gym_invoice_logs`
+### 3. Technical Changes
 
-**Scheduled Job (pg_cron)**
-A cron job scheduled for `0 8 20 * *` (8:00 AM on the 20th of every month) that calls the edge function.
+**File: `src/hooks/useGymMemberSubscriptions.tsx`**
+- Add `popUrl` to the `GymMemberSubscription` interface
+- Map `s.pop_url` in the fetch function so it's available to consuming components
 
-**Email Content**
-Each email will include:
-- Gym/business name and logo (from company profile)
-- Member name and member number
-- Plan name and monthly amount
-- Billing period (current month)
-- Bank payment details (from company profile)
-- A note that payment is due by end of month
-
-**Config Update: `supabase/config.toml`**
-Add `[functions.send-gym-invoices]` with `verify_jwt = false` (called by cron).
-
-### Files Changed
-1. **Database migration** -- create `gym_invoice_logs` table with RLS
-2. **`supabase/functions/send-gym-invoices/index.ts`** -- new edge function
-3. **`supabase/config.toml`** -- add function config (auto-managed)
-4. **pg_cron job** -- schedule the monthly trigger
-
+**File: `src/pages/GymPayments.tsx`**
+- Update unpaid card styling: use explicit red/green colors (`bg-red-50`, `border-red-200`, `text-red-600` / `bg-green-50`, `border-green-200`, `text-green-600`) with dark mode equivalents
+- Update paid card styling: green tints throughout
+- Make paid cards clickable (`cursor-pointer`, `onClick`)
+- Add a Dialog that shows the selected subscription's POP image
+- Add state for `selectedSub` and `popDialogOpen`
+- Import `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle` from UI components
+- Import `ImageIcon` from lucide-react for the empty state
