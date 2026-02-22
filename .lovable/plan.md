@@ -1,45 +1,18 @@
 
-## Menu Cleanup: Invoices, Delivery Notes, Profitability, and SMS Defaults
 
-### 1. Restore Invoices as a permanent nav item (not optional)
+## Make Clients Clickable to Edit on the /clients Page
 
-Currently, "Invoices" is gated behind `optionalFeature: 'invoices'`, so it only shows when toggled on in Settings. This will be changed to always visible (no optional feature gate) in:
-- **Sidebar** (`src/components/layout/Sidebar.tsx`) -- remove `optionalFeature: 'invoices'`
-- **BottomNav** (`src/components/layout/BottomNav.tsx`) -- remove `optionalFeature: 'invoices'`
-- **MoreMenuSheet** (`src/components/layout/MoreMenuSheet.tsx`) -- remove Invoices entry (it's now in main nav)
+### Problem
+On the Clients page (`/clients`), you currently have to click the three-dot menu and select "Edit" to modify a client. You should be able to simply click on a client row or card to open the edit dialog directly.
 
-### 2. Move Delivery Notes inside the Invoices page as a tab
+### Changes
 
-Instead of a separate nav item, Delivery Notes becomes a tab within the Invoices page:
-- **Sidebar** -- remove the "Delivery Notes" nav entry
-- **MoreMenuSheet** -- remove the "Delivery Notes" menu entry
-- **BottomNav** -- remove from `moreRoutes` list
-- **Invoices page** (`src/pages/Invoices.tsx`) -- wrap existing content in a Tabs component with two tabs: "Invoices" (existing content) and "Delivery Notes" (embed the DeliveryNotes page content)
-- The `/delivery-notes` route in `App.tsx` stays for backward compatibility but the primary access is now through the Invoices tab
+**`src/pages/Clients.tsx`** -- Make rows and cards clickable:
 
-### 3. Move Profitability inside the Accounting page as a tab
+1. **Mobile cards**: Add an `onClick` handler to the `ClientCard` component so tapping a client card opens the edit dialog (calls `handleEditClick`).
 
-Instead of a separate nav item, Profitability becomes a tab within Accounting:
-- **Sidebar** -- remove the "Profitability" nav entry
-- **MoreMenuSheet** -- remove the "Profitability" menu entry
-- **BottomNav** -- remove from `moreRoutes` list
-- **Accounting page** (`src/pages/Accounting.tsx`) -- add a 6th tab "Profitability" that lazy-loads the Profitability page content
-- The `/profitability` route stays for backward compatibility
+2. **Desktop table rows**: Add `onClick={() => handleEditClick(client)}` and `className="cursor-pointer hover:bg-muted/50"` to each `TableRow`, so clicking anywhere on the row opens the edit dialog. The dropdown menu cell will use `e.stopPropagation()` to prevent the row click from firing when using the menu.
 
-### 4. SMS notifications unchecked by default
+### What This Means
+After this change, you can simply click/tap on any client to immediately open the edit form with their details pre-filled, ready to update.
 
-The defaults in `useNotificationPreferences.tsx` already have `sms: false` for all categories and `sms_enabled: false`. This is already correct -- no changes needed here. SMS is off by default across all verticals.
-
-### Technical Details
-
-**Files to modify:**
-
-| File | Change |
-|------|--------|
-| `src/components/layout/Sidebar.tsx` | Remove Invoices optional gate, remove Delivery Notes and Profitability entries |
-| `src/components/layout/BottomNav.tsx` | Remove Invoices optional gate, clean up moreRoutes |
-| `src/components/layout/MoreMenuSheet.tsx` | Remove Delivery Notes and Profitability entries |
-| `src/pages/Invoices.tsx` | Add top-level Tabs with "Invoices" and "Delivery Notes" tabs |
-| `src/pages/Accounting.tsx` | Add "Profitability" as 6th tab (grid-cols-5 becomes grid-cols-6) |
-
-**No database or backend changes required.**
