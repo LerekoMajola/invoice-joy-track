@@ -94,7 +94,7 @@ export function PhoneInput({
   const handleLocalChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const digits = stripNonDigits(e.target.value);
-      onChange(digits ? `${selectedCountry.dial}${digits}` : '');
+      onChange(`${selectedCountry.dial}${digits}`);
     },
     [selectedCountry, onChange]
   );
@@ -102,7 +102,7 @@ export function PhoneInput({
   const handleCountrySelect = useCallback(
     (country: Country) => {
       const digits = localNumber;
-      onChange(digits ? `${country.dial}${digits}` : '');
+      onChange(`${country.dial}${digits}`);
       setOpen(false);
       setSearch('');
     },
