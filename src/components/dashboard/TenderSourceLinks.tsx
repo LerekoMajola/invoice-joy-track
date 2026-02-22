@@ -40,9 +40,9 @@ const getVisitStatus = (lastVisitedAt: string | null) => {
   
   const daysSinceVisit = differenceInDays(new Date(), new Date(lastVisitedAt));
   
-  if (daysSinceVisit <= 2) {
+  if (daysSinceVisit <= 1) {
     return { color: 'green' as const, label: 'Recently checked', urgent: false, days: daysSinceVisit };
-  } else if (daysSinceVisit <= 5) {
+  } else if (daysSinceVisit <= 4) {
     return { color: 'orange' as const, label: 'Check soon', urgent: false, days: daysSinceVisit };
   } else {
     return { color: 'red' as const, label: 'Needs attention', urgent: true, days: daysSinceVisit };
