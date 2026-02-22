@@ -1,41 +1,65 @@
 
-## Fix: Task Reminders Not Sending (Missing Cron Job + Too Infrequent)
 
-### The Problem
+## Apply Gradient Stat Cards with White Text + User Name
 
-The task reminder system has two critical gaps:
+### What Changes
 
-1. **No cron job exists for `check-task-reminders`** -- the function is deployed but never gets called automatically. That's why the 10am meeting didn't trigger any notification or email.
-2. **Needs frequent execution** -- since tasks can have specific due times (like 10:00 AM) with reminders set to fire minutes before, the cron must run frequently (every 5 minutes) to catch these windows accurately.
+Transform all stat cards across the entire platform from the current white/light card style to bold gradient-backed cards with white text and icons, plus display the logged-in user's name at the bottom left of each card.
 
-### The Fix
+### 1. Update the Core `StatCard` Component
 
-**1. Add deduplication to prevent repeat notifications**
+**File: `src/components/dashboard/StatCard.tsx`**
 
-The current `check-task-reminders` function doesn't track which reminders have already been sent. If it runs every 5 minutes, it would spam the same notification repeatedly. We need to add deduplication using `reference_id` checks (same pattern used by `check-hearing-reminders`).
+- Change the card background from `bg-card` to the system's signature gradient (`bg-gradient-to-br from-indigo-500 to-purple-600`) with white text
+- Make all text elements white: title (`text-white/80`), value (`text-white`), change badge text
+- Icon container: use `bg-white/20` with white icon (remove the per-card `iconColor` overrides)
+- Add the logged-in user's name at the bottom left using `useAuth()` to get `user.email` and `useCompanyProfile()` to get `contact_person` or `company_name`
+- Display name in small white text: `text-xs text-white/60`
+- Remove the hover gradient overlay (no longer needed since background is already gradient)
+- Keep the animated number counter and hover lift effect
 
-**File: `supabase/functions/check-task-reminders/index.ts`**
-- Before inserting notifications, query existing notifications to check for duplicates using `reference_id` (e.g., `task-reminder-{task.id}-{due_date}`)
-- Add `reference_id` and `reference_type` fields to each notification insert
-- Skip any notification whose `reference_id` already exists in the `notifications` table
+### 2. Update Custom Stat Card Components
 
-**2. Schedule the cron job (every 5 minutes)**
+These components don't use the shared `StatCard` and have their own card markup:
 
-Run a SQL command to create the cron job:
+**File: `src/components/school/FeeStatCards.tsx`**
+- Apply the same indigo-to-purple gradient background
+- Change all text to white variants
+- Icon: white on `bg-white/20` circle
+- Add logged-in user's name at bottom left
+
+**File: `src/components/profitability/ProfitabilityStats.tsx`**
+- Apply the same gradient background to each stat card
+- Change text and icon colors to white variants
+- Add logged-in user's name at bottom left
+
+**File: `src/components/admin/PlatformStatsCards.tsx`**
+- These already use gradients but each card has a different color. Unify them to the system indigo-to-purple gradient
+- Add logged-in user's name at bottom left
+
+### 3. Clean Up Callers
+
+Pages that pass custom `iconColor` props (like `bg-primary/10 text-primary`) to `StatCard` will continue to work since the component will now ignore that prop internally and use `bg-white/20 text-white` universally.
+
+### Visual Result
+
+Each stat card will look like:
+
+```text
++------------------------------------------+
+|  Title                        [icon]     |
+|  1,234                                   |
+|  +12% this month                         |
+|                                          |
+|  John Doe                                |
++------------------------------------------+
 ```
-cron.schedule('check-task-reminders', '*/5 * * * *', ...)
-```
 
-This ensures:
-- Reminders fire within a 5-minute window of the configured time
-- Time-specific tasks (like a 10:00 AM meeting with a "15 min before" reminder) get caught at ~9:45-9:50 AM
-- Deduplication prevents repeated notifications on subsequent runs
+With a rich indigo-to-purple gradient background, all white text, and a frosted-glass icon container.
 
-### Why This Matters
+### Files Modified
 
-Without this fix, **no task reminders are ever sent automatically** -- not in-app notifications, not push notifications, and not emails (since emails are triggered by the notification insert trigger). This affects all users relying on task reminders for meetings, deadlines, and follow-ups.
-
-### Files Changed
-
-1. **`supabase/functions/check-task-reminders/index.ts`** -- add `reference_id` deduplication logic
-2. **Database** -- insert pg_cron job `check-task-reminders` running every 5 minutes
+1. `src/components/dashboard/StatCard.tsx` -- core gradient + white text + user name
+2. `src/components/school/FeeStatCards.tsx` -- match gradient style + user name
+3. `src/components/profitability/ProfitabilityStats.tsx` -- match gradient style + user name
+4. `src/components/admin/PlatformStatsCards.tsx` -- unify gradient + user name
