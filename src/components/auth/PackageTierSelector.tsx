@@ -65,7 +65,7 @@ export function PackageTierSelector({ systemType, onSelect, onBack, onCustomBuil
               )}
             >
               {tier.is_popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1">
                   <Sparkles className="h-3 w-3 mr-1" />
                   Most Popular
                 </Badge>
