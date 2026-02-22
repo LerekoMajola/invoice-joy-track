@@ -1,113 +1,62 @@
 
 
-## Fix Package Pricing: Single Source of Truth
+## Fix Custom Package Builder for LawPro (and All Verticals)
 
-### The Problem
+### Problems Found
 
-Right now, package prices exist in **three disconnected places**:
-1. Hardcoded tier arrays in `PackageTierSelector.tsx` (signup) -- e.g., BizPro Starter = M350
-2. Hardcoded tier arrays in `PricingTable.tsx` (landing page) -- same hardcoded values
-3. Individual module prices in the `platform_modules` database table -- e.g., Quotes M50 + Invoices M50 + Tasks M30 + Staff M80 = M210
+1. **Irrelevant modules showing in custom builder** -- When a LawPro user clicks "Build your own custom package", they see shared modules like "Delivery Notes", "Profitability", and "Fleet Management" that don't apply to law firms. This makes the builder feel broken or confusing.
 
-After signup, the Billing page shows the sum of module prices (M210), not the tier price the user saw (M350). This creates confusion about what the subscriber actually owes.
+2. **No review step for custom builds** -- When selecting a pre-built tier (Starter/Professional/Enterprise), users see a review screen before creating their account. But custom builds skip this and go straight to the credentials form. This inconsistency may make users feel something went wrong.
 
-### The Solution: Database-Driven Package Tiers
+### Changes
 
-Create a `package_tiers` table as the **single source of truth** for all pricing. Both the landing page and signup flow will read from this table instead of hardcoded arrays. Subscribers can also custom-build their own package.
+**1. Filter modules per vertical relevance**
 
-### How It Works
+Update `ModuleSelector.tsx` to only show modules that are relevant to the selected system type. Each vertical will have a curated list of allowed shared modules:
 
-**For pre-built packages (Starter / Professional / Enterprise):**
-- Admin sets a bundle price per tier (can include markup or discount vs. raw module sum)
-- When a user selects a tier, the system stores the tier ID on their subscription
-- Billing page shows the tier's bundle price as "Monthly Total"
+- **Legal**: Core CRM, Invoices, Tasks, Accounting, Staff + all legal-specific modules. Exclude: Quotes, Delivery Notes, Profitability, Fleet, Tenders.
+- Other verticals get similar curated lists.
 
-**For custom-built packages:**
-- User picks individual modules (existing flow)
-- Monthly total = sum of selected module prices (existing behavior)
-- Subscription is marked as "custom" tier
+This is done by adding a mapping of which shared modules each system type can access.
 
-**Post-signup flexibility:**
-- On the Billing page, users can see their current package and have a "Customize Package" button
-- This opens the module selector where they can add/remove modules
-- Changing modules switches them to custom pricing (sum of modules) or they can switch back to a pre-built tier
+**2. Add review step for custom builds**
 
-### What Changes
+Update `Auth.tsx` so custom builds also pass through the review step before credentials:
+- After selecting modules in the custom builder, set `selectedTier` to "Custom" and go to the review step
+- The review step already handles showing the selected modules
 
-**1. New database table: `package_tiers`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| system_type | text | e.g., 'business', 'gym' |
-| name | text | e.g., 'Starter', 'Professional', 'Enterprise' |
-| display_name | text | e.g., 'BizPro Starter' |
-| description | text | Target audience text |
-| bundle_price | numeric | What the customer pays per month |
-| module_keys | text[] | Array of module keys included |
-| features | jsonb | Display features list with included/excluded flags |
-| is_popular | boolean | Highlight badge |
-| sort_order | integer | Display ordering |
-| is_active | boolean | Can be hidden without deleting |
-
-**2. Add `package_tier_id` to `subscriptions` table**
-- Links the subscriber to their selected tier
-- NULL means custom-built package
-
-**3. New hook: `usePackageTiers`**
-- Fetches tiers from database filtered by system_type
-- Replaces all hardcoded tier arrays
-
-**4. Update these files to use database tiers:**
+### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/auth/PackageTierSelector.tsx` | Remove ~400 lines of hardcoded tiers, fetch from `package_tiers` table instead |
-| `src/components/landing/PricingTable.tsx` | Remove ~360 lines of hardcoded tiers, fetch from `package_tiers` table instead |
-| `src/pages/Auth.tsx` | Store `package_tier_id` on subscription during signup |
-| `src/pages/Billing.tsx` | Show bundle price from tier (or module sum for custom). Add "Customize Package" button |
-| `src/hooks/useModules.tsx` | Add `getMonthlyTotal` logic that checks tier price first, falls back to module sum |
-
-**5. Seed data migration**
-- Insert all 24 current tiers (3 per vertical x 8 verticals) into `package_tiers` with the prices currently hardcoded
-- This makes them editable by the admin going forward
-
-### Billing Page Improvements
-
-The Billing page "Your Package" section will be enhanced:
-- Shows the tier name (e.g., "BizPro Professional") and bundle price if on a pre-built tier
-- Shows "Custom Package" with module-sum price if on a custom build
-- Lists included modules with individual prices for transparency
-- "Change Package" button opens a sheet where users can:
-  - Switch to a different pre-built tier for their vertical
-  - Or toggle individual modules (switches to custom pricing)
-
-### Admin Benefits
-
-Since tiers are now in the database:
-- Prices can be adjusted without code changes
-- New tiers can be added per vertical
-- Tiers can be deactivated without deleting
-- The admin dashboard could later include a tier management UI
+| `src/components/auth/ModuleSelector.tsx` | Add a `SYSTEM_ALLOWED_SHARED_KEYS` mapping to filter out irrelevant shared modules per vertical |
+| `src/pages/Auth.tsx` | Update `handleModulesComplete` to set `selectedTier` to "Custom" and go to the review step instead of skipping to credentials |
 
 ### Technical Details
 
-**Database migration:**
+**Module filtering logic in `ModuleSelector.tsx`:**
+
+```text
+SYSTEM_ALLOWED_SHARED_KEYS = {
+  legal:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  business:   ['core_crm', 'quotes', 'invoices', 'delivery_notes', 'profitability', 'tasks', 'accounting', 'staff', 'fleet', 'tenders'],
+  workshop:   ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
+  school:     ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  hire:       ['core_crm', 'quotes', 'invoices', 'tasks', 'accounting', 'staff'],
+  guesthouse: ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  fleet:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff', 'fleet'],
+  gym:        ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+}
 ```
--- Create package_tiers table
--- Add package_tier_id to subscriptions
--- Seed all 24 tier definitions
--- RLS: public read (for landing/signup), admin write
-```
 
-**New files:**
-- `src/hooks/usePackageTiers.tsx` -- fetch and cache tiers
+After fetching modules, filter: show the vertical's own modules + only the allowed shared modules for that vertical.
 
-**Modified files:**
-- `src/components/auth/PackageTierSelector.tsx` -- use database tiers
-- `src/components/landing/PricingTable.tsx` -- use database tiers
-- `src/pages/Auth.tsx` -- save tier ID on signup
-- `src/pages/Billing.tsx` -- show tier price, add customization
-- `src/hooks/useModules.tsx` -- tier-aware pricing logic
+**Auth.tsx custom flow fix:**
 
-**No breaking changes** -- existing subscribers keep working. Their `package_tier_id` will be NULL (treated as custom) until they select a tier.
+In `handleModulesComplete`, after looking up module keys:
+- Set `selectedTier` to `"Custom"`
+- Set `selectedTierId` to `null`
+- Set `signupStep` to `"review"` instead of `"credentials"`
+
+This gives users the same review screen as pre-built tiers, showing their selected modules before account creation.
+
