@@ -402,7 +402,7 @@ export function useHireOrders() {
             // Update invoice total
             await supabase
               .from('invoices')
-              .update({ total: input.adjustedTotal })
+              .update({ total: input.adjustedTotal, status: 'paid' })
               .eq('id', linkedInvoice.id);
 
             // Delete old line items
