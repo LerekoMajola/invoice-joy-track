@@ -114,12 +114,12 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
     <div className="w-full max-w-3xl mx-auto">
       <div className="text-center mb-8 animate-slide-up">
         <div className="flex justify-center mb-4">
-          <PlatformLogo className="h-12 w-auto" />
+          <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
         </div>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
           Build Your Package
         </h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+        <p className="text-white/70 mt-2 text-sm sm:text-base">
           Select the modules you need. Start with a 7-day free trial.
         </p>
       </div>
