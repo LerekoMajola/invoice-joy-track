@@ -43,7 +43,7 @@ function ClientCard({
   onDelete: (id: string, company: string) => void 
 }) {
   return (
-    <div className="mobile-card animate-slide-up">
+    <div className="mobile-card animate-slide-up cursor-pointer" onClick={() => onEdit(client)}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
@@ -225,8 +225,9 @@ export default function Clients() {
                   {clients.map((client, index) => (
                     <TableRow 
                       key={client.id} 
-                      className="animate-slide-up"
+                      className="animate-slide-up cursor-pointer hover:bg-muted/50"
                       style={{ animationDelay: `${index * 50}ms` }}
+                      onClick={() => handleEditClick(client)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -263,7 +264,7 @@ export default function Clients() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
