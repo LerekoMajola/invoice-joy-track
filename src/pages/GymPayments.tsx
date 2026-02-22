@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   ChevronLeft, ChevronRight, Search, CheckCircle2, AlertCircle,
-  TrendingUp, DollarSign, Users, Clock, CheckCheck, ImageIcon
+  TrendingUp, DollarSign, Users, Clock, CheckCheck, ImageIcon, Download
 } from 'lucide-react';
 import {
   format, parseISO,
@@ -362,12 +362,19 @@ export default function GymPayments() {
 
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">Proof of Payment</p>
-                {selectedSub.popUrl ? (
-                  <img
-                    src={selectedSub.popUrl}
-                    alt="Proof of payment"
-                    className="w-full rounded-lg border border-border object-contain max-h-72"
-                  />
+{selectedSub.popUrl ? (
+                  <div className="space-y-2">
+                    <img
+                      src={selectedSub.popUrl}
+                      alt="Proof of payment"
+                      className="w-full rounded-lg border border-border object-contain max-h-72"
+                    />
+                    <a href={selectedSub.popUrl} target="_blank" rel="noopener noreferrer" download>
+                      <Button variant="outline" size="sm" className="w-full mt-2">
+                        <Download className="h-4 w-4 mr-1" /> Download Receipt
+                      </Button>
+                    </a>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
                     <ImageIcon className="h-8 w-8 mb-2 opacity-30" />
