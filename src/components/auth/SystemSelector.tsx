@@ -21,8 +21,8 @@ const systems: SystemOption[] = [
     description: 'Quotes, invoices, CRM, tenders, accounting & more for service companies',
     startingPrice: 'M350',
     icon: Briefcase,
-    gradient: 'from-primary to-violet',
-    iconBg: 'bg-primary/10 text-primary',
+    gradient: 'from-indigo-500 to-purple-600',
+    iconBg: 'bg-indigo-500/10 text-indigo-600',
   },
   {
     type: 'legal',
@@ -30,8 +30,8 @@ const systems: SystemOption[] = [
     description: 'Case management, billable hours, court calendar & document management for law firms',
     startingPrice: 'M500',
     icon: Scale,
-    gradient: 'from-emerald-500 to-teal-500',
-    iconBg: 'bg-emerald-500/10 text-emerald-600',
+    gradient: 'from-cyan-500 to-blue-600',
+    iconBg: 'bg-cyan-500/10 text-cyan-600',
   },
   {
     type: 'gym',
