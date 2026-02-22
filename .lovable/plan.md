@@ -1,29 +1,19 @@
 
 
-## Brand the Auth Login Page
+## Fix Package Selector Page Contrast and Logo
+
+### Issues
+- Logo is not clickable (needs to navigate to landing page)
+- Text on the gradient background is dark and hard to read -- headings, subtitle, prices, feature text, and links all need white/light treatment
+- The "custom package" link at the bottom is barely visible
 
 ### Changes
 
-**File: `src/pages/Auth.tsx`**
+**File: `src/components/auth/PackageTierSelector.tsx`**
 
-1. **Gradient background on login view**: Change the login form's outer `div` from plain `bg-background` to use the platform's hero gradient (`bg-gradient-hero`) for the right panel, giving it the Electric Indigo / Violet / Cyan feel.
+1. **Make logo clickable**: Wrap `PlatformLogo` in a `Link to="/"` so clicking it returns to landing
+2. **White text for heading area**: Change the system label (e.g. "BizPro") and subtitle text from dark foreground/muted to white/white-70 so they pop on the gradient
+3. **White "custom package" link**: Change from `text-primary` to `text-white` with white underline
+4. **Cards stay as-is**: The white cards with dark text already have good contrast -- no changes needed there
 
-2. **Make the logo clickable**: Wrap the mobile `PlatformLogo` in a `Link` to `"/"` so tapping it navigates back to the landing page. Also wrap the "Back to home" text link's logo (if visible on desktop via AuthBrandingPanel) -- but the main fix is the mobile logo at the top of the login form.
-
-3. **Style the login card**: Add a frosted glass card (`bg-card/80 backdrop-blur border rounded-2xl shadow-xl p-8`) around the form content so it sits cleanly on the gradient background, similar to how the screenshot shows a contained card.
-
-4. **Gradient Sign In button**: Already uses `variant="gradient"` -- no change needed.
-
-5. **Apply same treatment to the signup credentials step** (line 414) for consistency.
-
-### Technical Details
-
-| Area | Current | After |
-|------|---------|-------|
-| Login background | `bg-background` (plain gray) | `bg-gradient-hero` or subtle gradient overlay |
-| Mobile logo | Static `PlatformLogo` | Wrapped in `<Link to="/">` |
-| Form container | No card wrapper | Glass card with shadow and rounded corners |
-| Desktop logo (AuthBrandingPanel) | Not clickable | Wrap in `<Link to="/">` in AuthBrandingPanel |
-
-Only two files change: `src/pages/Auth.tsx` and `src/components/auth/AuthBrandingPanel.tsx`.
-
+Only one file changes: `src/components/auth/PackageTierSelector.tsx`.
