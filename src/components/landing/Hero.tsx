@@ -1,16 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
+import { ArrowRight, Briefcase, Scale, Dumbbell } from 'lucide-react';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
 const industries = [
   { icon: Briefcase, label: 'BizPro', gradient: 'from-primary to-violet' },
-  { icon: Wrench, label: 'ShopPro', gradient: 'from-coral to-warning' },
-  { icon: GraduationCap, label: 'EduPro', gradient: 'from-info to-cyan' },
   { icon: Scale, label: 'LawPro', gradient: 'from-violet to-primary' },
-  { icon: Hammer, label: 'HirePro', gradient: 'from-success to-info' },
-  { icon: Hotel, label: 'StayPro', gradient: 'from-rose-500 to-pink-500' },
-  { icon: Car, label: 'FleetPro', gradient: 'from-slate-500 to-zinc-700' },
   { icon: Dumbbell, label: 'GymPro', gradient: 'from-lime-500 to-green-600' },
 ];
 
@@ -80,10 +75,10 @@ export function Hero() {
           <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
             One Platform,
             <br />
-            <span className="bg-gradient-to-r from-cyan via-accent to-coral bg-clip-text text-transparent">Every Industry</span>
+            <span className="bg-gradient-to-r from-cyan via-accent to-coral bg-clip-text text-transparent">Three Solutions</span>
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro, FleetPro &amp; GymPro — all powered by one modular platform.
+            BizPro, LawPro &amp; GymPro — modular business management for companies, law firms, and fitness centres.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: '0.3s' }}>

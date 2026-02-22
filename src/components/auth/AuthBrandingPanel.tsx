@@ -1,16 +1,11 @@
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-import { Quote, Briefcase, Wrench, GraduationCap, Scale, Hammer, Hotel, Car, Dumbbell } from 'lucide-react';
+import { Quote, Briefcase, Scale, Dumbbell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { testimonials } from '@/data/testimonials';
 
 const industries = [
   { label: 'BizPro', icon: Briefcase, color: 'bg-indigo-500/80' },
-  { label: 'ShopPro', icon: Wrench, color: 'bg-orange-500/80' },
-  { label: 'EduPro', icon: GraduationCap, color: 'bg-cyan-500/80' },
   { label: 'LawPro', icon: Scale, color: 'bg-emerald-500/80' },
-  { label: 'HirePro', icon: Hammer, color: 'bg-amber-500/80' },
-  { label: 'StayPro', icon: Hotel, color: 'bg-rose-500/80' },
-  { label: 'FleetPro', icon: Car, color: 'bg-slate-500/80' },
   { label: 'GymPro', icon: Dumbbell, color: 'bg-lime-500/80' },
 ];
 
@@ -38,10 +33,10 @@ export function AuthBrandingPanel() {
           <PlatformLogo className="h-32 w-32 rounded-full p-6 bg-white shadow-sm object-contain" />
         </div>
           <h2 className="font-display text-3xl font-bold text-white mb-4">
-            One Platform, Eight Industries
+            One Platform, Three Solutions
           </h2>
           <p className="text-white/70 text-lg">
-            BizPro, ShopPro, EduPro, LawPro, HirePro, StayPro, FleetPro &amp; GymPro — all powered by one modular platform.
+            BizPro, LawPro &amp; GymPro — modular business management for companies, law firms, and fitness centres.
           </p>
 
         {/* Rotating Testimonial */}

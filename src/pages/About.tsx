@@ -7,11 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   ArrowRight,
   Briefcase,
-  Wrench,
-  GraduationCap,
   Scale,
-  Hammer,
-  Hotel,
+  Dumbbell,
   CheckCircle2,
   FileText,
   Users,
@@ -31,27 +28,9 @@ const industries = [
     name: 'Business Management',
     system: 'business',
     gradient: 'from-primary to-violet',
-    description: 'Complete operations suite for companies, freelancers, and professional service providers.',
-    features: ['Quotes & Estimates', 'Invoices & Receipts', 'Client CRM & Pipeline', 'Delivery Notes', 'Tender Management', 'Profitability Tracking'],
+    description: 'Complete operations suite for companies and freelancers. Add optional modules for Workshop, Fleet, Hire, School, and Guesthouse management.',
+    features: ['Quotes & Invoices', 'Client CRM & Pipeline', 'Delivery Notes', 'Profitability Tracking', 'Workshop, Fleet, Hire & more as add-ons'],
     basePrice: 350,
-  },
-  {
-    icon: Wrench,
-    name: 'Workshop & Repairs',
-    system: 'workshop',
-    gradient: 'from-coral to-warning',
-    description: 'Manage job cards, track parts and labour, and keep full vehicle history for every customer.',
-    features: ['Job Cards & Progress Tracking', 'Parts & Labour Costing', 'Vehicle History Records', 'Technician Assignment', 'Quote-to-Invoice Flow', 'Workshop Dashboard'],
-    basePrice: 450,
-  },
-  {
-    icon: GraduationCap,
-    name: 'School Administration',
-    system: 'school',
-    gradient: 'from-info to-cyan',
-    description: 'Simplify student records, fee collection, class management, and parent communication.',
-    features: ['Student Records & Enrolment', 'Fee Tracking & Invoicing', 'Class & Term Management', 'Timetable Scheduling', 'Announcements', 'Fee Reports & Analytics'],
-    basePrice: 720,
   },
   {
     icon: Scale,
@@ -63,22 +42,13 @@ const industries = [
     basePrice: 500,
   },
   {
-    icon: Hammer,
-    name: 'Tool & Equipment Hire',
-    system: 'hire',
-    gradient: 'from-success to-info',
-    description: 'Equipment catalogues, hire orders, availability calendars, and damage tracking for rental companies.',
-    features: ['Equipment Catalogue', 'Hire Orders & Returns', 'Availability Calendar', 'Damage & Condition Tracking', 'Deposit Management', 'Hire Reports'],
-    basePrice: 400,
-  },
-  {
-    icon: Hotel,
-    name: 'Guest House & Hospitality',
-    system: 'guesthouse',
-    gradient: 'from-rose-500 to-pink-500',
-    description: 'Room management, booking calendars, housekeeping tasks, and guest reviews for lodges and B&Bs.',
-    features: ['Room Management', 'Booking Calendar', 'Housekeeping Tasks', 'Guest Reviews & Ratings', 'Meal Plan Tracking', 'Occupancy Reports'],
-    basePrice: 650,
+    icon: Dumbbell,
+    name: 'Gym & Fitness',
+    system: 'gym',
+    gradient: 'from-lime-500 to-green-600',
+    description: 'Member management, class scheduling, attendance tracking, and billing for gyms and fitness centres.',
+    features: ['Member Management', 'Class Scheduling', 'Attendance Tracking', 'Payment & Billing', 'Member Portal', 'Workout Plans'],
+    basePrice: 500,
   },
 ];
 
@@ -145,7 +115,7 @@ export default function About() {
             About <span className="bg-gradient-to-r from-cyan via-accent to-coral bg-clip-text text-transparent">Orion Labs</span>
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto">
-            The modular cloud platform that powers businesses, workshops, schools, law firms, rental companies, and guest houses across Africa.
+            The modular cloud platform that powers businesses, law firms, and fitness centres across Africa.
           </p>
         </div>
       </section>
@@ -158,10 +128,9 @@ export default function About() {
           </h2>
           <div className="prose prose-lg max-w-none text-muted-foreground text-center">
             <p className="text-lg leading-relaxed">
-              Orion Labs is a single, modular platform designed to run your entire operation — no matter your industry. 
-              Instead of juggling separate tools for invoicing, payroll, CRM, and accounting, you get one unified system 
-              with industry-specific modules built in. Choose the vertical that matches your business, pick a package tier, 
-              and you're up and running in minutes.
+              Orion Labs offers three focused solutions — BizPro, LawPro, and GymPro — each tailored for its industry. 
+              Instead of juggling separate tools for invoicing, payroll, CRM, and accounting, you get one unified system. 
+              BizPro users can further expand with optional add-on modules for Workshop, Fleet, Hire, School, and Guesthouse management.
             </p>
             <p className="text-lg leading-relaxed mt-4">
               Built as a Progressive Web App, Orion Labs works on any device — desktop, tablet, or mobile — and even works offline. 
@@ -176,7 +145,7 @@ export default function About() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-              6 Industries, 1 Platform
+              3 Solutions, 1 Platform
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Industry Solutions
