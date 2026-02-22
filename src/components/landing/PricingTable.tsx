@@ -81,14 +81,24 @@ function PricingCard({ tier, systemKey, symbol, rate, loading, currency }: { tie
         ))}
       </ul>
 
-      <Link to={`/auth?system=${systemKey}`}>
-        <Button
-          variant={tier.is_popular ? 'gradient' : 'outline'}
-          className="w-full rounded-xl h-12 font-semibold"
-        >
-          Start Free Trial
-        </Button>
-      </Link>
+      <div className="flex gap-3">
+        <Link to={`/auth?system=${systemKey}`} className="flex-1">
+          <Button
+            variant={tier.is_popular ? 'gradient' : 'outline'}
+            className="w-full rounded-xl h-12 font-semibold"
+          >
+            Start Free Trial
+          </Button>
+        </Link>
+        <Link to={`/auth?system=${systemKey}&subscribe=true`} className="flex-1">
+          <Button
+            variant="outline"
+            className="w-full rounded-xl h-12 font-semibold border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            Subscribe
+          </Button>
+        </Link>
+      </div>
       <p className="text-xs text-muted-foreground text-center mt-3">
         7-day free trial · No credit card required
       </p>
