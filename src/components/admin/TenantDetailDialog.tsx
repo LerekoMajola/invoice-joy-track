@@ -1,11 +1,16 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { Building2, Mail, Phone, Calendar, CreditCard, BarChart3, Puzzle, X, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Tenant } from '@/hooks/useAdminTenants';
 import { formatMaluti } from '@/lib/currency';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { TenantModuleManager } from './TenantModuleManager';
 import { TenantBusinessInsights } from './TenantBusinessInsights';
 import { TenantSmsCredits } from './TenantSmsCredits';
@@ -18,7 +23,34 @@ interface TenantDetailDialogProps {
 }
 
 export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailDialogProps) {
+  const [multiCompanyEnabled, setMultiCompanyEnabled] = useState(
+    () => (tenant?.subscription as any)?.multi_company_enabled ?? false
+  );
+  const [toggling, setToggling] = useState(false);
+
+  // Sync state when tenant changes
+  const tenantSubMulti = (tenant?.subscription as any)?.multi_company_enabled ?? false;
+  if (multiCompanyEnabled !== tenantSubMulti && !toggling) {
+    setMultiCompanyEnabled(tenantSubMulti);
+  }
+
   if (!tenant || !open) return null;
+
+  const handleToggleMultiCompany = async (checked: boolean) => {
+    setToggling(true);
+    setMultiCompanyEnabled(checked);
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ multi_company_enabled: checked } as any)
+      .eq('user_id', tenant.user_id);
+    if (error) {
+      toast.error('Failed to update multi-company access');
+      setMultiCompanyEnabled(!checked);
+    } else {
+      toast.success(checked ? 'Multi-company access enabled' : 'Multi-company access disabled');
+    }
+    setToggling(false);
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 bg-background animate-in fade-in-0 duration-200 flex flex-col">
@@ -125,7 +157,23 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
 
             <Separator />
 
-            {/* Usage Info */}
+            {/* Multi-Company Access Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="multi-company-toggle" className="font-medium">Multi-Company Access</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Allow this tenant to manage multiple companies</p>
+                </div>
+                <Switch
+                  id="multi-company-toggle"
+                  checked={multiCompanyEnabled}
+                  onCheckedChange={handleToggleMultiCompany}
+                  disabled={toggling}
+                />
+              </div>
+            </div>
+
+            <Separator />
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
