@@ -1,7 +1,8 @@
 import { TrendingUp, TrendingDown, DollarSign, Target, Trophy, AlertTriangle } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
-import { cn } from '@/lib/utils';
 import type { ProfitabilityStats as Stats } from '@/hooks/useJobProfitability';
+import { useAuth } from '@/hooks/useAuth';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
 interface ProfitabilityStatsProps {
   stats: Stats;
@@ -9,49 +10,17 @@ interface ProfitabilityStatsProps {
 }
 
 export function ProfitabilityStats({ stats, targetMargin }: ProfitabilityStatsProps) {
+  const { user } = useAuth();
+  const { profile } = useCompanyProfile();
+  const displayName = profile?.contact_person || profile?.company_name || user?.email?.split('@')[0] || '';
+
   const statCards = [
-    {
-      label: 'Total Revenue',
-      value: formatMaluti(stats.totalRevenue),
-      icon: DollarSign,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-    {
-      label: 'Total Cost',
-      value: formatMaluti(stats.totalCost),
-      icon: TrendingDown,
-      color: 'text-rose-500',
-      bgColor: 'bg-rose-500/10',
-    },
-    {
-      label: 'Gross Profit',
-      value: formatMaluti(stats.grossProfit),
-      icon: TrendingUp,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-    },
-    {
-      label: 'Avg. Margin',
-      value: `${stats.averageMargin.toFixed(1)}%`,
-      icon: Target,
-      color: stats.averageMargin >= targetMargin ? 'text-emerald-500' : 'text-amber-500',
-      bgColor: stats.averageMargin >= targetMargin ? 'bg-emerald-500/10' : 'bg-amber-500/10',
-    },
-    {
-      label: 'Jobs Tracked',
-      value: stats.jobsTracked.toString(),
-      icon: Trophy,
-      color: 'text-sky-500',
-      bgColor: 'bg-sky-500/10',
-    },
-    {
-      label: 'Below Target',
-      value: stats.jobsBelowTarget.toString(),
-      icon: AlertTriangle,
-      color: stats.jobsBelowTarget > 0 ? 'text-amber-500' : 'text-emerald-500',
-      bgColor: stats.jobsBelowTarget > 0 ? 'bg-amber-500/10' : 'bg-emerald-500/10',
-    },
+    { label: 'Total Revenue', value: formatMaluti(stats.totalRevenue), icon: DollarSign },
+    { label: 'Total Cost', value: formatMaluti(stats.totalCost), icon: TrendingDown },
+    { label: 'Gross Profit', value: formatMaluti(stats.grossProfit), icon: TrendingUp },
+    { label: 'Avg. Margin', value: `${stats.averageMargin.toFixed(1)}%`, icon: Target },
+    { label: 'Jobs Tracked', value: stats.jobsTracked.toString(), icon: Trophy },
+    { label: 'Below Target', value: stats.jobsBelowTarget.toString(), icon: AlertTriangle },
   ];
 
   return (
@@ -59,20 +28,23 @@ export function ProfitabilityStats({ stats, targetMargin }: ProfitabilityStatsPr
       {statCards.map((stat, index) => (
         <div
           key={stat.label}
-          className="rounded-xl border border-border bg-card p-4 shadow-card animate-slide-up"
+          className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-4 shadow-lg animate-slide-up"
           style={{ animationDelay: `${index * 50}ms` }}
         >
           <div className="flex items-center justify-between">
-            <div className={cn('p-2 rounded-lg', stat.bgColor)}>
-              <stat.icon className={cn('h-5 w-5', stat.color)} />
+            <div className="p-2 rounded-lg bg-white/20">
+              <stat.icon className="h-5 w-5 text-white" />
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
-            <p className={cn('text-2xl font-display font-semibold mt-1', stat.color)}>
+            <p className="text-sm text-white/80">{stat.label}</p>
+            <p className="text-2xl font-display font-semibold mt-1 text-white">
               {stat.value}
             </p>
           </div>
+          {displayName && (
+            <p className="mt-2 text-xs text-white/60 truncate">{displayName}</p>
+          )}
         </div>
       ))}
     </div>
