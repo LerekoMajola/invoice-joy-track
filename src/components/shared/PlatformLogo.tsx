@@ -8,7 +8,7 @@ interface PlatformLogoProps {
   fallbackIcon?: React.ReactNode;
 }
 
-export function PlatformLogo({ className = 'h-8 w-8 rounded-xl p-2 bg-white shadow-sm object-contain', alt = 'Platform Logo', fallbackIcon }: PlatformLogoProps) {
+export function PlatformLogo({ className = 'h-8 w-8 rounded-xl p-1 bg-white shadow-sm object-contain', alt = 'Platform Logo', fallbackIcon }: PlatformLogoProps) {
   const { logoUrl, isLoading } = usePlatformSettings();
   const [imgError, setImgError] = useState(false);
 
@@ -24,7 +24,7 @@ export function PlatformLogo({ className = 'h-8 w-8 rounded-xl p-2 bg-white shad
   }
 
   // Extract size/padding/bg classes for the wrapper vs image-only classes
-  const hasCircularPadding = (className.includes('rounded-full') || className.includes('rounded-2xl')) && className.includes('bg-');
+  const hasCircularPadding = className.includes('rounded-full') && className.includes('bg-');
 
   if (hasCircularPadding) {
     // Separate container styles from image styles

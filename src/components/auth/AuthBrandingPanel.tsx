@@ -31,7 +31,7 @@ export function AuthBrandingPanel() {
 
       <div className="relative max-w-md text-center animate-slide-up">
         <Link to="/" className="flex items-center justify-center mb-8 animate-bounce-in">
-          <PlatformLogo className="h-32 w-32 rounded-2xl p-6 bg-white shadow-sm object-contain" />
+          <PlatformLogo className="h-32 w-32 rounded-full p-6 bg-white shadow-sm object-contain" />
         </Link>
           <h2 className="font-display text-3xl font-bold text-white mb-4">
             One Platform, Three Solutions

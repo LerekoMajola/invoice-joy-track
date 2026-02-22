@@ -8,7 +8,6 @@ import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
-import { Link } from 'react-router-dom';
 
 interface PlatformModule {
   id: string;
@@ -114,13 +113,13 @@ export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelect
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="text-center mb-8 animate-slide-up">
-        <Link to="/" className="flex justify-center mb-4">
-          <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
-        </Link>
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
+        <div className="flex justify-center mb-4">
+          <PlatformLogo className="h-12 w-auto" />
+        </div>
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
           Build Your Package
         </h1>
-        <p className="text-white/70 mt-2 text-sm sm:text-base">
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
           Select the modules you need. Start with a 7-day free trial.
         </p>
       </div>
