@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useSmsCredits } from '@/hooks/useSmsCredits';
 import { useModules } from '@/hooks/useModules';
+import { usePackageTiers } from '@/hooks/usePackageTiers';
 import { formatMaluti } from '@/lib/currency';
 import {
   Clock, AlertTriangle, Loader2, Smartphone, Building2,
@@ -26,11 +27,13 @@ const ADMIN_USER_ID = '89710bb3-dff7-4e5e-9af0-7ef7f3ad105d';
 
 export default function Billing() {
   const { user } = useAuth();
-  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference } = useSubscription();
+  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, packageTierId } = useSubscription();
   const { profile: companyProfile } = useCompanyProfile();
   const { creditsRemaining, creditsUsed, creditsAllocated } = useSmsCredits();
   const { userModules, getMonthlyTotal } = useModules();
-  const monthlyTotal = getMonthlyTotal();
+  const { getTierById } = usePackageTiers();
+  const selectedTier = packageTierId ? getTierById(packageTierId) : null;
+  const monthlyTotal = selectedTier ? selectedTier.bundle_price : getMonthlyTotal();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
@@ -140,6 +143,21 @@ export default function Billing() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
+            {selectedTier && (
+              <div className="mb-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">{selectedTier.display_name}</span>
+                  <Badge variant="secondary" className="text-xs">{selectedTier.name}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{selectedTier.description}</p>
+              </div>
+            )}
+            {!selectedTier && userModules.length > 0 && (
+              <div className="mb-3 p-3 rounded-lg bg-muted/50">
+                <span className="text-sm font-medium text-foreground">Custom Package</span>
+                <p className="text-xs text-muted-foreground mt-0.5">Module-based pricing</p>
+              </div>
+            )}
             {userModules.length === 0 ? (
               <p className="text-sm text-muted-foreground">No modules selected.</p>
             ) : (
@@ -160,6 +178,9 @@ export default function Billing() {
               <span className="font-semibold text-foreground">Monthly Total</span>
               <span className="text-xl font-bold text-foreground">{formatMaluti(monthlyTotal)}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
             </div>
+            {selectedTier && (
+              <p className="text-[10px] text-muted-foreground mt-1 text-right">Bundle price</p>
+            )}
           </CardContent>
         </Card>
 
