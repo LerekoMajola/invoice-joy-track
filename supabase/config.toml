@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.admin-get-usage-analytics]
 verify_jwt = false
+
+[functions.check-task-reminders]
+verify_jwt = false
