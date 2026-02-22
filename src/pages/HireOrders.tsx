@@ -9,12 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useHireOrders, CreateHireOrderInput, HireOrder, HireOrderItem } from '@/hooks/useHireOrders';
+import { useHireOrders, CreateHireOrderInput, EditHireOrderInput, HireOrder, HireOrderItem } from '@/hooks/useHireOrders';
 import { useEquipment } from '@/hooks/useEquipment';
 import { useClients } from '@/hooks/useClients';
 import { formatMaluti } from '@/lib/currency';
 import { format } from 'date-fns';
-import { Plus, Loader2, ClipboardList, Search, Trash2, RotateCcw, FileText } from 'lucide-react';
+import { Plus, Loader2, ClipboardList, Search, Trash2, RotateCcw, FileText, Pencil } from 'lucide-react';
 import { ProcessReturnDialog } from '@/components/hire/ProcessReturnDialog';
 import { HireOrderPreview } from '@/components/hire/HireOrderPreview';
 
@@ -33,10 +33,11 @@ interface OrderItemForm {
 }
 
 export default function HireOrders() {
-  const { orders, isLoading, createOrder, isCreating, getOrderItems } = useHireOrders();
+  const { orders, isLoading, allOrderItems, createOrder, editOrder, isCreating, isEditing, getOrderItems } = useHireOrders();
   const { equipment } = useEquipment();
   const { clients } = useClients();
-  const [addOpen, setAddOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [statusTab, setStatusTab] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -102,30 +103,88 @@ export default function HireOrders() {
     return orderItems.reduce((sum, item) => sum + (item.daily_rate * item.quantity * days), 0);
   };
 
-  const handleCreate = () => {
-    if (!form.client_name.trim() || !form.hire_start || !form.hire_end) return;
-    const total = calculateTotal();
-    const input: CreateHireOrderInput = {
-      client_name: form.client_name,
-      client_id: form.client_id || undefined,
-      client_phone: form.client_phone || undefined,
-      hire_start: form.hire_start,
-      hire_end: form.hire_end,
-      deposit_paid: form.deposit_paid,
-      total,
-      notes: form.notes || undefined,
-      items: orderItems.map(item => ({
-        equipment_item_id: item.equipment_item_id || undefined,
-        equipment_name: item.equipment_name,
-        daily_rate: item.daily_rate,
-        quantity: item.quantity,
-        subtotal: item.daily_rate * item.quantity,
-      })),
-    };
-    createOrder(input);
-    setAddOpen(false);
+  const isFormValid = () => {
+    if (!form.client_name.trim()) return false;
+    if (!form.hire_start || !form.hire_end) return false;
+    if (orderItems.length === 0) return false;
+    if (orderItems.some(item => !item.equipment_item_id)) return false;
+    if (calculateTotal() <= 0) return false;
+    return true;
+  };
+
+  const resetForm = () => {
     setForm({ client_name: '', client_id: '', client_phone: '', hire_start: format(new Date(), 'yyyy-MM-dd'), hire_end: '', deposit_paid: 0, notes: '' });
     setOrderItems([]);
+    setEditingOrderId(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = async (order: HireOrder) => {
+    setForm({
+      client_name: order.client_name,
+      client_id: order.client_id || '',
+      client_phone: order.client_phone || '',
+      hire_start: order.hire_start,
+      hire_end: order.hire_end,
+      deposit_paid: order.deposit_paid,
+      notes: order.notes || '',
+    });
+    const items = await getOrderItems(order.id);
+    setOrderItems(items.map(i => ({
+      equipment_item_id: i.equipment_item_id || '',
+      equipment_name: i.equipment_name,
+      daily_rate: i.daily_rate,
+      quantity: i.quantity,
+    })));
+    setEditingOrderId(order.id);
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!isFormValid()) return;
+    const total = calculateTotal();
+    const itemsPayload = orderItems.map(item => ({
+      equipment_item_id: item.equipment_item_id || undefined,
+      equipment_name: item.equipment_name,
+      daily_rate: item.daily_rate,
+      quantity: item.quantity,
+      subtotal: item.daily_rate * item.quantity,
+    }));
+
+    if (editingOrderId) {
+      const input: EditHireOrderInput = {
+        orderId: editingOrderId,
+        client_name: form.client_name,
+        client_id: form.client_id || undefined,
+        client_phone: form.client_phone || undefined,
+        hire_start: form.hire_start,
+        hire_end: form.hire_end,
+        deposit_paid: form.deposit_paid,
+        total,
+        notes: form.notes || undefined,
+        items: itemsPayload,
+      };
+      editOrder(input);
+    } else {
+      const input: CreateHireOrderInput = {
+        client_name: form.client_name,
+        client_id: form.client_id || undefined,
+        client_phone: form.client_phone || undefined,
+        hire_start: form.hire_start,
+        hire_end: form.hire_end,
+        deposit_paid: form.deposit_paid,
+        total,
+        notes: form.notes || undefined,
+        items: itemsPayload,
+      };
+      createOrder(input);
+    }
+    setDialogOpen(false);
+    resetForm();
   };
 
   const handleOpenPreview = async (order: HireOrder) => {
@@ -136,14 +195,21 @@ export default function HireOrders() {
     setPreviewLoading(false);
   };
 
+  const getOrderEquipmentSummary = (orderId: string) => {
+    const items = allOrderItems.filter(i => i.hire_order_id === orderId);
+    if (items.length === 0) return null;
+    return items.map(i => `${i.equipment_name}${i.quantity > 1 ? ` x${i.quantity}` : ''}`).join(', ');
+  };
+
   const availableEquipment = equipment.filter(e => e.available_quantity > 0);
+  const isSaving = isCreating || isEditing;
 
   return (
     <DashboardLayout>
       <Header
         title="Hire Orders"
         subtitle="Manage rental agreements and bookings"
-        action={{ label: 'New Order', onClick: () => setAddOpen(true) }}
+        action={{ label: 'New Order', onClick: openCreateDialog }}
       />
       <div className="p-4 md:p-6 space-y-4 pb-safe">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -172,46 +238,56 @@ export default function HireOrders() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {filtered.map(order => (
-              <Card key={order.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm">{order.order_number}</h3>
-                        <Badge className={statusColor[order.status] || ''} variant="secondary">{order.status}</Badge>
+            {filtered.map(order => {
+              const equipSummary = getOrderEquipmentSummary(order.id);
+              return (
+                <Card key={order.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm">{order.order_number}</h3>
+                          <Badge className={statusColor[order.status] || ''} variant="secondary">{order.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{order.client_name}</p>
+                        {equipSummary && (
+                          <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">{equipSummary}</p>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">{order.client_name}</p>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-sm">{formatMaluti(order.total)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(order.hire_start), 'dd MMM')} — {format(new Date(order.hire_end), 'dd MMM yyyy')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-sm">{formatMaluti(order.total)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(order.hire_start), 'dd MMM')} — {format(new Date(order.hire_end), 'dd MMM yyyy')}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                    <Button variant="outline" size="sm" className="text-xs" onClick={() => handleOpenPreview(order)}>
-                      <FileText className="h-3.5 w-3.5 mr-1" />Agreement
-                    </Button>
-                    {(order.status === 'active' || order.status === 'overdue') && (
-                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setReturnOrder(order)}>
-                        <RotateCcw className="h-3.5 w-3.5 mr-1" />Process Return
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => handleOpenPreview(order)}>
+                        <FileText className="h-3.5 w-3.5 mr-1" />Agreement
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {(order.status === 'active' || order.status === 'draft') && (
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => openEditDialog(order)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                        </Button>
+                      )}
+                      {(order.status === 'active' || order.status === 'overdue') && (
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setReturnOrder(order)}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" />Process Return
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Create Hire Order Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      {/* Create / Edit Hire Order Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); resetForm(); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>New Hire Order</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingOrderId ? 'Edit Hire Order' : 'New Hire Order'}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -246,17 +322,17 @@ export default function HireOrders() {
             {/* Equipment Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Equipment Items</Label>
+                <Label>Equipment Items *</Label>
                 <Button variant="outline" size="sm" onClick={addItem}><Plus className="h-3 w-3 mr-1" />Add Item</Button>
               </div>
               {orderItems.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4 border rounded-lg">No items added. Click "Add Item" to select equipment.</p>
+                <p className="text-xs text-destructive text-center py-4 border border-dashed border-destructive/30 rounded-lg">At least one equipment item is required.</p>
               ) : (
                 <div className="space-y-2">
                   {orderItems.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2 p-2 border rounded-lg">
                       <Select value={item.equipment_item_id} onValueChange={v => updateItem(idx, 'equipment_item_id', v)}>
-                        <SelectTrigger className="flex-1"><SelectValue placeholder="Select equipment..." /></SelectTrigger>
+                        <SelectTrigger className={`flex-1 ${!item.equipment_item_id ? 'border-destructive/50' : ''}`}><SelectValue placeholder="Select equipment..." /></SelectTrigger>
                         <SelectContent>
                           {availableEquipment.map(eq => (
                             <SelectItem key={eq.id} value={eq.id}>{eq.name} — {formatMaluti(eq.daily_rate)}/day ({eq.available_quantity} avail)</SelectItem>
@@ -279,10 +355,10 @@ export default function HireOrders() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={isCreating || !form.client_name.trim() || !form.hire_end}>
-              {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Order
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={isSaving || !isFormValid()}>
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingOrderId ? 'Save Changes' : 'Create Order'}
             </Button>
           </DialogFooter>
         </DialogContent>

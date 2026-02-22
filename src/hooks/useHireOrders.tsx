@@ -69,6 +69,26 @@ export interface ProcessReturnInput {
   adjustedTotal: number;
 }
 
+export interface EditHireOrderInput {
+  orderId: string;
+  client_name: string;
+  client_id?: string;
+  client_phone?: string;
+  hire_start: string;
+  hire_end: string;
+  deposit_paid?: number;
+  total?: number;
+  notes?: string;
+  items: {
+    equipment_item_id?: string;
+    equipment_name: string;
+    daily_rate: number;
+    quantity: number;
+    subtotal: number;
+    condition_out?: string;
+  }[];
+}
+
 export function useHireOrders() {
   const { user } = useAuth();
   const { activeCompanyId } = useActiveCompany();
@@ -247,6 +267,95 @@ export function useHireOrders() {
     onError: () => toast.error('Failed to delete order'),
   });
 
+  const editOrder = useMutation({
+    mutationFn: async (input: EditHireOrderInput) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error: orderError } = await supabase
+        .from('hire_orders')
+        .update({
+          client_name: input.client_name,
+          client_id: input.client_id || null,
+          client_phone: input.client_phone || null,
+          hire_start: input.hire_start,
+          hire_end: input.hire_end,
+          deposit_paid: input.deposit_paid || 0,
+          total: input.total || 0,
+          notes: input.notes || null,
+        })
+        .eq('id', input.orderId);
+      if (orderError) throw orderError;
+
+      // Delete old items
+      await supabase.from('hire_order_items').delete().eq('hire_order_id', input.orderId);
+
+      // Insert new items
+      if (input.items.length > 0) {
+        const { error: itemsError } = await supabase.from('hire_order_items').insert(
+          input.items.map((item) => ({
+            hire_order_id: input.orderId,
+            equipment_item_id: item.equipment_item_id || null,
+            equipment_name: item.equipment_name,
+            daily_rate: item.daily_rate,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+            condition_out: item.condition_out || null,
+          }))
+        );
+        if (itemsError) throw itemsError;
+      }
+
+      // Update linked draft invoice
+      try {
+        const { data: orderData } = await supabase
+          .from('hire_orders')
+          .select('order_number')
+          .eq('id', input.orderId)
+          .single();
+
+        if (orderData) {
+          const { data: linkedInvoice } = await supabase
+            .from('invoices')
+            .select('id')
+            .eq('description', `Hire Order ${orderData.order_number}`)
+            .single();
+
+          if (linkedInvoice) {
+            const hireDays = Math.max(1, Math.ceil(
+              (new Date(input.hire_end).getTime() - new Date(input.hire_start).getTime()) / (1000 * 60 * 60 * 24)
+            ));
+
+            await supabase.from('invoices').update({
+              client_name: input.client_name,
+              client_id: input.client_id || null,
+              total: input.total || 0,
+            }).eq('id', linkedInvoice.id);
+
+            await supabase.from('invoice_line_items').delete().eq('invoice_id', linkedInvoice.id);
+
+            const lineItems = input.items.map((item) => ({
+              invoice_id: linkedInvoice.id,
+              description: `${item.equipment_name} (${hireDays} day${hireDays !== 1 ? 's' : ''} @ ${item.daily_rate}/day)`,
+              quantity: item.quantity,
+              unit_price: item.daily_rate * hireDays,
+              cost_price: 0,
+            }));
+            await supabase.from('invoice_line_items').insert(lineItems);
+          }
+        }
+      } catch (invoiceErr) {
+        console.error('Invoice update on edit failed:', invoiceErr);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hire-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['hire-order-items-all'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('Hire order updated');
+    },
+    onError: () => toast.error('Failed to update hire order'),
+  });
+
   const processReturn = useMutation({
     mutationFn: async (input: ProcessReturnInput) => {
       // Update order status and return date
@@ -368,10 +477,12 @@ export function useHireOrders() {
     allOrderItems,
     getOrderItems,
     createOrder: createOrder.mutate,
+    editOrder: editOrder.mutate,
     updateOrder: updateOrder.mutate,
     deleteOrder: deleteOrder.mutate,
     processReturn: processReturn.mutate,
     isCreating: createOrder.isPending,
+    isEditing: editOrder.isPending,
     isProcessingReturn: processReturn.isPending,
   };
 }
