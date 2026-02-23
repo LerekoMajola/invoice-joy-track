@@ -34,7 +34,8 @@ import {
   UserPlus,
   Filter,
   Loader2,
-  Target
+  Target,
+  Upload
 } from 'lucide-react';
 import { useLeads, Lead, LEAD_STATUSES, LEAD_PRIORITIES, LEAD_SOURCES } from '@/hooks/useLeads';
 import { formatMaluti } from '@/lib/currency';
@@ -42,6 +43,7 @@ import { format, isPast, parseISO } from 'date-fns';
 import { AddLeadDialog } from '@/components/leads/AddLeadDialog';
 import { LeadDetailDialog } from '@/components/leads/LeadDetailDialog';
 import { AddActivityDialog } from '@/components/leads/AddActivityDialog';
+import { ImportLeadsDialog } from '@/components/leads/ImportLeadsDialog';
 
 export function LeadsTab() {
   const { leads, isLoading, deleteLead, convertToClient } = useLeads();
@@ -53,6 +55,7 @@ export function LeadsTab() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch = 
@@ -170,10 +173,16 @@ export function LeadsTab() {
             </Select>
           </div>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Lead
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="flex-1 sm:flex-none">
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
+          <Button onClick={() => setAddDialogOpen(true)} className="flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Lead
+          </Button>
+        </div>
       </div>
 
       {/* Leads Table */}
@@ -367,6 +376,10 @@ export function LeadsTab() {
         open={activityDialogOpen} 
         onOpenChange={setActivityDialogOpen}
         lead={selectedLead}
+      />
+      <ImportLeadsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
       />
     </div>
   );
