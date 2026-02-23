@@ -1,42 +1,68 @@
 
 
-## Enhance Package Switcher Modal on Billing Page
+## CSV Lead Import Feature
 
-### What Changes
+### What It Does
 
-Three improvements to the Switch Package dialog in `src/pages/Billing.tsx`:
+Adds an "Import CSV" button next to the "Add Lead" button on the Leads tab. Users can upload a CSV file containing leads, preview the parsed data in a table, and bulk-import them into the database.
 
-1. **Gradient color on the current package card** -- The tier matching the user's current subscription gets a gradient border/background treatment (using `var(--gradient-primary)`) instead of a plain primary border.
+### User Flow
 
-2. **Confirmation step before sending** -- Clicking a tier no longer immediately sends the request. Instead, it selects the tier and shows an inline confirmation panel at the bottom of the dialog: "Switch to [Tier Name] at [price]/mo?" with "Confirm" and "Cancel" buttons. Only clicking "Confirm" triggers the notification to admin.
+1. Click "Import CSV" button on the Leads tab toolbar
+2. A dialog opens with a drag-and-drop / file picker area
+3. User selects a CSV file
+4. The dialog parses and displays a preview table showing all rows with column mapping
+5. User reviews the data, sees any validation warnings (missing name, duplicate emails)
+6. Click "Import X Leads" to bulk-insert all valid rows
+7. Success toast with count of imported leads; skipped/failed rows shown
 
-3. **Match landing page card design** -- Redesign each tier card in the dialog to match the `PricingCard` layout from `PricingTable.tsx`:
-   - Centered tier name and description at the top
-   - Large bold price in the middle
-   - Feature list with check/minus icons (all included features shown, not just first 5)
-   - "Popular" badge positioned at the top center like the landing page
-   - `is_popular` tier gets `shadow-glow-md` and a slight scale-up
+### CSV Format Expected
+
+The importer will auto-detect columns by header name (case-insensitive, flexible matching):
+
+| CSV Header | Maps To | Required |
+|------------|---------|----------|
+| name / contact name / full name | `name` | Yes |
+| company / organization | `company` | No |
+| email / email address | `email` | No |
+| phone / telephone / mobile | `phone` | No |
+| source | `source` | No |
+| value / estimated value / deal value | `estimated_value` | No |
+| priority | `priority` | No |
+| status | `status` | No (defaults to "new") |
+| notes / comments | `notes` | No |
+| follow up / next follow up | `next_follow_up` | No |
+
+A "Download Template" link will provide a sample CSV with the correct headers.
 
 ### Technical Details
 
-**File: `src/pages/Billing.tsx`**
+**New file: `src/components/leads/ImportLeadsDialog.tsx`**
 
-- Add new state: `confirmTier` (the tier the user clicked, or null)
-- On tier card click: set `confirmTier` to that tier (don't send request yet)
-- Show a sticky confirmation bar at the bottom of the dialog when `confirmTier` is set
-- On "Confirm": call existing `handleSwitchRequest(confirmTier)`, then clear `confirmTier`
-- On "Cancel": clear `confirmTier`
-- Restyle each tier card to mirror `PricingCard`:
-  - Centered layout with `text-center`
-  - Price displayed as large text with currency formatting
-  - Full feature list with `Check`/`Minus` icons
-  - Popular badge absolutely positioned at top
-- Current package card: add gradient background overlay and gradient border styling
-- Widen dialog to `max-w-4xl` with a responsive grid (`grid-cols-1 md:grid-cols-3`)
+- File input accepts `.csv` files only
+- Client-side CSV parsing (no library needed -- split by newlines and commas, handle quoted fields)
+- Preview table showing first 100 rows with validation status per row
+- Column auto-mapping from header names using a fuzzy match map
+- Rows without a `name` value are flagged as invalid (skipped)
+- Bulk insert via `supabase.from('leads').insert([...])` with `user_id` and `company_profile_id` set
+- Progress indicator during import
+- Summary toast: "Imported X leads, Y skipped"
 
-### Single File Changed
+**Modified file: `src/components/crm/LeadsTab.tsx`**
+
+- Add an "Import CSV" button (with Upload icon) next to the existing "Add Lead" button
+- Wire up the `ImportLeadsDialog` open/close state
+- Add the dialog to the render tree
+
+**Modified file: `src/hooks/useLeads.tsx`**
+
+- Add a `bulkCreateLeads` function that accepts an array of `LeadInsert[]` and inserts them in a single batch call (no per-row duplicate check for performance -- bulk import skips duplicate detection)
+
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Billing.tsx` | Add `confirmTier` state, confirmation step, redesign tier cards to match landing page pricing layout, gradient on current package |
+| `src/components/leads/ImportLeadsDialog.tsx` | New -- CSV upload dialog with parsing, preview table, column mapping, and bulk import |
+| `src/components/crm/LeadsTab.tsx` | Add "Import CSV" button and dialog state |
+| `src/hooks/useLeads.tsx` | Add `bulkCreateLeads` method for batch insert |
 
