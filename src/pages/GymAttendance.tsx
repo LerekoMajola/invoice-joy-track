@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useGymAttendance, GymAttendanceRecord } from '@/hooks/useGymAttendance';
+import { useGymAttendance, GymAttendanceRecord, isAutoCheckout } from '@/hooks/useGymAttendance';
 import { useGymMembers } from '@/hooks/useGymMembers';
-import { format } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   UserCheck, Users, CalendarDays, TrendingUp,
@@ -56,9 +56,10 @@ export default function GymAttendance() {
       .slice(0, 6);
   }, [members, searchQuery]);
 
-  // Check if member is already checked in today (no checkout)
+  // Check if member has an active session (no checkout AND less than 1 hour old)
+  const SESSION_DURATION_MS = 60 * 60 * 1000;
   const isMemberCheckedIn = (memberId: string) =>
-    attendance.some(a => a.member_id === memberId && !a.check_out);
+    attendance.some(a => a.member_id === memberId && !a.check_out && Date.now() - new Date(a.check_in).getTime() < SESSION_DURATION_MS);
 
   const stats = [
     { label: "Today's Check-ins", value: todayCheckins, icon: UserCheck, color: 'text-primary' },
@@ -239,6 +240,11 @@ export default function GymAttendance() {
                                   <>
                                     <span>→</span>
                                     <span>{format(new Date(record.check_out), 'HH:mm')}</span>
+                                    {isAutoCheckout(record) && (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
+                                        Auto
+                                      </Badge>
+                                    )}
                                   </>
                                 ) : (
                                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
