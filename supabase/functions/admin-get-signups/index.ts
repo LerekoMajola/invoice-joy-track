@@ -85,16 +85,25 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Guard: if user has a company profile, reject — must be soft-deleted from client
-      const { data: existingProfile } = await adminClient
+      // Guard: if user has ANY company profile (active or soft-deleted), reject hard-delete
+      const { data: existingProfiles } = await adminClient
         .from("company_profiles")
         .select("id")
-        .eq("user_id", deleteUserId)
-        .maybeSingle();
+        .eq("user_id", deleteUserId);
 
-      if (existingProfile) {
-        return new Response(JSON.stringify({ error: "Onboarded users must be soft-deleted from the client" }), {
-          status: 400,
+      if (existingProfiles && existingProfiles.length > 0) {
+        // Soft-delete any remaining active profiles instead
+        await adminClient
+          .from("company_profiles")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("user_id", deleteUserId)
+          .is("deleted_at", null);
+        await adminClient
+          .from("subscriptions")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("user_id", deleteUserId)
+          .is("deleted_at", null);
+        return new Response(JSON.stringify({ success: true, soft_deleted: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
