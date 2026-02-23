@@ -25,6 +25,7 @@ import { TenantDetailDialog } from './TenantDetailDialog';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
 import { GenerateAdminInvoiceDialog } from './GenerateAdminInvoiceDialog';
 import { PaymentTracker } from './PaymentTracker';
+import { RecycleBinSection } from './RecycleBinSection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { STATUS_COLORS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
@@ -111,18 +112,21 @@ export function CustomersTab() {
   const deleteTenantMutation = useMutation({
     mutationFn: async (customer: UnifiedCustomer) => {
       if (customer.tenant) {
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .delete()
-          .eq('user_id', customer.user_id);
-        if (subError) throw subError;
-
+        // Soft-delete: set deleted_at on company_profiles and subscriptions
+        const now = new Date().toISOString();
         const { error: profileError } = await supabase
           .from('company_profiles')
-          .delete()
-          .eq('id', customer.tenant.id);
+          .update({ deleted_at: now } as any)
+          .eq('user_id', customer.user_id);
         if (profileError) throw profileError;
+
+        const { error: subError } = await supabase
+          .from('subscriptions')
+          .update({ deleted_at: now } as any)
+          .eq('user_id', customer.user_id);
+        if (subError) throw subError;
       } else {
+        // Non-onboarded: hard-delete the auth user
         const { data, error } = await supabase.functions.invoke('admin-get-signups', {
           body: { action: 'delete', userId: customer.user_id },
         });
@@ -130,14 +134,33 @@ export function CustomersTab() {
         if (data?.error) throw new Error(data.error);
       }
     },
+    onMutate: async (customer) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-tenants'] });
+      await queryClient.cancelQueries({ queryKey: ['admin-signups'] });
+
+      const prevTenants = queryClient.getQueryData(['admin-tenants']);
+      const prevSignups = queryClient.getQueryData(['admin-signups']);
+
+      queryClient.setQueryData(['admin-tenants'], (old: Tenant[] | undefined) =>
+        old?.filter((t) => t.user_id !== customer.user_id)
+      );
+      queryClient.setQueryData(['admin-signups'], (old: AdminSignup[] | undefined) =>
+        old?.filter((s) => s.id !== customer.user_id)
+      );
+
+      return { prevTenants, prevSignups };
+    },
     onSuccess: () => {
-      toast.success('Customer deleted successfully');
+      toast.success('Customer moved to recycle bin');
       queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
       queryClient.invalidateQueries({ queryKey: ['admin-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants-deleted'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       setDeleteTarget(null);
     },
-    onError: (err: Error) => {
+    onError: (err: Error, _customer, context) => {
+      if (context?.prevTenants) queryClient.setQueryData(['admin-tenants'], context.prevTenants);
+      if (context?.prevSignups) queryClient.setQueryData(['admin-signups'], context.prevSignups);
       toast.error(err.message || 'Failed to delete customer');
     },
   });
@@ -429,11 +452,13 @@ export function CustomersTab() {
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Delete Customer"
-        description={`This will permanently delete ${deleteTarget?.company_name || deleteTarget?.email} and all their data. This cannot be undone.`}
+        description={`This will move ${deleteTarget?.company_name || deleteTarget?.email} to the recycle bin. You can restore them within 90 days.`}
         variant="destructive"
         confirmLabel="Delete"
         onConfirm={() => deleteTarget && deleteTenantMutation.mutate(deleteTarget)}
       />
+
+      <RecycleBinSection />
     </div>
   );
 }
