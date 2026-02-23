@@ -85,11 +85,23 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Delete subscription first
+      // Guard: if user has a company profile, reject — must be soft-deleted from client
+      const { data: existingProfile } = await adminClient
+        .from("company_profiles")
+        .select("id")
+        .eq("user_id", deleteUserId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return new Response(JSON.stringify({ error: "Onboarded users must be soft-deleted from the client" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // For non-onboarded users: clean up any orphan rows, then delete auth user
       await adminClient.from("subscriptions").delete().eq("user_id", deleteUserId);
-      // Delete company profile
-      await adminClient.from("company_profiles").delete().eq("user_id", deleteUserId);
-      // Delete auth user (cascades other FK references)
+      // Delete auth user
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(deleteUserId);
       if (deleteError) {
         return new Response(JSON.stringify({ error: deleteError.message }), {
@@ -118,7 +130,8 @@ Deno.serve(async (req) => {
     // Get all company profiles
     const { data: profiles } = await adminClient
       .from("company_profiles")
-      .select("user_id, company_name");
+      .select("user_id, company_name")
+      .is("deleted_at", null);
 
     // Get all subscriptions
     const { data: subscriptions } = await adminClient
