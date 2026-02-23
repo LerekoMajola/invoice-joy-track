@@ -3,22 +3,24 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  import { Button } from '@/components/ui/button';
- import { Users, Kanban, BarChart3, List, Plus } from 'lucide-react';
+import { Users, Kanban, BarChart3, List, Plus, Upload } from 'lucide-react';
 import { ClientsTab } from '@/components/crm/ClientsTab';
- import { PipelineBoard } from '@/components/crm/PipelineBoard';
- import { DealsListView } from '@/components/crm/DealsListView';
- import { DealDetailPanel } from '@/components/crm/DealDetailPanel';
- import { ForecastTab } from '@/components/crm/ForecastTab';
- import { AddLeadDialog } from '@/components/leads/AddLeadDialog';
- import { AddActivityDialog } from '@/components/leads/AddActivityDialog';
- import { Deal } from '@/hooks/useDeals';
+import { PipelineBoard } from '@/components/crm/PipelineBoard';
+import { DealsListView } from '@/components/crm/DealsListView';
+import { DealDetailPanel } from '@/components/crm/DealDetailPanel';
+import { ForecastTab } from '@/components/crm/ForecastTab';
+import { AddLeadDialog } from '@/components/leads/AddLeadDialog';
+import { AddActivityDialog } from '@/components/leads/AddActivityDialog';
+import { ImportLeadsDialog } from '@/components/leads/ImportLeadsDialog';
+import { Deal } from '@/hooks/useDeals';
 
 export default function CRM() {
    const [activeTab, setActiveTab] = useState('pipeline');
    const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
    const [detailPanelOpen, setDetailPanelOpen] = useState(false);
    const [addDealOpen, setAddDealOpen] = useState(false);
-   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+    const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
  
    // Keyboard shortcuts
    useEffect(() => {
@@ -71,6 +73,12 @@ export default function CRM() {
            onClick: () => setAddDealOpen(true),
          }}
        />
+       <div className="px-4 md:px-6 pt-2 flex justify-end">
+         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+           <Upload className="h-4 w-4 mr-2" />
+           Import CSV
+         </Button>
+       </div>
       
       <div className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -141,11 +149,16 @@ export default function CRM() {
          onOpenChange={setAddDealOpen} 
        />
  
-       <AddActivityDialog
-         open={activityDialogOpen}
-         onOpenChange={setActivityDialogOpen}
-         lead={selectedDeal as any}
-       />
+        <AddActivityDialog
+          open={activityDialogOpen}
+          onOpenChange={setActivityDialogOpen}
+          lead={selectedDeal as any}
+        />
+
+        <ImportLeadsDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+        />
     </DashboardLayout>
   );
 }
