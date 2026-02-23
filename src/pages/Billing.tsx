@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,19 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { useSmsCredits } from '@/hooks/useSmsCredits';
 import { useModules } from '@/hooks/useModules';
 import { usePackageTiers } from '@/hooks/usePackageTiers';
-import { formatMaluti } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 import {
-  Clock, AlertTriangle, Loader2, Smartphone, Building2,
-  CheckCircle2, ChevronDown, Copy, MessageSquare, Package,
-  CreditCard, Shield, Zap
+  AlertTriangle, Loader2, Building2,
+  CheckCircle2, Copy, Package,
+  CreditCard, Shield, Zap, ArrowRight, Upload, FileImage, X, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -27,28 +26,32 @@ const ADMIN_USER_ID = '89710bb3-dff7-4e5e-9af0-7ef7f3ad105d';
 
 export default function Billing() {
   const { user } = useAuth();
-  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, packageTierId } = useSubscription();
+  const { isTrialing, isTrialExpired, trialDaysRemaining, isActive, paymentReference, packageTierId, systemType, subscription } = useSubscription();
   const { profile: companyProfile } = useCompanyProfile();
-  const { creditsRemaining, creditsUsed, creditsAllocated } = useSmsCredits();
   const { userModules, getMonthlyTotal } = useModules();
-  const { getTierById } = usePackageTiers();
+  const { tiers, getTierById, getTiersForSystem } = usePackageTiers();
+  const { fc } = useCurrency();
   const selectedTier = packageTierId ? getTierById(packageTierId) : null;
   const monthlyTotal = selectedTier ? selectedTier.bundle_price : getMonthlyTotal();
+
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [bankOpen, setBankOpen] = useState(false);
-  const paymentSectionRef = React.useRef<HTMLDivElement>(null);
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [popUrl, setPopUrl] = useState<string | null>((subscription as any)?.pop_url || null);
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const companyName = companyProfile?.company_name || 'your company';
+  const availableTiers = getTiersForSystem(systemType);
 
   const scrollToPayment = () => {
     paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const companyName = companyProfile?.company_name || 'your company';
-  const smsPercent = creditsAllocated > 0 ? Math.round((creditsUsed / creditsAllocated) * 100) : 0;
-
-  const copyReference = () => {
-    navigator.clipboard.writeText(paymentReference);
-    toast.success('Reference copied');
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied`);
   };
 
   const handlePaymentNotification = async () => {
@@ -59,47 +62,112 @@ export default function Billing() {
         user_id: ADMIN_USER_ID,
         type: 'payment',
         title: 'Payment Notification',
-        message: `${companyName} says they've made a payment. Reference: ${paymentReference}`,
+        message: `${companyName} says they've made a payment. Reference: ${paymentReference}${popUrl ? `. POP: ${popUrl}` : ''}`,
         reference_id: user.id,
         reference_type: 'subscription',
         link: '/admin',
       });
       if (error) throw error;
       setSent(true);
-      toast.success('Payment notification sent! We will verify and activate your account.');
+      toast.success('Payment notification sent!');
     } catch (err) {
-      console.error('Error sending notification:', err);
-      toast.error('Failed to send notification. Please try again.');
+      console.error(err);
+      toast.error('Failed to send notification.');
     } finally {
       setSending(false);
     }
   };
+
+  const handleSwitchRequest = async (tier: any) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('notifications').insert({
+        user_id: ADMIN_USER_ID,
+        type: 'payment',
+        title: 'Package Switch Request',
+        message: `${companyName} requests to switch to "${tier.display_name}" package.`,
+        reference_id: user.id,
+        reference_type: 'subscription',
+        link: '/admin',
+      });
+      if (error) throw error;
+      toast.success(`Switch request sent for ${tier.display_name}`);
+      setSwitchOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to send request.');
+    }
+  };
+
+  const handlePopUpload = useCallback(async (file: File) => {
+    if (!user || !subscription) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('payment-pop').upload(path, file);
+      if (uploadErr) throw uploadErr;
+      const { data: { publicUrl } } = supabase.storage.from('payment-pop').getPublicUrl(path);
+      const { error: updateErr } = await supabase.from('subscriptions').update({ pop_url: publicUrl } as any).eq('id', subscription.id);
+      if (updateErr) throw updateErr;
+      setPopUrl(publicUrl);
+      toast.success('Proof of payment uploaded');
+    } catch (err) {
+      console.error(err);
+      toast.error('Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  }, [user, subscription]);
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handlePopUpload(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handlePopUpload(file);
+  };
+
+  const bankDetails = [
+    { label: 'Bank', value: 'First National Bank (FNB)' },
+    { label: 'Account Name', value: 'Orion Labs (Pty) Ltd' },
+    { label: 'Account Number', value: '63027317585' },
+    { label: 'Branch Code', value: '280061' },
+    { label: 'Reference', value: paymentReference },
+  ];
 
   return (
     <DashboardLayout>
       <Header title="Billing & Subscription" subtitle="Manage your plan, payments and usage" />
 
       <div className="p-4 md:p-6 space-y-6 pb-safe max-w-3xl">
+
         {/* Status Hero */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden border-0 shadow-lg relative">
+          <div className="absolute inset-0 opacity-5" style={{ background: 'var(--gradient-primary)' }} />
           <div className={cn(
-            "h-1.5",
-            isActive ? "bg-green-500" : isTrialExpired ? "bg-destructive" : isTrialing ? "bg-amber-500" : "bg-muted"
+            "h-1.5 relative z-10",
+            isActive ? "bg-success" : isTrialExpired ? "bg-destructive" : "bg-warning"
           )} />
-          <CardContent className="p-5">
+          <CardContent className="p-6 relative z-10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div className={cn(
-                  "h-10 w-10 rounded-full flex items-center justify-center",
-                  isActive ? "bg-green-100 dark:bg-green-900/30" : isTrialExpired ? "bg-destructive/10" : "bg-amber-100 dark:bg-amber-900/30"
+                  "h-12 w-12 rounded-2xl flex items-center justify-center transition-all",
+                  isActive ? "bg-success/10 shadow-[var(--shadow-glow-success)]" :
+                  isTrialExpired ? "bg-destructive/10" :
+                  "bg-warning/10"
                 )}>
-                  {isActive ? <Shield className="h-5 w-5 text-green-600 dark:text-green-400" /> :
-                   isTrialExpired ? <AlertTriangle className="h-5 w-5 text-destructive" /> :
-                   <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+                  {isActive ? <Shield className="h-6 w-6 text-success animate-pulse" /> :
+                   isTrialExpired ? <AlertTriangle className="h-6 w-6 text-destructive" /> :
+                   <Clock className="h-6 w-6 text-warning" />}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">
-                    {isActive ? 'Active Subscription' : isTrialExpired ? 'Trial Expired' : `Free Trial`}
+                  <h3 className="text-lg font-bold text-foreground">
+                    {isActive ? 'Active Subscription' : isTrialExpired ? 'Trial Expired' : 'Free Trial'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {isActive ? 'Your account is fully active' :
@@ -109,52 +177,60 @@ export default function Billing() {
                 </div>
               </div>
               <Badge className={cn(
-                "text-xs font-medium",
-                isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-                isTrialExpired ? "bg-destructive/10 text-destructive" :
-                "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-              )} variant="secondary">
+                "text-xs font-semibold px-3 py-1 rounded-full",
+                isActive ? "bg-success/15 text-success border-success/30" :
+                isTrialExpired ? "bg-destructive/15 text-destructive border-destructive/30" :
+                "bg-warning/15 text-warning border-warning/30"
+              )} variant="outline">
                 {isActive ? 'Active' : isTrialExpired ? 'Expired' : 'Trial'}
               </Badge>
             </div>
 
             {isTrialing && !isTrialExpired && (
-              <div className="mt-4 space-y-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <div className="mt-5 space-y-3">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Trial progress</span>
                   <span>{14 - trialDaysRemaining}/14 days</span>
                 </div>
                 <Progress value={((14 - trialDaysRemaining) / 14) * 100} className="h-2" />
-                <Button onClick={scrollToPayment} className="w-full" size="sm">
-                  <Zap className="h-4 w-4 mr-1.5" />
-                  Subscribe Now
+                <Button onClick={scrollToPayment} className="w-full mt-2" size="sm"
+                  style={{ background: 'var(--gradient-primary)' }}>
+                  <Zap className="h-4 w-4 mr-1.5" /> Subscribe Now
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Your Package */}
-        <Card>
+        {/* Current Package */}
+        <Card className="border-0 shadow-lg overflow-hidden">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-5 w-5 text-primary" />
-              Your Package
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Package className="h-5 w-5 text-primary" /> Your Package
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setSwitchOpen(true)}
+                className="border-primary/30 text-primary hover:bg-primary/5">
+                Switch Package <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             {selectedTier && (
-              <div className="mb-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">{selectedTier.display_name}</span>
-                  <Badge variant="secondary" className="text-xs">{selectedTier.name}</Badge>
+              <div className="mb-4 p-4 rounded-xl border border-primary/20 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03]" style={{ background: 'var(--gradient-primary)' }} />
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-lg text-foreground">{selectedTier.display_name}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">{selectedTier.description}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">{selectedTier.name}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{selectedTier.description}</p>
               </div>
             )}
             {!selectedTier && userModules.length > 0 && (
-              <div className="mb-3 p-3 rounded-lg bg-muted/50">
-                <span className="text-sm font-medium text-foreground">Custom Package</span>
+              <div className="mb-4 p-4 rounded-xl bg-muted/50 border border-border">
+                <span className="text-sm font-semibold text-foreground">Custom Package</span>
                 <p className="text-xs text-muted-foreground mt-0.5">Module-based pricing</p>
               </div>
             )}
@@ -163,162 +239,189 @@ export default function Billing() {
             ) : (
               <div className="space-y-2">
                 {userModules.map((um) => (
-                  <div key={um.id} className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-3.5 w-3.5 text-primary" />
+                  <div key={um.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
                       <span className="text-sm text-foreground">{um.module?.name}</span>
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">{formatMaluti(um.module?.monthly_price || 0)}</span>
+                    <span className="text-sm font-medium text-muted-foreground">{fc(um.module?.monthly_price || 0)}</span>
                   </div>
                 ))}
               </div>
             )}
-            <Separator className="my-3" />
+            <Separator className="my-4" />
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground">Monthly Total</span>
-              <span className="text-xl font-bold text-foreground">{formatMaluti(monthlyTotal)}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
+              <span className="font-bold text-foreground">Monthly Total</span>
+              <span className="text-2xl font-bold text-foreground">{fc(monthlyTotal)}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
             </div>
-            {selectedTier && (
-              <p className="text-[10px] text-muted-foreground mt-1 text-right">Bundle price</p>
-            )}
           </CardContent>
         </Card>
 
         {/* Payment Section */}
-        <div ref={paymentSectionRef} className="space-y-3">
-          <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Make a Payment
+        <div ref={paymentSectionRef} className="space-y-4">
+          <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-primary" /> Make a Payment
           </h2>
 
           {/* Payment Reference */}
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1.5">Your payment reference</p>
+          <Card className="border-0 shadow-lg overflow-hidden">
+            <div className="h-1" style={{ background: 'var(--gradient-primary)' }} />
+            <CardContent className="p-5">
+              <p className="text-xs text-muted-foreground mb-2">Your payment reference</p>
               <div className="flex items-center justify-between">
-                <span className="text-xl font-mono font-bold text-foreground tracking-wider">{paymentReference}</span>
-                <Button variant="outline" size="sm" onClick={copyReference} className="shrink-0">
-                  <Copy className="h-3.5 w-3.5 mr-1.5" />Copy
+                <span className="text-2xl font-mono font-black tracking-widest text-foreground">{paymentReference}</span>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(paymentReference, 'Reference')} className="shrink-0">
+                  <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">Always include this reference when making payment</p>
             </CardContent>
           </Card>
 
-          {/* M-Pesa */}
-          <Card>
-            <CardHeader className="pb-2">
+          {/* Bank Transfer */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Smartphone className="h-5 w-5 text-green-600" />
-                Pay via M-Pesa
+                <Building2 className="h-5 w-5 text-primary" /> Bank Transfer Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-2.5">
-                {[
-                  ['Dial', '*111#', 'on your phone'],
-                  ['Select', 'Pay Bill', ''],
-                  ['Enter business number:', '123456', ''],
-                  ['Enter reference:', paymentReference, ''],
-                  ['Enter your PIN and confirm', '', ''],
-                ].map(([pre, bold, post], i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-sm">
-                    <span className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
-                    <span className="text-muted-foreground">
-                      {pre} {bold && <strong className="text-foreground">{bold}</strong>} {post}
-                    </span>
+              <div className="space-y-3">
+                {bankDetails.map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">{label}</span>
+                      <span className="text-sm font-semibold text-foreground font-mono">{value}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => copyToClipboard(value, label)}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Bank Transfer */}
-          <Collapsible open={bankOpen} onOpenChange={setBankOpen}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer pb-2 hover:bg-muted/30 transition-colors rounded-t-xl">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-blue-600" />
-                      Pay via Bank Transfer
+          {/* POP Upload */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Upload className="h-5 w-5 text-primary" /> Proof of Payment
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {popUrl ? (
+                <div className="relative rounded-xl border border-success/30 bg-success/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
+                      <FileImage className="h-5 w-5 text-success" />
                     </div>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${bankOpen ? 'rotate-180' : ''}`} />
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-                    {[
-                      ['Bank', 'FNB Lesotho'],
-                      ['Account Name', 'Orion Labs (Pty) Ltd'],
-                      ['Account Number', '62012345678'],
-                      ['Branch Code', '260001'],
-                      ['Reference', paymentReference],
-                    ].map(([label, value]) => (
-                      <>
-                        <span key={`l-${label}`} className="text-muted-foreground">{label}</span>
-                        <span key={`v-${label}`} className="text-foreground font-medium font-mono">{value}</span>
-                      </>
-                    ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">POP uploaded</p>
+                      <a href={popUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">
+                        View document
+                      </a>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setPopUrl(null); fileInputRef.current?.click(); }}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+                    "border-border hover:border-primary/50 hover:bg-primary/5",
+                    uploading && "opacity-50 pointer-events-none"
+                  )}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onDrop}
+                >
+                  {uploading ? (
+                    <Loader2 className="h-8 w-8 mx-auto text-primary animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium text-foreground">Drop your POP here or click to upload</p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF</p>
+                    </>
+                  )}
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={onFileChange} />
+            </CardContent>
+          </Card>
 
-          {/* I've Made Payment */}
+          {/* Confirm Payment */}
           {sent ? (
-            <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <Card className="border-success/30 bg-success/5 shadow-lg">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-success/10 flex items-center justify-center shrink-0 shadow-[var(--shadow-glow-success)]">
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">Payment notification sent</p>
+                  <p className="text-sm font-semibold text-foreground">Payment notification sent</p>
                   <p className="text-xs text-muted-foreground">We'll verify your payment and activate your account shortly.</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Button onClick={handlePaymentNotification} disabled={sending} className="w-full h-12 text-base font-semibold" size="lg">
-              {sending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : "I've Made Payment"}
+            <Button onClick={handlePaymentNotification} disabled={sending} size="lg"
+              className="w-full h-14 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              style={{ background: 'var(--gradient-primary)' }}>
+              {sending ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Sending...</> : "I've Made Payment"}
             </Button>
           )}
         </div>
-
-        {/* SMS Credits */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              SMS Credits
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-3xl font-bold text-foreground">{creditsRemaining}</span>
-                <span className="text-sm text-muted-foreground ml-1">/ {creditsAllocated}</span>
-              </div>
-              <span className="text-xs text-muted-foreground">credits remaining</span>
-            </div>
-            <Progress value={smsPercent} className="h-2" />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <div className="text-lg font-bold text-foreground">{creditsUsed}</div>
-                <div className="text-xs text-muted-foreground">Sent</div>
-              </div>
-              <div className="rounded-lg bg-muted/50 p-3 text-center">
-                <div className="text-lg font-bold text-primary">{creditsRemaining}</div>
-                <div className="text-xs text-muted-foreground">Remaining</div>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">SMS credits reset monthly. Contact support for additional credits.</p>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Package Switcher Dialog */}
+      <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Switch Package</DialogTitle>
+            <DialogDescription>Select a package for your {systemType} system. A switch request will be sent to the admin.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {availableTiers.map((tier) => {
+              const isCurrent = tier.id === packageTierId;
+              return (
+                <div key={tier.id} className={cn(
+                  "p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+                  isCurrent ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                )} onClick={() => !isCurrent && handleSwitchRequest(tier)}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground">{tier.display_name}</span>
+                        {isCurrent && <Badge className="text-[10px] bg-primary/10 text-primary" variant="secondary">Current</Badge>}
+                        {tier.is_popular && !isCurrent && <Badge className="text-[10px]" variant="secondary">Popular</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{tier.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-bold text-foreground">{fc(tier.bundle_price)}</span>
+                      <span className="text-xs text-muted-foreground">/mo</span>
+                    </div>
+                  </div>
+                  {tier.features && tier.features.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {tier.features.filter(f => f.included).slice(0, 5).map((f, i) => (
+                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{f.name}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {availableTiers.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">No packages available for your system type.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -4692,6 +4692,7 @@ export type Database = {
           payment_method: string | null
           payment_reference: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
+          pop_url: string | null
           status: Database["public"]["Enums"]["subscription_status"]
           system_type: string
           trial_ends_at: string | null
@@ -4711,6 +4712,7 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          pop_url?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           system_type?: string
           trial_ends_at?: string | null
@@ -4730,6 +4732,7 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
+          pop_url?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           system_type?: string
           trial_ends_at?: string | null
