@@ -61,7 +61,20 @@ const HEADER_MAP: Record<string, keyof LeadInsert> = {
   'next follow up': 'next_follow_up',
 };
 
-function parseCSVLine(line: string): string[] {
+function cleanText(text: string): string {
+  return text.replace(/\uFEFF/g, '').replace(/\0/g, '');
+}
+
+function detectDelimiter(line: string): string {
+  const tabs = (line.match(/\t/g) || []).length;
+  const commas = (line.match(/,/g) || []).length;
+  const semicolons = (line.match(/;/g) || []).length;
+  if (tabs >= commas && tabs >= semicolons && tabs > 0) return '\t';
+  if (semicolons > commas && semicolons > 0) return ';';
+  return ',';
+}
+
+function parseCSVLine(line: string, delimiter: string = ','): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -81,7 +94,7 @@ function parseCSVLine(line: string): string[] {
     } else {
       if (ch === '"') {
         inQuotes = true;
-      } else if (ch === ',') {
+      } else if (ch === delimiter) {
         result.push(current.trim());
         current = '';
       } else {
@@ -135,20 +148,22 @@ export function ImportLeadsDialog({ open, onOpenChange }: ImportLeadsDialogProps
       setFileName(file.name);
       const reader = new FileReader();
       reader.onload = (e) => {
-        const text = e.target?.result as string;
+        const raw = e.target?.result as string;
+        const text = cleanText(raw);
         const lines = text.split(/\r?\n/).filter((l) => l.trim());
         if (lines.length < 2) {
           toast({ title: 'Invalid CSV', description: 'File must have a header row and at least one data row.', variant: 'destructive' });
           return;
         }
-        const headers = parseCSVLine(lines[0]);
+        const delimiter = detectDelimiter(lines[0]);
+        const headers = parseCSVLine(lines[0], delimiter);
         const mapped = mapHeaders(headers);
         setRawHeaders(headers);
         setColumnMap(mapped);
 
         const rows: ParsedRow[] = [];
         for (let i = 1; i < Math.min(lines.length, 501); i++) {
-          const values = parseCSVLine(lines[i]);
+          const values = parseCSVLine(lines[i], delimiter);
           const data: Record<string, string> = {};
           headers.forEach((h, idx) => {
             data[h] = values[idx] || '';
