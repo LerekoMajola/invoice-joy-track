@@ -68,13 +68,23 @@ export function RecycleBinSection() {
         .eq('user_id', tenant.user_id);
       if (subError) throw subError;
     },
+    onMutate: async (tenant) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-tenants-deleted'] });
+      const prevDeleted = queryClient.getQueryData(['admin-tenants-deleted']);
+      queryClient.setQueryData(['admin-tenants-deleted'], (old: DeletedTenant[] | undefined) =>
+        old?.filter((t) => t.id !== tenant.id)
+      );
+      return { prevDeleted };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
       queryClient.invalidateQueries({ queryKey: ['admin-tenants-deleted'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-signups'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       toast.success('Tenant restored successfully');
     },
-    onError: () => {
+    onError: (_err, _tenant, context) => {
+      if (context?.prevDeleted) queryClient.setQueryData(['admin-tenants-deleted'], context.prevDeleted);
       toast.error('Failed to restore tenant');
     },
   });
