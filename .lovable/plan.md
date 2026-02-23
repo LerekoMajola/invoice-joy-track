@@ -1,29 +1,35 @@
 
-
-## Add Import CSV to the CRM Page
+## Fix CSV Import Header Mapping
 
 ### Problem
-The "Import CSV" button lives inside `LeadsTab`, which is not rendered on the CRM page. The CRM page has Pipeline, Deals, Clients, and Forecast tabs -- no Leads tab.
+Your CSV file (from Facebook/Meta lead forms) uses headers like `full_name`, `phone_number`, `company_name`, and `lead_status`. While `full_name` and `company_name` are recognized (underscores get normalized to spaces), `phone_number` and `lead_status` are not in the mapping -- so they're ignored.
+
+Additionally, your CSV rows appear to have empty values in the `company_name` and `full_name` columns, which causes all rows to be marked invalid (both fields are currently required).
 
 ### Solution
-Add the Import CSV button directly to the CRM page header area so it's accessible from any tab. This makes sense because importing leads is a top-level action, not tied to a specific tab.
 
-### Changes
+1. **Add more header aliases** to recognize Facebook/Meta lead form columns (`phone_number`, `lead_status`, `ad_name`, `campaign_name`, `platform`, etc.)
+2. **Relax validation** so only `contact_name` OR `company_name` is required (not both) -- many lead form CSVs only have a person's name, no company
+3. **Map `lead_status`** to the `status` field
+4. **Map `phone_number`** to the `phone` field
 
-**File: `src/pages/CRM.tsx`**
+### Technical Details
 
-- Import `ImportLeadsDialog` and the `Upload` icon
-- Add `importDialogOpen` state
-- Add an "Import CSV" button in the header area (next to the "New Deal" action, or as a secondary button below the header)
-- Render the `ImportLeadsDialog` component alongside the other dialogs
+**File: `src/components/admin/crm/ImportProspectsDialog.tsx`**
 
-The header will show two actions:
-- "Import CSV" (outline button with Upload icon)
-- "New Deal" (primary button, already exists)
+Add these entries to HEADER_MAP:
+- `phone number` -> `phone`
+- `lead status` -> `status`
+- `campaign name` -> `source` (useful context for where the lead came from)
+- `platform` -> `source` (fallback if no campaign)
+- `ad name` -> `notes`
+- `adset name` -> `notes`
+
+Change the validation on line 188 from requiring both company_name AND contact_name to requiring at least one of them. This way Facebook leads that only have a full_name (no company) will still import successfully.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/CRM.tsx` | Add Import CSV button and ImportLeadsDialog |
-
+| `src/components/admin/crm/ImportProspectsDialog.tsx` | Add header aliases for Facebook lead form fields; relax validation to require contact_name OR company_name |
+| `src/components/leads/ImportLeadsDialog.tsx` | Add same `phone number` and `lead status` aliases for consistency |
