@@ -62,15 +62,21 @@ const HEADER_MAP: Record<string, keyof ProspectInsert> = {
   'phone': 'phone',
   'telephone': 'phone',
   'mobile': 'phone',
+  'phone number': 'phone',
   'status': 'status',
   'stage': 'status',
+  'lead status': 'status',
   'priority': 'priority',
   'value': 'estimated_value',
   'estimated value': 'estimated_value',
   'deal value': 'estimated_value',
   'source': 'source',
+  'campaign name': 'source',
+  'platform': 'source',
   'notes': 'notes',
   'comments': 'notes',
+  'ad name': 'notes',
+  'adset name': 'notes',
   'follow up': 'next_follow_up',
   'next follow up': 'next_follow_up',
   'plan': 'interested_plan',
@@ -185,12 +191,14 @@ export function ImportProspectsDialog({ open, onOpenChange, onImported }: Import
           if (!prospect.status) prospect.status = 'lead';
           if (!prospect.priority) prospect.priority = 'medium';
 
-          const valid = !!prospect.company_name?.trim() && !!prospect.contact_name?.trim();
+          const hasName = !!prospect.company_name?.trim() || !!prospect.contact_name?.trim();
+          if (!prospect.company_name?.trim()) prospect.company_name = prospect.contact_name || 'Unknown';
+          if (!prospect.contact_name?.trim()) prospect.contact_name = prospect.company_name || 'Unknown';
           rows.push({
             data,
             mapped: prospect,
-            valid,
-            error: valid ? undefined : 'Missing company or contact name',
+            valid: hasName,
+            error: hasName ? undefined : 'Missing company and contact name',
           });
         }
         setParsedRows(rows);
