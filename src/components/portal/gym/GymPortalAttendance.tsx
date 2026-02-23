@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfDay, startOfMonth, parseISO, subDays } from 'date-fns';
-import { Zap, Flame, CheckCircle2, Loader2, Clock } from 'lucide-react';
+import { format, startOfDay, startOfMonth, parseISO, subDays, addHours } from 'date-fns';
+import { Zap, Flame, CheckCircle2, Loader2, Clock, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePortalTheme } from '@/hooks/usePortalTheme';
@@ -14,6 +14,8 @@ interface GymPortalAttendanceProps {
 }
 
 interface AttendanceRecord { id: string; check_in: string; check_out: string | null; }
+
+const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 /* ── Particle burst component ─────────────────────────────────── */
 function ParticleBurst() {
@@ -75,9 +77,32 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [animPhase, setAnimPhase] = useState<'idle' | 'charging' | 'explode' | 'done'>('idle');
+  const [cooldownEnd, setCooldownEnd] = useState<Date | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const { pt } = usePortalTheme();
 
   const ownerUserId = member.owner_user_id ?? member.user_id;
+
+  // Auto-checkout stale sessions
+  const autoCheckoutStale = useCallback(async (records: AttendanceRecord[]) => {
+    const now = Date.now();
+    const stale = records.filter(r => !r.check_out && now - new Date(r.check_in).getTime() >= SESSION_DURATION_MS);
+    if (stale.length === 0) return records;
+
+    await Promise.all(
+      stale.map(r =>
+        supabase.from('gym_attendance').update({
+          check_out: addHours(new Date(r.check_in), 1).toISOString(),
+        }).eq('id', r.id)
+      )
+    );
+
+    // Return updated records
+    return records.map(r => {
+      const isStale = stale.some(s => s.id === r.id);
+      return isStale ? { ...r, check_out: addHours(new Date(r.check_in), 1).toISOString() } : r;
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     const todayStart = startOfDay(new Date()).toISOString();
@@ -89,21 +114,56 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
       supabase.from('gym_attendance').select('check_in').eq('member_id', member.id).gte('check_in', subDays(new Date(), 30).toISOString()).order('check_in', { ascending: false }),
     ]);
 
-    if (todayRes.data) setTodayRecords(todayRes.data as AttendanceRecord[]);
+    let records = (todayRes.data || []) as AttendanceRecord[];
+    records = await autoCheckoutStale(records);
+    setTodayRecords(records);
+
     if (monthRes.count !== null) setMonthlyCount(monthRes.count);
 
     if (historyRes.data && historyRes.data.length > 0) {
+      // Check cooldown from latest check-in
+      const latestCheckIn = new Date(historyRes.data[0].check_in);
+      const elapsed = Date.now() - latestCheckIn.getTime();
+      if (elapsed < SESSION_DURATION_MS) {
+        setCooldownEnd(addHours(latestCheckIn, 1));
+      }
+
       const uniqueDays = new Set(historyRes.data.map(r => format(parseISO(r.check_in), 'yyyy-MM-dd')));
       let s = 0; let checkDay = new Date();
       while (uniqueDays.has(format(checkDay, 'yyyy-MM-dd'))) { s++; checkDay = subDays(checkDay, 1); }
       setStreak(s);
     }
     setLoading(false);
-  }, [member.id]);
+  }, [member.id, autoCheckoutStale]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (!cooldownEnd) { setCooldownRemaining(0); return; }
+    const tick = () => {
+      const remaining = cooldownEnd.getTime() - Date.now();
+      if (remaining <= 0) {
+        setCooldownEnd(null);
+        setCooldownRemaining(0);
+      } else {
+        setCooldownRemaining(remaining);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownEnd]);
+
+  const isOnCooldown = cooldownRemaining > 0;
+  const cooldownMinutes = Math.ceil(cooldownRemaining / 60000);
+
   const handleCheckIn = async () => {
+    if (isOnCooldown) {
+      toast.error(`Please wait ${cooldownMinutes} minute${cooldownMinutes !== 1 ? 's' : ''} before checking in again`);
+      return;
+    }
+
     setCheckingIn(true);
     setAnimPhase('charging');
 
@@ -115,6 +175,9 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
         check_in: new Date().toISOString(),
       }).select('id, check_in, check_out').single();
       if (error) throw error;
+
+      // Set cooldown
+      setCooldownEnd(addHours(new Date(), 1));
 
       setAnimPhase('explode');
       setCheckingIn(false);
@@ -161,15 +224,29 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
 
         <div className={cn('flex flex-col items-center gap-5', animPhase === 'done' && 'opacity-0')}>
           <div className="text-center space-y-1">
-            <p className={cn(
-              'text-lg font-bold transition-all duration-300',
-              animPhase === 'charging' && 'scale-110 text-[#00E5A0]'
-            )} style={animPhase !== 'charging' ? { color: 'rgb(var(--portal-text))' } : undefined}>
-              {animPhase === 'charging' ? 'Powering up...' : todayRecords.length > 0 ? 'Go again?' : 'Ready to train?'}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>
-              {animPhase === 'charging' ? '' : todayRecords.length > 0 ? 'Tap to log another session' : 'Tap the button to check in'}
-            </p>
+            {isOnCooldown && animPhase === 'idle' ? (
+              <>
+                <div className="flex items-center justify-center gap-2">
+                  <Timer className="h-5 w-5 text-amber-500" />
+                  <p className="text-lg font-bold text-amber-500">Cooldown Active</p>
+                </div>
+                <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>
+                  You can check in again in {cooldownMinutes} min
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={cn(
+                  'text-lg font-bold transition-all duration-300',
+                  animPhase === 'charging' && 'scale-110 text-[#00E5A0]'
+                )} style={animPhase !== 'charging' ? { color: 'rgb(var(--portal-text))' } : undefined}>
+                  {animPhase === 'charging' ? 'Powering up...' : todayRecords.length > 0 ? 'Go again?' : 'Ready to train?'}
+                </p>
+                <p className="text-sm" style={{ color: 'var(--portal-text-muted)' }}>
+                  {animPhase === 'charging' ? '' : todayRecords.length > 0 ? 'Tap to log another session' : 'Tap the button to check in'}
+                </p>
+              </>
+            )}
           </div>
 
           {showButton && (
@@ -192,13 +269,14 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
               )}
               <button
                 onClick={handleCheckIn}
-                disabled={checkingIn}
+                disabled={checkingIn || isOnCooldown}
                 className={cn(
                   'relative z-10 h-36 w-36 rounded-full flex flex-col items-center justify-center gap-2',
                   'bg-gradient-to-br from-[#00E5A0] to-[#00C4FF]',
                   'text-black transition-all duration-300',
                   'active:scale-90 disabled:pointer-events-none',
-                  animPhase === 'idle' && 'shadow-[0_0_50px_rgba(0,229,160,0.3)]',
+                  isOnCooldown && 'opacity-40 grayscale',
+                  animPhase === 'idle' && !isOnCooldown && 'shadow-[0_0_50px_rgba(0,229,160,0.3)]',
                   animPhase === 'charging' && 'scale-95 shadow-[0_0_80px_rgba(0,229,160,0.6)] checkin-shake',
                   animPhase === 'explode' && 'scale-0 opacity-0',
                 )}
@@ -207,6 +285,11 @@ export function GymPortalAttendance({ member }: GymPortalAttendanceProps) {
                   <div className="flex flex-col items-center gap-1">
                     <Zap className="h-10 w-10 fill-current checkin-charge-pulse" />
                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">Hold on...</span>
+                  </div>
+                ) : isOnCooldown ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <Timer className="h-10 w-10" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{cooldownMinutes}m</span>
                   </div>
                 ) : (
                   <>
