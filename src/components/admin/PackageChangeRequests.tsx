@@ -32,7 +32,7 @@ export function PackageChangeRequests() {
         .from('subscriptions')
         .update({
           package_tier_id: req.requested_tier_id,
-          plan: requestedTier.name as any,
+          plan: 'pro' as any,
         })
         .eq('user_id', req.user_id);
       if (subError) throw subError;
