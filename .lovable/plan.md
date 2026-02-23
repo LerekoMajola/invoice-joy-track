@@ -1,109 +1,42 @@
 
 
-## Redesign Billing Page -- Modern, Cutting-Edge
+## Enhance Package Switcher Modal on Billing Page
 
-### Overview
+### What Changes
 
-A full redesign of the Billing page (`src/pages/Billing.tsx`) with these changes:
+Three improvements to the Switch Package dialog in `src/pages/Billing.tsx`:
 
-1. **Package switcher** -- Browse available tiers for your system type and request a switch
-2. **Remove SMS Credits section** -- Hidden entirely
-3. **Remove M-Pesa option** -- Only Bank Transfer remains
-4. **Correct bank details** -- Account: 63027317585, Branch Code: 280061
-5. **Add POP upload** -- Upload proof of payment image/PDF after paying
-6. **Modern redesign** -- Glassmorphism cards, gradient accents, animated elements matching the platform's bold visual identity
+1. **Gradient color on the current package card** -- The tier matching the user's current subscription gets a gradient border/background treatment (using `var(--gradient-primary)`) instead of a plain primary border.
 
----
+2. **Confirmation step before sending** -- Clicking a tier no longer immediately sends the request. Instead, it selects the tier and shows an inline confirmation panel at the bottom of the dialog: "Switch to [Tier Name] at [price]/mo?" with "Confirm" and "Cancel" buttons. Only clicking "Confirm" triggers the notification to admin.
 
-### Detailed Changes
+3. **Match landing page card design** -- Redesign each tier card in the dialog to match the `PricingCard` layout from `PricingTable.tsx`:
+   - Centered tier name and description at the top
+   - Large bold price in the middle
+   - Feature list with check/minus icons (all included features shown, not just first 5)
+   - "Popular" badge positioned at the top center like the landing page
+   - `is_popular` tier gets `shadow-glow-md` and a slight scale-up
 
-#### 1. New Storage Bucket (if needed) or Reuse `gym-pop`
+### Technical Details
 
-A new storage bucket `payment-pop` (public) will be created for uploading proof of payment files. This keeps billing POP separate from gym-specific POP.
+**File: `src/pages/Billing.tsx`**
 
-**Migration**: Create bucket + storage policy for authenticated uploads.
+- Add new state: `confirmTier` (the tier the user clicked, or null)
+- On tier card click: set `confirmTier` to that tier (don't send request yet)
+- Show a sticky confirmation bar at the bottom of the dialog when `confirmTier` is set
+- On "Confirm": call existing `handleSwitchRequest(confirmTier)`, then clear `confirmTier`
+- On "Cancel": clear `confirmTier`
+- Restyle each tier card to mirror `PricingCard`:
+  - Centered layout with `text-center`
+  - Price displayed as large text with currency formatting
+  - Full feature list with `Check`/`Minus` icons
+  - Popular badge absolutely positioned at top
+- Current package card: add gradient background overlay and gradient border styling
+- Widen dialog to `max-w-4xl` with a responsive grid (`grid-cols-1 md:grid-cols-3`)
 
-#### 2. Database: Add `pop_url` Column to `subscriptions`
-
-Add a `pop_url` text column to the `subscriptions` table so uploaded proof of payment can be linked to the subscription record.
-
-```sql
-ALTER TABLE public.subscriptions ADD COLUMN pop_url text;
-```
-
-#### 3. Redesigned Billing Page (`src/pages/Billing.tsx`)
-
-The page will be restructured into these sections:
-
-**A. Status Hero Card** (kept, enhanced)
-- Glassmorphism styling with gradient top bar
-- Animated status icon (pulse for trial, glow for active)
-- Trial progress bar with smooth animation
-
-**B. Current Package Card with "Switch Package" Button**
-- Shows current tier name, price, included modules
-- "Switch Package" button opens a modal/sheet displaying all available tiers for the user's system type (fetched via `usePackageTiers`)
-- Selecting a new tier sends a notification to admin requesting the switch (no self-service DB change -- admin activates it)
-- Shows pending switch request if one was sent
-
-**C. Payment Section** (streamlined)
-- Payment reference card with copy button (kept)
-- **Bank Transfer only** (no M-Pesa) with correct details:
-  - Bank: First National Bank (FNB)
-  - Account Name: Orion Labs (Pty) Ltd
-  - Account Number: **63027317585**
-  - Branch Code: **280061**
-  - Reference: user's payment reference
-- All fields have copy buttons
-
-**D. Upload Proof of Payment (POP)**
-- Drag-and-drop / click-to-upload area
-- Accepts images (jpg, png) and PDF
-- Uploads to `payment-pop` storage bucket
-- Saves URL to `subscriptions.pop_url`
-- Shows uploaded POP thumbnail/link if already uploaded
-- Upload triggers a notification to admin
-
-**E. "I've Made Payment" Button** (kept, enhanced)
-- Gradient button with animation
-- Success state with confirmation card
-
-**Removed sections:**
-- SMS Credits card -- removed entirely
-- M-Pesa payment option -- removed entirely
-
-#### 4. Visual Redesign Elements
-
-- Gradient borders and subtle glassmorphism on cards
-- Animated gradient dividers between sections
-- Hover effects with scale transforms
-- Modern typography with the display font
-- Smooth transitions and micro-animations
-- Color-coded status indicators (green=active, amber=trial, red=expired)
-
----
-
-### Files Changed
+### Single File Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Billing.tsx` | Full redesign with package switcher, POP upload, bank-only payment, modern UI |
-| Migration SQL | Add `pop_url` column to `subscriptions`, create `payment-pop` storage bucket with policies |
-
-### Flow Diagram
-
-When a user wants to switch packages:
-1. User clicks "Switch Package" on Billing page
-2. Modal shows available tiers for their system type
-3. User selects desired tier
-4. A notification is sent to admin: "[Company] requests package switch to [Tier Name]"
-5. Admin processes the switch manually via the Admin panel
-6. User sees "Switch requested" badge until admin acts
-
-When a user uploads POP:
-1. User clicks upload area or drags file
-2. File uploads to `payment-pop` bucket
-3. `pop_url` saved to their subscription record
-4. Notification sent to admin with POP link
-5. Thumbnail/link shown on the Billing page
+| `src/pages/Billing.tsx` | Add `confirmTier` state, confirmation step, redesign tier cards to match landing page pricing layout, gradient on current package |
 
