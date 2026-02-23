@@ -145,7 +145,12 @@ Deno.serve(async (req) => {
     const subMap = new Map((subscriptions || []).map((s) => [s.user_id, s]));
 
     const signups = usersData.users
-      .filter((user) => !excludedUserIds.has(user.id)) // Exclude staff/workers and system admins
+      .filter((user) => {
+        if (excludedUserIds.has(user.id)) return false;
+        const meta = (user.user_metadata || {}) as Record<string, unknown>;
+        if (meta.portal_type) return false; // Exclude portal accounts (gym members, school parents, etc.)
+        return true;
+      })
       .map((user) => {
         const profile = profileMap.get(user.id);
         const sub = subMap.get(user.id);
