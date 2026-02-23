@@ -204,8 +204,8 @@ export function ImportProspectsDialog({ open, onOpenChange, onImported }: Import
             }
           });
 
-          if (!prospect.status) prospect.status = 'lead';
-          if (!prospect.priority) prospect.priority = 'medium';
+          if (!prospect.status || !['lead','contacted','demo','proposal','negotiation','won','lost'].includes(prospect.status)) prospect.status = 'lead';
+          if (!prospect.priority || !['low','medium','high'].includes(prospect.priority)) prospect.priority = 'medium';
 
           const hasName = !!prospect.company_name?.trim() || !!prospect.contact_name?.trim();
           if (!prospect.company_name?.trim()) prospect.company_name = prospect.contact_name || 'Unknown';
@@ -353,6 +353,7 @@ export function ImportProspectsDialog({ open, onOpenChange, onImported }: Import
                     <TableHead>Company</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-16">Valid</TableHead>
                   </TableRow>
@@ -364,6 +365,7 @@ export function ImportProspectsDialog({ open, onOpenChange, onImported }: Import
                       <TableCell className="font-medium">{row.mapped.company_name || '-'}</TableCell>
                       <TableCell>{row.mapped.contact_name || '-'}</TableCell>
                       <TableCell>{row.mapped.email || '-'}</TableCell>
+                      <TableCell>{row.mapped.phone || '-'}</TableCell>
                       <TableCell>{row.mapped.status || 'lead'}</TableCell>
                       <TableCell>
                         {row.valid ? (
