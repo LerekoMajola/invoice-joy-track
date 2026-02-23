@@ -3528,6 +3528,57 @@ export type Database = {
           },
         ]
       }
+      package_change_requests: {
+        Row: {
+          admin_note: string | null
+          company_name: string
+          created_at: string
+          current_tier_id: string | null
+          id: string
+          requested_tier_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          company_name: string
+          created_at?: string
+          current_tier_id?: string | null
+          id?: string
+          requested_tier_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          company_name?: string
+          created_at?: string
+          current_tier_id?: string | null
+          id?: string
+          requested_tier_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_change_requests_current_tier_id_fkey"
+            columns: ["current_tier_id"]
+            isOneToOne: false
+            referencedRelation: "package_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_change_requests_requested_tier_id_fkey"
+            columns: ["requested_tier_id"]
+            isOneToOne: false
+            referencedRelation: "package_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       package_tiers: {
         Row: {
           bundle_price: number

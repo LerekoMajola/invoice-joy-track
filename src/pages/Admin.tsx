@@ -5,10 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AdminOverviewTab, CustomersTab, AdminSettingsTab, AdminInvoicesTab, AdminCRMTab, BillingTab, UsageAnalyticsTab } from '@/components/admin';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
+import { PackageChangeRequests } from '@/components/admin/PackageChangeRequests';
+import { usePackageChangeRequests } from '@/hooks/usePackageChangeRequests';
+import { Badge } from '@/components/ui/badge';
 
 export default function Admin() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { pendingRequests } = usePackageChangeRequests(true);
 
   const handleSignOut = async () => {
     await signOut();
@@ -52,6 +56,14 @@ export default function Admin() {
               <TabsTrigger value="crm">CRM</TabsTrigger>
               <TabsTrigger value="customers">Customers</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
+              <TabsTrigger value="requests" className="relative">
+                Requests
+                {pendingRequests.length > 0 && (
+                  <Badge className="ml-1.5 h-5 min-w-5 px-1.5 text-[10px] bg-warning text-warning-foreground rounded-full">
+                    {pendingRequests.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="invoices">Invoices</TabsTrigger>
               <TabsTrigger value="usage">Usage</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -72,6 +84,10 @@ export default function Admin() {
 
           <TabsContent value="billing">
             <BillingTab />
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <PackageChangeRequests />
           </TabsContent>
 
           <TabsContent value="invoices">
