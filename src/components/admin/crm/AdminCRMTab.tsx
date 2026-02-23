@@ -3,6 +3,7 @@ import { useAdminProspects, AdminProspect } from '@/hooks/useAdminProspects';
 import { ProspectKanban } from './ProspectKanban';
 import { ProspectDetailSheet } from './ProspectDetailSheet';
 import { AddProspectDialog } from './AddProspectDialog';
+import { ImportProspectsDialog } from './ImportProspectsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Kanban, List, DollarSign, TrendingUp, Users, Bell } from 'lucide-react';
+import { Plus, Search, Kanban, List, DollarSign, TrendingUp, Users, Bell, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 
 const statusColors: Record<string, string> = {
@@ -35,13 +36,14 @@ const priorityBadge: Record<string, string> = {
 };
 
 export function AdminCRMTab() {
-  const { prospects, loading, stats, createProspect, updateProspect, deleteProspect, moveProspect, fetchActivities, addActivity } = useAdminProspects();
+  const { prospects, loading, stats, createProspect, updateProspect, deleteProspect, moveProspect, fetchActivities, addActivity, fetchProspects } = useAdminProspects();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedProspect, setSelectedProspect] = useState<AdminProspect | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const filtered = prospects.filter(p => {
     const matchSearch =
@@ -156,6 +158,9 @@ export function AdminCRMTab() {
               <List className="h-4 w-4" />
             </Button>
           </div>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
           <Button onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Add Prospect
           </Button>
@@ -242,6 +247,7 @@ export function AdminCRMTab() {
       />
 
       <AddProspectDialog open={addOpen} onOpenChange={setAddOpen} createProspect={createProspect} />
+      <ImportProspectsDialog open={importOpen} onOpenChange={setImportOpen} onImported={fetchProspects} />
     </div>
   );
 }
