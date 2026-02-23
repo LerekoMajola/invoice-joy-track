@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useModules } from '@/hooks/useModules';
 import { usePackageTiers } from '@/hooks/usePackageTiers';
+import { usePackageChangeRequests } from '@/hooks/usePackageChangeRequests';
 import { useCurrency } from '@/hooks/useCurrency';
 import {
   AlertTriangle, Loader2, Building2,
@@ -32,6 +33,7 @@ export default function Billing() {
   const { userModules, getMonthlyTotal } = useModules();
   const { tiers, getTierById, getTiersForSystem } = usePackageTiers();
   const { fc } = useCurrency();
+  const { hasPendingRequest, submitRequest } = usePackageChangeRequests();
   const selectedTier = packageTierId ? getTierById(packageTierId) : null;
   const monthlyTotal = selectedTier ? selectedTier.bundle_price : getMonthlyTotal();
 
@@ -83,7 +85,15 @@ export default function Billing() {
   const handleSwitchRequest = async (tier: any) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('notifications').insert({
+      // Insert into package_change_requests table
+      await submitRequest.mutateAsync({
+        companyName: companyName,
+        currentTierId: packageTierId || null,
+        requestedTierId: tier.id,
+      });
+
+      // Also send a notification to admin
+      await supabase.from('notifications').insert({
         user_id: ADMIN_USER_ID,
         type: 'payment',
         title: 'Package Switch Request',
@@ -92,7 +102,7 @@ export default function Billing() {
         reference_type: 'subscription',
         link: '/admin',
       });
-      if (error) throw error;
+
       toast.success(`Switch request sent for ${tier.display_name}`);
       setSwitchOpen(false);
     } catch (err) {
@@ -211,10 +221,16 @@ export default function Billing() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <Package className="h-5 w-5 text-primary" /> Your Package
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setSwitchOpen(true)}
-                className="border-primary/30 text-primary hover:bg-primary/5">
-                Switch Package <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
+              {hasPendingRequest ? (
+                <Badge variant="outline" className="border-warning/30 text-warning text-xs">
+                  <Clock className="h-3 w-3 mr-1" /> Switch Pending
+                </Badge>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => setSwitchOpen(true)}
+                  className="border-primary/30 text-primary hover:bg-primary/5">
+                  Switch Package <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="pt-0">
