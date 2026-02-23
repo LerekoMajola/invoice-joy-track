@@ -1,54 +1,109 @@
 
 
-## Auto Check-Out After 1 Hour and 1-Hour Check-In Cooldown
+## Redesign Billing Page -- Modern, Cutting-Edge
 
-### What Changes
+### Overview
 
-Two attendance rules will be enforced for gym members:
+A full redesign of the Billing page (`src/pages/Billing.tsx`) with these changes:
 
-1. **Auto check-out after 1 hour** -- Any active session (no check-out) that is older than 1 hour will be automatically checked out (check_out set to check_in + 1 hour).
-2. **1-hour cooldown between check-ins** -- A member cannot check in again until at least 1 hour has passed since their last check-in.
+1. **Package switcher** -- Browse available tiers for your system type and request a switch
+2. **Remove SMS Credits section** -- Hidden entirely
+3. **Remove M-Pesa option** -- Only Bank Transfer remains
+4. **Correct bank details** -- Account: 63027317585, Branch Code: 280061
+5. **Add POP upload** -- Upload proof of payment image/PDF after paying
+6. **Modern redesign** -- Glassmorphism cards, gradient accents, animated elements matching the platform's bold visual identity
 
-### Implementation
+---
 
-#### 1. Database: Auto Check-Out Function + Trigger
+### Detailed Changes
 
-Create a scheduled database function that auto-closes stale sessions, and a trigger-based validation on insert to enforce the cooldown.
+#### 1. New Storage Bucket (if needed) or Reuse `gym-pop`
 
-**Migration SQL:**
+A new storage bucket `payment-pop` (public) will be created for uploading proof of payment files. This keeps billing POP separate from gym-specific POP.
 
-- **`auto_checkout_gym_attendance()`** -- A database function that updates all `gym_attendance` rows where `check_out IS NULL` and `check_in` is older than 1 hour, setting `check_out = check_in + interval '1 hour'`.
-- **`enforce_gym_checkin_cooldown()`** -- A trigger function on `gym_attendance` INSERT that checks if the same `member_id` has a `check_in` within the last hour. If so, it raises an exception.
-- A `pg_cron` schedule (or call from the frontend polling) to run the auto-checkout periodically.
+**Migration**: Create bucket + storage policy for authenticated uploads.
 
-Since `pg_cron` may not be available, the auto-checkout will run from the frontend side on each data fetch instead.
+#### 2. Database: Add `pop_url` Column to `subscriptions`
 
-#### 2. Frontend: `useGymAttendance.tsx`
+Add a `pop_url` text column to the `subscriptions` table so uploaded proof of payment can be linked to the subscription record.
 
-- **Auto-checkout on fetch**: After fetching attendance records, identify any active sessions older than 1 hour and batch-update their `check_out` to `check_in + 1 hour` automatically.
-- **Cooldown enforcement in `checkIn` mutation**: Before inserting, query the member's latest `check_in`. If it is less than 1 hour ago, show a toast error ("Please wait -- members can only check in once per hour") and abort.
-- **UI updates**: Hide the "Check Out" button for sessions that are auto-checked-out. Show cooldown remaining time or a disabled state for the check-in button.
+```sql
+ALTER TABLE public.subscriptions ADD COLUMN pop_url text;
+```
 
-#### 3. Frontend: `GymPortalAttendance.tsx` (Member Self-Service)
+#### 3. Redesigned Billing Page (`src/pages/Billing.tsx`)
 
-- Same cooldown check before `handleCheckIn` -- query the member's latest check-in and block if less than 1 hour ago.
-- Show a message like "You can check in again at [time]" instead of the button when on cooldown.
-- Auto-checkout logic runs on component mount as well.
+The page will be restructured into these sections:
 
-#### 4. Admin Attendance Page: `GymAttendance.tsx`
+**A. Status Hero Card** (kept, enhanced)
+- Glassmorphism styling with gradient top bar
+- Animated status icon (pulse for trial, glow for active)
+- Trial progress bar with smooth animation
 
-- Update `isMemberCheckedIn` logic to also account for auto-checked-out sessions (session older than 1 hour = treated as checked out).
-- Show "Auto" badge on check-outs that were system-generated (check_out equals check_in + exactly 1 hour).
+**B. Current Package Card with "Switch Package" Button**
+- Shows current tier name, price, included modules
+- "Switch Package" button opens a modal/sheet displaying all available tiers for the user's system type (fetched via `usePackageTiers`)
+- Selecting a new tier sends a notification to admin requesting the switch (no self-service DB change -- admin activates it)
+- Shows pending switch request if one was sent
 
-### Technical Details
+**C. Payment Section** (streamlined)
+- Payment reference card with copy button (kept)
+- **Bank Transfer only** (no M-Pesa) with correct details:
+  - Bank: First National Bank (FNB)
+  - Account Name: Orion Labs (Pty) Ltd
+  - Account Number: **63027317585**
+  - Branch Code: **280061**
+  - Reference: user's payment reference
+- All fields have copy buttons
 
-**Files changed:**
+**D. Upload Proof of Payment (POP)**
+- Drag-and-drop / click-to-upload area
+- Accepts images (jpg, png) and PDF
+- Uploads to `payment-pop` storage bucket
+- Saves URL to `subscriptions.pop_url`
+- Shows uploaded POP thumbnail/link if already uploaded
+- Upload triggers a notification to admin
+
+**E. "I've Made Payment" Button** (kept, enhanced)
+- Gradient button with animation
+- Success state with confirmation card
+
+**Removed sections:**
+- SMS Credits card -- removed entirely
+- M-Pesa payment option -- removed entirely
+
+#### 4. Visual Redesign Elements
+
+- Gradient borders and subtle glassmorphism on cards
+- Animated gradient dividers between sections
+- Hover effects with scale transforms
+- Modern typography with the display font
+- Smooth transitions and micro-animations
+- Color-coded status indicators (green=active, amber=trial, red=expired)
+
+---
+
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/hooks/useGymAttendance.tsx` | Add auto-checkout on fetch, add cooldown check in checkIn mutation |
-| `src/components/portal/gym/GymPortalAttendance.tsx` | Add cooldown check before check-in, show cooldown timer, auto-checkout on load |
-| `src/pages/GymAttendance.tsx` | Update "Already In" logic for cooldown, show "Auto" badge on auto-checkouts |
+| `src/pages/Billing.tsx` | Full redesign with package switcher, POP upload, bank-only payment, modern UI |
+| Migration SQL | Add `pop_url` column to `subscriptions`, create `payment-pop` storage bucket with policies |
 
-No database migration needed -- the logic will be handled entirely in the frontend to keep it simple and avoid `pg_cron` dependency. The auto-checkout runs as a side effect when attendance data is fetched (any active session older than 1 hour gets its `check_out` set to `check_in + 1 hour`).
+### Flow Diagram
+
+When a user wants to switch packages:
+1. User clicks "Switch Package" on Billing page
+2. Modal shows available tiers for their system type
+3. User selects desired tier
+4. A notification is sent to admin: "[Company] requests package switch to [Tier Name]"
+5. Admin processes the switch manually via the Admin panel
+6. User sees "Switch requested" badge until admin acts
+
+When a user uploads POP:
+1. User clicks upload area or drags file
+2. File uploads to `payment-pop` bucket
+3. `pop_url` saved to their subscription record
+4. Notification sent to admin with POP link
+5. Thumbnail/link shown on the Billing page
 
