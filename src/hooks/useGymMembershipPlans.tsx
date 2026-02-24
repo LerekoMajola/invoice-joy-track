@@ -33,6 +33,16 @@ export function useGymMembershipPlans() {
   const [plans, setPlans] = useState<GymMembershipPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const resolveCompanyId = async (userId: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from('company_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+    return data?.id ?? null;
+  };
+
   const getActiveUser = async () => {
     if (user) return user;
     const { data: sessionData } = await supabase.auth.getSession();
@@ -89,7 +99,7 @@ export function useGymMembershipPlans() {
     try {
       const { error } = await (supabase.from('gym_membership_plans') as any).insert({
         user_id: activeUser.id,
-        company_profile_id: activeCompanyId || null,
+        company_profile_id: activeCompanyId || (await resolveCompanyId(activeUser.id)),
         name: plan.name,
         description: plan.description || null,
         duration_days: plan.durationDays,

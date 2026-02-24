@@ -48,6 +48,16 @@ export function useGymMembers() {
   const [members, setMembers] = useState<GymMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const resolveCompanyId = async (userId: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from('company_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+    return data?.id ?? null;
+  };
+
   const getActiveUser = async () => {
     if (user) return user;
     const { data: sessionData } = await supabase.auth.getSession();
@@ -133,7 +143,7 @@ export function useGymMembers() {
       const { data, error } = await (supabase.from('gym_members') as any)
         .insert({
           user_id: activeUser.id,
-          company_profile_id: activeCompanyId || null,
+          company_profile_id: activeCompanyId || (await resolveCompanyId(activeUser.id)),
           member_number: memberNumber,
           first_name: member.firstName,
           last_name: member.lastName,
