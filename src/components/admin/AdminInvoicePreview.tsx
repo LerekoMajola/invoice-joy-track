@@ -192,8 +192,8 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                   <tr>
                     <td style={{ verticalAlign: 'middle', width: '160px', paddingRight: '4px' }}>
                       {logoUrl && (
-                        <div style={{ background: 'white', borderRadius: '8px', padding: '6px', display: 'inline-block' }}>
-                          <img src={logoUrl} alt="Orion Labs" style={{ width: '140px', height: 'auto', maxHeight: '60px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" />
+                        <div style={{ background: 'white', borderRadius: '8px', padding: '6px', display: 'block', textAlign: 'left' }}>
+                          <img src={logoUrl} alt="Orion Labs" style={{ width: '140px', height: 'auto', objectFit: 'contain', display: 'block', maxWidth: '140px' }} crossOrigin="anonymous" />
                         </div>
                       )}
                     </td>
