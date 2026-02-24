@@ -48,8 +48,10 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
       backgroundColor: '#ffffff',
       width: el.offsetWidth,
       windowWidth: el.offsetWidth,
+      height: el.scrollHeight,
       scrollX: 0,
       scrollY: 0,
+      imageTimeout: 15000,
       logging: false,
     });
 
@@ -82,8 +84,10 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
       backgroundColor: '#ffffff',
       width: el.offsetWidth,
       windowWidth: el.offsetWidth,
+      height: el.scrollHeight,
       scrollX: 0,
       scrollY: 0,
+      imageTimeout: 15000,
       logging: false,
     });
 
@@ -229,34 +233,38 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             <div style={{ padding: '24px 28px' }}>
 
               {/* Bill To & Details */}
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
-                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Bill To</div>
-                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>{invoice.company_name}</div>
-                  {invoice.tenant_email && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{invoice.tenant_email}</div>}
-                </div>
-                <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
-                  <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Invoice Details</div>
-                  <table style={{ width: '100%', fontSize: '11px' }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Issue Date</td>
-                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.issue_date), 'MMM d, yyyy')}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ color: '#9ca3af', padding: '1px 0' }}>Payment Terms</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#1a1a2e' }}>Due on Receipt</td>
-                      </tr>
-                      {invoice.payment_date && (
-                        <tr>
-                          <td style={{ color: '#9ca3af', padding: '1px 0' }}>Paid</td>
-                          <td style={{ textAlign: 'right', fontWeight: 500, color: '#16a34a' }}>{format(new Date(invoice.payment_date), 'MMM d, yyyy')}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <table style={{ width: '100%', marginBottom: '24px', borderCollapse: 'separate', borderSpacing: '16px 0' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '50%', verticalAlign: 'top', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                      <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Bill To</div>
+                      <div style={{ fontWeight: 600, fontSize: '13px', color: '#111827' }}>{invoice.company_name}</div>
+                      {invoice.tenant_email && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{invoice.tenant_email}</div>}
+                    </td>
+                    <td style={{ width: '50%', verticalAlign: 'top', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '12px' }}>
+                      <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#9ca3af', marginBottom: '6px' }}>Invoice Details</div>
+                      <table style={{ width: '100%', fontSize: '11px' }}>
+                        <tbody>
+                          <tr>
+                            <td style={{ color: '#9ca3af', padding: '1px 0' }}>Issue Date</td>
+                            <td style={{ textAlign: 'right', fontWeight: 500 }}>{format(new Date(invoice.issue_date), 'MMM d, yyyy')}</td>
+                          </tr>
+                          <tr>
+                            <td style={{ color: '#9ca3af', padding: '1px 0' }}>Payment Terms</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600, color: '#1a1a2e' }}>Due on Receipt</td>
+                          </tr>
+                          {invoice.payment_date && (
+                            <tr>
+                              <td style={{ color: '#9ca3af', padding: '1px 0' }}>Paid</td>
+                              <td style={{ textAlign: 'right', fontWeight: 500, color: '#16a34a' }}>{format(new Date(invoice.payment_date), 'MMM d, yyyy')}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
               {/* Line Items */}
               <div style={{ marginBottom: '24px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
@@ -290,36 +298,50 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               </div>
 
               {/* Totals */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-                <div style={{ width: '220px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                  <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', background: '#f8fafc' }}>
-                    <span style={{ color: '#6b7280' }}>Subtotal</span>
-                    <span style={{ fontWeight: 500 }}>M{invoice.subtotal.toFixed(2)}</span>
-                  </div>
-                  {invoice.tax_rate > 0 && (
-                    <div style={{ padding: '6px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderTop: '1px solid #e2e8f0' }}>
-                      <span style={{ color: '#6b7280' }}>Tax ({invoice.tax_rate}%)</span>
-                      <span style={{ fontWeight: 500 }}>M{taxAmount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 700, color: 'white', background: NAVY }}>
-                    <span>Total Due</span>
-                    <span>M{invoice.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
+              <table style={{ width: '100%', marginBottom: '24px' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: 'right' }}>
+                      <table style={{ width: '220px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0', borderCollapse: 'collapse', marginLeft: 'auto' }}>
+                        <tbody>
+                          <tr style={{ background: '#f8fafc', fontSize: '11px' }}>
+                            <td style={{ padding: '6px 12px', color: '#6b7280' }}>Subtotal</td>
+                            <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 500 }}>M{invoice.subtotal.toFixed(2)}</td>
+                          </tr>
+                          {invoice.tax_rate > 0 && (
+                            <tr style={{ fontSize: '11px', borderTop: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '6px 12px', color: '#6b7280' }}>Tax ({invoice.tax_rate}%)</td>
+                              <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 500 }}>M{taxAmount.toFixed(2)}</td>
+                            </tr>
+                          )}
+                          <tr style={{ background: NAVY, fontSize: '15px', fontWeight: 700, color: 'white' }}>
+                            <td style={{ padding: '10px 12px' }}>Total Due</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right' }}>M{invoice.total.toFixed(2)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
               {/* Banking Details */}
               <div style={{ marginBottom: '16px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #c7d2fe' }}>
                 <div style={{ background: '#eef2ff', padding: '6px 12px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: NAVY }}>Banking Details</div>
                 </div>
-                <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 24px', fontSize: '11px', background: 'white' }}>
-                  <div><span style={{ color: '#9ca3af' }}>Bank: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>First National Bank (FNB)</span></div>
-                  <div><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>Pioneer Mall</span></div>
-                  <div><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>63027317585</span></div>
-                  <div><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></div>
-                </div>
+                <table style={{ width: '100%', fontSize: '11px', background: 'white', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Bank: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>First National Bank (FNB)</span></td>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>Pioneer Mall</span></td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>63027317585</span></td>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               {/* Send POP instruction */}
