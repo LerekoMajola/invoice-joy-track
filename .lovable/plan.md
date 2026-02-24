@@ -1,66 +1,67 @@
 
-Goal: make the downloaded invoice PDF look exactly like the on-screen preview (screenshot-like), with no logo skewing.
 
-What I found in the current implementation:
-- The download path already uses a high-quality PNG pipeline in `src/lib/pdfExport.ts` (`exportHighQualityPDF`), but it still captures from a cloned offscreen DOM.
-- The invoice logo in `src/components/admin/AdminInvoicePreview.tsx` is rendered with `height: 60px` + `width: auto` inside a constrained table cell (`72px` wide). That combination is visually fine in browser preview, but html2canvas can re-resolve the intrinsic ratio differently during offscreen clone capture.
-- Current image normalization in `exportHighQualityPDF` is generic (`objectFit`, `display`, `decode`) but does not lock each image to the exact rendered pixel box from the live preview before capture.
-- Result: export quality is high, but geometric fidelity for the logo can still drift.
+## Fix Invoice PDF Logo Skewing - Fixed A4 Layout
 
-Implementation approach (download only, email unchanged):
-1) Make the invoice logo box deterministic in the preview markup
-- Update the header logo block in `AdminInvoicePreview` so the logo always renders inside a fixed-size wrapper (explicit width + height), and the image uses `width: 100%`, `height: 100%`, `objectFit: 'contain'`.
-- Remove `width: auto` from the invoice logo style.
-- Keep visual appearance identical by preserving background, padding, and rounded corners inside this fixed box.
-- Add safe fallback to default logo if the custom logo fails to load, so capture always has a stable image node.
+### Problem
+The logo continues to skew in the downloaded PDF because the logo container uses a fixed square box (60x60px / 50x50px) that forces the logo into a square regardless of its natural aspect ratio. Additionally, `html2canvas` still struggles with geometry even after the "screenshot mode" changes.
 
-2) Replace clone-first PDF capture with “live-element screenshot mode”
-- Rework `exportHighQualityPDF` to capture the actual `sourceElement` (the same node shown in preview), not an independently laid-out offscreen clone.
-- Keep lossless PNG output and A4 mapping, but drive html2canvas dimensions from `getBoundingClientRect()` + `scrollHeight` of the live element.
-- Enable options that preserve screenshot fidelity:
-  - high DPR-aware `scale` (capped)
-  - `useCORS: true`
-  - `backgroundColor: '#ffffff'`
-  - `imageTimeout` increased
-  - `foreignObjectRendering: true` (for closer browser-like rendering when available)
+### Solution
+Apply the user's exact specifications: fixed-width logo (140px) with auto height, `object-fit: contain`, no transforms, and a fixed-width A4 container.
 
-3) Lock image geometry before capture (critical for skew fix)
-- Add a pre-capture image stabilization step in `pdfExport.ts`:
-  - collect all `img` nodes inside the export element
-  - await full decode/load for each
-  - freeze each image to its current rendered pixel box (`style.width/height` from computed dimensions)
-  - force `objectFit: contain`, `objectPosition: center`, `transform: none`
-- Optional hardening for external images: for the logo, fetch as blob and convert to data URL in-memory before capture so html2canvas reads a same-origin source and cannot reinterpret dimensions due to late network timing.
+### Changes
 
-4) Keep existing high-quality PDF assembly (already good)
-- Preserve PNG embedding and multi-page slicing logic in jsPDF.
-- Preserve filename and button behavior in `AdminInvoicePreview`.
-- Keep email generation path untouched.
+#### 1. `src/components/admin/AdminInvoicePreview.tsx` - Logo markup
 
-5) Add targeted diagnostics for future edge cases
-- Add temporary guarded console diagnostics (only in development) around image natural size vs rendered size before capture.
-- If mismatch is detected, force a second-pass stabilization before exporting.
+**Current** (lines 193-198): Logo forced into a 60x60 square container with a 50x50 image.
 
-Files to update:
-- `src/components/admin/AdminInvoicePreview.tsx`
-  - deterministic logo container/image sizing in the invoice header
-  - optional fallback logo handling for capture stability
-- `src/lib/pdfExport.ts`
-  - switch to live-element screenshot capture path
-  - add strict image geometry stabilization
-  - keep PNG + multi-page jsPDF logic
+**New**: 
+- Remove the fixed square wrapper
+- Logo image: `width: 140px`, `height: auto`, `object-fit: contain`, `display: block`
+- Left-aligned with padding inside the table cell
+- No percentage widths, no transforms
+- Table cell width increased to accommodate 140px logo + padding
 
-Validation checklist:
-- PDF logo proportions match preview exactly for:
-  - default logo
-  - uploaded PNG logo
-  - uploaded JPEG logo
-  - wide and square logos
-- No stretching/skewing in repeated downloads.
-- Table alignment and spacing match preview.
-- Text remains sharp and readable.
-- Email sending still works exactly as before (unchanged path).
+#### 2. `src/lib/pdfExport.ts` - `exportHighQualityPDF`
 
-Technical notes:
-- This is the closest possible “screenshot-like” export while still producing a downloadable PDF file directly.
-- File size may increase slightly due to lossless image handling and stabilized rendering, but visual fidelity should be consistently accurate.
+Simplify the capture to avoid transform scaling and respect the fixed A4 container:
+
+- Remove the dynamic `SCALE` calculation tied to `devicePixelRatio` -- use a fixed scale of `2` (sufficient for sharp output without distortion)
+- In the image geometry freeze step, do NOT override `objectFit` or dimensions for images that already have explicit pixel widths set (i.e., the logo). Only freeze images that use `auto` or percentage sizing
+- Use `width` and `windowWidth` from `sourceElement.offsetWidth` (the fixed 595px container) instead of `getBoundingClientRect()` which can include sub-pixel rounding
+- Keep PNG output and multi-page slicing logic unchanged
+
+### Technical Details
+
+**AdminInvoicePreview.tsx logo cell change:**
+```
+// Before
+<div style={{ width: '60px', height: '60px', ... }}>
+  <img style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+</div>
+
+// After
+<img 
+  src={logoUrl} 
+  alt="Logo"
+  style={{ 
+    width: '140px', 
+    height: 'auto', 
+    objectFit: 'contain',
+    display: 'block',
+    maxHeight: '60px',
+  }} 
+  crossOrigin="anonymous" 
+/>
+```
+- Table cell width updated from `72px` to `160px` to fit the wider logo with padding
+- White background box with rounded corners preserved around the logo area
+
+**pdfExport.ts changes:**
+- Fixed scale of `2` instead of DPR-based calculation
+- Skip geometry freezing for images with explicit pixel `width` already set (prevents overriding the deterministic 140px logo)
+- Use `offsetWidth` (595) instead of `getBoundingClientRect().width` for capture dimensions
+- No `transform` scaling at any point in the pipeline
+
+### Files Modified
+- `src/components/admin/AdminInvoicePreview.tsx` -- logo container and image styles
+- `src/lib/pdfExport.ts` -- simplified, stable capture with no transform scaling
