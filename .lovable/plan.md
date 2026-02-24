@@ -1,62 +1,66 @@
 
-Goal: completely replace the current invoice download implementation with a new high-quality export pipeline that avoids logo skewing and keeps layout/spacing matched to the on-screen preview.
+Goal: make the downloaded invoice PDF look exactly like the on-screen preview (screenshot-like), with no logo skewing.
 
-What I found in your current code:
-- The download button in `src/components/admin/AdminInvoicePreview.tsx` uses `html2canvas -> JPEG -> jsPDF`.
-- JPEG export (`canvas.toDataURL('image/jpeg', 1.0)`) can introduce visual artifacts and edge distortion, especially around logos/text.
-- The same `contentRef` node is rendered for screen and capture, so any runtime image timing/stretch issue directly affects PDF output.
-- Download and email currently share similar generation logic, but you confirmed scope is **download only**.
+What I found in the current implementation:
+- The download path already uses a high-quality PNG pipeline in `src/lib/pdfExport.ts` (`exportHighQualityPDF`), but it still captures from a cloned offscreen DOM.
+- The invoice logo in `src/components/admin/AdminInvoicePreview.tsx` is rendered with `height: 60px` + `width: auto` inside a constrained table cell (`72px` wide). That combination is visually fine in browser preview, but html2canvas can re-resolve the intrinsic ratio differently during offscreen clone capture.
+- Current image normalization in `exportHighQualityPDF` is generic (`objectFit`, `display`, `decode`) but does not lock each image to the exact rendered pixel box from the live preview before capture.
+- Result: export quality is high, but geometric fidelity for the logo can still drift.
 
-Implementation approach (download only):
-1. Remove existing download PDF generator logic in `AdminInvoicePreview`
-- Delete the current `handleDownloadPDF` body and replace it with a new high-quality flow.
-- Keep email sending flow untouched (as requested).
+Implementation approach (download only, email unchanged):
+1) Make the invoice logo box deterministic in the preview markup
+- Update the header logo block in `AdminInvoicePreview` so the logo always renders inside a fixed-size wrapper (explicit width + height), and the image uses `width: 100%`, `height: 100%`, `objectFit: 'contain'`.
+- Remove `width: auto` from the invoice logo style.
+- Keep visual appearance identical by preserving background, padding, and rounded corners inside this fixed box.
+- Add safe fallback to default logo if the custom logo fails to load, so capture always has a stable image node.
 
-2. Recreate download export using a robust, lossless capture pipeline
-- Use a dedicated helper function in `src/lib/pdfExport.ts` (or a new admin-specific export helper) for invoice download.
-- Capture with:
-  - higher DPR-aware scale (`Math.max(3, window.devicePixelRatio * 2)`, capped for performance)
+2) Replace clone-first PDF capture with “live-element screenshot mode”
+- Rework `exportHighQualityPDF` to capture the actual `sourceElement` (the same node shown in preview), not an independently laid-out offscreen clone.
+- Keep lossless PNG output and A4 mapping, but drive html2canvas dimensions from `getBoundingClientRect()` + `scrollHeight` of the live element.
+- Enable options that preserve screenshot fidelity:
+  - high DPR-aware `scale` (capped)
   - `useCORS: true`
-  - explicit `width`/`windowWidth` from element layout width
   - `backgroundColor: '#ffffff'`
-  - `imageTimeout` and a small pre-capture wait to ensure images finish decoding.
-- Export image as **PNG** (lossless) instead of JPEG.
-- Insert into A4 `jsPDF` with exact width mapping and no extra compression.
+  - `imageTimeout` increased
+  - `foreignObjectRendering: true` (for closer browser-like rendering when available)
 
-3. Add image normalization step to prevent logo distortion
-- Before capture, ensure the logo image is fully decoded (`img.decode()` where supported).
-- During html2canvas clone (`onclone`), enforce deterministic logo sizing styles in the cloned DOM:
-  - fixed width/height box
-  - `object-fit: contain`
-  - `display: block`
-  - no inherited transforms
-- This prevents async image/layout variance from skewing in the final canvas.
+3) Lock image geometry before capture (critical for skew fix)
+- Add a pre-capture image stabilization step in `pdfExport.ts`:
+  - collect all `img` nodes inside the export element
+  - await full decode/load for each
+  - freeze each image to its current rendered pixel box (`style.width/height` from computed dimensions)
+  - force `objectFit: contain`, `objectPosition: center`, `transform: none`
+- Optional hardening for external images: for the logo, fetch as blob and convert to data URL in-memory before capture so html2canvas reads a same-origin source and cannot reinterpret dimensions due to late network timing.
 
-4. Make download rendering isolated and stable
-- Clone the preview content into an offscreen, fixed-width container (same A4 pixel width as preview) and capture that clone.
-- This avoids side effects from sheet scrolling/animations and produces repeatable output every time.
+4) Keep existing high-quality PDF assembly (already good)
+- Preserve PNG embedding and multi-page slicing logic in jsPDF.
+- Preserve filename and button behavior in `AdminInvoicePreview`.
+- Keep email generation path untouched.
 
-5. Preserve UI behavior
-- Keep the existing “PDF” button and filename format (`${invoice.invoice_number}.pdf`).
-- Add loading toast and error handling for download generation failures.
-- No UI redesign; only behind-the-scenes export engine replacement.
+5) Add targeted diagnostics for future edge cases
+- Add temporary guarded console diagnostics (only in development) around image natural size vs rendered size before capture.
+- If mismatch is detected, force a second-pass stabilization before exporting.
 
 Files to update:
 - `src/components/admin/AdminInvoicePreview.tsx`
-  - remove old download generation
-  - call new high-quality download exporter
-  - keep email generation path unchanged
+  - deterministic logo container/image sizing in the invoice header
+  - optional fallback logo handling for capture stability
 - `src/lib/pdfExport.ts`
-  - add a dedicated high-quality invoice download helper (lossless PNG + stable capture + logo normalization)
+  - switch to live-element screenshot capture path
+  - add strict image geometry stabilization
+  - keep PNG + multi-page jsPDF logic
 
-Validation checklist after implementation:
-- Downloaded PDF logo is not skewed/stretched.
-- Text and lines are crisp (no heavy pixelation).
-- Alignment matches preview (header, bill-to/details, table columns, totals, banking block).
-- Multiple repeated downloads produce consistent output.
-- Email send behavior remains unchanged.
+Validation checklist:
+- PDF logo proportions match preview exactly for:
+  - default logo
+  - uploaded PNG logo
+  - uploaded JPEG logo
+  - wide and square logos
+- No stretching/skewing in repeated downloads.
+- Table alignment and spacing match preview.
+- Text remains sharp and readable.
+- Email sending still works exactly as before (unchanged path).
 
-Technical notes and trade-offs:
-- PNG increases PDF size compared to JPEG, but gives much better visual fidelity.
-- Higher scale improves clarity but can increase generation time on slower devices; I’ll keep a safe cap to balance quality and responsiveness.
-- This plan intentionally avoids touching backend/email paths to match your scope exactly.
+Technical notes:
+- This is the closest possible “screenshot-like” export while still producing a downloadable PDF file directly.
+- File size may increase slightly due to lossless image handling and stabilized rendering, but visual fidelity should be consistently accurate.
