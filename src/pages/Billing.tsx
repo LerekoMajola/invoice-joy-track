@@ -252,9 +252,20 @@ export default function Billing() {
                 <p className="text-xs text-muted-foreground mt-0.5">Module-based pricing</p>
               </div>
             )}
-            {userModules.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No modules selected.</p>
-            ) : (
+
+            {/* Show features from tier instead of module breakdown */}
+            {selectedTier && selectedTier.features.length > 0 ? (
+              <ul className="space-y-2">
+                {selectedTier.features.filter(f => f.included).map((f) => (
+                  <li key={f.name} className="flex items-center gap-2.5 py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    <span className="text-sm text-foreground">{f.name}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : !selectedTier && userModules.length > 0 ? (
               <div className="space-y-2">
                 {userModules.map((um) => (
                   <div key={um.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
@@ -266,7 +277,10 @@ export default function Billing() {
                   </div>
                 ))}
               </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No modules selected.</p>
             )}
+
             <Separator className="my-4" />
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">Monthly Total</span>
