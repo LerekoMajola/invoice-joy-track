@@ -74,6 +74,29 @@ export function useAdminTenants() {
         console.error('Error fetching user modules:', modulesError);
       }
 
+      // Fetch package tiers for bundle pricing
+      const { data: packageTiers, error: tiersError } = await supabase
+        .from('package_tiers')
+        .select('id, bundle_price');
+
+      if (tiersError) {
+        console.error('Error fetching package tiers:', tiersError);
+      }
+
+      // Build tier price lookup by id
+      const tierPriceMap: Record<string, number> = {};
+      (packageTiers || []).forEach((t: any) => {
+        tierPriceMap[t.id] = Number(t.bundle_price);
+      });
+
+      // Build tier prices per user from their subscription's package_tier_id
+      const tierPrices: Record<string, number> = {};
+      (subscriptions || []).forEach((s: any) => {
+        if (s.package_tier_id && tierPriceMap[s.package_tier_id] != null) {
+          tierPrices[s.user_id] = tierPriceMap[s.package_tier_id];
+        }
+      });
+
       // Calculate module totals per user
       const moduleTotals: Record<string, number> = {};
       (userModulesData || []).forEach((um: any) => {
@@ -125,7 +148,7 @@ export function useAdminTenants() {
               quotes_count: usage.quotes_count || 0,
               invoices_count: usage.invoices_count || 0,
             } : null,
-            module_total: (subscription as any).billing_override ?? moduleTotals[userId] ?? 0,
+            module_total: (subscription as any).billing_override ?? tierPrices[userId] ?? moduleTotals[userId] ?? 0,
           } as Tenant;
         })
         .filter((t): t is Tenant => t !== null);
