@@ -1,34 +1,62 @@
 
+Goal: completely replace the current invoice download implementation with a new high-quality export pipeline that avoids logo skewing and keeps layout/spacing matched to the on-screen preview.
 
-## Fix Admin Invoice PDF — Eliminate Skewing, Pixelation, and Misalignment
+What I found in your current code:
+- The download button in `src/components/admin/AdminInvoicePreview.tsx` uses `html2canvas -> JPEG -> jsPDF`.
+- JPEG export (`canvas.toDataURL('image/jpeg', 1.0)`) can introduce visual artifacts and edge distortion, especially around logos/text.
+- The same `contentRef` node is rendered for screen and capture, so any runtime image timing/stretch issue directly affects PDF output.
+- Download and email currently share similar generation logic, but you confirmed scope is **download only**.
 
-### Problem
-The AdminInvoicePreview generates PDFs using `html2canvas`, which has poor support for CSS `display: flex` and `display: grid`. This causes:
-- **Skewed layout** in the "Bill To / Invoice Details" side-by-side section (uses `display: flex`)
-- **Misaligned totals** section (uses `display: flex` with `justify-content: flex-end`)
-- **Broken banking details grid** (uses `display: grid` with `gridTemplateColumns`)
-- **Subtotal/Tax/Total rows** misaligned (uses `display: flex` with `justify-content: space-between`)
+Implementation approach (download only):
+1. Remove existing download PDF generator logic in `AdminInvoicePreview`
+- Delete the current `handleDownloadPDF` body and replace it with a new high-quality flow.
+- Keep email sending flow untouched (as requested).
 
-### Solution
-Replace all `display: flex` and `display: grid` usages inside the PDF-captured container (`contentRef`) with HTML `<table>` elements. Tables are the most reliably rendered layout by `html2canvas`.
+2. Recreate download export using a robust, lossless capture pipeline
+- Use a dedicated helper function in `src/lib/pdfExport.ts` (or a new admin-specific export helper) for invoice download.
+- Capture with:
+  - higher DPR-aware scale (`Math.max(3, window.devicePixelRatio * 2)`, capped for performance)
+  - `useCORS: true`
+  - explicit `width`/`windowWidth` from element layout width
+  - `backgroundColor: '#ffffff'`
+  - `imageTimeout` and a small pre-capture wait to ensure images finish decoding.
+- Export image as **PNG** (lossless) instead of JPEG.
+- Insert into A4 `jsPDF` with exact width mapping and no extra compression.
 
-### File: `src/components/admin/AdminInvoicePreview.tsx`
+3. Add image normalization step to prevent logo distortion
+- Before capture, ensure the logo image is fully decoded (`img.decode()` where supported).
+- During html2canvas clone (`onclone`), enforce deterministic logo sizing styles in the cloned DOM:
+  - fixed width/height box
+  - `object-fit: contain`
+  - `display: block`
+  - no inherited transforms
+- This prevents async image/layout variance from skewing in the final canvas.
 
-**Changes (all within the `contentRef` div, lines 232-353):**
+4. Make download rendering isolated and stable
+- Clone the preview content into an offscreen, fixed-width container (same A4 pixel width as preview) and capture that clone.
+- This avoids side effects from sheet scrolling/animations and produces repeatable output every time.
 
-1. **Bill To and Invoice Details (line 232)** — Replace the `display: flex` wrapper with a two-column `<table>` layout so both cards sit side-by-side reliably.
+5. Preserve UI behavior
+- Keep the existing “PDF” button and filename format (`${invoice.invoice_number}.pdf`).
+- Add loading toast and error handling for download generation failures.
+- No UI redesign; only behind-the-scenes export engine replacement.
 
-2. **Totals section (lines 293-310)** — Replace the outer `display: flex` (right-aligned) with a right-aligned `<table>`. Replace inner flex rows (Subtotal, Tax, Total Due) with `<tr>` rows containing left-aligned label and right-aligned amount `<td>` cells.
+Files to update:
+- `src/components/admin/AdminInvoicePreview.tsx`
+  - remove old download generation
+  - call new high-quality download exporter
+  - keep email generation path unchanged
+- `src/lib/pdfExport.ts`
+  - add a dedicated high-quality invoice download helper (lossless PNG + stable capture + logo normalization)
 
-3. **Banking Details grid (line 317)** — Replace `display: grid` with a 2-column `<table>` with two rows (Bank/Branch, Account/Reference).
+Validation checklist after implementation:
+- Downloaded PDF logo is not skewed/stretched.
+- Text and lines are crisp (no heavy pixelation).
+- Alignment matches preview (header, bill-to/details, table columns, totals, banking block).
+- Multiple repeated downloads produce consistent output.
+- Email send behavior remains unchanged.
 
-4. **PDF generation settings** — Add `imageTimeout: 15000` to the `html2canvas` options in both `generatePDFBase64` and `handleDownloadPDF` to ensure the logo fully loads before capture. Also add `height: el.scrollHeight` to capture the full content.
-
-### What stays the same
-- The visual design, colors, fonts, and spacing remain identical
-- The header already uses `<table>` (no change needed)
-- The line items table is already a proper `<table>` (no change needed)
-- The POP instruction, notes, payment confirmation, and footer sections use simple block layout (no change needed)
-
-### Result
-The on-screen preview will look exactly the same, and the downloaded/emailed PDF will match the preview pixel-for-pixel with no skewing or misalignment.
+Technical notes and trade-offs:
+- PNG increases PDF size compared to JPEG, but gives much better visual fidelity.
+- Higher scale improves clarity but can increase generation time on slower devices; I’ll keep a safe cap to balance quality and responsiveness.
+- This plan intentionally avoids touching backend/email paths to match your scope exactly.
