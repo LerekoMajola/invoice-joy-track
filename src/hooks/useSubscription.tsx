@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 export type SubscriptionPlan = 'free_trial' | 'basic' | 'standard' | 'pro' | 'custom';
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
+export type SubscriptionStatus = 'trialing' | 'active' | 'active_awaiting_pop' | 'past_due' | 'cancelled' | 'expired';
 
 interface Subscription {
   id: string;
@@ -144,7 +144,7 @@ export function useSubscription() {
 
   // Check subscription status
   const isTrialing = subscription?.status === 'trialing';
-  const isActive = subscription?.status === 'active';
+  const isActive = subscription?.status === 'active' || subscription?.status === 'active_awaiting_pop';
   const isExpired = subscription?.status === 'expired' || subscription?.status === 'cancelled';
   
   const trialDaysRemaining = isTrialing && subscription?.trial_ends_at

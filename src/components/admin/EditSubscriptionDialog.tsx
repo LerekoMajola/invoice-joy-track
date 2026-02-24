@@ -139,6 +139,7 @@ export function EditSubscriptionDialog({ tenant, open, onOpenChange }: EditSubsc
               <SelectContent>
                 <SelectItem value="trialing">Trialing — on free trial, not yet paying</SelectItem>
                 <SelectItem value="active">Active — confirmed payment received</SelectItem>
+                <SelectItem value="active_awaiting_pop">Active — awaiting proof of payment</SelectItem>
                 <SelectItem value="past_due">Past Due — trial ended, awaiting payment</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>

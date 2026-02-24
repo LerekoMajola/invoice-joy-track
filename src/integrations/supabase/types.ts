@@ -5158,6 +5158,7 @@ export type Database = {
       subscription_status:
         | "trialing"
         | "active"
+        | "active_awaiting_pop"
         | "past_due"
         | "cancelled"
         | "expired"
@@ -5293,6 +5294,7 @@ export const Constants = {
       subscription_status: [
         "trialing",
         "active",
+        "active_awaiting_pop",
         "past_due",
         "cancelled",
         "expired",
