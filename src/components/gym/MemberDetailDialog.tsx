@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle, KeyRound } from 'lucide-react';
+import { User, Phone, Mail, AlertTriangle, Heart, Calendar, CreditCard, Snowflake, XCircle, KeyRound, Pencil } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useGymMemberSubscriptions } from '@/hooks/useGymMemberSubscriptions';
@@ -13,6 +13,8 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { ConfirmDialog as ConfirmDialogComponent } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { GymMember } from '@/hooks/useGymMembers';
@@ -32,6 +34,90 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
 
+interface EditData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  healthConditions: string;
+  notes: string;
+}
+
+function MemberEditForm({ editData, setEditData }: { editData: EditData; setEditData: React.Dispatch<React.SetStateAction<EditData>> }) {
+  const update = (field: keyof EditData, value: string) => setEditData(prev => ({ ...prev, [field]: value }));
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">First Name</Label>
+          <Input value={editData.firstName} onChange={e => update('firstName', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Last Name</Label>
+          <Input value={editData.lastName} onChange={e => update('lastName', e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Email</Label>
+          <Input type="email" value={editData.email} onChange={e => update('email', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Phone</Label>
+          <Input value={editData.phone} onChange={e => update('phone', e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Date of Birth</Label>
+          <Input type="date" value={editData.dateOfBirth} onChange={e => update('dateOfBirth', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Gender</Label>
+          <Select value={editData.gender} onValueChange={v => update('gender', v)}>
+            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Address</Label>
+        <Input value={editData.address} onChange={e => update('address', e.target.value)} />
+      </div>
+      <Separator />
+      <p className="text-xs font-medium text-destructive flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" />Emergency Contact</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Name</Label>
+          <Input value={editData.emergencyContactName} onChange={e => update('emergencyContactName', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Phone</Label>
+          <Input value={editData.emergencyContactPhone} onChange={e => update('emergencyContactPhone', e.target.value)} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Health Conditions</Label>
+        <Textarea value={editData.healthConditions} onChange={e => update('healthConditions', e.target.value)} rows={2} />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Notes</Label>
+        <Textarea value={editData.notes} onChange={e => update('notes', e.target.value)} rows={2} />
+      </div>
+    </div>
+  );
+}
+
 export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Props) {
   const { fc } = useCurrency();
   const { toast } = useToast();
@@ -40,10 +126,45 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
   const [freezeEnd, setFreezeEnd] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editData, setEditData] = useState<EditData>({
+    firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
+    gender: '', address: '', emergencyContactName: '', emergencyContactPhone: '',
+    healthConditions: '', notes: '',
+  });
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
+
+  useEffect(() => {
+    setEditData({
+      firstName: member.firstName,
+      lastName: member.lastName,
+      email: member.email || '',
+      phone: member.phone || '',
+      dateOfBirth: member.dateOfBirth || '',
+      gender: member.gender || '',
+      address: member.address || '',
+      emergencyContactName: member.emergencyContactName || '',
+      emergencyContactPhone: member.emergencyContactPhone || '',
+      healthConditions: member.healthConditions || '',
+      notes: member.notes || '',
+    });
+    setIsEditing(false);
+  }, [member]);
 
   const activeSub = subscriptions.find(s => s.status === 'active' || s.status === 'frozen');
   const today = new Date();
+
+  const handleSave = async () => {
+    if (!editData.firstName.trim() || !editData.lastName.trim()) {
+      toast({ title: 'Name required', description: 'First and last name cannot be empty.', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    const ok = await onUpdate(member.id, editData);
+    setSaving(false);
+    if (ok) setIsEditing(false);
+  };
 
   const handleCreatePortalAccess = async () => {
     if (!member.email) {
@@ -113,42 +234,61 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
             <DialogDescription>View and manage member profile and subscription.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-            {/* Profile */}
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-7 w-7 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">{member.firstName} {member.lastName}</h3>
-                <p className="text-sm text-muted-foreground">{member.memberNumber}</p>
-              </div>
-              <Badge className={`ml-auto ${statusColors[member.status]}`} variant="secondary">{member.status}</Badge>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {member.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" />{member.email}</div>}
-              {member.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{member.phone}</div>}
-              {member.dateOfBirth && <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{format(parseISO(member.dateOfBirth), 'dd MMM yyyy')}</div>}
-              {member.gender && <div className="text-muted-foreground capitalize">{member.gender}</div>}
-            </div>
-
-            {/* Emergency Contact */}
-            {(member.emergencyContactName || member.emergencyContactPhone) && (
+            {isEditing ? (
               <>
-                <Separator />
-                <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
-                  <p className="text-xs font-medium text-destructive flex items-center gap-1.5 mb-1"><AlertTriangle className="h-3.5 w-3.5" />Emergency Contact</p>
-                  <p className="text-sm text-foreground">{member.emergencyContactName} {member.emergencyContactPhone && `— ${member.emergencyContactPhone}`}</p>
+                <MemberEditForm editData={editData} setEditData={setEditData} />
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button size="sm" variant="outline" onClick={() => { setIsEditing(false); setEditData({ firstName: member.firstName, lastName: member.lastName, email: member.email || '', phone: member.phone || '', dateOfBirth: member.dateOfBirth || '', gender: member.gender || '', address: member.address || '', emergencyContactName: member.emergencyContactName || '', emergencyContactPhone: member.emergencyContactPhone || '', healthConditions: member.healthConditions || '', notes: member.notes || '' }); }}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
                 </div>
               </>
-            )}
+            ) : (
+              <>
+                {/* Profile */}
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+                    <User className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">{member.firstName} {member.lastName}</h3>
+                    <p className="text-sm text-muted-foreground">{member.memberNumber}</p>
+                  </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)} className="h-8 w-8">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Badge className={statusColors[member.status]} variant="secondary">{member.status}</Badge>
+                  </div>
+                </div>
 
-            {/* Health Declaration */}
-            {member.healthConditions && (
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-                <p className="text-xs font-medium text-warning flex items-center gap-1.5 mb-1"><Heart className="h-3.5 w-3.5" />Health Declaration</p>
-                <p className="text-sm text-foreground">{member.healthConditions}</p>
-              </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {member.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-3.5 w-3.5" />{member.email}</div>}
+                  {member.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5" />{member.phone}</div>}
+                  {member.dateOfBirth && <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />{format(parseISO(member.dateOfBirth), 'dd MMM yyyy')}</div>}
+                  {member.gender && <div className="text-muted-foreground capitalize">{member.gender}</div>}
+                </div>
+
+                {/* Emergency Contact */}
+                {(member.emergencyContactName || member.emergencyContactPhone) && (
+                  <>
+                    <Separator />
+                    <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+                      <p className="text-xs font-medium text-destructive flex items-center gap-1.5 mb-1"><AlertTriangle className="h-3.5 w-3.5" />Emergency Contact</p>
+                      <p className="text-sm text-foreground">{member.emergencyContactName} {member.emergencyContactPhone && `— ${member.emergencyContactPhone}`}</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Health Declaration */}
+                {member.healthConditions && (
+                  <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
+                    <p className="text-xs font-medium text-warning flex items-center gap-1.5 mb-1"><Heart className="h-3.5 w-3.5" />Health Declaration</p>
+                    <p className="text-sm text-foreground">{member.healthConditions}</p>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Current Subscription */}
@@ -222,16 +362,20 @@ export function MemberDetailDialog({ open, onOpenChange, member, onUpdate }: Pro
             )}
 
             {/* Actions */}
-            <Separator />
-            <div className="flex flex-wrap gap-2">
-              {member.email && (
-                <Button size="sm" variant="outline" onClick={handleCreatePortalAccess} disabled={sendingInvite} className="flex-1">
-                  <KeyRound className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Sending…' : member.portalUserId ? 'Resend Portal Access' : 'Create Portal Access'}
-                </Button>
-              )}
-              {!activeSub && <Button size="sm" onClick={() => setAssignOpen(true)}>Assign Plan</Button>}
-              <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-            </div>
+            {!isEditing && (
+              <>
+                <Separator />
+                <div className="flex flex-wrap gap-2">
+                  {member.email && (
+                    <Button size="sm" variant="outline" onClick={handleCreatePortalAccess} disabled={sendingInvite} className="flex-1">
+                      <KeyRound className="h-3.5 w-3.5 mr-1" />{sendingInvite ? 'Sending…' : member.portalUserId ? 'Resend Portal Access' : 'Create Portal Access'}
+                    </Button>
+                  )}
+                  {!activeSub && <Button size="sm" onClick={() => setAssignOpen(true)}>Assign Plan</Button>}
+                  <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
