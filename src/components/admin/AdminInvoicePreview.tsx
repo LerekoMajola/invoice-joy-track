@@ -11,6 +11,7 @@ import { AdminInvoice } from '@/hooks/useAdminInvoices';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { exportHighQualityPDF } from '@/lib/pdfExport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -77,33 +78,13 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
     const el = contentRef.current;
     if (!el) return;
 
-    const SCALE = 3;
-    const canvas = await html2canvas(el, {
-      scale: SCALE,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      width: el.offsetWidth,
-      windowWidth: el.offsetWidth,
-      height: el.scrollHeight,
-      scrollX: 0,
-      scrollY: 0,
-      imageTimeout: 15000,
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-    const pxW = canvas.width / SCALE;
-    const pxH = canvas.height / SCALE;
-
-    const A4_W = 210;
-    const MARGIN = 10;
-    const contentW = A4_W - MARGIN * 2;
-    const scaleFactor = contentW / pxW;
-    const contentH = pxH * scaleFactor;
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    pdf.addImage(imgData, 'JPEG', MARGIN, MARGIN, contentW, contentH, undefined, 'NONE');
-    pdf.save(`${invoice.invoice_number}.pdf`);
+    try {
+      toast.info('Generating high-quality PDF…');
+      await exportHighQualityPDF(el, `${invoice.invoice_number}.pdf`);
+    } catch (err: any) {
+      console.error('PDF download failed', err);
+      toast.error('Failed to generate PDF. Please try again.');
+    }
   };
 
   const handleSendEmail = async () => {
