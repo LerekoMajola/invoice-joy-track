@@ -112,7 +112,7 @@ export async function exportHighQualityPDF(
   sourceElement: HTMLElement,
   filename: string,
 ) {
-  const SCALE = Math.min(Math.max(3, Math.round(window.devicePixelRatio * 2)), 5);
+  const SCALE = 2;
 
   // 1. Collect all images and freeze their geometry to current rendered size
   const images = Array.from(sourceElement.querySelectorAll('img')) as HTMLImageElement[];
@@ -134,6 +134,10 @@ export async function exportHighQualityPDF(
       if (img.decode) await img.decode();
     } catch { /* safe to ignore */ }
 
+    // Skip images that already have explicit pixel widths (e.g. the 140px logo)
+    const hasExplicitWidth = img.style.width && img.style.width.endsWith('px') && img.style.width !== '0px';
+    if (hasExplicitWidth) continue;
+
     // Freeze to exact rendered pixel box
     const rect = img.getBoundingClientRect();
     img.style.width = `${rect.width}px`;
@@ -148,14 +152,14 @@ export async function exportHighQualityPDF(
 
   try {
     // 2. Capture the live element
-    const rect = sourceElement.getBoundingClientRect();
+    const fixedWidth = sourceElement.offsetWidth;
     const canvas = await html2canvas(sourceElement, {
       scale: SCALE,
       useCORS: true,
       allowTaint: false,
       backgroundColor: '#ffffff',
-      width: rect.width,
-      windowWidth: rect.width,
+      width: fixedWidth,
+      windowWidth: fixedWidth,
       height: sourceElement.scrollHeight,
       scrollX: 0,
       scrollY: -window.scrollY,
