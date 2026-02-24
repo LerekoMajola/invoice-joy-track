@@ -88,7 +88,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const trialExpired = isTrialing && subscription.trial_ends_at
           ? new Date(subscription.trial_ends_at).getTime() < Date.now()
           : false;
-        const isActive = subscription.status === 'active';
+        const isActive = subscription.status === 'active' || subscription.status === 'active_awaiting_pop';
 
         if (trialExpired && !isActive) {
           setNeedsPayment(true);

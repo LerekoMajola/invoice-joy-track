@@ -70,7 +70,7 @@ export function useAdminStats() {
 
       const totalTenants = uniqueProfiles.length;
       const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
-      const activeSubscriptions = subscriptions.filter(s => s.status === 'active').length;
+      const activeSubscriptions = subscriptions.filter(s => s.status === 'active' || s.status === 'active_awaiting_pop').length;
 
       // MRR: actual collected payments for the current month from subscription_payments
       const now = new Date();
@@ -83,12 +83,12 @@ export function useAdminStats() {
       const trialEnded = subscriptions.filter(s =>
         s.trial_ends_at && new Date(s.trial_ends_at) < now
       );
-      const convertedFromTrial = trialEnded.filter(s => s.status === 'active').length;
+      const convertedFromTrial = trialEnded.filter(s => s.status === 'active' || s.status === 'active_awaiting_pop').length;
       const trialConversionRate = trialEnded.length > 0
         ? (convertedFromTrial / trialEnded.length) * 100
         : 0;
 
-      const paidSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'cancelled' || s.status === 'expired');
+      const paidSubs = subscriptions.filter(s => s.status === 'active' || s.status === 'active_awaiting_pop' || s.status === 'cancelled' || s.status === 'expired');
       const totalSubscriptions = paidSubs.length;
 
       // Total (Platform) Revenue: only actual confirmed payments from admin_invoices (paid) + subscription_payments (paid)
