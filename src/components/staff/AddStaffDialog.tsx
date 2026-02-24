@@ -33,6 +33,7 @@ import { useStaff, CreateStaffData, StaffRole } from '@/hooks/useStaff';
 import { useModules } from '@/hooks/useModules';
 import { useStaffModuleAccess } from '@/hooks/useStaffModuleAccess';
 import { useSubscription } from '@/hooks/useSubscription';
+import { usePackageTiers } from '@/hooks/usePackageTiers';
 import { Loader2, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StaffCredentialsDialog } from './StaffCredentialsDialog';
@@ -112,7 +113,10 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
   const { createStaff, staff } = useStaff();
   const [customRoleInput, setCustomRoleInput] = useState('');
   const [showCustomRoleInput, setShowCustomRoleInput] = useState(false);
-  const { systemType } = useSubscription();
+  const { systemType, packageTierId } = useSubscription();
+  const { getTierById } = usePackageTiers(systemType);
+  const currentTier = packageTierId ? getTierById(packageTierId) : null;
+  const isLiteTier = currentTier?.name === 'Lite';
   const isGym = systemType === 'gym';
 
   const departments = isGym ? GYM_DEPARTMENTS : DEFAULT_DEPARTMENTS;
@@ -408,7 +412,13 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
               )}
             />
 
-            {isAtLimit && (
+            {isLiteTier && (
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+                Staff management is not available on the Lite plan. Upgrade to Professional to add team members.
+              </div>
+            )}
+
+            {isAtLimit && !isLiteTier && (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                 Staff limit reached. Maximum 5 staff members allowed.
               </div>
@@ -423,7 +433,7 @@ export function AddStaffDialog({ open, onOpenChange }: AddStaffDialogProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting || isAtLimit}>
+              <Button type="submit" disabled={isSubmitting || isAtLimit || isLiteTier}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Add Staff Member
               </Button>
