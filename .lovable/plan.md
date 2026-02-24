@@ -1,28 +1,36 @@
 
 
-## Add Edit Member Functionality
+## Fix: Admin Showing M730 Instead of M700 for GymPro
 
-### Summary
-Add an "Edit" button to the Member Detail Dialog that toggles the profile section into an editable form, allowing you to update member details like email, phone, name, etc.
+### Root Cause
 
-### What Changes
+The admin dashboard calculates tenant pricing by **summing individual module prices** from `user_modules` + `platform_modules`. For MISFIT, this adds up to M730 (the sum of all their activated module prices). However, MISFIT subscribed to the **GymPro Professional bundle** which has a fixed `bundle_price` of **M700** in the `package_tiers` table.
 
-**File: `src/components/gym/MemberDetailDialog.tsx`**
+The code currently ignores the `package_tiers.bundle_price` entirely when displaying the tenant's monthly price.
 
-1. Add an `isEditing` state toggle and an `editData` state object pre-filled with the member's current info
-2. Add an "Edit" button next to the member name/status area
-3. When editing, replace the read-only profile fields with input fields for: First Name, Last Name, Email, Phone, Date of Birth, Gender, Address, Emergency Contact Name, Emergency Contact Phone, Health Conditions, and Notes
-4. Add "Save" and "Cancel" buttons that call the existing `onUpdate` prop or revert changes
-5. On save, call `onUpdate(member.id, editData)` which already handles the database update via the `useGymMembers` hook
+### Fix
 
-### Fields Editable
-- First Name, Last Name
-- Email, Phone
-- Date of Birth, Gender
-- Address
-- Emergency Contact (Name and Phone)
-- Health Conditions
-- Notes
+**File: `src/hooks/useAdminTenants.tsx`**
 
-### No database or hook changes needed
-The `onUpdate` function from `useGymMembers` already supports updating all these fields.
+1. Join `package_tiers` data when fetching subscriptions -- read `package_tier_id` from each subscription and fetch the corresponding `bundle_price`
+2. Update the `module_total` calculation logic on line 128 to use this priority:
+   - First: `billing_override` (admin manual override)
+   - Second: `bundle_price` from the linked `package_tier_id` (the tier they signed up with)
+   - Third: Sum of individual module prices (fallback for custom/legacy users)
+   - Last: 0
+
+### Technical Detail
+
+Current logic:
+```
+module_total: billing_override ?? moduleTotals[userId] ?? 0
+```
+
+New logic:
+```
+module_total: billing_override ?? tierPrices[userId] ?? moduleTotals[userId] ?? 0
+```
+
+Where `tierPrices` is built by looking up each subscription's `package_tier_id` against the fetched `package_tiers` bundle prices.
+
+This will also fetch the tier name so it could optionally be displayed alongside the price. The change is confined to a single file and ensures every tenant on a bundle tier shows the correct bundle price.
