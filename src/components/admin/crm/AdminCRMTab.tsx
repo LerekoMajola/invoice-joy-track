@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdminProspects, AdminProspect } from '@/hooks/useAdminProspects';
+import { useAdminLeadStats } from '@/hooks/useAdminLeadStats';
 import { ProspectKanban } from './ProspectKanban';
 import { ProspectDetailSheet } from './ProspectDetailSheet';
 import { AddProspectDialog } from './AddProspectDialog';
@@ -7,12 +8,12 @@ import { ImportProspectsDialog } from './ImportProspectsDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Kanban, List, DollarSign, TrendingUp, Users, Bell, Upload } from 'lucide-react';
+import { Plus, Search, Kanban, List, DollarSign, TrendingUp, TrendingDown, Users, Bell, Upload, Target } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatMaluti } from '@/lib/currency';
 
 const statusColors: Record<string, string> = {
   lead:        'bg-blue-100 text-blue-700',
@@ -37,6 +38,7 @@ const priorityBadge: Record<string, string> = {
 
 export function AdminCRMTab() {
   const { prospects, loading, stats, createProspect, updateProspect, deleteProspect, moveProspect, fetchActivities, addActivity, fetchProspects } = useAdminProspects();
+  const { stats: leadStats, loading: leadStatsLoading } = useAdminLeadStats();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -63,6 +65,9 @@ export function AdminCRMTab() {
   if (loading) {
     return (
       <div className="space-y-4">
+        <div className="grid grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
         <div className="grid grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
@@ -71,46 +76,65 @@ export function AdminCRMTab() {
     );
   }
 
+  const leadStatCards = [
+    { title: 'Total Leads', value: leadStats.totalLeads.toLocaleString(), desc: 'All tenant leads', icon: Users },
+    { title: 'Won Deals', value: leadStats.wonCount.toLocaleString(), desc: 'Converted leads', icon: TrendingUp },
+    { title: 'Lost Deals', value: leadStats.lostCount.toLocaleString(), desc: 'Lost leads', icon: TrendingDown },
+    { title: 'Active Pipeline', value: formatMaluti(leadStats.totalPipelineValue), desc: 'Est. value', icon: DollarSign },
+    { title: 'Conversion Rate', value: `${leadStats.conversionRate.toFixed(1)}%`, desc: 'Won / (Won + Lost)', icon: Target },
+  ];
+
+  const prospectStatCards = [
+    { title: 'Pipeline Value', value: `$${stats.totalPipelineValue.toLocaleString()}`, desc: 'Prospect pipeline', icon: DollarSign },
+    { title: 'Weighted Value', value: `$${Math.round(stats.weightedValue).toLocaleString()}`, desc: 'Probability-adjusted', icon: TrendingUp },
+    { title: 'Active Prospects', value: stats.activeCount.toLocaleString(), desc: 'In pipeline', icon: Users },
+    { title: 'Follow-ups Due', value: stats.followUpsDueToday.toLocaleString(), desc: 'Due today', icon: Bell },
+  ];
+
   return (
     <div className="space-y-5">
-      {/* Stats Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 rounded-lg bg-primary/10"><DollarSign className="h-4 w-4 text-primary" /></div>
-              <span className="text-xs text-muted-foreground">Pipeline Value</span>
+      {/* Platform Lead Stats */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3">Platform Lead Stats</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {leadStatCards.map(card => (
+            <div
+              key={card.title}
+              className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-white/80">{card.title}</span>
+                <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <card.icon className="h-4 w-4 text-white" />
+                </div>
+              </div>
+              <div className="text-xl font-bold">{leadStatsLoading ? '…' : card.value}</div>
+              <p className="text-xs text-white/70 mt-1">{card.desc}</p>
             </div>
-            <p className="text-xl font-bold">${stats.totalPipelineValue.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 rounded-lg bg-success/10"><TrendingUp className="h-4 w-4 text-success" /></div>
-              <span className="text-xs text-muted-foreground">Weighted Value</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Prospect Stats */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3">Prospect Stats</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {prospectStatCards.map(card => (
+            <div
+              key={card.title}
+              className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-white/80">{card.title}</span>
+                <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <card.icon className="h-4 w-4 text-white" />
+                </div>
+              </div>
+              <div className="text-xl font-bold">{card.value}</div>
+              <p className="text-xs text-white/70 mt-1">{card.desc}</p>
             </div>
-            <p className="text-xl font-bold">${Math.round(stats.weightedValue).toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 rounded-lg bg-accent"><Users className="h-4 w-4 text-accent-foreground" /></div>
-              <span className="text-xs text-muted-foreground">Active Prospects</span>
-            </div>
-            <p className="text-xl font-bold">{stats.activeCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 rounded-lg bg-destructive/10"><Bell className="h-4 w-4 text-destructive" /></div>
-              <span className="text-xs text-muted-foreground">Follow-ups Due</span>
-            </div>
-            <p className="text-xl font-bold">{stats.followUpsDueToday}</p>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </div>
 
       {/* Toolbar */}
