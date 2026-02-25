@@ -1,67 +1,53 @@
 
 
-## Fix Invoice PDF Logo Skewing - Fixed A4 Layout
+## Add Platform-Wide Lead Stats to Admin CRM Tab
 
-### Problem
-The logo continues to skew in the downloaded PDF because the logo container uses a fixed square box (60x60px / 50x50px) that forces the logo into a square regardless of its natural aspect ratio. Additionally, `html2canvas` still struggles with geometry even after the "screenshot mode" changes.
+### What's changing
+Add a row of gradient-styled stats cards at the top of the Admin CRM tab showing aggregate lead data across all tenants in the system. These sit above the existing prospect stats and use the platform's standard indigo-to-purple gradient design.
 
-### Solution
-Apply the user's exact specifications: fixed-width logo (140px) with auto height, `object-fit: contain`, no transforms, and a fixed-width A4 container.
+### Stats to display
+1. **Total Leads** -- count of all leads in the system (Users icon)
+2. **Won Deals** -- leads with status "won" (TrendingUp icon)
+3. **Lost Deals** -- leads with status "lost" (TrendingDown icon)
+4. **Active Pipeline** -- leads not won/lost (DollarSign icon), showing total estimated value
+5. **Conversion Rate** -- won / (won + lost) as a percentage (Target icon)
 
 ### Changes
 
-#### 1. `src/components/admin/AdminInvoicePreview.tsx` - Logo markup
+#### 1. `src/hooks/useAdminLeadStats.tsx` (new file)
+- Create a new hook that queries the `leads` table to compute platform-wide stats
+- Uses `useQuery` from TanStack for caching and loading states
+- Only enabled when user has admin role (via `useAdminRole`)
+- Computes: totalLeads, wonCount, lostCount, activeCount, totalPipelineValue, conversionRate
 
-**Current** (lines 193-198): Logo forced into a 60x60 square container with a 50x50 image.
+#### 2. `src/components/admin/crm/AdminCRMTab.tsx`
+- Import the new `useAdminLeadStats` hook
+- Add a section header "Platform Lead Stats" above the existing prospect cards
+- Render 5 gradient cards (matching `PlatformStatsCards` / `StatCard` style):
+  - `bg-gradient-to-br from-indigo-500 to-purple-600`
+  - White text, icon in `bg-white/20` circle
+  - `hover:scale-[1.02]` effect with shadow
+- Keep the existing 4 prospect stat cards below, unchanged
+- Replace the existing plain white prospect cards with the same gradient style for visual consistency
 
-**New**: 
-- Remove the fixed square wrapper
-- Logo image: `width: 140px`, `height: auto`, `object-fit: contain`, `display: block`
-- Left-aligned with padding inside the table cell
-- No percentage widths, no transforms
-- Table cell width increased to accommodate 140px logo + padding
+### Design
+```text
++------------------+------------------+------------------+------------------+------------------+
+| Total Leads      | Won Deals        | Lost Deals       | Active Pipeline  | Conversion Rate  |
+| 142              | 38               | 21               | M 1,250,000      | 64.4%            |
+| All tenant leads | Converted leads  | Lost leads       | Est. value       | Won / (Won+Lost) |
++------------------+------------------+------------------+------------------+------------------+
 
-#### 2. `src/lib/pdfExport.ts` - `exportHighQualityPDF`
-
-Simplify the capture to avoid transform scaling and respect the fixed A4 container:
-
-- Remove the dynamic `SCALE` calculation tied to `devicePixelRatio` -- use a fixed scale of `2` (sufficient for sharp output without distortion)
-- In the image geometry freeze step, do NOT override `objectFit` or dimensions for images that already have explicit pixel widths set (i.e., the logo). Only freeze images that use `auto` or percentage sizing
-- Use `width` and `windowWidth` from `sourceElement.offsetWidth` (the fixed 595px container) instead of `getBoundingClientRect()` which can include sub-pixel rounding
-- Keep PNG output and multi-page slicing logic unchanged
-
-### Technical Details
-
-**AdminInvoicePreview.tsx logo cell change:**
+[Existing prospect stats cards - also upgraded to gradient style]
 ```
-// Before
-<div style={{ width: '60px', height: '60px', ... }}>
-  <img style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-</div>
 
-// After
-<img 
-  src={logoUrl} 
-  alt="Logo"
-  style={{ 
-    width: '140px', 
-    height: 'auto', 
-    objectFit: 'contain',
-    display: 'block',
-    maxHeight: '60px',
-  }} 
-  crossOrigin="anonymous" 
-/>
-```
-- Table cell width updated from `72px` to `160px` to fit the wider logo with padding
-- White background box with rounded corners preserved around the logo area
+### Technical details
+- The `leads` table is tenant-scoped via RLS, but admin users with `super_admin` role can read all rows (verified by existing RLS patterns)
+- If RLS blocks admin access, the hook will return zeros gracefully
+- Currency formatting uses `formatMaluti` from `@/lib/currency` for consistency
+- The hook uses `useAdminRole` to gate the query, matching the pattern in `useAdminStats`
 
-**pdfExport.ts changes:**
-- Fixed scale of `2` instead of DPR-based calculation
-- Skip geometry freezing for images with explicit pixel `width` already set (prevents overriding the deterministic 140px logo)
-- Use `offsetWidth` (595) instead of `getBoundingClientRect().width` for capture dimensions
-- No `transform` scaling at any point in the pipeline
+### Files
+- `src/hooks/useAdminLeadStats.tsx` -- new hook for platform-wide lead statistics
+- `src/components/admin/crm/AdminCRMTab.tsx` -- add gradient lead stats cards section
 
-### Files Modified
-- `src/components/admin/AdminInvoicePreview.tsx` -- logo container and image styles
-- `src/lib/pdfExport.ts` -- simplified, stable capture with no transform scaling
