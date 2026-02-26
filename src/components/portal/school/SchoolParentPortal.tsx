@@ -3,14 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, BookOpen, Calendar, User, Loader2, MessageCircle, CreditCard, Clock } from 'lucide-react';
+import { GraduationCap, BookOpen, Calendar, User, Loader2, MessageCircle, CreditCard, Clock, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SchoolPortalStudent } from '@/hooks/usePortalSession';
 import type { User as AuthUser } from '@supabase/supabase-js';
+import type { PortalTab } from '@/components/portal/PortalLayout';
 
 interface SchoolParentPortalProps {
   student: SchoolPortalStudent;
   user: AuthUser;
+  onTabChange?: (tab: PortalTab) => void;
 }
 
 interface SchoolClass {
@@ -34,6 +36,14 @@ interface FeeBalance {
   balance: number;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  published_at: string | null;
+  created_at: string;
+}
+
 const statusColors: Record<string, string> = {
   active: 'bg-success/15 text-success border-success/20',
   graduated: 'bg-blue-500/15 text-blue-600 border-blue-500/20',
@@ -41,15 +51,17 @@ const statusColors: Record<string, string> = {
   suspended: 'bg-destructive/15 text-destructive border-destructive/20',
 };
 
-export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
+export function SchoolParentPortal({ student, onTabChange }: SchoolParentPortalProps) {
   const [schoolClass, setSchoolClass] = useState<SchoolClass | null>(null);
   const [currentTerm, setCurrentTerm] = useState<AcademicTerm | null>(null);
   const [feeBalance, setFeeBalance] = useState<FeeBalance | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const db = supabase as any;
+      const ownerId = student.owner_user_id ?? student.user_id;
       const allPromises: Promise<any>[] = [];
 
       if (student.class_id) {
@@ -62,10 +74,29 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
       allPromises.push(
         db.from('academic_terms')
           .select('*')
-          .eq('user_id', student.owner_user_id ?? student.user_id)
+          .eq('user_id', ownerId)
           .eq('is_current', true)
           .maybeSingle()
           .then(({ data }: any) => setCurrentTerm(data))
+      );
+
+      // Fetch announcements (school-wide or student's class)
+      const announcementQuery = db.from('school_announcements')
+        .select('id, title, message, published_at, created_at')
+        .eq('is_published', true)
+        .eq('user_id', ownerId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      allPromises.push(
+        announcementQuery.then(({ data }: any) => {
+          if (data) {
+            const filtered = data.filter((a: any) =>
+              !a.target_class_id || a.target_class_id === student.class_id
+            );
+            setAnnouncements(filtered);
+          }
+        })
       );
 
       await Promise.all(allPromises);
@@ -73,7 +104,7 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
       const { data: term } = await db
         .from('academic_terms')
         .select('id')
-        .eq('user_id', student.owner_user_id ?? student.user_id)
+        .eq('user_id', ownerId)
         .eq('is_current', true)
         .maybeSingle();
 
@@ -110,12 +141,17 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
     ? Math.round((feeBalance.totalPaid / feeBalance.totalOwed) * 100)
     : 0;
 
+  const quickActions = [
+    { icon: Clock, label: 'Timetable', color: 'text-purple-500', bg: 'bg-purple-500/10', tab: 'timetable' as PortalTab },
+    { icon: MessageCircle, label: 'Messages', color: 'text-green-500', bg: 'bg-green-500/10', tab: 'messages' as PortalTab },
+    { icon: CreditCard, label: 'Fees', color: 'text-blue-600', bg: 'bg-blue-500/10', tab: 'fees' as PortalTab },
+  ];
+
   return (
     <div className="space-y-0">
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-blue-500/20 via-blue-500/5 to-background px-4 pt-6 pb-8">
         <div className="flex items-center gap-4">
-          {/* Avatar */}
           <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shrink-0">
             <span className="text-xl font-bold text-primary-foreground">{initials || '?'}</span>
           </div>
@@ -181,7 +217,7 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
                   <p className="text-[10px] text-white/60 uppercase mb-1">Paid</p>
                   <p className="text-sm font-bold text-green-300">{feeBalance.totalPaid.toFixed(2)}</p>
                 </div>
-                <div className={cn('rounded-xl p-3 text-center', feeBalance.balance > 0 ? 'bg-white/10' : 'bg-white/10')}>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-white/60 uppercase mb-1">Balance</p>
                   <p className={cn('text-sm font-bold', feeBalance.balance > 0 ? 'text-red-300' : 'text-green-300')}>
                     {feeBalance.balance.toFixed(2)}
@@ -189,17 +225,13 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
                 </div>
               </div>
 
-              {/* Progress bar */}
               <div>
                 <div className="flex justify-between text-[10px] text-white/50 mb-1">
                   <span>Payment progress</span>
                   <span>{paidPct}% paid</span>
                 </div>
                 <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full transition-all"
-                    style={{ width: `${paidPct}%` }}
-                  />
+                  <div className="h-full bg-white rounded-full transition-all" style={{ width: `${paidPct}%` }} />
                 </div>
               </div>
             </div>
@@ -208,12 +240,12 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Clock, label: 'Timetable', color: 'text-purple-500', bg: 'bg-purple-500/10' },
-            { icon: MessageCircle, label: 'Messages', color: 'text-green-500', bg: 'bg-green-500/10' },
-            { icon: CreditCard, label: 'Fees', color: 'text-blue-600', bg: 'bg-blue-500/10' },
-          ].map(({ icon: Icon, label, color, bg }) => (
-            <Card key={label} className="border-border/50">
+          {quickActions.map(({ icon: Icon, label, color, bg, tab }) => (
+            <Card
+              key={label}
+              className="border-border/50 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => onTabChange?.(tab)}
+            >
               <CardContent className="p-3 flex flex-col items-center gap-2">
                 <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center', bg)}>
                   <Icon className={cn('h-5 w-5', color)} />
@@ -223,6 +255,27 @@ export function SchoolParentPortal({ student }: SchoolParentPortalProps) {
             </Card>
           ))}
         </div>
+
+        {/* Announcements */}
+        {announcements.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm text-foreground">Announcements</h3>
+            </div>
+            {announcements.map((a) => (
+              <Card key={a.id} className="border-border/50">
+                <CardContent className="p-3">
+                  <p className="font-medium text-sm text-foreground">{a.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.message}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    {format(parseISO(a.published_at || a.created_at), 'dd MMM yyyy')}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Guardian Info */}
         <Card>
