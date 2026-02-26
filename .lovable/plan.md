@@ -1,53 +1,70 @@
 
 
-## Add Platform-Wide Lead Stats to Admin CRM Tab
+## Reinstate EduPro (School) as a Standalone Vertical
 
-### What's changing
-Add a row of gradient-styled stats cards at the top of the Admin CRM tab showing aggregate lead data across all tenants in the system. These sit above the existing prospect stats and use the platform's standard indigo-to-purple gradient design.
+### Overview
+School management was previously consolidated into a BizPro add-on module. This plan reinstates it as a top-level vertical called **EduPro**, alongside BizPro, LawPro, and GymPro, so schools can sign up directly for a dedicated school management system.
 
-### Stats to display
-1. **Total Leads** -- count of all leads in the system (Users icon)
-2. **Won Deals** -- leads with status "won" (TrendingUp icon)
-3. **Lost Deals** -- leads with status "lost" (TrendingDown icon)
-4. **Active Pipeline** -- leads not won/lost (DollarSign icon), showing total estimated value
-5. **Conversion Rate** -- won / (won + lost) as a percentage (Target icon)
+### Database Changes
 
-### Changes
-
-#### 1. `src/hooks/useAdminLeadStats.tsx` (new file)
-- Create a new hook that queries the `leads` table to compute platform-wide stats
-- Uses `useQuery` from TanStack for caching and loading states
-- Only enabled when user has admin role (via `useAdminRole`)
-- Computes: totalLeads, wonCount, lostCount, activeCount, totalPipelineValue, conversionRate
-
-#### 2. `src/components/admin/crm/AdminCRMTab.tsx`
-- Import the new `useAdminLeadStats` hook
-- Add a section header "Platform Lead Stats" above the existing prospect cards
-- Render 5 gradient cards (matching `PlatformStatsCards` / `StatCard` style):
-  - `bg-gradient-to-br from-indigo-500 to-purple-600`
-  - White text, icon in `bg-white/20` circle
-  - `hover:scale-[1.02]` effect with shadow
-- Keep the existing 4 prospect stat cards below, unchanged
-- Replace the existing plain white prospect cards with the same gradient style for visual consistency
-
-### Design
-```text
-+------------------+------------------+------------------+------------------+------------------+
-| Total Leads      | Won Deals        | Lost Deals       | Active Pipeline  | Conversion Rate  |
-| 142              | 38               | 21               | M 1,250,000      | 64.4%            |
-| All tenant leads | Converted leads  | Lost leads       | Est. value       | Won / (Won+Lost) |
-+------------------+------------------+------------------+------------------+------------------+
-
-[Existing prospect stats cards - also upgraded to gradient style]
+**1. Update `subscriptions.system_type` check constraint**
+- Drop and recreate `subscriptions_system_type_check` to allow `'school'` in addition to `business`, `legal`, `gym`:
+```sql
+ALTER TABLE public.subscriptions DROP CONSTRAINT IF EXISTS subscriptions_system_type_check;
+ALTER TABLE public.subscriptions ADD CONSTRAINT subscriptions_system_type_check 
+  CHECK (system_type IN ('business', 'legal', 'gym', 'school'));
 ```
 
-### Technical details
-- The `leads` table is tenant-scoped via RLS, but admin users with `super_admin` role can read all rows (verified by existing RLS patterns)
-- If RLS blocks admin access, the hook will return zeros gracefully
-- Currency formatting uses `formatMaluti` from `@/lib/currency` for consistency
-- The hook uses `useAdminRole` to gate the query, matching the pattern in `useAdminStats`
+**2. Update `platform_modules` for school modules**
+- Change `system_type` from `'shared'` to `'school'` for: `students`, `school_admin`, `school_fees`
+```sql
+UPDATE platform_modules SET system_type = 'school' WHERE key IN ('students', 'school_admin', 'school_fees');
+```
 
-### Files
-- `src/hooks/useAdminLeadStats.tsx` -- new hook for platform-wide lead statistics
-- `src/components/admin/crm/AdminCRMTab.tsx` -- add gradient lead stats cards section
+No new tables needed -- school package tiers already exist in `package_tiers` with `system_type = 'school'`.
+
+### Frontend Changes
+
+**3. `src/hooks/useSubscription.tsx`**
+- Add `'school'` to the `SystemType` union: `'business' | 'legal' | 'gym' | 'school'`
+
+**4. `src/components/auth/SystemSelector.tsx`**
+- Add `'school'` to the `SystemType` union
+- Add a 4th card for EduPro with `GraduationCap` icon, teal/cyan gradient (`from-cyan-400 to-teal-600`), description "Student management, fee tracking, timetables & announcements for schools", starting price "M720"
+- Update grid to `lg:grid-cols-4`
+
+**5. `src/pages/Auth.tsx`**
+- Add `'school'` to the allowed system types array on line 44: `['business', 'legal', 'gym', 'school']`
+
+**6. `src/pages/Dashboard.tsx`**
+- Lazy-import `SchoolDashboard`
+- Add `case 'school'` to the `renderDashboard` switch to render `SchoolDashboard`
+
+**7. `src/components/layout/Sidebar.tsx`**
+- Update school nav items `systemTypes` from `['business']` to `['business', 'school']` for: Students, School Admin, School Fees, Timetable
+- Also show Invoices for school (already `systemTypes: null`, so no change needed)
+
+**8. `src/components/layout/BottomNav.tsx`**
+- Update school nav items `systemTypes` from `['business']` to `['business', 'school']` for: Students, Fees
+
+**9. `src/components/landing/Solutions.tsx`**
+- Add EduPro card with `GraduationCap` icon, teal gradient, features list, and M720/mo price
+- Update badge text from "3 Solutions" to "4 Solutions"
+
+**10. `src/components/admin/adminConstants.ts`**
+- Import `GraduationCap` icon
+- Add `school: GraduationCap` to `SYSTEM_ICONS`
+- Add `school: 'EduPro'` to `SYSTEM_LABELS`
+- Add `school: 'bg-teal-600 text-white dark:bg-teal-500 dark:text-white'` to `SYSTEM_COLORS`
+
+### Files Modified
+- 1 database migration (constraint + module system_type update)
+- `src/hooks/useSubscription.tsx`
+- `src/components/auth/SystemSelector.tsx`
+- `src/pages/Auth.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/components/layout/Sidebar.tsx`
+- `src/components/layout/BottomNav.tsx`
+- `src/components/landing/Solutions.tsx`
+- `src/components/admin/adminConstants.ts`
 
