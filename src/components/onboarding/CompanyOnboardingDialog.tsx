@@ -37,6 +37,7 @@ const SYSTEM_CONFIG: Record<string, { icon: React.ElementType; title: string; en
   business: { icon: Building2, title: "Let's set up your business", entityLabel: 'Company' },
   legal: { icon: Scale, title: "Let's set up your practice", entityLabel: 'Firm' },
   gym: { icon: Building2, title: "Let's set up your gym", entityLabel: 'Gym' },
+  school: { icon: GraduationCap, title: "Let's set up your school", entityLabel: 'School' },
 };
 
 interface CompanyOnboardingDialogProps {
