@@ -1,4 +1,4 @@
-import { Briefcase, Scale, Dumbbell } from 'lucide-react';
+import { Briefcase, Scale, Dumbbell, GraduationCap } from 'lucide-react';
 
 export const STATUS_COLORS: Record<string, string> = {
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -21,16 +21,19 @@ export const SYSTEM_ICONS: Record<string, typeof Briefcase> = {
   business: Briefcase,
   legal: Scale,
   gym: Dumbbell,
+  school: GraduationCap,
 };
 
 export const SYSTEM_LABELS: Record<string, string> = {
   business: 'BizPro',
   legal: 'LawPro',
   gym: 'GymPro',
+  school: 'EduPro',
 };
 
 export const SYSTEM_COLORS: Record<string, string> = {
   business: 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
   legal: 'bg-purple-600 text-white dark:bg-purple-500 dark:text-white',
   gym: 'bg-lime-600 text-white dark:bg-lime-500 dark:text-white',
+  school: 'bg-teal-600 text-white dark:bg-teal-500 dark:text-white',
 };
