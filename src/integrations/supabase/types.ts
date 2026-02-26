@@ -4583,6 +4583,107 @@ export type Database = {
           },
         ]
       }
+      student_report_cards: {
+        Row: {
+          attendance_days: number | null
+          attendance_total: number | null
+          created_at: string
+          id: string
+          is_published: boolean
+          overall_grade: string | null
+          overall_percentage: number | null
+          principal_comments: string | null
+          published_at: string | null
+          student_id: string
+          teacher_comments: string | null
+          term_id: string
+          user_id: string
+        }
+        Insert: {
+          attendance_days?: number | null
+          attendance_total?: number | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          overall_grade?: string | null
+          overall_percentage?: number | null
+          principal_comments?: string | null
+          published_at?: string | null
+          student_id: string
+          teacher_comments?: string | null
+          term_id: string
+          user_id: string
+        }
+        Update: {
+          attendance_days?: number | null
+          attendance_total?: number | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          overall_grade?: string | null
+          overall_percentage?: number | null
+          principal_comments?: string | null
+          published_at?: string | null
+          student_id?: string
+          teacher_comments?: string | null
+          term_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_report_cards_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_report_cards_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "academic_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_subject_grades: {
+        Row: {
+          created_at: string
+          grade: string | null
+          id: string
+          percentage: number | null
+          report_card_id: string
+          subject_name: string
+          teacher_comment: string | null
+        }
+        Insert: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          percentage?: number | null
+          report_card_id: string
+          subject_name: string
+          teacher_comment?: string | null
+        }
+        Update: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          percentage?: number | null
+          report_card_id?: string
+          subject_name?: string
+          teacher_comment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_subject_grades_report_card_id_fkey"
+            columns: ["report_card_id"]
+            isOneToOne: false
+            referencedRelation: "student_report_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           address: string | null

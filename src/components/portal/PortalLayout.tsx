@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect, useCallback } from 'react';
-import { Home, CreditCard, CalendarDays, GraduationCap, LogOut, Zap, Dumbbell, Activity, Sun, Moon, Bell, X } from 'lucide-react';
+import { Home, CreditCard, CalendarDays, GraduationCap, LogOut, Zap, Dumbbell, Activity, Sun, Moon, Bell, X, FileText, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 
-export type PortalTab = 'home' | 'membership' | 'classes' | 'fees' | 'timetable' | 'check-in' | 'progress';
+export type PortalTab = 'home' | 'membership' | 'classes' | 'fees' | 'timetable' | 'check-in' | 'progress' | 'reports' | 'messages';
 
 interface NavItem {
   id: PortalTab;
@@ -26,6 +26,8 @@ const schoolNav: NavItem[] = [
   { id: 'home',      label: 'Home',      icon: Home },
   { id: 'fees',      label: 'Fees',      icon: CreditCard },
   { id: 'timetable', label: 'Timetable', icon: CalendarDays },
+  { id: 'reports',   label: 'Reports',   icon: FileText },
+  { id: 'messages',  label: 'Messages',  icon: MessageCircle },
 ];
 
 interface PortalNotification {

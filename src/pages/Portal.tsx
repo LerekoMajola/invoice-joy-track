@@ -11,6 +11,8 @@ import { GymPortalProgress } from '@/components/portal/gym/GymPortalProgress';
 import { SchoolParentPortal } from '@/components/portal/school/SchoolParentPortal';
 import { SchoolPortalFees } from '@/components/portal/school/SchoolPortalFees';
 import { SchoolPortalTimetable } from '@/components/portal/school/SchoolPortalTimetable';
+import { SchoolPortalReports } from '@/components/portal/school/SchoolPortalReports';
+import { SchoolPortalMessages } from '@/components/portal/school/SchoolPortalMessages';
 
 import { Loader2 } from 'lucide-react';
 
@@ -18,15 +20,21 @@ export default function Portal() {
   const { user, portalType, gymMember, schoolStudent, loading } = usePortalSession();
   const [activeTab, setActiveTab] = useState<PortalTab>('home');
   const [gymName, setGymName] = useState<string | undefined>();
+  const [schoolName, setSchoolName] = useState<string | undefined>();
 
-  // Fetch gym name for the header
+  // Fetch gym/school name for the header
   useEffect(() => {
     if (portalType === 'gym' && gymMember) {
       const ownerId = gymMember.owner_user_id ?? gymMember.user_id;
       supabase.from('company_profiles').select('company_name').eq('user_id', ownerId).maybeSingle()
         .then(({ data }) => { if (data) setGymName(data.company_name); });
     }
-  }, [portalType, gymMember]);
+    if (portalType === 'school' && schoolStudent) {
+      const ownerId = schoolStudent.owner_user_id ?? schoolStudent.user_id;
+      supabase.from('company_profiles').select('company_name').eq('user_id', ownerId).maybeSingle()
+        .then(({ data }) => { if (data) setSchoolName(data.company_name); });
+    }
+  }, [portalType, gymMember, schoolStudent]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -80,13 +88,17 @@ export default function Portal() {
     const renderSchoolTab = () => {
       switch (activeTab) {
         case 'home':
-          return <SchoolParentPortal student={schoolStudent} user={user} />;
+          return <SchoolParentPortal student={schoolStudent} user={user} onTabChange={setActiveTab} />;
         case 'fees':
           return <SchoolPortalFees studentId={schoolStudent.id} ownerId={ownerUserId} />;
         case 'timetable':
           return <SchoolPortalTimetable classId={schoolStudent.class_id} ownerId={ownerUserId} />;
+        case 'reports':
+          return <SchoolPortalReports studentId={schoolStudent.id} />;
+        case 'messages':
+          return <SchoolPortalMessages user={user} studentId={schoolStudent.id} ownerUserId={ownerUserId} schoolName={schoolName} />;
         default:
-          return <SchoolParentPortal student={schoolStudent} user={user} />;
+          return <SchoolParentPortal student={schoolStudent} user={user} onTabChange={setActiveTab} />;
       }
     };
 
