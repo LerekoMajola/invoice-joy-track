@@ -41,7 +41,7 @@ export default function Auth() {
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
     const isCustom = searchParams.get('custom') === 'true';
-    if (systemParam && ['business', 'legal', 'gym'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'legal', 'gym', 'school'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
       setSignupStep(isCustom ? 'custom-modules' : 'package');
       setIsLogin(false);
@@ -285,6 +285,7 @@ export default function Auth() {
         business: { label: 'BizPro', icon: <Briefcase className="h-6 w-6" />, gradient: 'from-primary to-violet' },
         legal: { label: 'LawPro', icon: <Scale className="h-6 w-6" />, gradient: 'from-emerald-500 to-teal-500' },
         gym: { label: 'GymPro', icon: <Dumbbell className="h-6 w-6" />, gradient: 'from-lime-500 to-green-600' },
+        school: { label: 'EduPro', icon: <GraduationCap className="h-6 w-6" />, gradient: 'from-cyan-400 to-teal-600' },
       };
       const meta = SYSTEM_META[selectedSystem || 'business'];
 

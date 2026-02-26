@@ -70,10 +70,10 @@ const navigation = [
   { name: 'Housekeeping', href: '/housekeeping', icon: Hotel, moduleKey: 'gh_housekeeping', systemTypes: ['business'], optionalFeature: null },
   { name: 'Reviews', href: '/guest-reviews', icon: Star, moduleKey: 'gh_reviews', systemTypes: ['business'], optionalFeature: null },
   // School (now a BizPro module)
-  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['business'], optionalFeature: null },
-  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
-  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['business'], optionalFeature: null },
-  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  { name: 'Students', href: '/students', icon: GraduationCap, moduleKey: 'students', systemTypes: ['business', 'school'], optionalFeature: null },
+  { name: 'School Admin', href: '/school-admin', icon: School, moduleKey: 'school_admin', systemTypes: ['business', 'school'], optionalFeature: null },
+  { name: 'School Fees', href: '/school-fees', icon: Wallet, moduleKey: 'school_fees', systemTypes: ['business', 'school'], optionalFeature: null },
+  { name: 'Timetable', href: '/timetable', icon: Clock, moduleKey: 'school_admin', systemTypes: ['business', 'school'], optionalFeature: null },
   // Fleet (now a BizPro module)
   { name: 'Fleet', href: '/fleet', icon: Car, moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym

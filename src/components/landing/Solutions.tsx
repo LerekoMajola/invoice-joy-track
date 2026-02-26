@@ -5,6 +5,7 @@ import {
   Briefcase, 
   Scale, 
   Dumbbell,
+  GraduationCap,
   CheckCircle2
 } from 'lucide-react';
 
@@ -33,6 +34,14 @@ const industries = [
     features: ['Member Management', 'Class Scheduling', 'Attendance Tracking', 'Payment & Billing'],
     price: 'M500/mo',
   },
+  {
+    icon: GraduationCap,
+    name: 'EduPro',
+    system: 'school',
+    gradient: 'from-cyan-400 to-teal-600',
+    features: ['Student Management', 'Fee Tracking & Invoicing', 'Timetable & Scheduling', 'Announcements & Reports'],
+    price: 'M720/mo',
+  },
 ];
 
 export function Solutions() {
@@ -41,7 +50,7 @@ export function Solutions() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-violet text-white text-sm font-medium mb-4">
-            3 Solutions, 1 Platform
+            4 Solutions, 1 Platform
           </div>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Built for Your Industry
@@ -52,7 +61,7 @@ export function Solutions() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {industries.map((ind, index) => (
             <div
               key={ind.system}

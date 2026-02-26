@@ -28,8 +28,8 @@ const allNavItems = [
   { icon: Timer, label: 'Time', path: '/legal-time-tracking', moduleKey: 'legal_billing', systemTypes: ['legal'], optionalFeature: null },
   { icon: CalendarDays, label: 'Calendar', path: '/legal-calendar', moduleKey: 'legal_calendar', systemTypes: ['legal'], optionalFeature: null },
   // School (BizPro module)
-  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['business'], optionalFeature: null },
-  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['business'], optionalFeature: null },
+  { icon: GraduationCap, label: 'Students', path: '/students', moduleKey: 'students', systemTypes: ['business', 'school'], optionalFeature: null },
+  { icon: Wallet, label: 'Fees', path: '/school-fees', moduleKey: 'school_fees', systemTypes: ['business', 'school'], optionalFeature: null },
   // Fleet (BizPro module)
   { icon: Car, label: 'Fleet', path: '/fleet', moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym

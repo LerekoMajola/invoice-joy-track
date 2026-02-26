@@ -1,8 +1,8 @@
-import { Briefcase, Scale, Dumbbell, ArrowRight } from 'lucide-react';
+import { Briefcase, Scale, Dumbbell, GraduationCap, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'legal' | 'gym';
+export type SystemType = 'business' | 'legal' | 'gym' | 'school';
 
 interface SystemOption {
   type: SystemType;
@@ -42,6 +42,15 @@ const systems: SystemOption[] = [
     gradient: 'from-lime-500 to-green-600',
     iconBg: 'bg-lime-500/10 text-lime-600',
   },
+  {
+    type: 'school',
+    label: 'EduPro',
+    description: 'Student management, fee tracking, timetables & announcements for schools',
+    startingPrice: 'M720',
+    icon: GraduationCap,
+    gradient: 'from-cyan-400 to-teal-600',
+    iconBg: 'bg-teal-500/10 text-teal-600',
+  },
 ];
 
 interface SystemSelectorProps {
@@ -63,7 +72,7 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {systems.map((system) => {
           const Icon = system.icon;
           return (
