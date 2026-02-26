@@ -32,8 +32,8 @@ const allMenuItems = [
   // Legal-specific
   { icon: FolderOpen, label: 'Legal Docs', path: '/legal-documents', description: 'Case documents', moduleKey: 'legal_documents', systemTypes: ['legal'], optionalFeature: null },
   // School (BizPro module)
-  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
-  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['business'], optionalFeature: null },
+  { icon: School, label: 'School Admin', path: '/school-admin', description: 'Classes & terms', moduleKey: 'school_admin', systemTypes: ['business', 'school'], optionalFeature: null },
+  { icon: Clock, label: 'Timetable', path: '/timetable', description: 'Weekly schedule', moduleKey: 'school_admin', systemTypes: ['business', 'school'], optionalFeature: null },
   // Fleet (BizPro module)
   { icon: Car, label: 'Fleet', path: '/fleet', description: 'Vehicle management', moduleKey: 'fleet', systemTypes: ['business'], optionalFeature: null },
   // Gym

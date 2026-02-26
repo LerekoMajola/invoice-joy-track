@@ -168,7 +168,10 @@ export default function Auth() {
         .select('id, key')
         .eq('is_core', true);
 
-      const coreKeys = (coreModules || []).map(m => m.key);
+      const NON_SCHOOL_CORE_KEYS = ['core_crm', 'hire_equipment'];
+      const coreKeys = (coreModules || [])
+        .map(m => m.key)
+        .filter(key => selectedSystem !== 'school' || !NON_SCHOOL_CORE_KEYS.includes(key));
       const allKeys = [...new Set([...selectedModuleKeys, ...coreKeys])];
       const moduleIds = (modules || [])
         .filter(m => allKeys.includes(m.key))

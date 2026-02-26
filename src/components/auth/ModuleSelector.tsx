@@ -44,6 +44,7 @@ const SYSTEM_ALLOWED_SHARED_KEYS: Record<string, string[]> = {
     'gh_rooms', 'gh_bookings', 'gh_housekeeping', 'gh_reviews',
   ],
   gym:      ['core_crm', 'invoices', 'tasks', 'accounting', 'staff'],
+  school:   ['invoices', 'tasks', 'accounting', 'staff'],
 };
 
 export function ModuleSelector({ onComplete, loading, systemType }: ModuleSelectorProps) {
