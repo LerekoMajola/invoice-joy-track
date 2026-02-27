@@ -11,11 +11,20 @@ const SEARCH_QUERIES = [
   "RFQ Lesotho government procurement",
   "Lesotho tender notice bid invitation",
   "Maseru procurement tender",
+  "Lesotho procurement notice 2026",
+  "Lesotho government RFP request for proposal",
+  "Lesotho construction tender bid",
+  "UNDP Lesotho procurement",
+  "Lesotho consulting services EOI",
+  "Lesotho supply delivery tender",
 ];
 
 const KNOWN_SOURCES = [
   { url: "https://www.gov.ls/tenders/", name: "Government of Lesotho" },
   { url: "https://lesothotenders.com", name: "Lesotho Tenders" },
+  { url: "https://www.undp.org/lesotho/procurement", name: "UNDP Lesotho" },
+  { url: "https://procurement.gov.ls", name: "Government Procurement Portal" },
+  { url: "https://reliefweb.int/country/lso", name: "ReliefWeb Lesotho" },
 ];
 
 Deno.serve(async (req) => {
@@ -48,14 +57,6 @@ Deno.serve(async (req) => {
 
     const { company_profile_id } = await req.json().catch(() => ({}));
 
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-    if (!FIRECRAWL_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Firecrawl connector not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(
@@ -64,70 +65,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Starting tender scraping...");
+    console.log("Starting tender scraping with Jina AI...");
 
-    // 1. Search via Firecrawl
     let allContent: { markdown: string; url: string; title: string }[] = [];
 
+    // 1. Search via Jina AI Search (s.jina.ai)
     for (const query of SEARCH_QUERIES) {
       try {
         console.log(`Searching: ${query}`);
-        const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query,
-            limit: 5,
-            scrapeOptions: { formats: ["markdown"] },
-          }),
-        });
-        const searchData = await searchRes.json();
-        if (searchData.success && searchData.data) {
-          for (const result of searchData.data) {
-            if (result.markdown) {
-              allContent.push({
-                markdown: result.markdown.substring(0, 3000),
-                url: result.url || "",
-                title: result.title || "",
-              });
-            }
+        const searchRes = await fetch(
+          `https://s.jina.ai/${encodeURIComponent(query)}`,
+          { headers: { "Accept": "text/markdown" } }
+        );
+
+        if (searchRes.ok) {
+          const markdown = await searchRes.text();
+          if (markdown && markdown.length > 100) {
+            allContent.push({
+              markdown: markdown.substring(0, 5000),
+              url: `https://s.jina.ai/${encodeURIComponent(query)}`,
+              title: `Search: ${query}`,
+            });
           }
         }
       } catch (e) {
-        console.error(`Search failed for "${query}":`, e);
+        console.error(`Jina search failed for "${query}":`, e);
       }
     }
 
-    // 2. Scrape known sources
+    // 2. Scrape known sources via Jina AI Reader (r.jina.ai)
     for (const source of KNOWN_SOURCES) {
       try {
         console.log(`Scraping: ${source.url}`);
-        const scrapeRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url: source.url,
-            formats: ["markdown"],
-            onlyMainContent: true,
-          }),
-        });
-        const scrapeData = await scrapeRes.json();
-        const md = scrapeData?.data?.markdown || scrapeData?.markdown;
-        if (md) {
-          allContent.push({
-            markdown: md.substring(0, 5000),
-            url: source.url,
-            title: source.name,
-          });
+        const scrapeRes = await fetch(
+          `https://r.jina.ai/${source.url}`,
+          { headers: { "Accept": "text/markdown" } }
+        );
+
+        if (scrapeRes.ok) {
+          const markdown = await scrapeRes.text();
+          if (markdown && markdown.length > 100) {
+            allContent.push({
+              markdown: markdown.substring(0, 5000),
+              url: source.url,
+              title: source.name,
+            });
+          }
         }
       } catch (e) {
-        console.error(`Scrape failed for ${source.url}:`, e);
+        console.error(`Jina reader failed for ${source.url}:`, e);
       }
     }
 
@@ -246,7 +232,6 @@ Return ONLY the JSON array, no markdown fencing or explanation.`,
     for (const tender of tenders) {
       if (!tender.title) continue;
 
-      // Check for duplicates
       const { data: existing } = await supabase
         .from("scraped_tenders")
         .select("id")
