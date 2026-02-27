@@ -56,6 +56,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch banking details from platform_settings
+    const bankingKeys = ['bank_name', 'bank_account_name', 'bank_account_number', 'bank_branch_code', 'bank_branch_name', 'bank_pop_email'];
+    const { data: bankingRows } = await supabase
+      .from("platform_settings")
+      .select("key, value")
+      .in("key", bankingKeys);
+
+    const bankingMap: Record<string, string> = {};
+    (bankingRows || []).forEach((r: any) => { bankingMap[r.key] = r.value; });
+
+    const bankName = bankingMap.bank_name || "First National Bank (FNB)";
+    const bankBranchName = bankingMap.bank_branch_name || "Pioneer Mall";
+    const bankAccountNumber = bankingMap.bank_account_number || "63027317585";
+    const bankPopEmail = bankingMap.bank_pop_email || "sales@orionlabslesotho.com";
+
     const sendTo = recipientEmail || invoice.tenant_email;
     if (!sendTo) {
       return new Response(JSON.stringify({ error: "No recipient email" }), {
@@ -145,15 +160,15 @@ Deno.serve(async (req) => {
         <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin-bottom:24px;border:1px solid #eee">
           <p style="color:#888;font-size:12px;margin:0 0 8px;font-weight:bold;text-transform:uppercase">Banking Details</p>
           <table style="font-size:14px">
-            <tr><td style="color:#888;padding:2px 12px 2px 0">Bank:</td><td style="font-weight:600">First National Bank (FNB)</td></tr>
-            <tr><td style="color:#888;padding:2px 12px 2px 0">Branch:</td><td style="font-weight:600">Pioneer Mall</td></tr>
-            <tr><td style="color:#888;padding:2px 12px 2px 0">Account Number:</td><td style="font-weight:600">63027317585</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Bank:</td><td style="font-weight:600">${bankName}</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Branch:</td><td style="font-weight:600">${bankBranchName}</td></tr>
+            <tr><td style="color:#888;padding:2px 12px 2px 0">Account Number:</td><td style="font-weight:600">${bankAccountNumber}</td></tr>
             <tr><td style="color:#888;padding:2px 12px 2px 0">Reference:</td><td style="font-weight:600">${subscriptionRef}</td></tr>
           </table>
         </div>
         <div style="background:#eff6ff;padding:12px;border-radius:8px;margin-bottom:24px;border:1px solid #bfdbfe;text-align:center;font-size:14px">
           <span style="color:#1e40af;font-weight:600">Please send Proof of Payment (POP) to </span>
-          <span style="color:#1a1a2e;font-weight:700">sales@orionlabslesotho.com</span>
+          <span style="color:#1a1a2e;font-weight:700">${bankPopEmail}</span>
         </div>
         ${invoice.notes ? `<div style="background:#f8f9fa;padding:16px;border-radius:8px;font-size:14px;margin-bottom:24px"><p style="color:#888;font-size:12px;margin:0 0 4px">Notes</p><p style="margin:0">${invoice.notes}</p></div>` : ""}
       </div>

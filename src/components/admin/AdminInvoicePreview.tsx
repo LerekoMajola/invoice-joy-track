@@ -10,7 +10,7 @@ import {
 import { AdminInvoice } from '@/hooks/useAdminInvoices';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { usePlatformSettings, usePlatformBanking } from '@/hooks/usePlatformSettings';
 import { exportHighQualityPDF } from '@/lib/pdfExport';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ const NAVY = '#1a1a2e';
 export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoicePreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const { logoUrl } = usePlatformSettings();
+  const { banking } = usePlatformBanking();
   const queryClient = useQueryClient();
   const [sendEmail, setSendEmail] = useState(invoice?.tenant_email || '');
   const [sending, setSending] = useState(false);
@@ -318,11 +319,11 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                 <table style={{ width: '100%', fontSize: '11px', background: 'white', borderCollapse: 'collapse' }}>
                   <tbody>
                     <tr>
-                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Bank: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>First National Bank (FNB)</span></td>
-                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>Pioneer Mall</span></td>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Bank: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_name}</span></td>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_branch_name}</span></td>
                     </tr>
                     <tr>
-                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>63027317585</span></td>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_account_number}</span></td>
                       <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></td>
                     </tr>
                   </tbody>
@@ -332,7 +333,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
               {/* Send POP instruction */}
               <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '11px', textAlign: 'center' }}>
                 <span style={{ color: '#1e40af', fontWeight: 600 }}>Please send Proof of Payment (POP) to </span>
-                <span style={{ color: NAVY, fontWeight: 700 }}>sales@orionlabslesotho.com</span>
+                <span style={{ color: NAVY, fontWeight: 700 }}>{banking.bank_pop_email}</span>
               </div>
 
               {/* Notes */}

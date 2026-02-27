@@ -6,6 +6,7 @@ import { useModules } from '@/hooks/useModules';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformBanking } from '@/hooks/usePlatformSettings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ export default function PaymentRequired() {
   const { getMonthlyTotal, userModules } = useModules();
   const { profile: companyProfile } = useCompanyProfile();
   const queryClient = useQueryClient();
+  const { banking } = usePlatformBanking();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -213,10 +215,10 @@ export default function PaymentRequired() {
               <TabsContent value="bank" className="mt-4 space-y-3">
                 <div className="space-y-2.5 text-sm">
                   {[
-                    { label: 'Bank', value: 'First National Bank (FNB)' },
-                    { label: 'Account Name', value: 'Orion Labs (Pty) Ltd' },
-                    { label: 'Account No', value: '63027317585', copyable: true },
-                    { label: 'Branch', value: 'Pioneer Mall' },
+                    { label: 'Bank', value: banking.bank_name },
+                    { label: 'Account Name', value: banking.bank_account_name },
+                    { label: 'Account No', value: banking.bank_account_number, copyable: true },
+                    { label: 'Branch', value: banking.bank_branch_name },
                     { label: 'Reference', value: paymentReference, copyable: true },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
