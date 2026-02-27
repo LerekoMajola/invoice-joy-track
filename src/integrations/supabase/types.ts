@@ -4267,6 +4267,74 @@ export type Database = {
         }
         Relationships: []
       }
+      scraped_tenders: {
+        Row: {
+          category: string | null
+          closing_date: string | null
+          company_profile_id: string | null
+          created_at: string
+          description: string
+          estimated_value: string | null
+          id: string
+          is_dismissed: boolean
+          is_saved: boolean
+          organization: string
+          raw_content: string | null
+          reference_number: string | null
+          scraped_at: string
+          source_name: string
+          source_url: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          closing_date?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string
+          estimated_value?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_saved?: boolean
+          organization?: string
+          raw_content?: string | null
+          reference_number?: string | null
+          scraped_at?: string
+          source_name?: string
+          source_url?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          closing_date?: string | null
+          company_profile_id?: string | null
+          created_at?: string
+          description?: string
+          estimated_value?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_saved?: boolean
+          organization?: string
+          raw_content?: string | null
+          reference_number?: string | null
+          scraped_at?: string
+          source_name?: string
+          source_url?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scraped_tenders_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_credits: {
         Row: {
           created_at: string
