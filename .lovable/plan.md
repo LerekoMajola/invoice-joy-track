@@ -1,36 +1,96 @@
 
 
-## Fix: Tender Source Link Notifications Not Repeating
+## Auto-Source Tenders from Lesotho Internet
 
-### Problem
-The `check-tender-links` function has a deduplication check that prevents creating a new notification if **any unread notification** already exists for that link. Since you don't always clear/read old tender notifications, the system never sends new ones -- it thinks "already notified" even if the old notification is weeks old.
+Build an automated tender discovery system that scrapes and searches Lesotho tender websites, uses AI to extract structured tender data, and presents them in a dedicated "Discover" tab on the Tenders page.
 
-**Current data confirms this**: 7 links are stale, but only 1 notification was created (for a brand-new link). The other 6 have unread notifications from February 5-7 blocking new ones.
+### Architecture
 
-### Solution
-Change the deduplication logic in the edge function to only skip if a notification was created **within the last 2 days** (instead of checking for any unread notification). This way, you get a fresh reminder every ~2 days for links you haven't visited.
-
-### Changes
-
-**File: `supabase/functions/check-tender-links/index.ts`**
-
-Replace the existing notification check (lines 43-56) from:
 ```text
-// Check if we already have an unread notification for this link
-.eq("is_read", false)
-.single();
+User clicks "Scan for Tenders"
+        |
+        v
+Frontend --> Edge Function (scrape-tenders)
+                |
+                +--> Firecrawl Search API (search "tenders Lesotho")
+                +--> Firecrawl Scrape API (scrape known Lesotho tender sites)
+                |
+                v
+            Lovable AI (parse raw content into structured tender objects)
+                |
+                v
+            Insert into scraped_tenders table
+                |
+                v
+Frontend <-- Display results in "Discover" tab
 ```
 
-To:
-```text
-// Check if we already sent a notification for this link in the last 2 days
-.gte("created_at", twoDaysAgoISO)
-.single();
-```
+### Prerequisites
 
-This removes the `is_read` filter and instead uses a **time-based** window -- if a notification was already created in the last 2 days for this link, skip it. Otherwise, create a fresh one regardless of whether older ones are unread.
+**Firecrawl Connector** -- needed to scrape websites. You will be prompted to connect it before implementation begins.
 
-### Impact
-- You will receive a tender reminder notification every ~2 days for each unvisited link
-- Visiting a link resets its `last_visited_at`, removing it from the stale list
-- No database migration needed -- only the edge function code changes
+### Database Changes
+
+**New table: `scraped_tenders`**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | default gen_random_uuid() |
+| user_id | uuid | owner |
+| company_profile_id | uuid | nullable |
+| title | text | extracted tender title |
+| organization | text | issuing body |
+| description | text | summary |
+| closing_date | text | deadline as extracted |
+| reference_number | text | nullable, tender ref |
+| source_url | text | where it was found |
+| source_name | text | site name |
+| estimated_value | text | nullable |
+| category | text | nullable (construction, IT, etc.) |
+| is_saved | boolean | default false (user bookmarks it) |
+| is_dismissed | boolean | default false |
+| scraped_at | timestamptz | default now() |
+| raw_content | text | nullable, original snippet |
+| created_at | timestamptz | default now() |
+
+RLS: Users can read/update their own rows.
+
+### Edge Function: `scrape-tenders`
+
+1. Uses Firecrawl Search to query terms like "tenders Lesotho 2026", "RFQ Lesotho government"
+2. Scrapes a curated list of known Lesotho tender sources:
+   - iTenders Lesotho (ifp.lse.gov.ls)
+   - LMPS procurement
+   - UN procurement / ReliefWeb Lesotho
+   - Lesotho government gazette
+3. Sends raw scraped markdown to Lovable AI (Gemini Flash) with a structured extraction prompt
+4. AI returns an array of parsed tender objects
+5. Inserts new tenders into `scraped_tenders` (deduplicates by title + organization + closing_date)
+
+### Frontend Changes
+
+**Update `src/pages/Tenders.tsx`**
+- Add a new "Discover" tab alongside Open/Submitted/Won/Lost
+- "Discover" tab shows scraped tenders in cards with: title, organization, closing date, source link, category badge
+- Each card has "Save" (bookmarks to your tenders list) and "Dismiss" buttons
+- "Scan for Tenders" button triggers the edge function with a loading state
+- Show last scan timestamp
+
+**New hook: `src/hooks/useScrapedTenders.tsx`**
+- Fetches from `scraped_tenders` where `is_dismissed = false`
+- Provides `saveTender` (copies to main tenders workflow), `dismissTender`, and `scanForTenders` mutations
+
+### Files to Create
+- `supabase/functions/scrape-tenders/index.ts` -- orchestrates Firecrawl + AI parsing
+- `src/hooks/useScrapedTenders.tsx` -- data hook for scraped tenders
+
+### Files to Modify
+- `src/pages/Tenders.tsx` -- add Discover tab with scan button and results grid
+
+### How It Works for You
+1. Go to Tenders page and click the "Discover" tab
+2. Click "Scan for Tenders" -- the system searches across Lesotho internet sources
+3. Results appear as cards showing tender title, organization, deadline, and source
+4. Click "Save" to add a tender to your tracked list, or "Dismiss" to hide it
+5. Previously saved tenders appear in your normal Open/Submitted/Won/Lost workflow
+
