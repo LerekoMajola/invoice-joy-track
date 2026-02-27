@@ -323,8 +323,11 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                       <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Branch: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_branch_name}</span></td>
                     </tr>
                     <tr>
+                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Account Name: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_account_name}</span></td>
                       <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Account No: </span><span style={{ fontWeight: 600, color: '#1f2937' }}>{banking.bank_account_number}</span></td>
-                      <td style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></td>
+                    </tr>
+                    <tr>
+                      <td colSpan={2} style={{ padding: '5px 12px' }}><span style={{ color: '#9ca3af' }}>Reference: </span><span style={{ fontWeight: 600, color: NAVY }}>{subscriptionRef}</span></td>
                     </tr>
                   </tbody>
                 </table>
