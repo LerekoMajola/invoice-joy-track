@@ -1,96 +1,75 @@
 
 
-## Auto-Source Tenders from Lesotho Internet
+## Replace Firecrawl with Free Alternatives (Jina AI Reader + Direct Fetch)
 
-Build an automated tender discovery system that scrapes and searches Lesotho tender websites, uses AI to extract structured tender data, and presents them in a dedicated "Discover" tab on the Tenders page.
+### Overview
+Remove the Firecrawl dependency entirely and replace it with two free, unlimited scraping methods:
+1. **Jina AI Reader** (`r.jina.ai/{url}`) -- converts any URL to clean markdown, no API key needed, completely free
+2. **Direct `fetch()`** -- built-in Deno fetch for simple HTML pages, parsed to extract text
 
-### Architecture
+### Step 1: Disconnect Firecrawl
+Use the disconnect tool to unlink the Firecrawl connection (`std_01kjexthbmfvbsfr2dw7gvhrme`) from the project.
 
+### Step 2: Rewrite `supabase/functions/scrape-tenders/index.ts`
+
+Replace all Firecrawl API calls with two new scraping strategies:
+
+**For known sources (direct URLs)** -- use Jina AI Reader:
 ```text
-User clicks "Scan for Tenders"
-        |
-        v
-Frontend --> Edge Function (scrape-tenders)
-                |
-                +--> Firecrawl Search API (search "tenders Lesotho")
-                +--> Firecrawl Scrape API (scrape known Lesotho tender sites)
-                |
-                v
-            Lovable AI (parse raw content into structured tender objects)
-                |
-                v
-            Insert into scraped_tenders table
-                |
-                v
-Frontend <-- Display results in "Discover" tab
+// Instead of Firecrawl scrape API:
+const res = await fetch(`https://r.jina.ai/${source.url}`, {
+  headers: { "Accept": "text/markdown" }
+});
+const markdown = await res.text();
 ```
 
-### Prerequisites
+**For search/discovery** -- use Jina AI Search:
+```text
+// Instead of Firecrawl search API:
+const res = await fetch(`https://s.jina.ai/${encodeURIComponent(query)}`, {
+  headers: { "Accept": "text/markdown" }
+});
+const markdown = await res.text();
+```
 
-**Firecrawl Connector** -- needed to scrape websites. You will be prompted to connect it before implementation begins.
+**Key changes:**
+- Remove `FIRECRAWL_API_KEY` check entirely
+- Replace the Firecrawl search loop (lines 72-102) with Jina `s.jina.ai` search calls
+- Replace the Firecrawl scrape loop (lines 105-132) with Jina `r.jina.ai` reader calls
+- Keep AI extraction logic (lines 141-240) and deduplication logic (lines 244-283) unchanged
+- Expand `KNOWN_SOURCES` to include more Lesotho procurement sites
+- Expand `SEARCH_QUERIES` to cover more sectors
 
-### Database Changes
+**Expanded sources list:**
+- `https://www.gov.ls/tenders/` -- Government of Lesotho
+- `https://lesothotenders.com` -- Lesotho Tenders
+- `https://www.undp.org/lesotho/procurement` -- UNDP Lesotho
+- `https://procurement.gov.ls` -- Government Procurement Portal
+- `https://reliefweb.int/country/lso` -- ReliefWeb Lesotho
 
-**New table: `scraped_tenders`**
+**Expanded search queries:**
+- Original 4 queries plus:
+- "Lesotho procurement notice 2026"
+- "Lesotho government RFP request for proposal"
+- "Lesotho construction tender bid"
+- "UNDP Lesotho procurement"
+- "Lesotho consulting services EOI"
+- "Lesotho supply delivery tender"
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | default gen_random_uuid() |
-| user_id | uuid | owner |
-| company_profile_id | uuid | nullable |
-| title | text | extracted tender title |
-| organization | text | issuing body |
-| description | text | summary |
-| closing_date | text | deadline as extracted |
-| reference_number | text | nullable, tender ref |
-| source_url | text | where it was found |
-| source_name | text | site name |
-| estimated_value | text | nullable |
-| category | text | nullable (construction, IT, etc.) |
-| is_saved | boolean | default false (user bookmarks it) |
-| is_dismissed | boolean | default false |
-| scraped_at | timestamptz | default now() |
-| raw_content | text | nullable, original snippet |
-| created_at | timestamptz | default now() |
+### What stays the same
+- AI extraction via Lovable AI (Gemini Flash) -- unchanged
+- Database table `scraped_tenders` -- unchanged
+- Frontend Discover tab -- unchanged
+- `useScrapedTenders` hook -- unchanged
+- Deduplication logic -- unchanged
 
-RLS: Users can read/update their own rows.
+### Benefits
+- Zero cost, no API keys needed for scraping
+- No usage limits or credit tracking
+- Jina Reader handles JavaScript-rendered pages better than raw fetch
+- More sources and queries for broader coverage
 
-### Edge Function: `scrape-tenders`
-
-1. Uses Firecrawl Search to query terms like "tenders Lesotho 2026", "RFQ Lesotho government"
-2. Scrapes a curated list of known Lesotho tender sources:
-   - iTenders Lesotho (ifp.lse.gov.ls)
-   - LMPS procurement
-   - UN procurement / ReliefWeb Lesotho
-   - Lesotho government gazette
-3. Sends raw scraped markdown to Lovable AI (Gemini Flash) with a structured extraction prompt
-4. AI returns an array of parsed tender objects
-5. Inserts new tenders into `scraped_tenders` (deduplicates by title + organization + closing_date)
-
-### Frontend Changes
-
-**Update `src/pages/Tenders.tsx`**
-- Add a new "Discover" tab alongside Open/Submitted/Won/Lost
-- "Discover" tab shows scraped tenders in cards with: title, organization, closing date, source link, category badge
-- Each card has "Save" (bookmarks to your tenders list) and "Dismiss" buttons
-- "Scan for Tenders" button triggers the edge function with a loading state
-- Show last scan timestamp
-
-**New hook: `src/hooks/useScrapedTenders.tsx`**
-- Fetches from `scraped_tenders` where `is_dismissed = false`
-- Provides `saveTender` (copies to main tenders workflow), `dismissTender`, and `scanForTenders` mutations
-
-### Files to Create
-- `supabase/functions/scrape-tenders/index.ts` -- orchestrates Firecrawl + AI parsing
-- `src/hooks/useScrapedTenders.tsx` -- data hook for scraped tenders
-
-### Files to Modify
-- `src/pages/Tenders.tsx` -- add Discover tab with scan button and results grid
-
-### How It Works for You
-1. Go to Tenders page and click the "Discover" tab
-2. Click "Scan for Tenders" -- the system searches across Lesotho internet sources
-3. Results appear as cards showing tender title, organization, deadline, and source
-4. Click "Save" to add a tender to your tracked list, or "Dismiss" to hide it
-5. Previously saved tenders appear in your normal Open/Submitted/Won/Lost workflow
+### Files Changed
+- `supabase/functions/scrape-tenders/index.ts` -- rewrite scraping logic
+- Disconnect Firecrawl connector
 
