@@ -15,6 +15,7 @@ import { useModules } from '@/hooks/useModules';
 import { usePackageTiers } from '@/hooks/usePackageTiers';
 import { usePackageChangeRequests } from '@/hooks/usePackageChangeRequests';
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePlatformBanking } from '@/hooks/usePlatformSettings';
 import {
   AlertTriangle, Loader2, Building2,
   CheckCircle2, Copy, Package,
@@ -33,6 +34,7 @@ export default function Billing() {
   const { userModules, getMonthlyTotal } = useModules();
   const { tiers, getTierById, getTiersForSystem } = usePackageTiers();
   const { fc } = useCurrency();
+  const { banking } = usePlatformBanking();
   const { hasPendingRequest, submitRequest } = usePackageChangeRequests();
   const selectedTier = packageTierId ? getTierById(packageTierId) : null;
   const monthlyTotal = selectedTier ? selectedTier.bundle_price : getMonthlyTotal();
@@ -144,10 +146,10 @@ export default function Billing() {
   };
 
   const bankDetails = [
-    { label: 'Bank', value: 'First National Bank (FNB)' },
-    { label: 'Account Name', value: 'Orion Labs (Pty) Ltd' },
-    { label: 'Account Number', value: '63027317585' },
-    { label: 'Branch Code', value: '280061' },
+    { label: 'Bank', value: banking.bank_name },
+    { label: 'Account Name', value: banking.bank_account_name },
+    { label: 'Account Number', value: banking.bank_account_number },
+    { label: 'Branch Code', value: banking.bank_branch_code },
     { label: 'Reference', value: paymentReference },
   ];
 
