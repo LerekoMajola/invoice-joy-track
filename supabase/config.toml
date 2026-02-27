@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.check-task-reminders]
 verify_jwt = false
+
+[functions.scrape-tenders]
+verify_jwt = false
