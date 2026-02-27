@@ -40,15 +40,15 @@
      let notificationsCreated = 0;
  
      for (const link of staleLinks || []) {
-       // Check if we already have an unread notification for this link
-       const { data: existingNotification } = await supabase
-         .from("notifications")
-         .select("id")
-         .eq("user_id", link.user_id)
-         .eq("reference_id", link.id)
-         .eq("reference_type", "tender_source_link")
-         .eq("is_read", false)
-         .single();
+        // Check if we already sent a notification for this link in the last 2 days
+        const { data: existingNotification } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", link.user_id)
+          .eq("reference_id", link.id)
+          .eq("reference_type", "tender_source_link")
+          .gte("created_at", twoDaysAgoISO)
+          .single();
  
        if (existingNotification) {
          console.log(`Notification already exists for link: ${link.name}`);
