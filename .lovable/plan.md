@@ -1,55 +1,43 @@
 
 
-## Fix Real-Time Updates + Add Customer/Member Counts for Admin
+## Fix Status Inconsistencies + Redesign Admin Dashboard
 
-### Problem 1: Members don't appear until page refresh
-The `gym_members` table (and `gym_membership_plans`) are **not added to the Supabase realtime publication**. The hooks subscribe to `postgres_changes` but since the tables aren't published, no events are ever emitted. The `createMember` function does call `fetchMembers()` after insert (which should work), but this is fragile -- the root fix is enabling realtime properly.
+### Bug: Active tenants misclassified
 
-Additionally, as a safety net, I'll add an optimistic local state update so the new member appears instantly in the list before the refetch completes.
+**Root cause 1**: In `useAdminStats.tsx` (line 119), the system breakdown only checks `sub.status === 'active'` -- it misses `active_awaiting_pop`, which falls into the `else` branch and gets counted as "expired". MISFIT (status: active) should be fine, but any tenant with `active_awaiting_pop` is silently miscounted.
 
-### Problem 2: Admin can't see customer/member counts per tenant
-The Customers table currently shows a "Usage" column with Clients (C), Quotes (Q), Invoices (I) counts from `usage_tracking`. But for gym tenants, the relevant metric is **member count**, not client count. For school tenants, it's **student count**.
+**Root cause 2**: `adminConstants.ts` only defines `SYSTEM_ICONS`, `SYSTEM_LABELS`, and `SYSTEM_COLORS` for 4 systems (business, legal, gym, school), but the platform has 8 systems (missing workshop, hire, guesthouse, fleet). This causes fallback rendering issues across CustomersTab, BillingTab, and TenantDetailDialog.
 
-### Implementation
+**Root cause 3**: The `PLAN_LABELS` map shows "Free Trial" for the legacy `free_trial` plan value even when the subscription status is `active`. The Subscription column in CustomersTab displays both status badge AND plan label underneath, so active tenants whose `plan` field was never updated from `free_trial` show a confusing "Free Trial" subtitle beneath their "active" badge.
 
-**1. Database migration -- enable realtime for gym tables**
+### Changes
 
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_members;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_membership_plans;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_member_subscriptions;
-```
+**1. Fix `adminConstants.ts`** -- Add all 8 systems to SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS (add Wrench/workshop, Hammer/hire, Hotel/guesthouse, Car/fleet). Add `STATUS_LABELS` map for human-readable status names (e.g., `active_awaiting_pop` -> "Awaiting POP").
 
-**2. Optimistic update in `useGymMembers.tsx`**
+**2. Fix `useAdminStats.tsx`** -- In the system breakdown loop, count `active_awaiting_pop` as active (line 119). Same pattern already used on line 73.
 
-After successful insert in `createMember`, immediately add the new member to local state before calling `fetchMembers()`. This ensures the UI updates instantly even if realtime has a slight delay.
+**3. Redesign `AdminOverviewTab.tsx`** -- Clean, professional layout following SaaS admin standards:
+- Welcome banner stays but becomes cleaner
+- KPI cards: Total Tenants, Active Subscriptions, MRR (collected), Trial Conversion Rate -- using clean card design instead of all-purple gradient
+- Customer lifecycle funnel: Trial -> Active -> Past Due -> Churned (horizontal bar/counts)
+- System breakdown cards remain but with cleaner presentation
+- Charts row stays (signups + revenue)
 
-**3. Update `admin-get-tenant-data` edge function**
+**4. Redesign `PlatformStatsCards.tsx`** -- Remove redundant display name, use distinct card colors per metric (green for revenue, blue for tenants, amber for trials, etc.) instead of uniform purple gradient.
 
-Add queries for `gym_members` and `students` tables (count by `user_id`), and include `gym_members_count` and `students_count` in the response summary.
+**5. Fix `CustomersTab.tsx`** -- In the Subscription column, show the status badge with a human-readable label (from STATUS_LABELS). Remove the confusing plan label subtitle that shows "Free Trial" for active tenants. The plan info is already visible via the Price/mo column.
 
-**4. Update `useAdminTenants.tsx` -- fetch system-specific counts**
-
-Enhance the tenant query to also fetch counts from `gym_members` and `students` tables grouped by `user_id`, so the Customers table can show the right metric per system type.
-
-**5. Update `CustomersTab.tsx` -- show contextual usage column**
-
-Change the Usage column to show system-appropriate counts:
-- **Business/Workshop/Legal/Hire/Fleet/Guesthouse**: Clients (C), Quotes (Q), Invoices (I) -- same as now
-- **Gym**: Members count
-- **School**: Students count
-
-**6. Update `TenantDetailDialog.tsx` -- show system-specific counts**
-
-In the Usage section, show Members instead of Clients for gym tenants, Students for school tenants.
+**6. Fix status display in `BillingTab.tsx`** -- Use STATUS_LABELS for consistent human-readable status names instead of raw `.replace('_', ' ')`.
 
 ### Files changed
 | File | Change |
 |------|--------|
-| New migration | Enable realtime for `gym_members`, `gym_membership_plans`, `gym_member_subscriptions` |
-| `src/hooks/useGymMembers.tsx` | Add optimistic local state update in `createMember` |
-| `supabase/functions/admin-get-tenant-data/index.ts` | Add gym_members + students count queries |
-| `src/hooks/useAdminTenants.tsx` | Fetch gym_members and students counts per user |
-| `src/components/admin/CustomersTab.tsx` | Show system-contextual usage (Members for gym, Students for school) |
-| `src/components/admin/TenantDetailDialog.tsx` | Show Members/Students labels based on system type |
+| `src/components/admin/adminConstants.ts` | Add all 8 systems, add STATUS_LABELS map |
+| `src/hooks/useAdminStats.tsx` | Fix `active_awaiting_pop` counting in system breakdown |
+| `src/components/admin/AdminOverviewTab.tsx` | Redesign with lifecycle funnel + cleaner KPIs |
+| `src/components/admin/PlatformStatsCards.tsx` | Distinct card colors, remove redundant info |
+| `src/components/admin/CustomersTab.tsx` | Fix subscription column to use STATUS_LABELS, remove misleading plan label |
+| `src/components/admin/BillingTab.tsx` | Use STATUS_LABELS for consistent display |
+
+No database changes needed. No data loss.
 
