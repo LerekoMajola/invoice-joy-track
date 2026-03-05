@@ -116,7 +116,7 @@ export function useAdminStats() {
         if (!systemMap.has(st)) systemMap.set(st, { total: 0, active: 0, trialing: 0, expired: 0 });
         const entry = systemMap.get(st)!;
         entry.total++;
-        if (sub.status === 'active') entry.active++;
+        if (sub.status === 'active' || sub.status === 'active_awaiting_pop') entry.active++;
         else if (sub.status === 'trialing') entry.trialing++;
         else entry.expired++;
       }

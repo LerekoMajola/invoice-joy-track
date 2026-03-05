@@ -1,7 +1,7 @@
 import { Building2, DollarSign, Clock, TrendingUp } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { formatMaluti } from '@/lib/currency';
 import { AdminStats } from '@/hooks/useAdminStats';
-import { useAuth } from '@/hooks/useAuth';
 
 interface PlatformStatsCardsProps {
   stats: AdminStats;
@@ -14,6 +14,8 @@ const cards = [
     icon: Building2,
     getValue: (s: AdminStats) => s.totalTenants.toString(),
     getDesc: (s: AdminStats) => `${s.recentSignups} new in last 30 days`,
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/50',
   },
   {
     key: 'mrr',
@@ -21,6 +23,8 @@ const cards = [
     icon: DollarSign,
     getValue: (s: AdminStats) => formatMaluti(s.mrr),
     getDesc: () => 'Confirmed payments this month',
+    iconColor: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-50 dark:bg-green-950/50',
   },
   {
     key: 'trials',
@@ -28,6 +32,8 @@ const cards = [
     icon: Clock,
     getValue: (s: AdminStats) => s.activeTrials.toString(),
     getDesc: (s: AdminStats) => `${s.trialConversionRate.toFixed(1)}% conversion rate`,
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/50',
   },
   {
     key: 'revenue',
@@ -35,32 +41,27 @@ const cards = [
     icon: TrendingUp,
     getValue: (s: AdminStats) => formatMaluti(s.totalRevenue),
     getDesc: () => 'Total confirmed & collected',
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-purple-50 dark:bg-purple-950/50',
   },
 ];
 
 export function PlatformStatsCards({ stats }: PlatformStatsCardsProps) {
-  const { user } = useAuth();
-  const displayName = user?.email?.split('@')[0] || '';
-
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <div
-          key={card.key}
-          className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white/80">{card.title}</span>
-            <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-              <card.icon className="h-5 w-5 text-white" />
+        <Card key={card.key} className="border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-muted-foreground">{card.title}</span>
+              <div className={`h-10 w-10 rounded-lg ${card.bgColor} flex items-center justify-center`}>
+                <card.icon className={`h-5 w-5 ${card.iconColor}`} />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-bold">{card.getValue(stats)}</div>
-          <p className="text-xs text-white/70 mt-1">{card.getDesc(stats)}</p>
-          {displayName && (
-            <p className="mt-2 text-xs text-white/60 truncate">{displayName}</p>
-          )}
-        </div>
+            <div className="text-2xl font-bold text-foreground">{card.getValue(stats)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{card.getDesc(stats)}</p>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
