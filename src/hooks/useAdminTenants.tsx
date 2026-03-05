@@ -57,27 +57,10 @@ export function useAdminTenants() {
         console.error('Error fetching subscriptions:', subsError);
       }
 
-      // Fetch all usage tracking
-      const [usageRes, gymMembersRes, studentsRes] = await Promise.all([
-        supabase.from('usage_tracking').select('*'),
-        (supabase.from('gym_members') as any).select('user_id'),
-        supabase.from('students').select('user_id'),
-      ]);
-
-      const usageData = usageRes.data;
-      if (usageRes.error) console.error('Error fetching usage:', usageRes.error);
-
-      // Count gym members per user
-      const gymMemberCounts: Record<string, number> = {};
-      (gymMembersRes.data || []).forEach((m: any) => {
-        gymMemberCounts[m.user_id] = (gymMemberCounts[m.user_id] || 0) + 1;
-      });
-
-      // Count students per user
-      const studentCounts: Record<string, number> = {};
-      (studentsRes.data || []).forEach((s: any) => {
-        studentCounts[s.user_id] = (studentCounts[s.user_id] || 0) + 1;
-      });
+      // Fetch tenant counts via edge function (bypasses RLS)
+      const { data: tenantCounts, error: countsError } = await supabase.functions.invoke('admin-get-tenant-counts');
+      if (countsError) console.error('Error fetching tenant counts:', countsError);
+      const counts = tenantCounts || {};
 
       // Fetch all user modules with prices
       const { data: userModulesData, error: modulesError } = await supabase
@@ -139,7 +122,7 @@ export function useAdminTenants() {
           const sorted = [...userProfiles].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
           const primaryProfile = sorted.find(p => p.company_name !== 'My Company') || sorted[0];
 
-          const usage = usageData?.find(u => u.user_id === userId);
+          const userCounts = counts[userId];
 
           return {
             id: primaryProfile.id,
@@ -158,18 +141,12 @@ export function useAdminTenants() {
               billing_note: (subscription as any).billing_note || null,
               billing_override: (subscription as any).billing_override ?? null,
             },
-            usage: usage ? {
-              clients_count: usage.clients_count || 0,
-              quotes_count: usage.quotes_count || 0,
-              invoices_count: usage.invoices_count || 0,
-              gym_members_count: gymMemberCounts[userId] || 0,
-              students_count: studentCounts[userId] || 0,
-            } : {
-              clients_count: 0,
-              quotes_count: 0,
-              invoices_count: 0,
-              gym_members_count: gymMemberCounts[userId] || 0,
-              students_count: studentCounts[userId] || 0,
+            usage: {
+              clients_count: userCounts?.clients || 0,
+              quotes_count: userCounts?.quotes || 0,
+              invoices_count: userCounts?.invoices || 0,
+              gym_members_count: userCounts?.gym_members || 0,
+              students_count: userCounts?.students || 0,
             },
             module_total: (subscription as any).billing_override ?? tierPrices[userId] ?? moduleTotals[userId] ?? 0,
           } as Tenant;
