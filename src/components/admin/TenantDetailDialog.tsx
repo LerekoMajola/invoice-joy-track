@@ -179,20 +179,61 @@ export function TenantDetailDialog({ tenant, open, onOpenChange }: TenantDetailD
                 <BarChart3 className="h-4 w-4" />
                 <h4 className="font-medium">Usage (Current Period)</h4>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold">{tenant.usage?.clients_count || 0}</div>
-                  <div className="text-xs text-muted-foreground">Clients</div>
-                </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold">{tenant.usage?.quotes_count || 0}</div>
-                  <div className="text-xs text-muted-foreground">Quotes</div>
-                </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <div className="text-2xl font-bold">{tenant.usage?.invoices_count || 0}</div>
-                  <div className="text-xs text-muted-foreground">Invoices</div>
-                </div>
-              </div>
+              {(() => {
+                const sys = tenant.subscription?.system_type || 'business';
+                if (sys === 'gym') {
+                  return (
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.gym_members_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Members</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.quotes_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Quotes</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.invoices_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Invoices</div>
+                      </div>
+                    </div>
+                  );
+                }
+                if (sys === 'school') {
+                  return (
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.students_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Students</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.quotes_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Quotes</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted">
+                        <div className="text-2xl font-bold">{tenant.usage?.invoices_count || 0}</div>
+                        <div className="text-xs text-muted-foreground">Invoices</div>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="text-2xl font-bold">{tenant.usage?.clients_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Clients</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="text-2xl font-bold">{tenant.usage?.quotes_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Quotes</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="text-2xl font-bold">{tenant.usage?.invoices_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Invoices</div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

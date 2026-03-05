@@ -305,17 +305,35 @@ export function CustomersTab() {
                       {customer.tenant ? formatMaluti(customer.tenant.module_total) : '-'}
                     </TableCell>
                     <TableCell>
-                      {customer.tenant?.usage ? (
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">C:</span> {customer.tenant.usage.clients_count}
-                          <span className="mx-1">|</span>
-                          <span className="text-muted-foreground">Q:</span> {customer.tenant.usage.quotes_count}
-                          <span className="mx-1">|</span>
-                          <span className="text-muted-foreground">I:</span> {customer.tenant.usage.invoices_count}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
+                      {(() => {
+                        const sys = customer.system_type || 'business';
+                        if (sys === 'gym') {
+                          return (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Members:</span> {customer.tenant?.usage?.gym_members_count || 0}
+                            </div>
+                          );
+                        }
+                        if (sys === 'school') {
+                          return (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Students:</span> {customer.tenant?.usage?.students_count || 0}
+                            </div>
+                          );
+                        }
+                        if (customer.tenant?.usage) {
+                          return (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">C:</span> {customer.tenant.usage.clients_count}
+                              <span className="mx-1">|</span>
+                              <span className="text-muted-foreground">Q:</span> {customer.tenant.usage.quotes_count}
+                              <span className="mx-1">|</span>
+                              <span className="text-muted-foreground">I:</span> {customer.tenant.usage.invoices_count}
+                            </div>
+                          );
+                        }
+                        return <span className="text-muted-foreground text-sm">-</span>;
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm">
                       {format(new Date(customer.created_at), 'MMM d, yyyy')}

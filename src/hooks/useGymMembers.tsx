@@ -164,7 +164,34 @@ export function useGymMembers() {
 
       if (error) throw error;
 
-      await fetchMembers();
+      // Optimistic local update so new member appears instantly
+      if (data) {
+        const optimisticMember: GymMember = {
+          id: data.id,
+          memberNumber: data.member_number,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          email: data.email,
+          phone: data.phone,
+          dateOfBirth: data.date_of_birth,
+          gender: data.gender,
+          address: data.address,
+          emergencyContactName: data.emergency_contact_name,
+          emergencyContactPhone: data.emergency_contact_phone,
+          healthConditions: data.health_conditions,
+          photoUrl: data.photo_url,
+          joinDate: data.join_date,
+          status: data.status as GymMember['status'],
+          notes: data.notes,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          portalUserId: data.portal_user_id || null,
+        };
+        setMembers(prev => [optimisticMember, ...prev]);
+      }
+
+      // Background refetch for full consistency
+      fetchMembers();
       toast.success('Member added successfully');
       return data;
     } catch (error) {
