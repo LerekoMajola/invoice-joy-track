@@ -1,43 +1,48 @@
 
 
-## Fix Status Inconsistencies + Redesign Admin Dashboard
+## Create Edge Function + Update Hook to Fix Usage Counts
 
-### Bug: Active tenants misclassified
+### Problem
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-**Root cause 1**: In `useAdminStats.tsx` (line 119), the system breakdown only checks `sub.status === 'active'` -- it misses `active_awaiting_pop`, which falls into the `else` branch and gets counted as "expired". MISFIT (status: active) should be fine, but any tenant with `active_awaiting_pop` is silently miscounted.
+### Solution
 
-**Root cause 2**: `adminConstants.ts` only defines `SYSTEM_ICONS`, `SYSTEM_LABELS`, and `SYSTEM_COLORS` for 4 systems (business, legal, gym, school), but the platform has 8 systems (missing workshop, hire, guesthouse, fleet). This causes fallback rendering issues across CustomersTab, BillingTab, and TenantDetailDialog.
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
 
-**Root cause 3**: The `PLAN_LABELS` map shows "Free Trial" for the legacy `free_trial` plan value even when the subscription status is `active`. The Subscription column in CustomersTab displays both status badge AND plan label underneath, so active tenants whose `plan` field was never updated from `free_trial` show a confusing "Free Trial" subtitle beneath their "active" badge.
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
 
-### Changes
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
+```
 
-**1. Fix `adminConstants.ts`** -- Add all 8 systems to SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS (add Wrench/workshop, Hammer/hire, Hotel/guesthouse, Car/fleet). Add `STATUS_LABELS` map for human-readable status names (e.g., `active_awaiting_pop` -> "Awaiting POP").
+**3. Update `src/hooks/useAdminTenants.tsx`:**
 
-**2. Fix `useAdminStats.tsx`** -- In the system breakdown loop, count `active_awaiting_pop` as active (line 119). Same pattern already used on line 73.
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
+```typescript
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
+```
 
-**3. Redesign `AdminOverviewTab.tsx`** -- Clean, professional layout following SaaS admin standards:
-- Welcome banner stays but becomes cleaner
-- KPI cards: Total Tenants, Active Subscriptions, MRR (collected), Trial Conversion Rate -- using clean card design instead of all-purple gradient
-- Customer lifecycle funnel: Trial -> Active -> Past Due -> Churned (horizontal bar/counts)
-- System breakdown cards remain but with cleaner presentation
-- Charts row stays (signups + revenue)
-
-**4. Redesign `PlatformStatsCards.tsx`** -- Remove redundant display name, use distinct card colors per metric (green for revenue, blue for tenants, amber for trials, etc.) instead of uniform purple gradient.
-
-**5. Fix `CustomersTab.tsx`** -- In the Subscription column, show the status badge with a human-readable label (from STATUS_LABELS). Remove the confusing plan label subtitle that shows "Free Trial" for active tenants. The plan info is already visible via the Price/mo column.
-
-**6. Fix status display in `BillingTab.tsx`** -- Use STATUS_LABELS for consistent human-readable status names instead of raw `.replace('_', ' ')`.
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
 
 ### Files changed
 | File | Change |
 |------|--------|
-| `src/components/admin/adminConstants.ts` | Add all 8 systems, add STATUS_LABELS map |
-| `src/hooks/useAdminStats.tsx` | Fix `active_awaiting_pop` counting in system breakdown |
-| `src/components/admin/AdminOverviewTab.tsx` | Redesign with lifecycle funnel + cleaner KPIs |
-| `src/components/admin/PlatformStatsCards.tsx` | Distinct card colors, remove redundant info |
-| `src/components/admin/CustomersTab.tsx` | Fix subscription column to use STATUS_LABELS, remove misleading plan label |
-| `src/components/admin/BillingTab.tsx` | Use STATUS_LABELS for consistent display |
-
-No database changes needed. No data loss.
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
 
