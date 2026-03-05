@@ -20,7 +20,7 @@ import { useAdminTenants, Tenant } from '@/hooks/useAdminTenants';
 import { EditSubscriptionDialog } from './EditSubscriptionDialog';
 import { GenerateAdminInvoiceDialog } from './GenerateAdminInvoiceDialog';
 import { PaymentTracker } from './PaymentTracker';
-import { STATUS_COLORS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
+import { STATUS_COLORS, STATUS_LABELS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
 import { formatMaluti } from '@/lib/currency';
 
 export function BillingTab() {
@@ -151,7 +151,7 @@ export function BillingTab() {
                     </TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[sub.status] || ''}>
-                        {sub.status.replace('_', ' ')}
+                        {STATUS_LABELS[sub.status] || sub.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
@@ -225,7 +225,7 @@ export function BillingTab() {
                   {PLAN_LABELS[billingTenant.subscription.plan] || billingTenant.subscription.plan}
                 </Badge>
                 <Badge className={STATUS_COLORS[billingTenant.subscription.status]}>
-                  {billingTenant.subscription.status.replace('_', ' ')}
+                  {STATUS_LABELS[billingTenant.subscription.status] || billingTenant.subscription.status}
                 </Badge>
                 <span className="text-sm text-muted-foreground ml-auto">
                   {formatMaluti(billingTenant.module_total)}/mo

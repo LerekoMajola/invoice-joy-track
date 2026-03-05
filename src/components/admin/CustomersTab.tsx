@@ -28,7 +28,7 @@ import { PaymentTracker } from './PaymentTracker';
 import { RecycleBinSection } from './RecycleBinSection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { STATUS_COLORS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
+import { STATUS_COLORS, STATUS_LABELS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
 import { formatMaluti } from '@/lib/currency';
 
 interface UnifiedCustomer {
@@ -287,16 +287,9 @@ export function CustomersTab() {
                     </TableCell>
                     <TableCell>
                       {customer.subscription_status ? (
-                        <div className="flex flex-col gap-1">
-                          <Badge className={STATUS_COLORS[customer.subscription_status] || ''}>
-                            {customer.subscription_status}
-                          </Badge>
-                          {customer.subscription_plan && (
-                            <span className="text-xs text-muted-foreground">
-                              {PLAN_LABELS[customer.subscription_plan] || customer.subscription_plan}
-                            </span>
-                          )}
-                        </div>
+                        <Badge className={STATUS_COLORS[customer.subscription_status] || ''}>
+                          {STATUS_LABELS[customer.subscription_status] || customer.subscription_status}
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">None</span>
                       )}
@@ -402,7 +395,7 @@ export function CustomersTab() {
               <div className="flex items-center gap-3">
                 <Badge variant="outline">{PLAN_LABELS[billingTenant.subscription.plan] || billingTenant.subscription.plan}</Badge>
                 <Badge className={STATUS_COLORS[billingTenant.subscription.status]}>
-                  {billingTenant.subscription.status}
+                  {STATUS_LABELS[billingTenant.subscription.status] || billingTenant.subscription.status}
                 </Badge>
                 <span className="text-sm text-muted-foreground ml-auto">
                   {formatMaluti(billingTenant.module_total)}/mo

@@ -1,4 +1,4 @@
-import { Briefcase, Scale, Dumbbell, GraduationCap } from 'lucide-react';
+import { Briefcase, Scale, Dumbbell, GraduationCap, Wrench, Hammer, Hotel, Car } from 'lucide-react';
 
 export const STATUS_COLORS: Record<string, string> = {
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -7,6 +7,15 @@ export const STATUS_COLORS: Record<string, string> = {
   past_due: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
   expired: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+  trialing: 'Trial',
+  active: 'Active',
+  active_awaiting_pop: 'Awaiting POP',
+  past_due: 'Past Due',
+  cancelled: 'Cancelled',
+  expired: 'Expired',
 };
 
 export const PLAN_LABELS: Record<string, string> = {
@@ -22,6 +31,10 @@ export const SYSTEM_ICONS: Record<string, typeof Briefcase> = {
   legal: Scale,
   gym: Dumbbell,
   school: GraduationCap,
+  workshop: Wrench,
+  hire: Hammer,
+  guesthouse: Hotel,
+  fleet: Car,
 };
 
 export const SYSTEM_LABELS: Record<string, string> = {
@@ -29,6 +42,10 @@ export const SYSTEM_LABELS: Record<string, string> = {
   legal: 'LawPro',
   gym: 'GymPro',
   school: 'EduPro',
+  workshop: 'WorkPro',
+  hire: 'HirePro',
+  guesthouse: 'StayPro',
+  fleet: 'FleetPro',
 };
 
 export const SYSTEM_COLORS: Record<string, string> = {
@@ -36,4 +53,8 @@ export const SYSTEM_COLORS: Record<string, string> = {
   legal: 'bg-purple-600 text-white dark:bg-purple-500 dark:text-white',
   gym: 'bg-lime-600 text-white dark:bg-lime-500 dark:text-white',
   school: 'bg-teal-600 text-white dark:bg-teal-500 dark:text-white',
+  workshop: 'bg-orange-600 text-white dark:bg-orange-500 dark:text-white',
+  hire: 'bg-yellow-600 text-white dark:bg-yellow-500 dark:text-white',
+  guesthouse: 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white',
+  fleet: 'bg-slate-600 text-white dark:bg-slate-500 dark:text-white',
 };
