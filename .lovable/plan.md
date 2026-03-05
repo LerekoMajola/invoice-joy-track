@@ -1,62 +1,55 @@
 
 
-## Editable Platform Banking Details
+## Fix Real-Time Updates + Add Customer/Member Counts for Admin
 
-### Problem
-Orion Labs banking information (bank name, account number, branch code, etc.) is hardcoded in 4 separate files. Any change requires code edits in multiple places.
+### Problem 1: Members don't appear until page refresh
+The `gym_members` table (and `gym_membership_plans`) are **not added to the Supabase realtime publication**. The hooks subscribe to `postgres_changes` but since the tables aren't published, no events are ever emitted. The `createMember` function does call `fetchMembers()` after insert (which should work), but this is fragile -- the root fix is enabling realtime properly.
 
-### Solution
-Add a "Platform Banking Details" card to the Admin Settings tab where you can edit banking info, and have it automatically reflect across all invoices, billing pages, and email templates.
+Additionally, as a safety net, I'll add an optimistic local state update so the new member appears instantly in the list before the refetch completes.
 
-### Where banking details are currently hardcoded
-1. **Admin Invoice Preview** (`AdminInvoicePreview.tsx`) -- the PDF/print invoice for tenants
-2. **Billing page** (`Billing.tsx`) -- payment instructions shown to tenants
-3. **Payment Required page** (`PaymentRequired.tsx`) -- blocked-account payment screen
-4. **Send Admin Invoice email** (`send-admin-invoice/index.ts`) -- email body with banking details
+### Problem 2: Admin can't see customer/member counts per tenant
+The Customers table currently shows a "Usage" column with Clients (C), Quotes (Q), Invoices (I) counts from `usage_tracking`. But for gym tenants, the relevant metric is **member count**, not client count. For school tenants, it's **student count**.
 
 ### Implementation
 
-**1. Extend `usePlatformSettings` hook**
+**1. Database migration -- enable realtime for gym tables**
 
-Add 6 new platform setting keys using the existing `platform_settings` table (no migration needed):
-- `bank_name` (default: "First National Bank (FNB)")
-- `bank_account_name` (default: "Orion Labs (Pty) Ltd")
-- `bank_account_number` (default: "63027317585")
-- `bank_branch_code` (default: "280061")
-- `bank_branch_name` (default: "Pioneer Mall")
-- `bank_pop_email` (default: "sales@orionlabslesotho.com")
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_members;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_membership_plans;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.gym_member_subscriptions;
+```
 
-Export a dedicated `usePlatformBanking()` hook that returns these values with their defaults.
+**2. Optimistic update in `useGymMembers.tsx`**
 
-**2. Add Banking Details card to Admin Settings**
+After successful insert in `createMember`, immediately add the new member to local state before calling `fetchMembers()`. This ensures the UI updates instantly even if realtime has a slight delay.
 
-Create a new `PlatformBankingSettings` component with an editable form containing fields for all 6 banking values. Add it to the `AdminSettingsTab` between the branding card and App Icon settings.
+**3. Update `admin-get-tenant-data` edge function**
 
-The form will:
-- Show current values (or defaults if not yet saved)
-- Have a "Save Banking Details" button
-- Show success/error toast on save
+Add queries for `gym_members` and `students` tables (count by `user_id`), and include `gym_members_count` and `students_count` in the response summary.
 
-**3. Update all 4 consumer files**
+**4. Update `useAdminTenants.tsx` -- fetch system-specific counts**
 
-Replace hardcoded banking strings with values from `usePlatformBanking()`:
+Enhance the tenant query to also fetch counts from `gym_members` and `students` tables grouped by `user_id`, so the Customers table can show the right metric per system type.
 
-- **`AdminInvoicePreview.tsx`** -- pass banking data as props or use the hook directly
-- **`Billing.tsx`** -- use hook to populate the `bankDetails` array
-- **`PaymentRequired.tsx`** -- use hook to populate payment instructions
-- **`send-admin-invoice/index.ts`** -- fetch banking details from `platform_settings` table at runtime before building the email HTML
+**5. Update `CustomersTab.tsx` -- show contextual usage column**
+
+Change the Usage column to show system-appropriate counts:
+- **Business/Workshop/Legal/Hire/Fleet/Guesthouse**: Clients (C), Quotes (Q), Invoices (I) -- same as now
+- **Gym**: Members count
+- **School**: Students count
+
+**6. Update `TenantDetailDialog.tsx` -- show system-specific counts**
+
+In the Usage section, show Members instead of Clients for gym tenants, Students for school tenants.
 
 ### Files changed
 | File | Change |
 |------|--------|
-| `src/hooks/usePlatformSettings.tsx` | Add `usePlatformBanking()` export |
-| `src/components/admin/PlatformBankingSettings.tsx` | New -- banking details form card |
-| `src/components/admin/AdminSettingsTab.tsx` | Add `PlatformBankingSettings` component |
-| `src/components/admin/AdminInvoicePreview.tsx` | Replace hardcoded banking with hook/props |
-| `src/pages/Billing.tsx` | Replace hardcoded `bankDetails` array |
-| `src/pages/PaymentRequired.tsx` | Replace hardcoded banking values |
-| `supabase/functions/send-admin-invoice/index.ts` | Fetch banking from `platform_settings` table |
-
-### No database migration needed
-The existing `platform_settings` key-value table already supports storing arbitrary settings. Banking details will be stored as individual key-value rows following the same pattern used for logo and favicon URLs.
+| New migration | Enable realtime for `gym_members`, `gym_membership_plans`, `gym_member_subscriptions` |
+| `src/hooks/useGymMembers.tsx` | Add optimistic local state update in `createMember` |
+| `supabase/functions/admin-get-tenant-data/index.ts` | Add gym_members + students count queries |
+| `src/hooks/useAdminTenants.tsx` | Fetch gym_members and students counts per user |
+| `src/components/admin/CustomersTab.tsx` | Show system-contextual usage (Members for gym, Students for school) |
+| `src/components/admin/TenantDetailDialog.tsx` | Show Members/Students labels based on system type |
 
