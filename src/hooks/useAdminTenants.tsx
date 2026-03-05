@@ -23,6 +23,8 @@ export interface Tenant {
     clients_count: number;
     quotes_count: number;
     invoices_count: number;
+    gym_members_count?: number;
+    students_count?: number;
   } | null;
   module_total: number;
 }
@@ -56,13 +58,26 @@ export function useAdminTenants() {
       }
 
       // Fetch all usage tracking
-      const { data: usageData, error: usageError } = await supabase
-        .from('usage_tracking')
-        .select('*');
+      const [usageRes, gymMembersRes, studentsRes] = await Promise.all([
+        supabase.from('usage_tracking').select('*'),
+        (supabase.from('gym_members') as any).select('user_id'),
+        supabase.from('students').select('user_id'),
+      ]);
 
-      if (usageError) {
-        console.error('Error fetching usage:', usageError);
-      }
+      const usageData = usageRes.data;
+      if (usageRes.error) console.error('Error fetching usage:', usageRes.error);
+
+      // Count gym members per user
+      const gymMemberCounts: Record<string, number> = {};
+      (gymMembersRes.data || []).forEach((m: any) => {
+        gymMemberCounts[m.user_id] = (gymMemberCounts[m.user_id] || 0) + 1;
+      });
+
+      // Count students per user
+      const studentCounts: Record<string, number> = {};
+      (studentsRes.data || []).forEach((s: any) => {
+        studentCounts[s.user_id] = (studentCounts[s.user_id] || 0) + 1;
+      });
 
       // Fetch all user modules with prices
       const { data: userModulesData, error: modulesError } = await supabase
@@ -147,7 +162,15 @@ export function useAdminTenants() {
               clients_count: usage.clients_count || 0,
               quotes_count: usage.quotes_count || 0,
               invoices_count: usage.invoices_count || 0,
-            } : null,
+              gym_members_count: gymMemberCounts[userId] || 0,
+              students_count: studentCounts[userId] || 0,
+            } : {
+              clients_count: 0,
+              quotes_count: 0,
+              invoices_count: 0,
+              gym_members_count: gymMemberCounts[userId] || 0,
+              students_count: studentCounts[userId] || 0,
+            },
             module_total: (subscription as any).billing_override ?? tierPrices[userId] ?? moduleTotals[userId] ?? 0,
           } as Tenant;
         })

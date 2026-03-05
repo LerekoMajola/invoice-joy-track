@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch tenant data using service role (bypasses RLS)
-    const [clientsRes, invoicesRes, quotesRes] = await Promise.all([
+    const [clientsRes, invoicesRes, quotesRes, gymMembersRes, studentsRes] = await Promise.all([
       adminClient
         .from("clients")
         .select("id, company, contact_person, email, phone, total_revenue, status, created_at")
@@ -86,6 +86,14 @@ Deno.serve(async (req) => {
         .eq("user_id", tenant_user_id)
         .order("created_at", { ascending: false })
         .limit(50),
+      adminClient
+        .from("gym_members")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", tenant_user_id),
+      adminClient
+        .from("students")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", tenant_user_id),
     ]);
 
     const clients = clientsRes.data || [];
@@ -116,6 +124,8 @@ Deno.serve(async (req) => {
       quote_conversion_rate: conversionRate,
       total_invoices: invoices.length,
       total_quotes: quotes.length,
+      gym_members_count: gymMembersRes.count ?? 0,
+      students_count: studentsRes.count ?? 0,
     };
 
     return new Response(
