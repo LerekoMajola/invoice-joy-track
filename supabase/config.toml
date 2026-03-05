@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.scrape-tenders]
 verify_jwt = false
+
+[functions.admin-get-tenant-counts]
+verify_jwt = false
