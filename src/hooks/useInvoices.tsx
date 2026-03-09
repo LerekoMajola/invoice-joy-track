@@ -192,7 +192,7 @@ export function useInvoices() {
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: activeUser.id,
+          user_id: activeCompany?.user_id || activeUser.id,
           company_profile_id: activeCompanyId || null,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,

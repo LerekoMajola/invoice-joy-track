@@ -91,7 +91,7 @@ export function useClients() {
       const { data, error } = await supabase
         .from('clients')
         .insert({
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
           company_profile_id: activeCompanyId || null,
           company: client.company,
           contact_person: client.contactPerson || null,

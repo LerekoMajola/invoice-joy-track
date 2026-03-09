@@ -165,7 +165,7 @@ export function useLeads() {
         .from('leads')
         .insert({
           ...lead,
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
         })
         .select()
         .single();

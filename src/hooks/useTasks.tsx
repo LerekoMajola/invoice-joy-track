@@ -90,7 +90,7 @@ export function useTasks() {
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
           title: input.title,
           description: input.description || null,
           due_date: input.due_date || null,
