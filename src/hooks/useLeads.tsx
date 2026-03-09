@@ -248,7 +248,7 @@ export function useLeads() {
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
           company: lead.company || lead.name,
           contact_person: lead.name,
           email: lead.email,
