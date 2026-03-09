@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -29,6 +29,26 @@ export function useModules() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Detect if user is a staff member and get owner info
+  const { data: staffInfo } = useQuery({
+    queryKey: ['staff-info', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('staff_members')
+        .select('id, owner_user_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const isStaff = !!staffInfo;
+  const effectiveUserId = isStaff ? staffInfo!.owner_user_id : user?.id;
+
   // Fetch all available platform modules
   const { data: platformModules = [], isLoading: modulesLoading } = useQuery({
     queryKey: ['platform-modules'],
@@ -43,23 +63,48 @@ export function useModules() {
     },
   });
 
-  // Fetch user's subscribed modules
-  const { data: userModules = [], isLoading: userModulesLoading } = useQuery({
-    queryKey: ['user-modules', user?.id],
+  // Fetch staff module access restrictions (only for staff)
+  const { data: staffModuleIds } = useQuery({
+    queryKey: ['staff-module-access-ids', staffInfo?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!staffInfo) return null;
+      const { data, error } = await supabase
+        .from('staff_module_access')
+        .select('module_id')
+        .eq('staff_member_id', staffInfo.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data?.map((r) => r.module_id) || [];
+    },
+    enabled: !!staffInfo,
+  });
+
+  // Fetch user's (or owner's) subscribed modules
+  const { data: userModules = [], isLoading: userModulesLoading } = useQuery({
+    queryKey: ['user-modules', effectiveUserId],
+    queryFn: async () => {
+      if (!effectiveUserId) return [];
       const { data, error } = await supabase
         .from('user_modules')
         .select('*, module:platform_modules(*)')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .eq('is_active', true);
       if (error) throw error;
-      return (data || []).map((um: any) => ({
+      let modules = (data || []).map((um: any) => ({
         ...um,
         module: um.module as PlatformModule,
       })) as UserModule[];
+
+      // If staff, filter to only modules they have access to
+      if (staffModuleIds && staffModuleIds.length > 0) {
+        modules = modules.filter(
+          (um) => um.module?.is_core || staffModuleIds.includes(um.module_id)
+        );
+      }
+
+      return modules;
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   useEffect(() => {
@@ -72,7 +117,6 @@ export function useModules() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Check if user has a specific module by key
   const hasModule = (moduleKey: string): boolean => {
     if (!userModules.length) return false;
     return userModules.some(
@@ -80,44 +124,36 @@ export function useModules() {
     );
   };
 
-  // Get the user's active module keys
   const getActiveModuleKeys = (): string[] => {
     return userModules
       .filter((um) => um.is_active && um.module)
       .map((um) => um.module!.key);
   };
 
-  // Calculate monthly total from active modules
   const getMonthlyTotal = (): number => {
     return userModules
       .filter((um) => um.is_active && um.module)
       .reduce((sum, um) => sum + (um.module?.monthly_price || 0), 0);
   };
 
-  // Save modules for a user (used during signup)
   const saveUserModules = async (userId: string, moduleIds: string[]) => {
     const rows = moduleIds.map((moduleId) => ({
       user_id: userId,
       module_id: moduleId,
       is_active: true,
     }));
-
     const { error } = await supabase.from('user_modules').insert(rows);
     if (error) throw error;
   };
 
-  // Toggle a module on/off for the current user
   const toggleModule = useMutation({
     mutationFn: async ({ moduleId, activate }: { moduleId: string; activate: boolean }) => {
       if (!user) throw new Error('Not authenticated');
+      const targetUserId = effectiveUserId || user.id;
 
       if (activate) {
         const { error } = await supabase.from('user_modules').upsert(
-          {
-            user_id: user.id,
-            module_id: moduleId,
-            is_active: true,
-          },
+          { user_id: targetUserId, module_id: moduleId, is_active: true },
           { onConflict: 'user_id,module_id' }
         );
         if (error) throw error;
@@ -125,7 +161,7 @@ export function useModules() {
         const { error } = await supabase
           .from('user_modules')
           .update({ is_active: false })
-          .eq('user_id', user.id)
+          .eq('user_id', targetUserId)
           .eq('module_id', moduleId);
         if (error) throw error;
       }
@@ -139,7 +175,6 @@ export function useModules() {
     },
   });
 
-  // Filter platform modules by system type
   const getModulesForSystem = (systemType: string): PlatformModule[] => {
     return platformModules.filter(
       (m) => !(m as any).system_type || (m as any).system_type === 'shared' || (m as any).system_type === systemType
@@ -156,5 +191,6 @@ export function useModules() {
     saveUserModules,
     toggleModule,
     getModulesForSystem,
+    isStaff,
   };
 }
