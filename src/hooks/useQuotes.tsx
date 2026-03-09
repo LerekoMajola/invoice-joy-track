@@ -47,7 +47,7 @@ interface QuoteInsert {
 
 export function useQuotes() {
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -200,7 +200,7 @@ export function useQuotes() {
         const { data: quoteData, error: quoteError } = await supabase
           .from('quotes')
           .insert({
-            user_id: user.id,
+            user_id: activeCompany?.user_id || user.id,
             company_profile_id: activeCompanyId || null,
             quote_number: quoteNumber,
             client_id: quote.clientId || null,

@@ -54,7 +54,7 @@ interface InvoiceInsert {
 
 export function useInvoices() {
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -192,7 +192,7 @@ export function useInvoices() {
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: activeUser.id,
+          user_id: activeCompany?.user_id || activeUser.id,
           company_profile_id: activeCompanyId || null,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,
@@ -324,7 +324,7 @@ export function useInvoices() {
         if (activeUser) {
           const invoiceTotal = updates.lineItems ? totalWithTax : (existingInvoice?.total || 0);
           await supabase.from('accounting_transactions').insert({
-            user_id: activeUser.id,
+            user_id: activeCompany?.user_id || activeUser.id,
             transaction_type: 'income',
             reference_type: 'invoice',
             reference_id: id,

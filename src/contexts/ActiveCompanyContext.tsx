@@ -39,7 +39,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Fetch all company profiles for this user
+      // Fetch all company profiles for this user (owned)
       const { data: profiles, error: profilesError } = await supabase
         .from('company_profiles')
         .select('*')
@@ -48,7 +48,29 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
 
       if (profilesError) throw profilesError;
 
-      const typedProfiles = (profiles || []) as CompanyProfile[];
+      let typedProfiles = (profiles || []) as CompanyProfile[];
+
+      // Staff fallback: if user owns no companies, check if they're staff
+      if (typedProfiles.length === 0) {
+        const { data: staffRecord } = await supabase
+          .from('staff_members')
+          .select('owner_user_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (staffRecord?.owner_user_id) {
+          const { data: ownerProfiles, error: ownerError } = await supabase
+            .from('company_profiles')
+            .select('*')
+            .eq('user_id', staffRecord.owner_user_id)
+            .order('created_at', { ascending: true });
+
+          if (!ownerError && ownerProfiles) {
+            typedProfiles = ownerProfiles as CompanyProfile[];
+          }
+        }
+      }
       setCompanies(typedProfiles);
 
       // Fetch user preferences for active company

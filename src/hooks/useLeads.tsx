@@ -68,7 +68,7 @@ export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const { toast } = useToast();
 
   const checkForDuplicate = async (lead: LeadInsert, excludeId?: string) => {
@@ -165,7 +165,7 @@ export function useLeads() {
         .from('leads')
         .insert({
           ...lead,
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
         })
         .select()
         .single();
@@ -248,7 +248,7 @@ export function useLeads() {
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
-          user_id: user.id,
+          user_id: activeCompany?.user_id || user.id,
           company: lead.company || lead.name,
           contact_person: lead.name,
           email: lead.email,

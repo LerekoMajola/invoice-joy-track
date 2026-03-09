@@ -37,7 +37,7 @@ interface DeliveryNoteInsert {
 
 export function useDeliveryNotes() {
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -158,7 +158,7 @@ export function useDeliveryNotes() {
       const { data: noteData, error: noteError } = await supabase
         .from('delivery_notes')
         .insert({
-          user_id: activeUser.id,
+          user_id: activeCompany?.user_id || activeUser.id,
           company_profile_id: activeCompanyId || null,
           note_number: noteNumber,
           client_id: note.clientId || null,
