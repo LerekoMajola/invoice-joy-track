@@ -330,13 +330,15 @@ interface DocumentWrapperProps {
 
 export function DocumentWrapper({ template, fontFamily, children, innerRef }: DocumentWrapperProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const docRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = React.useState(1);
+  const [docHeight, setDocHeight] = React.useState<number | undefined>(undefined);
 
   React.useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
         const parentWidth = containerRef.current.parentElement?.clientWidth || 800;
-        const docWidth = 793; // 210mm in px
+        const docWidth = 793; // 210mm ≈ 793px
         const newScale = Math.min(1, parentWidth / docWidth);
         setScale(newScale);
       }
@@ -344,6 +346,19 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
+  // Track actual document height to size the outer wrapper correctly when scaled
+  React.useEffect(() => {
+    const el = docRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDocHeight(entry.contentRect.height + 2); // +2 for border
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const baseStyle: React.CSSProperties = {
@@ -355,18 +370,33 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     color: '#1a1a1a',
   };
 
+  const outerStyle: React.CSSProperties = {
+    height: docHeight ? docHeight * scale : undefined,
+    overflow: 'visible',
+  };
+
   const scaleWrapperStyle: React.CSSProperties = {
     transformOrigin: 'top center',
     transform: `scale(${scale})`,
   };
 
+  // Merge the innerRef and our internal docRef
+  const setDocRefs = React.useCallback((el: HTMLDivElement | null) => {
+    (docRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    if (innerRef && 'current' in innerRef) {
+      (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    }
+  }, [innerRef]);
+
   if (template.headerStyle === 'sidebar') {
     return (
-      <div ref={containerRef} style={scaleWrapperStyle}>
-        <div ref={innerRef} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
-          <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
-          <div className="flex-1 p-[15mm]">
-            {children}
+      <div style={outerStyle}>
+        <div ref={containerRef} style={scaleWrapperStyle}>
+          <div ref={setDocRefs} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
+            <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
+            <div className="flex-1 p-[15mm]">
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -374,9 +404,11 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
   }
 
   return (
-    <div ref={containerRef} style={scaleWrapperStyle}>
-      <div ref={innerRef} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
-        {children}
+    <div style={outerStyle}>
+      <div ref={containerRef} style={scaleWrapperStyle}>
+        <div ref={setDocRefs} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
+          {children}
+        </div>
       </div>
     </div>
   );
