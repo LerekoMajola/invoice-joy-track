@@ -329,6 +329,23 @@ interface DocumentWrapperProps {
 }
 
 export function DocumentWrapper({ template, fontFamily, children, innerRef }: DocumentWrapperProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scale, setScale] = React.useState(1);
+
+  React.useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const parentWidth = containerRef.current.parentElement?.clientWidth || 800;
+        const docWidth = 793; // 210mm in px
+        const newScale = Math.min(1, parentWidth / docWidth);
+        setScale(newScale);
+      }
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
   const baseStyle: React.CSSProperties = {
     fontFamily,
     width: '210mm',
@@ -338,20 +355,29 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     color: '#1a1a1a',
   };
 
+  const scaleWrapperStyle: React.CSSProperties = {
+    transformOrigin: 'top center',
+    transform: `scale(${scale})`,
+  };
+
   if (template.headerStyle === 'sidebar') {
     return (
-      <div ref={innerRef} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
-        <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
-        <div className="flex-1 p-[15mm]">
-          {children}
+      <div ref={containerRef} style={scaleWrapperStyle}>
+        <div ref={innerRef} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
+          <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
+          <div className="flex-1 p-[15mm]">
+            {children}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={innerRef} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
-      {children}
+    <div ref={containerRef} style={scaleWrapperStyle}>
+      <div ref={innerRef} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
+        {children}
+      </div>
     </div>
   );
 }
