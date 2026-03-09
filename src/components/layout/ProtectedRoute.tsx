@@ -95,50 +95,58 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         }
       }
 
-      // Check if user has modules — if not, assign based on signup metadata or all (legacy)
-      const { data: userModules } = await supabase
-        .from('user_modules')
+      // Check if user is a staff member — staff inherit modules from owner, skip auto-assignment
+      const { data: staffCheck } = await supabase
+        .from('staff_members')
         .select('id')
         .eq('user_id', currentUser.id)
-        .limit(1);
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (!userModules || userModules.length === 0) {
-        const selectedKeys: string[] = currentUser.user_metadata?.selected_module_keys;
+      if (!staffCheck) {
+        // Only auto-assign modules for non-staff (business owners)
+        const { data: userModules } = await supabase
+          .from('user_modules')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .limit(1);
 
-        if (selectedKeys && selectedKeys.length > 0) {
-          // New user: assign only the modules they selected during signup + core modules
-          const { data: allModules } = await supabase
-            .from('platform_modules')
-            .select('id, key, is_core')
-            .eq('is_active', true);
+        if (!userModules || userModules.length === 0) {
+          const selectedKeys: string[] = currentUser.user_metadata?.selected_module_keys;
 
-          if (allModules && allModules.length > 0) {
-            const modulesToAssign = allModules.filter(
-              (m) => selectedKeys.includes(m.key) || m.is_core
-            );
-            if (modulesToAssign.length > 0) {
-              const rows = modulesToAssign.map((m) => ({
+          if (selectedKeys && selectedKeys.length > 0) {
+            const { data: allModules } = await supabase
+              .from('platform_modules')
+              .select('id, key, is_core')
+              .eq('is_active', true);
+
+            if (allModules && allModules.length > 0) {
+              const modulesToAssign = allModules.filter(
+                (m) => selectedKeys.includes(m.key) || m.is_core
+              );
+              if (modulesToAssign.length > 0) {
+                const rows = modulesToAssign.map((m) => ({
+                  user_id: currentUser.id,
+                  module_id: m.id,
+                  is_active: true,
+                }));
+                await supabase.from('user_modules').insert(rows);
+              }
+            }
+          } else {
+            const { data: allModules } = await supabase
+              .from('platform_modules')
+              .select('id')
+              .eq('is_active', true);
+
+            if (allModules && allModules.length > 0) {
+              const rows = allModules.map((m) => ({
                 user_id: currentUser.id,
                 module_id: m.id,
                 is_active: true,
               }));
               await supabase.from('user_modules').insert(rows);
             }
-          }
-        } else {
-          // Legacy user with no metadata: assign all active modules
-          const { data: allModules } = await supabase
-            .from('platform_modules')
-            .select('id')
-            .eq('is_active', true);
-
-          if (allModules && allModules.length > 0) {
-            const rows = allModules.map((m) => ({
-              user_id: currentUser.id,
-              module_id: m.id,
-              is_active: true,
-            }));
-            await supabase.from('user_modules').insert(rows);
           }
         }
       }

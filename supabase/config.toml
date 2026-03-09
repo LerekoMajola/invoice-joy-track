@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.admin-get-tenant-counts]
 verify_jwt = false
+
+[functions.fix-staff-orphaned-data]
+verify_jwt = false
