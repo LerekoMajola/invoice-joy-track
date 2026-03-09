@@ -68,7 +68,7 @@ export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const { toast } = useToast();
 
   const checkForDuplicate = async (lead: LeadInsert, excludeId?: string) => {

@@ -38,7 +38,7 @@ export function useContacts(clientId?: string, leadId?: string) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const { toast } = useToast();
 
   const fetchContacts = async () => {

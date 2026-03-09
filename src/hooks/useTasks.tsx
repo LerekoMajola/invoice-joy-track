@@ -53,7 +53,7 @@ export interface UpdateTaskInput {
 
 export function useTasks() {
   const { user } = useAuth();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const queryClient = useQueryClient();
 
   const { data: tasks = [], isLoading, error } = useQuery({
