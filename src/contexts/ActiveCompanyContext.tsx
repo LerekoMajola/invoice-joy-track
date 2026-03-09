@@ -12,6 +12,7 @@ interface ActiveCompanyContextType {
   activeCompanyId: string | null;
   currency: string;
   isLoading: boolean;
+  isStaff: boolean;
   switchCompany: (companyId: string) => Promise<void>;
   addCompany: (name: string) => Promise<CompanyProfile | null>;
   canAddMore: boolean;
@@ -29,6 +30,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStaff, setIsStaff] = useState(false);
 
   const fetchCompanies = useCallback(async () => {
     if (!user?.id) {
@@ -39,38 +41,30 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Fetch all company profiles for this user (owned)
+      // Check if user is a staff member FIRST
+      const { data: staffRecord } = await supabase
+        .from('staff_members')
+        .select('owner_user_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      const isStaffUser = !!staffRecord;
+      setIsStaff(isStaffUser);
+
+      // Determine which user_id to load company profiles for
+      const profileOwnerId = isStaffUser ? staffRecord!.owner_user_id : user.id;
+
       const { data: profiles, error: profilesError } = await supabase
         .from('company_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', profileOwnerId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: true });
 
       if (profilesError) throw profilesError;
 
-      let typedProfiles = (profiles || []) as CompanyProfile[];
-
-      // Staff fallback: if user owns no companies, check if they're staff
-      if (typedProfiles.length === 0) {
-        const { data: staffRecord } = await supabase
-          .from('staff_members')
-          .select('owner_user_id')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (staffRecord?.owner_user_id) {
-          const { data: ownerProfiles, error: ownerError } = await supabase
-            .from('company_profiles')
-            .select('*')
-            .eq('user_id', staffRecord.owner_user_id)
-            .order('created_at', { ascending: true });
-
-          if (!ownerError && ownerProfiles) {
-            typedProfiles = ownerProfiles as CompanyProfile[];
-          }
-        }
-      }
+      const typedProfiles = (profiles || []) as CompanyProfile[];
       setCompanies(typedProfiles);
 
       // Fetch user preferences for active company
@@ -85,9 +79,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       if (prefs?.active_company_id && typedProfiles.some(p => p.id === prefs.active_company_id)) {
         setActiveCompanyId(prefs.active_company_id);
       } else if (typedProfiles.length > 0) {
-        // Default to first company
         setActiveCompanyId(typedProfiles[0].id);
-        // Upsert preference
         await supabase.from('user_preferences').upsert({
           user_id: user.id,
           active_company_id: typedProfiles[0].id,
@@ -114,12 +106,15 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       active_company_id: companyId,
     }, { onConflict: 'user_id' });
 
-    // Invalidate all data queries so they refetch with new company context
     queryClient.invalidateQueries();
   }, [user?.id, queryClient]);
 
   const addCompany = useCallback(async (name: string): Promise<CompanyProfile | null> => {
     if (!user?.id) return null;
+    if (isStaff) {
+      toast.error('Staff members cannot create companies');
+      return null;
+    }
     if (companies.length >= MAX_COMPANIES) {
       toast.error(`Maximum of ${MAX_COMPANIES} companies allowed per subscription`);
       return null;
@@ -140,7 +135,6 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       const newProfile = data as CompanyProfile;
       setCompanies(prev => [...prev, newProfile]);
       
-      // Switch to the new company
       await switchCompany(newProfile.id);
       
       toast.success(`Company "${name}" created successfully`);
@@ -150,7 +144,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       toast.error('Failed to create company');
       return null;
     }
-  }, [user?.id, companies.length, switchCompany]);
+  }, [user?.id, companies.length, switchCompany, isStaff]);
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
   const currency = activeCompany?.currency || 'LSL';
@@ -162,9 +156,10 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
       activeCompanyId,
       currency,
       isLoading,
+      isStaff,
       switchCompany,
       addCompany,
-      canAddMore: multiCompanyEnabled && companies.length < MAX_COMPANIES,
+      canAddMore: !isStaff && multiCompanyEnabled && companies.length < MAX_COMPANIES,
       refetchCompanies: fetchCompanies,
     }}>
       {children}
