@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { TypeToConfirmDeleteDialog } from '@/components/admin/TypeToConfirmDeleteDialog';
 
 interface DeletedTenant {
   id: string;
@@ -29,6 +30,7 @@ const RECYCLE_BIN_DAYS = 90;
 
 export function RecycleBinSection() {
   const [open, setOpen] = useState(false);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<DeletedTenant | null>(null);
   const { isAdmin } = useAdminRole();
   const queryClient = useQueryClient();
 
@@ -43,7 +45,6 @@ export function RecycleBinSection() {
 
       if (error) throw error;
 
-      // Deduplicate by user_id — pick the primary profile per user
       const byUser: Record<string, typeof profiles[0]> = {};
       (profiles || []).forEach((p: any) => {
         if (!byUser[p.user_id]) byUser[p.user_id] = p;
@@ -89,71 +90,124 @@ export function RecycleBinSection() {
     },
   });
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (tenant: DeletedTenant) => {
+      const { data, error } = await supabase.functions.invoke('admin-get-signups', {
+        body: { action: 'permanent_delete', userId: tenant.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onMutate: async (tenant) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-tenants-deleted'] });
+      const prevDeleted = queryClient.getQueryData(['admin-tenants-deleted']);
+      queryClient.setQueryData(['admin-tenants-deleted'], (old: DeletedTenant[] | undefined) =>
+        old?.filter((t) => t.id !== tenant.id)
+      );
+      return { prevDeleted };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants-deleted'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success('Tenant permanently deleted');
+      setPermanentDeleteTarget(null);
+    },
+    onError: (_err, _tenant, context) => {
+      if (context?.prevDeleted) queryClient.setQueryData(['admin-tenants-deleted'], context.prevDeleted);
+      toast.error('Failed to permanently delete tenant');
+    },
+  });
+
   const count = deletedTenants?.length || 0;
 
   if (count === 0) return null;
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4" />
-            Recycle Bin ({count})
-          </span>
-          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="mt-2">
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Deleted</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {deletedTenants?.map((tenant) => {
-                const daysSinceDelete = differenceInDays(new Date(), new Date(tenant.deleted_at));
-                const daysRemaining = RECYCLE_BIN_DAYS - daysSinceDelete;
-                const isExpired = daysRemaining <= 0;
+    <>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            <span className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Recycle Bin ({count})
+            </span>
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Deleted</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deletedTenants?.map((tenant) => {
+                  const daysSinceDelete = differenceInDays(new Date(), new Date(tenant.deleted_at));
+                  const daysRemaining = RECYCLE_BIN_DAYS - daysSinceDelete;
+                  const isExpired = daysRemaining <= 0;
 
-                return (
-                  <TableRow key={tenant.id}>
-                    <TableCell className="font-medium">{tenant.company_name}</TableCell>
-                    <TableCell>{tenant.email || '-'}</TableCell>
-                    <TableCell>{format(new Date(tenant.deleted_at), 'MMM d, yyyy')}</TableCell>
-                    <TableCell>
-                      {isExpired ? (
-                        <Badge variant="destructive">Expired</Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                          {daysRemaining} days remaining
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => restoreMutation.mutate(tenant)}
-                        disabled={restoreMutation.isPending}
-                      >
-                        <RotateCcw className="h-3 w-3 mr-1" />
-                        Restore
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+                  return (
+                    <TableRow key={tenant.id}>
+                      <TableCell className="font-medium">{tenant.company_name}</TableCell>
+                      <TableCell>{tenant.email || '-'}</TableCell>
+                      <TableCell>{format(new Date(tenant.deleted_at), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>
+                        {isExpired ? (
+                          <Badge variant="destructive">Expired</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                            {daysRemaining} days remaining
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreMutation.mutate(tenant)}
+                          disabled={restoreMutation.isPending || permanentDeleteMutation.isPending}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setPermanentDeleteTarget(tenant)}
+                          disabled={restoreMutation.isPending || permanentDeleteMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Delete Forever
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {permanentDeleteTarget && (
+        <TypeToConfirmDeleteDialog
+          open={!!permanentDeleteTarget}
+          onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
+          title="Permanently Delete Tenant"
+          description={`This will permanently delete "${permanentDeleteTarget.company_name}" and ALL associated data including invoices, quotes, clients, and the user account. This action is IRREVERSIBLE.`}
+          confirmText={permanentDeleteTarget.company_name}
+          onConfirm={() => permanentDeleteMutation.mutate(permanentDeleteTarget)}
+          isPending={permanentDeleteMutation.isPending}
+        />
+      )}
+    </>
   );
 }
