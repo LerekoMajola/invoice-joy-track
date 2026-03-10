@@ -18,6 +18,7 @@ export interface Tenant {
     system_type: string;
     billing_note: string | null;
     billing_override: number | null;
+    payment_reference: string | null;
   } | null;
   usage?: {
     clients_count: number;
@@ -140,6 +141,7 @@ export function useAdminTenants() {
               system_type: subscription.system_type || 'business',
               billing_note: (subscription as any).billing_note || null,
               billing_override: (subscription as any).billing_override ?? null,
+              payment_reference: (subscription as any).payment_reference || null,
             },
             usage: {
               clients_count: userCounts?.clients || 0,

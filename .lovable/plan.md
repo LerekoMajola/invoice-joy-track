@@ -1,38 +1,48 @@
 
 
-## Fix: Status Still Shows "Past Due" Before Due Date
+## Create Edge Function + Update Hook to Fix Usage Counts
 
-### Root Cause
+### Problem
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-Two issues:
-1. **BillingTab.tsx** displays the raw `status` from the database without checking whether the anniversary due date has actually passed. The edge function correction hasn't run yet, so stale `past_due` values persist.
-2. **Edge function**: Subscriptions with `trial_ends_at: null` (e.g., the owner account with `OWNER-PERPETUAL`) default to day 1, meaning they're always "past due" by the 2nd of the month. Owner/perpetual accounts should be excluded entirely.
+### Solution
 
-### Changes
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
 
-**1. BillingTab.tsx** — Compute a display status client-side:
-- If `trial_ends_at` is null and `payment_reference` is `OWNER-PERPETUAL`, always show "Active"
-- Otherwise, calculate the next due date from the anniversary day. If today is before that date, override `past_due` to show "Active" instead
-- Use this derived status for the badge and for the summary stats counts
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
 
-**2. check-payment-reminders edge function** — Skip perpetual/owner subscriptions:
-- Filter out subscriptions with `payment_reference = 'OWNER-PERPETUAL'` from all processing
-- Also fix the restoration logic: for subs with `trial_ends_at: null`, restore to active since there's no billing anniversary to calculate from
-
-### Technical Detail
-
-```typescript
-// BillingTab: derive effective status
-const getEffectiveStatus = (sub) => {
-  if (sub.payment_reference === 'OWNER-PERPETUAL') return 'active';
-  if (sub.status !== 'past_due') return sub.status;
-  // If next due date hasn't arrived, it's still active
-  const day = sub.trial_ends_at ? new Date(sub.trial_ends_at).getDate() : 1;
-  const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDay));
-  if (now < dueDate) return 'active';
-  return 'past_due';
-};
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
 ```
+
+**3. Update `src/hooks/useAdminTenants.tsx`:**
+
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
+```typescript
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
+```
+
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
+
+### Files changed
+| File | Change |
+|------|--------|
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
 

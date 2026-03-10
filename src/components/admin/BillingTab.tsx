@@ -23,6 +23,17 @@ import { PaymentTracker } from './PaymentTracker';
 import { STATUS_COLORS, STATUS_LABELS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
 import { formatMaluti } from '@/lib/currency';
 
+function getEffectiveStatus(sub: NonNullable<Tenant['subscription']>): string {
+  if (sub.payment_reference === 'OWNER-PERPETUAL') return 'active';
+  if (sub.status !== 'past_due') return sub.status;
+  const day = sub.trial_ends_at ? new Date(sub.trial_ends_at).getDate() : 1;
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDay));
+  if (now < dueDate) return 'active';
+  return 'past_due';
+}
+
 export function BillingTab() {
   const { data: tenants, isLoading } = useAdminTenants();
 
@@ -53,13 +64,13 @@ export function BillingTab() {
   const filtered = billingTenants.filter((t) => {
     const s = search.toLowerCase();
     if (search && !(t.company_name?.toLowerCase().includes(s) || t.email?.toLowerCase().includes(s))) return false;
-    if (statusFilter !== 'all' && t.subscription?.status !== statusFilter) return false;
+    if (statusFilter !== 'all' && t.subscription && getEffectiveStatus(t.subscription) !== statusFilter) return false;
     return true;
   });
 
-  // Summary stats
-  const activeCount = billingTenants.filter(t => t.subscription?.status === 'active').length;
-  const pastDueCount = billingTenants.filter(t => t.subscription?.status === 'past_due').length;
+  // Summary stats using effective status
+  const activeCount = billingTenants.filter(t => t.subscription && getEffectiveStatus(t.subscription) === 'active').length;
+  const pastDueCount = billingTenants.filter(t => t.subscription && getEffectiveStatus(t.subscription) === 'past_due').length;
   const mrr = billingTenants
     .filter(t => t.subscription?.status === 'active')
     .reduce((sum, t) => sum + (t.module_total || 0), 0);
@@ -150,9 +161,14 @@ export function BillingTab() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[sub.status] || ''}>
-                        {STATUS_LABELS[sub.status] || sub.status}
-                      </Badge>
+                      {(() => {
+                        const effectiveStatus = getEffectiveStatus(sub);
+                        return (
+                          <Badge className={STATUS_COLORS[effectiveStatus] || ''}>
+                            {STATUS_LABELS[effectiveStatus] || effectiveStatus}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm">
                       {PLAN_LABELS[sub.plan] || sub.plan}

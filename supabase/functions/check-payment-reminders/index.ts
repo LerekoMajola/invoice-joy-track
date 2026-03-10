@@ -18,11 +18,15 @@ Deno.serve(async (req) => {
     const now = new Date();
     const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-    // Get all active/past_due subscriptions
-    const { data: subscriptions, error: subsError } = await supabase
+    // Get all active/past_due subscriptions (exclude owner-perpetual)
+    const { data: allSubscriptions, error: subsError } = await supabase
       .from('subscriptions')
-      .select('id, user_id, plan, status, trial_ends_at')
+      .select('id, user_id, plan, status, trial_ends_at, payment_reference')
       .in('status', ['active', 'past_due']);
+
+    const subscriptions = (allSubscriptions || []).filter(
+      s => s.payment_reference !== 'OWNER-PERPETUAL'
+    );
 
     if (subsError) throw subsError;
     if (!subscriptions || subscriptions.length === 0) {
@@ -52,14 +56,23 @@ Deno.serve(async (req) => {
       return new Date(now.getFullYear(), now.getMonth(), Math.min(anniversaryDay, lastDay));
     };
 
+    // Also restore any OWNER-PERPETUAL subs that were incorrectly marked
+    const ownerSubs = (allSubscriptions || []).filter(
+      s => s.payment_reference === 'OWNER-PERPETUAL' && s.status === 'past_due'
+    );
+    for (const sub of ownerSubs) {
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', sub.id);
+    }
+
     // Fix: Restore past_due subs back to active if their due date hasn't arrived yet
-    // (corrects subscriptions incorrectly marked by old hardcoded logic)
-    let restored = 0;
+    let restored = ownerSubs.length;
     for (const sub of subscriptions) {
       if (sub.status !== 'past_due') continue;
       const dueDate = getDueDate(sub);
       const isPaid = paidSubIds.has(sub.id);
-      // If paid or due date hasn't arrived, restore to active
       if (isPaid || now < dueDate) {
         await supabase
           .from('subscriptions')
