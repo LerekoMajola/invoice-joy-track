@@ -68,9 +68,9 @@ export function BillingTab() {
     return true;
   });
 
-  // Summary stats
-  const activeCount = billingTenants.filter(t => t.subscription?.status === 'active').length;
-  const pastDueCount = billingTenants.filter(t => t.subscription?.status === 'past_due').length;
+  // Summary stats using effective status
+  const activeCount = billingTenants.filter(t => t.subscription && getEffectiveStatus(t.subscription) === 'active').length;
+  const pastDueCount = billingTenants.filter(t => t.subscription && getEffectiveStatus(t.subscription) === 'past_due').length;
   const mrr = billingTenants
     .filter(t => t.subscription?.status === 'active')
     .reduce((sum, t) => sum + (t.module_total || 0), 0);
