@@ -23,6 +23,17 @@ import { PaymentTracker } from './PaymentTracker';
 import { STATUS_COLORS, STATUS_LABELS, PLAN_LABELS, SYSTEM_ICONS, SYSTEM_LABELS, SYSTEM_COLORS } from './adminConstants';
 import { formatMaluti } from '@/lib/currency';
 
+function getEffectiveStatus(sub: NonNullable<Tenant['subscription']>): string {
+  if (sub.payment_reference === 'OWNER-PERPETUAL') return 'active';
+  if (sub.status !== 'past_due') return sub.status;
+  const day = sub.trial_ends_at ? new Date(sub.trial_ends_at).getDate() : 1;
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDay));
+  if (now < dueDate) return 'active';
+  return 'past_due';
+}
+
 export function BillingTab() {
   const { data: tenants, isLoading } = useAdminTenants();
 
