@@ -111,28 +111,11 @@ export function CustomersTab() {
 
   const deleteTenantMutation = useMutation({
     mutationFn: async (customer: UnifiedCustomer) => {
-      if (customer.tenant) {
-        // Soft-delete: set deleted_at on company_profiles and subscriptions
-        const now = new Date().toISOString();
-        const { error: profileError } = await supabase
-          .from('company_profiles')
-          .update({ deleted_at: now } as any)
-          .eq('user_id', customer.user_id);
-        if (profileError) throw profileError;
-
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .update({ deleted_at: now } as any)
-          .eq('user_id', customer.user_id);
-        if (subError) throw subError;
-      } else {
-        // Non-onboarded: hard-delete the auth user
-        const { data, error } = await supabase.functions.invoke('admin-get-signups', {
-          body: { action: 'delete', userId: customer.user_id },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-      }
+      const { data, error } = await supabase.functions.invoke('admin-get-signups', {
+        body: { action: 'permanent_delete', userId: customer.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onMutate: async (customer) => {
       await queryClient.cancelQueries({ queryKey: ['admin-tenants'] });
