@@ -410,9 +410,19 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
   );
 
   return (
-    <div ref={containerRef} className="w-full overflow-visible" style={{ minHeight: effectiveDocHeight * scale }}>
-      <div style={{ transformOrigin: 'top center', transform: `scale(${scale})`, width: '210mm', margin: '0 auto' }}>
-        {docContent}
+    <div ref={containerRef} className="w-full flex justify-center overflow-visible">
+      <div style={{
+        width: 793 * scale,
+        minHeight: effectiveDocHeight * scale,
+        overflow: 'visible',
+      }}>
+        <div style={{
+          transformOrigin: 'top left',
+          transform: `scale(${scale})`,
+          width: 793,
+        }}>
+          {docContent}
+        </div>
       </div>
     </div>
   );
