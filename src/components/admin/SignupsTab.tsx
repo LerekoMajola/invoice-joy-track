@@ -35,7 +35,7 @@ export function SignupsTab() {
   const deleteMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { data, error } = await supabase.functions.invoke('admin-get-signups', {
-        body: { action: 'delete', userId },
+        body: { action: 'permanent_delete', userId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
