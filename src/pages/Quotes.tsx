@@ -54,12 +54,11 @@ import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
 import { supabase } from '@/integrations/supabase/client';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+// @ts-ignore - Vite URL import for worker
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/legacy/build/pdf.worker.mjs',
-  import.meta.url
-).toString();
+// Configure PDF.js worker using Vite-friendly URL import
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const ITEMS_PER_PAGE = 10;
 
