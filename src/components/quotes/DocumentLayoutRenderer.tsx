@@ -374,8 +374,9 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     color: '#1a1a1a',
   };
 
+  const effectiveDocHeight = Math.max(docHeight || 1123, 1123); // always at least A4 height (297mm ≈ 1123px)
   const outerStyle: React.CSSProperties = {
-    height: docHeight ? docHeight * scale : undefined,
+    height: effectiveDocHeight * scale,
     overflow: 'visible',
   };
 
