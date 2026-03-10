@@ -339,9 +339,12 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     const updateScale = () => {
       if (!containerRef.current) return;
       const containerWidth = containerRef.current.clientWidth || 800;
-      const availableHeight = window.innerHeight - 160; // toolbar + padding + margins
-      const scaleX = Math.min(1, containerWidth / 793);
-      const scaleY = Math.min(1, availableHeight / 1123);
+      const containerHeight = containerRef.current.clientHeight || (window.innerHeight - 120);
+      const viewportHeight = Math.max(containerHeight, window.innerHeight - 120);
+      const docWidth = 793; // 210mm ≈ 793px
+      const docH = 1123; // 297mm ≈ 1123px
+      const scaleX = Math.min(1, containerWidth / docWidth);
+      const scaleY = Math.min(1, viewportHeight / docH);
       setScale(Math.min(scaleX, scaleY));
     };
 
