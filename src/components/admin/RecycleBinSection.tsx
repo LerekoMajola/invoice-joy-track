@@ -201,11 +201,8 @@ export function RecycleBinSection() {
         <TypeToConfirmDeleteDialog
           open={!!permanentDeleteTarget}
           onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
-          title="Permanently Delete Tenant"
-          description={`This will permanently delete "${permanentDeleteTarget.company_name}" and ALL associated data including invoices, quotes, clients, and the user account. This action is IRREVERSIBLE.`}
-          confirmText={permanentDeleteTarget.company_name}
+          companyName={permanentDeleteTarget.company_name}
           onConfirm={() => permanentDeleteMutation.mutate(permanentDeleteTarget)}
-          isPending={permanentDeleteMutation.isPending}
         />
       )}
     </>
