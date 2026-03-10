@@ -18,6 +18,7 @@ export interface Tenant {
     system_type: string;
     billing_note: string | null;
     billing_override: number | null;
+    payment_reference: string | null;
   } | null;
   usage?: {
     clients_count: number;
