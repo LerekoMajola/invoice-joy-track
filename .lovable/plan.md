@@ -1,48 +1,73 @@
 
 
-## Create Edge Function + Update Hook to Fix Usage Counts
+## Fix: Quote Preview Layout Clipping
 
-### Problem
-Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
+### Root Cause
+The `DocumentWrapper` component scales the A4 document (210mm = 793px wide) using CSS `transform: scale()`, but the **scale wrapper div has a fixed `width: '210mm'`**. When the scale is less than 1, the transformed content visually shrinks but the wrapper still occupies 793px of layout space — causing horizontal overflow and clipping within the `max-w-4xl` (896px) parent container in `QuotePreview.tsx`.
 
-### Solution
+The outer container in `QuotePreview` also uses `overflow-x-hidden`, which silently clips the right edge.
 
-**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
+### Plan
 
-- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
-- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
-- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
-- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
+**File: `src/components/quotes/DocumentLayoutRenderer.tsx`** (lines 412-418)
 
-**2. Add to `supabase/config.toml`:**
-```toml
-[functions.admin-get-tenant-counts]
-verify_jwt = false
+Change the scale wrapper to not force a fixed 210mm width at the outer level. Instead, let it size to 100% of the container and only set the 210mm width on the inner document content (which it already does via `baseStyle`):
+
+```tsx
+// Current (line 414):
+<div style={{ transformOrigin: 'top center', transform: `scale(${scale})`, width: '210mm', margin: '0 auto' }}>
+
+// Fix:
+<div style={{ transformOrigin: 'top left', transform: `scale(${scale})`, width: 793, margin: '0 auto' }}>
 ```
 
-**3. Update `src/hooks/useAdminTenants.tsx`:**
+Wait — the real issue is that `transform: scale` doesn't change layout size. The outer div needs to account for the scaled dimensions. The fix:
 
-Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
-```typescript
-const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
-const tenantCounts = countsData || {};
+1. **Scale wrapper** (line 414): Remove `width: '210mm'` from the scale wrapper. Set `width: 793` (the native A4 px width) but wrap it so the outer container compensates for the scale.
+
+2. **Outer container** (line 413): Set explicit `width` and `height` to the **scaled** dimensions so layout flows correctly:
+
+```tsx
+<div ref={containerRef} className="w-full flex justify-center overflow-visible">
+  <div style={{
+    width: 793 * scale,
+    minHeight: effectiveDocHeight * scale,
+    overflow: 'visible',
+  }}>
+    <div style={{
+      transformOrigin: 'top left',
+      transform: `scale(${scale})`,
+      width: 793,
+    }}>
+      {docContent}
+    </div>
+  </div>
+</div>
 ```
 
-Then in the tenant mapping (lines 161-173), use:
-```typescript
-usage: {
-  clients_count: tenantCounts[userId]?.clients || 0,
-  quotes_count: tenantCounts[userId]?.quotes || 0,
-  invoices_count: tenantCounts[userId]?.invoices || 0,
-  gym_members_count: tenantCounts[userId]?.gym_members || 0,
-  students_count: tenantCounts[userId]?.students || 0,
-}
+This creates a properly-sized layout box that matches the visually-scaled document, preventing any clipping.
+
+**File: `src/components/quotes/QuotePreview.tsx`** (line 162-163)
+
+Change the outer container to allow proper overflow and remove the `overflow-x-hidden` that clips content:
+
+```tsx
+// Current:
+<div className="fixed inset-0 z-50 bg-background overflow-y-auto overflow-x-hidden">
+  <div className="w-full max-w-4xl mx-auto py-8 px-4">
+
+// Fix:
+<div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+  <div className="w-full max-w-5xl mx-auto py-8 px-4">
 ```
 
-### Files changed
+- Remove `overflow-x-hidden` — the scaled document will now fit properly
+- Widen to `max-w-5xl` (1024px) to give the A4 document (793px) comfortable margins
+
+### Summary
+
 | File | Change |
 |------|--------|
-| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` entry |
-| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
+| `DocumentLayoutRenderer.tsx` | Wrap scaled document in a layout-sized container (width/height = native × scale), use `transformOrigin: top left`, center with flexbox |
+| `QuotePreview.tsx` | Remove `overflow-x-hidden`, widen container to `max-w-5xl` |
 
