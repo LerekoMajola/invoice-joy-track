@@ -1,48 +1,45 @@
 
 
-## Create Edge Function + Update Hook to Fix Usage Counts
+## Show Subscription Due Date on Trial Anniversary
 
 ### Problem
-Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
+The billing page currently treats payments as due on the 1st of each month. The actual billing cycle should align with the trial end date — e.g., if a trial ended March 15, payments are due on the 15th of each subsequent month.
 
-### Solution
+### Changes
 
-**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
+**1. PaymentTracker.tsx** — Update `getMonthStatus` logic:
+- Extract the anniversary day from `trialEndsAt` (e.g., day 15)
+- A month becomes "due" only when the current date reaches the anniversary day of that month (not the 1st)
+- A month is "overdue" only after the anniversary day has passed (not after the 1st of the next month)
+- Show the due date (e.g., "Due 15th") under each month indicator for clarity
 
-- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
-- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
-- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
-- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
+**2. BillingTab.tsx** — Add a "Next Due" column:
+- Calculate the next due date from `trial_ends_at` anniversary day
+- Show it formatted (e.g., "Mar 15, 2026") in the table
+- Replace the less useful "Trial Ended" column with "Next Due"
 
-**2. Add to `supabase/config.toml`:**
-```toml
-[functions.admin-get-tenant-counts]
-verify_jwt = false
-```
+### Technical Detail
 
-**3. Update `src/hooks/useAdminTenants.tsx`:**
-
-Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
 ```typescript
-const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
-const tenantCounts = countsData || {};
+// PaymentTracker: derive anniversary day
+const anniversaryDay = anniversaryDate ? anniversaryDate.getDate() : 1;
+
+// A month's due date is the anniversary day of that month
+const getDueDate = (monthIndex: number) => {
+  const lastDay = new Date(currentYear, monthIndex + 1, 0).getDate();
+  return new Date(currentYear, monthIndex, Math.min(anniversaryDay, lastDay));
+};
+
+// Status uses dueDate instead of monthStart
+const getMonthStatus = (monthIndex: number) => {
+  // ... N/A check stays same
+  const dueDate = getDueDate(monthIndex);
+  if (payment?.status === 'paid') return 'paid';
+  if (isSameMonth(dueDate, now) && now >= dueDate) return 'due'; // due once anniversary day arrives
+  if (isBefore(dueDate, now)) return 'overdue';
+  return 'future';
+};
 ```
 
-Then in the tenant mapping (lines 161-173), use:
-```typescript
-usage: {
-  clients_count: tenantCounts[userId]?.clients || 0,
-  quotes_count: tenantCounts[userId]?.quotes || 0,
-  invoices_count: tenantCounts[userId]?.invoices || 0,
-  gym_members_count: tenantCounts[userId]?.gym_members || 0,
-  students_count: tenantCounts[userId]?.students || 0,
-}
-```
-
-### Files changed
-| File | Change |
-|------|--------|
-| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` entry |
-| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
+For BillingTab, the "Next Due" calculation finds the next upcoming anniversary date from today.
 
