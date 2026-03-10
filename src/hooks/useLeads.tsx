@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from './use-toast';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface Lead {
   id: string;
