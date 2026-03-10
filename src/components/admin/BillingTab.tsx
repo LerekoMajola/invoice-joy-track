@@ -161,9 +161,14 @@ export function BillingTab() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[sub.status] || ''}>
-                        {STATUS_LABELS[sub.status] || sub.status}
-                      </Badge>
+                      {(() => {
+                        const effectiveStatus = getEffectiveStatus(sub);
+                        return (
+                          <Badge className={STATUS_COLORS[effectiveStatus] || ''}>
+                            {STATUS_LABELS[effectiveStatus] || effectiveStatus}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm">
                       {PLAN_LABELS[sub.plan] || sub.plan}

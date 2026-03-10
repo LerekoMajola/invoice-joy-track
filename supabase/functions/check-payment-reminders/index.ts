@@ -56,14 +56,23 @@ Deno.serve(async (req) => {
       return new Date(now.getFullYear(), now.getMonth(), Math.min(anniversaryDay, lastDay));
     };
 
+    // Also restore any OWNER-PERPETUAL subs that were incorrectly marked
+    const ownerSubs = (allSubscriptions || []).filter(
+      s => s.payment_reference === 'OWNER-PERPETUAL' && s.status === 'past_due'
+    );
+    for (const sub of ownerSubs) {
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', sub.id);
+    }
+
     // Fix: Restore past_due subs back to active if their due date hasn't arrived yet
-    // (corrects subscriptions incorrectly marked by old hardcoded logic)
-    let restored = 0;
+    let restored = ownerSubs.length;
     for (const sub of subscriptions) {
       if (sub.status !== 'past_due') continue;
       const dueDate = getDueDate(sub);
       const isPaid = paidSubIds.has(sub.id);
-      // If paid or due date hasn't arrived, restore to active
       if (isPaid || now < dueDate) {
         await supabase
           .from('subscriptions')
