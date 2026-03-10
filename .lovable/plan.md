@@ -1,48 +1,44 @@
 
 
-## Create Edge Function + Update Hook to Fix Usage Counts
+## Fix: Align Status with Next Due Date
 
 ### Problem
-Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
+`getEffectiveStatus` calculates the due date for the current month only. For Ideliver (day 5) and MISFIT (day 3), the March due dates have passed, so it shows "Past Due". But the "Next Due" column correctly shows April 5 / April 3 — a future date. The status should only be "Past Due" once the **next upcoming** due date has passed.
 
-### Solution
+### Fix
 
-**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
+Update `getEffectiveStatus` in `BillingTab.tsx` to use the same next-due-date logic as the "Next Due" column:
 
-- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
-- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
-- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
-- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
-
-**2. Add to `supabase/config.toml`:**
-```toml
-[functions.admin-get-tenant-counts]
-verify_jwt = false
-```
-
-**3. Update `src/hooks/useAdminTenants.tsx`:**
-
-Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
 ```typescript
-const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
-const tenantCounts = countsData || {};
-```
-
-Then in the tenant mapping (lines 161-173), use:
-```typescript
-usage: {
-  clients_count: tenantCounts[userId]?.clients || 0,
-  quotes_count: tenantCounts[userId]?.quotes || 0,
-  invoices_count: tenantCounts[userId]?.invoices || 0,
-  gym_members_count: tenantCounts[userId]?.gym_members || 0,
-  students_count: tenantCounts[userId]?.students || 0,
+function getEffectiveStatus(sub: NonNullable<Tenant['subscription']>): string {
+  if (sub.payment_reference === 'OWNER-PERPETUAL') return 'active';
+  if (sub.status !== 'past_due') return sub.status;
+  if (!sub.trial_ends_at) return sub.status;
+  
+  const day = new Date(sub.trial_ends_at).getDate();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  let nextDue = new Date(year, month, Math.min(day, lastDay));
+  
+  // If this month's due date has passed, next due is next month
+  if (nextDue <= now) {
+    const nm = month + 1 > 11 ? 0 : month + 1;
+    const ny = month + 1 > 11 ? year + 1 : year;
+    const ld = new Date(ny, nm + 1, 0).getDate();
+    nextDue = new Date(ny, nm, Math.min(day, ld));
+  }
+  
+  // If next due is in the future, they're not past due yet
+  return now < nextDue ? 'active' : 'past_due';
 }
 ```
 
-### Files changed
+This ensures the status badge matches the "Next Due" column — if the next due date hasn't arrived, the tenant is still "Active".
+
+### Files
 | File | Change |
 |------|--------|
-| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` entry |
-| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
+| `src/components/admin/BillingTab.tsx` | Update `getEffectiveStatus` to use next-due-date logic |
 
