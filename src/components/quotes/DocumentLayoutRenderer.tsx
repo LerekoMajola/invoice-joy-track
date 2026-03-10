@@ -344,8 +344,7 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
       const docWidth = 793; // 210mm ≈ 793px
       const docH = 1123; // 297mm ≈ 1123px
       const scaleX = Math.min(1, containerWidth / docWidth);
-      const scaleY = Math.min(1, viewportHeight / docH);
-      setScale(Math.min(scaleX, scaleY));
+      setScale(scaleX);
     };
 
     // Delay first measurement to let layout settle
