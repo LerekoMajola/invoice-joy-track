@@ -52,6 +52,23 @@ Deno.serve(async (req) => {
       return new Date(now.getFullYear(), now.getMonth(), Math.min(anniversaryDay, lastDay));
     };
 
+    // Fix: Restore past_due subs back to active if their due date hasn't arrived yet
+    // (corrects subscriptions incorrectly marked by old hardcoded logic)
+    let restored = 0;
+    for (const sub of subscriptions) {
+      if (sub.status !== 'past_due') continue;
+      const dueDate = getDueDate(sub);
+      const isPaid = paidSubIds.has(sub.id);
+      // If paid or due date hasn't arrived, restore to active
+      if (isPaid || now < dueDate) {
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'active', updated_at: new Date().toISOString() })
+          .eq('id', sub.id);
+        restored++;
+      }
+    }
+
     // Filter unpaid subs whose due date has arrived
     const unpaidSubs = subscriptions.filter(s => {
       if (paidSubIds.has(s.id)) return false;
@@ -69,7 +86,7 @@ Deno.serve(async (req) => {
     });
 
     if (unpaidSubs.length === 0) {
-      return new Response(JSON.stringify({ message: 'All payments received or not yet due' }), {
+      return new Response(JSON.stringify({ message: `All payments received or not yet due. Restored ${restored} subscriptions.` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
