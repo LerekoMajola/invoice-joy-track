@@ -16,15 +16,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date();
-    const dayOfMonth = now.getDate();
     const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-
-    // Only send reminders after the 5th of the month
-    if (dayOfMonth < 5) {
-      return new Response(JSON.stringify({ message: 'Too early in month for reminders' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     // Get all active/past_due subscriptions
     const { data: subscriptions, error: subsError } = await supabase
@@ -53,7 +45,14 @@ Deno.serve(async (req) => {
       (payments || []).filter(p => p.status === 'paid').map(p => p.subscription_id)
     );
 
-    // Filter unpaid subs, but skip those whose anniversary month hasn't arrived yet
+    // Helper: get the due date for a subscription in the current month
+    const getDueDate = (sub: { trial_ends_at: string | null }) => {
+      const anniversaryDay = sub.trial_ends_at ? new Date(sub.trial_ends_at).getDate() : 1;
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      return new Date(now.getFullYear(), now.getMonth(), Math.min(anniversaryDay, lastDay));
+    };
+
+    // Filter unpaid subs whose due date has arrived
     const unpaidSubs = subscriptions.filter(s => {
       if (paidSubIds.has(s.id)) return false;
       // If trial_ends_at exists, only expect payment from that month onward
@@ -63,10 +62,14 @@ Deno.serve(async (req) => {
         const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
         if (currentMonthDate < anniversaryMonthStart) return false;
       }
+      // Only send reminders once the due date has arrived
+      const dueDate = getDueDate(s);
+      if (now < dueDate) return false;
       return true;
     });
+
     if (unpaidSubs.length === 0) {
-      return new Response(JSON.stringify({ message: 'All payments received' }), {
+      return new Response(JSON.stringify({ message: 'All payments received or not yet due' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -92,6 +95,7 @@ Deno.serve(async (req) => {
 
     for (const sub of unpaidSubs) {
       const companyName = profileMap.get(sub.user_id) || 'Unknown Company';
+      const dueDate = getDueDate(sub);
 
       // Notify the client
       await supabase.from('notifications').insert({
@@ -115,8 +119,10 @@ Deno.serve(async (req) => {
         notificationsCreated++;
       }
 
-      // If past the 7th, update status to past_due
-      if (dayOfMonth > 7 && sub.status === 'active') {
+      // Mark as past_due if more than 7 days past the anniversary due date
+      const msSinceDue = now.getTime() - dueDate.getTime();
+      const daysPastDue = msSinceDue / (1000 * 60 * 60 * 24);
+      if (daysPastDue > 7 && sub.status === 'active') {
         await supabase
           .from('subscriptions')
           .update({ status: 'past_due', updated_at: new Date().toISOString() })
