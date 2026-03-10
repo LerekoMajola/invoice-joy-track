@@ -1,35 +1,48 @@
 
 
-## Fix: Document Preview Still Cut Off
+## Create Edge Function + Update Hook to Fix Usage Counts
 
-### Root Cause
+### Problem
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-In `DocumentWrapper`, `containerRef.current.clientHeight` measures the container's own content height — which includes the full unscaled document (~1123px). This means:
+### Solution
 
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
+
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
+
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
 ```
-containerHeight = 1123  (its own content)
-viewportHeight = Math.max(1123, window.innerHeight - 120) = 1123
-scaleY = 1123 / 1123 = 1  ← never scales down!
-```
 
-The height-based scaling never activates because the container is measuring itself rather than the available viewport space.
+**3. Update `src/hooks/useAdminTenants.tsx`:**
 
-### Fix
-
-**File: `src/components/quotes/DocumentLayoutRenderer.tsx`** — lines 339-348
-
-Remove `containerHeight` from the calculation entirely. For height, always use `window.innerHeight` minus offset (the fixed overlay viewport is the constraint, not the container). Only use the container for width measurement.
-
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
 ```typescript
-const updateScale = () => {
-  if (!containerRef.current) return;
-  const containerWidth = containerRef.current.clientWidth || 800;
-  const availableHeight = window.innerHeight - 160; // toolbar + padding + margins
-  const scaleX = Math.min(1, containerWidth / 793);
-  const scaleY = Math.min(1, availableHeight / 1123);
-  setScale(Math.min(scaleX, scaleY));
-};
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
 ```
 
-The 160px offset accounts for: sticky toolbar (~56px), `py-8` padding (64px), and `mb-4` margin (16px) in the QuotePreview layout.
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
+
+### Files changed
+| File | Change |
+|------|--------|
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
 
