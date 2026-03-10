@@ -30,10 +30,7 @@ function getEffectiveStatus(sub: NonNullable<Tenant['subscription']>): string {
   const now = new Date();
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDay));
-  // Match edge function: only past_due after 7-day grace period
-  const msSinceDue = now.getTime() - dueDate.getTime();
-  const daysPastDue = msSinceDue / (1000 * 60 * 60 * 24);
-  if (daysPastDue <= 7) return 'active';
+  if (now < dueDate) return 'active';
   return 'past_due';
 }
 
