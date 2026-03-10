@@ -159,7 +159,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
   const thStyle = getTableHeaderStyle(selectedTemplate);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto py-8 px-4">
         {/* Toolbar */}
