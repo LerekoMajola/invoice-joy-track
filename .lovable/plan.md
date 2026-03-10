@@ -1,35 +1,48 @@
 
 
-## Fix: Company Logo Not Updating in Header "My Business" Tab
+## Create Edge Function + Update Hook to Fix Usage Counts
 
 ### Problem
-When you upload a logo in Settings and save, the `CompanySwitcher` ("My Business" button in the header) still shows no logo. This happens because:
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-1. Settings saves `logo_url` to the `company_profiles` table via `useCompanyProfile`
-2. The `CompanySwitcher` reads from `ActiveCompanyContext`, which fetches companies into local state on mount
-3. There's no mechanism to refresh that local state when the profile is updated
+### Solution
 
-### Fix
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
 
-**`src/contexts/ActiveCompanyContext.tsx`** — Add a realtime subscription on the `company_profiles` table so when a profile is updated (including logo), the companies list automatically refreshes:
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
 
-```typescript
-// Add realtime listener for company_profiles changes
-useEffect(() => {
-  const channel = supabase
-    .channel('company-profiles-switcher')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'company_profiles' }, () => {
-      fetchCompanies();
-    })
-    .subscribe();
-  return () => { supabase.removeChannel(channel); };
-}, [fetchCompanies]);
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
 ```
 
-This single addition ensures that any update to `company_profiles` (logo upload, name change, etc.) immediately reflects in the header's company switcher without a page reload.
+**3. Update `src/hooks/useAdminTenants.tsx`:**
 
-### Files Changed
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
+```typescript
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
+```
+
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
+
+### Files changed
 | File | Change |
 |------|--------|
-| `src/contexts/ActiveCompanyContext.tsx` | Add realtime subscription to auto-refresh on profile changes |
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
 
