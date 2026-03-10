@@ -395,7 +395,8 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           />
         </DocumentWrapper>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
