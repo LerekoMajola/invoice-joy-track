@@ -162,11 +162,14 @@ export function useLeads() {
         return null;
       }
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data, error } = await supabase
         .from('leads')
         .insert({
           ...lead,
-          user_id: activeCompany?.user_id || user.id,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
         })
         .select()
         .single();
