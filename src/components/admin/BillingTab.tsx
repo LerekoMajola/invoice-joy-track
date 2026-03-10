@@ -119,7 +119,7 @@ export function BillingTab() {
               <TableHead>Status</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Price/mo</TableHead>
-              <TableHead>Trial Ended</TableHead>
+              <TableHead>Next Due</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
