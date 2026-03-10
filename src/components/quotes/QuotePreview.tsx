@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -158,7 +159,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
   const thStyle = getTableHeaderStyle(selectedTemplate);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto py-8 px-4">
         {/* Toolbar */}
@@ -394,7 +395,8 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           />
         </DocumentWrapper>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
