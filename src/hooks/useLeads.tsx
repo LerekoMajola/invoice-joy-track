@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from './use-toast';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface Lead {
   id: string;
@@ -161,11 +162,14 @@ export function useLeads() {
         return null;
       }
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data, error } = await supabase
         .from('leads')
         .insert({
           ...lead,
-          user_id: activeCompany?.user_id || user.id,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
         })
         .select()
         .single();
@@ -245,10 +249,13 @@ export function useLeads() {
 
     try {
       // Create client from lead with source tracking
+      const { ownerId: convertOwnerId, companyProfileId: convertCompanyId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
-          user_id: activeCompany?.user_id || user.id,
+          user_id: convertOwnerId,
+          company_profile_id: convertCompanyId,
           company: lead.company || lead.name,
           contact_person: lead.name,
           email: lead.email,

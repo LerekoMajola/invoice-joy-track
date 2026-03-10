@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface LineItem {
   id: string;
@@ -196,12 +197,14 @@ export function useQuotes() {
       const total = quote.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       const totalWithTax = total * (1 + (quote.taxRate || 0) / 100);
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const insertFn = async () => {
         const { data: quoteData, error: quoteError } = await supabase
           .from('quotes')
           .insert({
-            user_id: activeCompany?.user_id || user.id,
-            company_profile_id: activeCompanyId || null,
+            user_id: ownerId,
+            company_profile_id: companyProfileId,
             quote_number: quoteNumber,
             client_id: quote.clientId || null,
             client_name: quote.clientName,

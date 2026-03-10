@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { useToast } from './use-toast';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface Contact {
   id: string;
@@ -105,12 +106,14 @@ export function useContacts(clientId?: string, leadId?: string) {
         }
       }
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data, error } = await supabase
         .from('contacts')
         .insert({
           ...contact,
-          user_id: activeCompany?.user_id || user.id,
-          company_profile_id: activeCompanyId || null,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
         })
         .select()
         .single();

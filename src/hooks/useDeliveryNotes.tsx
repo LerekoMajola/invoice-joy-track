@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface DeliveryNoteItem {
   id: string;
@@ -155,11 +156,13 @@ export function useDeliveryNotes() {
     try {
       const noteNumber = await generateNoteNumber();
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(activeUser.id, activeCompany?.user_id, activeCompanyId);
+
       const { data: noteData, error: noteError } = await supabase
         .from('delivery_notes')
         .insert({
-          user_id: activeCompany?.user_id || activeUser.id,
-          company_profile_id: activeCompanyId || null,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
           note_number: noteNumber,
           client_id: note.clientId || null,
           invoice_id: note.invoiceId || null,

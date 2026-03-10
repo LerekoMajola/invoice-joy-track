@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
@@ -87,10 +88,12 @@ export function useTasks() {
       // Get max sort_order
       const maxOrder = tasks.reduce((max, t) => Math.max(max, t.sort_order), -1);
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          user_id: activeCompany?.user_id || user.id,
+          user_id: ownerId,
           title: input.title,
           description: input.description || null,
           due_date: input.due_date || null,
@@ -101,7 +104,7 @@ export function useTasks() {
           assigned_to_name: input.assigned_to_name || null,
           due_time: input.due_time || null,
           reminder_minutes_before: input.reminder_minutes_before ?? 15,
-          company_profile_id: activeCompanyId,
+          company_profile_id: companyProfileId,
         })
         .select()
         .single();

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
+import { resolveOwnerIds } from './useStaffOwnerIds';
 
 export interface LineItem {
   id: string;
@@ -189,11 +190,13 @@ export function useInvoices() {
       const total = invoice.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       const totalWithTax = total * (1 + (invoice.taxRate || 0) / 100);
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(activeUser.id, activeCompany?.user_id, activeCompanyId);
+
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: activeCompany?.user_id || activeUser.id,
-          company_profile_id: activeCompanyId || null,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,
           client_id: invoice.clientId || null,
@@ -323,8 +326,9 @@ export function useInvoices() {
         const activeUser = await getActiveUser();
         if (activeUser) {
           const invoiceTotal = updates.lineItems ? totalWithTax : (existingInvoice?.total || 0);
+          const { ownerId: acctOwnerId } = await resolveOwnerIds(activeUser.id, activeCompany?.user_id, activeCompanyId);
           await supabase.from('accounting_transactions').insert({
-            user_id: activeCompany?.user_id || activeUser.id,
+            user_id: acctOwnerId,
             transaction_type: 'income',
             reference_type: 'invoice',
             reference_id: id,
