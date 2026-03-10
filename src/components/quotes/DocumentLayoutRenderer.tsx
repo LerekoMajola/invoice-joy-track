@@ -334,22 +334,30 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
   const [scale, setScale] = React.useState(1);
   const [docHeight, setDocHeight] = React.useState<number | undefined>(undefined);
 
+  // Recalculate scale whenever the outer container resizes (handles dialogs, sidebar, data load)
   React.useEffect(() => {
     const updateScale = () => {
-      if (containerRef.current) {
-        const parentWidth = containerRef.current.parentElement?.clientWidth || 800;
-        const viewportHeight = window.innerHeight - 120; // subtract toolbar + padding
-        const docWidth = 793; // 210mm ≈ 793px
-        const docH = 1123; // 297mm ≈ 1123px
-        const scaleX = Math.min(1, parentWidth / docWidth);
-        const scaleY = Math.min(1, viewportHeight / docH);
-        const newScale = Math.min(scaleX, scaleY);
-        setScale(newScale);
-      }
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth || 800;
+      const containerHeight = containerRef.current.clientHeight || (window.innerHeight - 120);
+      const viewportHeight = Math.max(containerHeight, window.innerHeight - 120);
+      const docWidth = 793; // 210mm ≈ 793px
+      const docH = 1123; // 297mm ≈ 1123px
+      const scaleX = Math.min(1, containerWidth / docWidth);
+      const scaleY = Math.min(1, viewportHeight / docH);
+      setScale(Math.min(scaleX, scaleY));
     };
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+
+    // Delay first measurement to let layout settle
+    const raf = requestAnimationFrame(updateScale);
+
+    const observer = new ResizeObserver(updateScale);
+    if (containerRef.current) observer.observe(containerRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, []);
 
   // Track actual document height to size the outer wrapper correctly when scaled
@@ -358,7 +366,7 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setDocHeight(entry.contentRect.height + 2); // +2 for border
+        setDocHeight(entry.contentRect.height + 2);
       }
     });
     observer.observe(el);
@@ -374,7 +382,7 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     color: '#1a1a1a',
   };
 
-  const effectiveDocHeight = Math.max(docHeight || 1123, 1123); // always at least A4 height (297mm ≈ 1123px)
+  const effectiveDocHeight = Math.max(docHeight || 1123, 1123);
   const outerStyle: React.CSSProperties = {
     height: effectiveDocHeight * scale,
     overflow: 'visible',
@@ -385,7 +393,6 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     transform: `scale(${scale})`,
   };
 
-  // Merge the innerRef and our internal docRef
   const setDocRefs = React.useCallback((el: HTMLDivElement | null) => {
     (docRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
     if (innerRef && 'current' in innerRef) {
@@ -393,26 +400,22 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     }
   }, [innerRef]);
 
-  if (template.headerStyle === 'sidebar') {
-    return (
-      <div style={outerStyle}>
-        <div ref={containerRef} style={scaleWrapperStyle}>
-          <div ref={setDocRefs} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
-            <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
-            <div className="flex-1 p-[15mm]">
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const docContent = template.headerStyle === 'sidebar' ? (
+    <div ref={setDocRefs} className="bg-white shadow-lg mx-auto flex" style={baseStyle}>
+      <div className="w-2 flex-shrink-0" style={{ backgroundColor: template.primaryColor }} />
+      <div className="flex-1 p-[15mm]">{children}</div>
+    </div>
+  ) : (
+    <div ref={setDocRefs} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
+      {children}
+    </div>
+  );
 
   return (
-    <div style={outerStyle}>
-      <div ref={containerRef} style={scaleWrapperStyle}>
-        <div ref={setDocRefs} className="bg-white shadow-lg mx-auto" style={{ ...baseStyle, padding: '15mm' }}>
-          {children}
+    <div ref={containerRef} className="w-full" style={{ minHeight: outerStyle.height }}>
+      <div style={{ ...outerStyle }}>
+        <div style={scaleWrapperStyle}>
+          {docContent}
         </div>
       </div>
     </div>
