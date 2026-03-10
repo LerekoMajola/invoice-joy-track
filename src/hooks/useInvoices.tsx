@@ -190,11 +190,13 @@ export function useInvoices() {
       const total = invoice.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       const totalWithTax = total * (1 + (invoice.taxRate || 0) / 100);
 
+      const { ownerId, companyProfileId } = await resolveOwnerIds(activeUser.id, activeCompany?.user_id, activeCompanyId);
+
       const { data: invoiceData, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: activeCompany?.user_id || activeUser.id,
-          company_profile_id: activeCompanyId || null,
+          user_id: ownerId,
+          company_profile_id: companyProfileId,
           invoice_number: invoiceNumber,
           source_quote_id: invoice.sourceQuoteId || null,
           client_id: invoice.clientId || null,
