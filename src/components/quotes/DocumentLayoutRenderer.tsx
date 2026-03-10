@@ -375,7 +375,6 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
   const baseStyle: React.CSSProperties = {
     fontFamily,
     width: '210mm',
-    minHeight: '297mm',
     fontSize: '10pt',
     lineHeight: '1.4',
     color: '#1a1a1a',
@@ -383,7 +382,7 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
 
   const effectiveDocHeight = docHeight || 1123;
   const outerStyle: React.CSSProperties = {
-    height: effectiveDocHeight * scale,
+    minHeight: effectiveDocHeight * scale,
     overflow: 'visible',
   };
 
