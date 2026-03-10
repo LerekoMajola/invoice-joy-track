@@ -64,7 +64,7 @@ export function BillingTab() {
   const filtered = billingTenants.filter((t) => {
     const s = search.toLowerCase();
     if (search && !(t.company_name?.toLowerCase().includes(s) || t.email?.toLowerCase().includes(s))) return false;
-    if (statusFilter !== 'all' && t.subscription?.status !== statusFilter) return false;
+    if (statusFilter !== 'all' && t.subscription && getEffectiveStatus(t.subscription) !== statusFilter) return false;
     return true;
   });
 
