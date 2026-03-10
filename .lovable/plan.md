@@ -1,48 +1,34 @@
 
 
-## Create Edge Function + Update Hook to Fix Usage Counts
+## Fix: Quote Preview Hidden Behind Sidebar
 
-### Problem
-Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
+### Root Cause
 
-### Solution
+The `PageTransition` component applies `translate-y-0` / `translate-y-2` CSS transforms to animate page transitions. In CSS, **any element with a `transform` property creates a new stacking context**. This means the `z-50` on the `QuotePreview` component only applies *within* that stacking context — it cannot escape above the sidebar (`z-40`) which sits outside that context.
 
-**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
-
-- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
-- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
-- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
-- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
-
-**2. Add to `supabase/config.toml`:**
-```toml
-[functions.admin-get-tenant-counts]
-verify_jwt = false
+```text
+DashboardLayout
+├── Sidebar (fixed, z-40)          ← stacking context A
+├── main
+│   └── PageTransition (transform) ← creates stacking context B
+│       └── QuotePreview (fixed, z-50) ← z-50 only within B, cannot beat A
 ```
 
-**3. Update `src/hooks/useAdminTenants.tsx`:**
+### Fix
 
-Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
-```typescript
-const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
-const tenantCounts = countsData || {};
-```
+**File: `src/components/quotes/QuotePreview.tsx`**
 
-Then in the tenant mapping (lines 161-173), use:
-```typescript
-usage: {
-  clients_count: tenantCounts[userId]?.clients || 0,
-  quotes_count: tenantCounts[userId]?.quotes || 0,
-  invoices_count: tenantCounts[userId]?.invoices || 0,
-  gym_members_count: tenantCounts[userId]?.gym_members || 0,
-  students_count: tenantCounts[userId]?.students || 0,
-}
-```
+Render the quote preview via a **React portal** to `document.body`. This moves it outside the `PageTransition` stacking context entirely, allowing its `z-50` to work correctly against the sidebar's `z-40`.
 
-### Files changed
+- Import `createPortal` from `react-dom`
+- Wrap the entire return JSX in `createPortal(..., document.body)`
+- No other changes needed — the `fixed inset-0 z-50` styling already handles positioning
+
+This is a minimal, surgical fix — one import and one wrapper.
+
+### Files Changed
+
 | File | Change |
 |------|--------|
-| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` entry |
-| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
+| `src/components/quotes/QuotePreview.tsx` | Wrap return in `createPortal` to escape stacking context |
 
