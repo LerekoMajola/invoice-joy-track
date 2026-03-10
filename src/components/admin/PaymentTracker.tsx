@@ -114,6 +114,12 @@ export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt 
 
   // Determine the anniversary month (when trial ends and real subscription starts)
   const anniversaryDate = trialEndsAt ? new Date(trialEndsAt) : null;
+  const anniversaryDay = anniversaryDate ? anniversaryDate.getDate() : 1;
+
+  const getDueDate = (monthIndex: number) => {
+    const lastDay = new Date(currentYear, monthIndex + 1, 0).getDate();
+    return new Date(currentYear, monthIndex, Math.min(anniversaryDay, lastDay));
+  };
 
   const getMonthStatus = (monthIndex: number): 'paid' | 'overdue' | 'due' | 'future' | 'na' => {
     // If we have an anniversary date, months before that month are N/A
@@ -127,9 +133,12 @@ export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt 
     const payment = payments?.find(p => p.month === monthDate);
     if (payment?.status === 'paid') return 'paid';
 
-    const monthStart = new Date(currentYear, monthIndex, 1);
-    if (isSameMonth(monthStart, now)) return 'due';
-    if (isBefore(monthStart, now)) return 'overdue';
+    const dueDate = getDueDate(monthIndex);
+    if (isSameMonth(dueDate, now)) {
+      if (now >= dueDate) return 'due';
+      return 'future'; // anniversary day hasn't arrived yet this month
+    }
+    if (isBefore(dueDate, now)) return 'overdue';
     return 'future';
   };
 
@@ -191,6 +200,9 @@ export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt 
               </div>
               {status === 'na' && (
                 <span className="text-[10px] text-muted-foreground">N/A</span>
+              )}
+              {status !== 'na' && status !== 'paid' && (
+                <span className="text-[10px] text-muted-foreground">Due {getDueDate(i).getDate()}{['st','nd','rd'][((getDueDate(i).getDate()+90)%100-10)%10-1]||'th'}</span>
               )}
               {payment?.status === 'paid' && (
                 <span className="text-[10px] text-muted-foreground">{formatMaluti(payment.amount)}</span>

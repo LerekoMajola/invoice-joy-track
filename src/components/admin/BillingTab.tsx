@@ -119,7 +119,7 @@ export function BillingTab() {
               <TableHead>Status</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Price/mo</TableHead>
-              <TableHead>Trial Ended</TableHead>
+              <TableHead>Next Due</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -161,9 +161,24 @@ export function BillingTab() {
                       {formatMaluti(tenant.module_total)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {sub.trial_ends_at
-                        ? format(new Date(sub.trial_ends_at), 'MMM d, yyyy')
-                        : '-'}
+                      {(() => {
+                        if (!sub.trial_ends_at) return '-';
+                        const trialEnd = new Date(sub.trial_ends_at);
+                        const day = trialEnd.getDate();
+                        const today = new Date();
+                        let nextMonth = today.getMonth();
+                        let nextYear = today.getFullYear();
+                        const lastDay = new Date(nextYear, nextMonth + 1, 0).getDate();
+                        const dueDay = Math.min(day, lastDay);
+                        let nextDue = new Date(nextYear, nextMonth, dueDay);
+                        if (nextDue <= today) {
+                          nextMonth++;
+                          if (nextMonth > 11) { nextMonth = 0; nextYear++; }
+                          const ld = new Date(nextYear, nextMonth + 1, 0).getDate();
+                          nextDue = new Date(nextYear, nextMonth, Math.min(day, ld));
+                        }
+                        return format(nextDue, 'MMM d, yyyy');
+                      })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
