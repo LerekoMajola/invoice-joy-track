@@ -18,11 +18,15 @@ Deno.serve(async (req) => {
     const now = new Date();
     const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-    // Get all active/past_due subscriptions
-    const { data: subscriptions, error: subsError } = await supabase
+    // Get all active/past_due subscriptions (exclude owner-perpetual)
+    const { data: allSubscriptions, error: subsError } = await supabase
       .from('subscriptions')
-      .select('id, user_id, plan, status, trial_ends_at')
+      .select('id, user_id, plan, status, trial_ends_at, payment_reference')
       .in('status', ['active', 'past_due']);
+
+    const subscriptions = (allSubscriptions || []).filter(
+      s => s.payment_reference !== 'OWNER-PERPETUAL'
+    );
 
     if (subsError) throw subsError;
     if (!subscriptions || subscriptions.length === 0) {
