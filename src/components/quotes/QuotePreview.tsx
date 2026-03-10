@@ -159,8 +159,8 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
   const thStyle = getTableHeaderStyle(selectedTemplate);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-y-auto overflow-x-hidden">
-      <div className="w-full max-w-4xl mx-auto py-8 px-4">
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="w-full max-w-5xl mx-auto py-8 px-4">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-4 sticky top-0 bg-background/95 backdrop-blur py-3 px-4 rounded-lg border border-border shadow-sm z-10">
           <div className="flex items-center gap-2">
