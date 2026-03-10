@@ -326,8 +326,9 @@ export function useInvoices() {
         const activeUser = await getActiveUser();
         if (activeUser) {
           const invoiceTotal = updates.lineItems ? totalWithTax : (existingInvoice?.total || 0);
+          const { ownerId: acctOwnerId } = await resolveOwnerIds(activeUser.id, activeCompany?.user_id, activeCompanyId);
           await supabase.from('accounting_transactions').insert({
-            user_id: activeCompany?.user_id || activeUser.id,
+            user_id: acctOwnerId,
             transaction_type: 'income',
             reference_type: 'invoice',
             reference_id: id,

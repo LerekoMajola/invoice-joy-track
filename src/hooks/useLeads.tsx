@@ -249,10 +249,13 @@ export function useLeads() {
 
     try {
       // Create client from lead with source tracking
+      const { ownerId: convertOwnerId, companyProfileId: convertCompanyId } = await resolveOwnerIds(user.id, activeCompany?.user_id, activeCompanyId);
+
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
-          user_id: activeCompany?.user_id || user.id,
+          user_id: convertOwnerId,
+          company_profile_id: convertCompanyId,
           company: lead.company || lead.name,
           contact_person: lead.name,
           email: lead.email,
