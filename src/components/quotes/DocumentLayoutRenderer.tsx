@@ -381,7 +381,7 @@ export function DocumentWrapper({ template, fontFamily, children, innerRef }: Do
     color: '#1a1a1a',
   };
 
-  const effectiveDocHeight = Math.max(docHeight || 1123, 1123);
+  const effectiveDocHeight = docHeight || 1123;
   const outerStyle: React.CSSProperties = {
     height: effectiveDocHeight * scale,
     overflow: 'visible',
