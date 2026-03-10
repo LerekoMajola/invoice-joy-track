@@ -445,10 +445,10 @@ export function CustomersTab() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Delete Customer"
-        description={`This will move ${deleteTarget?.company_name || deleteTarget?.email} to the recycle bin. You can restore them within 90 days.`}
+        title="Permanently Delete Customer"
+        description={`This will permanently remove ${deleteTarget?.company_name || deleteTarget?.email} and ALL associated data. This action cannot be undone.`}
         variant="destructive"
-        confirmLabel="Delete"
+        confirmLabel="Delete Forever"
         onConfirm={() => deleteTarget && deleteTenantMutation.mutate(deleteTarget)}
       />
 
