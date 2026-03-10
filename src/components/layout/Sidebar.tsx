@@ -52,6 +52,7 @@ const navigation = [
   { name: 'Quotes', href: '/quotes', icon: FileText, moduleKey: 'quotes', systemTypes: ['business', 'workshop'], optionalFeature: null },
   { name: 'Drafts', href: '/drafts', icon: FolderOpen, moduleKey: null, systemTypes: null, optionalFeature: 'drafts' as const },
   { name: 'Invoices', href: '/invoices', icon: Receipt, moduleKey: 'invoices', systemTypes: null, optionalFeature: null },
+  { name: 'Delivery Notes', href: '/delivery-notes', icon: Truck, moduleKey: 'delivery_notes', systemTypes: null, optionalFeature: null },
   { name: 'Tenders', href: '/tenders', icon: Briefcase, moduleKey: 'tenders', systemTypes: ['business'], optionalFeature: null },
   // Workshop (now a BizPro module)
   { name: 'Workshop', href: '/workshop', icon: Wrench, moduleKey: 'workshop', systemTypes: ['business'], optionalFeature: null },

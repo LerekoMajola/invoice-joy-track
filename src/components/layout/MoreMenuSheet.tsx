@@ -39,6 +39,7 @@ const allMenuItems = [
   // Gym
   { icon: Wallet, label: 'Payments', path: '/gym-payments', description: 'Member payments', moduleKey: 'gym_members', systemTypes: ['gym'], optionalFeature: null },
   // Shared
+  { icon: Truck, label: 'Delivery Notes', path: '/delivery-notes', description: 'Manage deliveries', moduleKey: 'delivery_notes', systemTypes: null, optionalFeature: null },
   { icon: CheckSquare, label: 'Tasks', path: '/tasks', description: 'Track your to-dos', moduleKey: 'tasks', systemTypes: null, optionalFeature: null },
   { icon: Calculator, label: 'Accounting', path: '/accounting', description: 'Financial overview', moduleKey: 'accounting', systemTypes: null, optionalFeature: null },
   { icon: Users2, label: 'Staff', path: '/staff', description: 'Team management', moduleKey: 'staff', systemTypes: null, optionalFeature: null },
