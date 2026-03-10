@@ -1,38 +1,48 @@
 
 
-## Fix: Document Preview Cut Off Inconsistently
+## Create Edge Function + Update Hook to Fix Usage Counts
 
-### Root Cause
+### Problem
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-The `DocumentWrapper` scaling logic has a timing issue. It calculates the scale once on mount using `containerRef.current.parentElement?.clientWidth`, but:
+### Solution
 
-1. **The `containerRef` is placed on the wrong element** — it's on the inner scale wrapper, and its parent width may not represent the actual available container width reliably.
-2. **No re-calculation on content/layout changes** — the scale is only computed on mount and window resize, but the container may not have its final dimensions at mount time (e.g., when rendered inside a dialog or when data loads asynchronously).
-3. **Different accounts = different data/content** — one account may have more toolbar buttons or different layout states that shift the container width, causing the initial scale calculation to differ.
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
 
-### Fix
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
 
-1. **Move `containerRef` to a dedicated outer measurement wrapper** that sits above the scale transform, so `clientWidth` and available height are measured from the correct element.
-2. **Use `ResizeObserver` on the outer container** instead of just `window.resize`, so the scale recalculates whenever the container's actual dimensions change (e.g., after dialog animation, sidebar toggle, data load).
-3. **Add a small delay fallback** (`requestAnimationFrame`) on mount to ensure the first measurement happens after layout settles.
-
-### Changes
-
-**File: `src/components/quotes/DocumentLayoutRenderer.tsx`** — `DocumentWrapper` component (~lines 331-419)
-
-- Add a new outer `<div ref={containerRef}>` that wraps everything and is used solely for measuring available width/height.
-- Replace the `window.resize` listener with a `ResizeObserver` on this outer container.
-- Use `containerRef.current.clientWidth` (not `parentElement`) for width measurement.
-- Use `containerRef.current.clientHeight || (window.innerHeight - 120)` for height measurement, preferring the container's own height when available.
-- Keep the existing `docRef` / `ResizeObserver` for tracking actual document content height.
-
-```text
-┌─ outer div (ref=containerRef) ── measures available space ──┐
-│  ┌─ scale wrapper div ── transform: scale(s) ──────────────┐│
-│  │  ┌─ document div (ref=docRef) ── 210mm x 297mm ────────┐││
-│  │  │  ... content ...                                     │││
-│  │  └──────────────────────────────────────────────────────┘││
-│  └──────────────────────────────────────────────────────────┘│
-└──────────────────────────────────────────────────────────────┘
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
 ```
+
+**3. Update `src/hooks/useAdminTenants.tsx`:**
+
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
+```typescript
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
+```
+
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
+
+### Files changed
+| File | Change |
+|------|--------|
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
 
