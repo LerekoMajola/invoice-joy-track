@@ -26,12 +26,23 @@ import { formatMaluti } from '@/lib/currency';
 function getEffectiveStatus(sub: NonNullable<Tenant['subscription']>): string {
   if (sub.payment_reference === 'OWNER-PERPETUAL') return 'active';
   if (sub.status !== 'past_due') return sub.status;
-  const day = sub.trial_ends_at ? new Date(sub.trial_ends_at).getDate() : 1;
+  if (!sub.trial_ends_at) return sub.status;
+
+  const day = new Date(sub.trial_ends_at).getDate();
   const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dueDate = new Date(now.getFullYear(), now.getMonth(), Math.min(day, lastDay));
-  if (now < dueDate) return 'active';
-  return 'past_due';
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  let nextDue = new Date(year, month, Math.min(day, lastDay));
+
+  if (nextDue <= now) {
+    const nm = month + 1 > 11 ? 0 : month + 1;
+    const ny = month + 1 > 11 ? year + 1 : year;
+    const ld = new Date(ny, nm + 1, 0).getDate();
+    nextDue = new Date(ny, nm, Math.min(day, ld));
+  }
+
+  return now < nextDue ? 'active' : 'past_due';
 }
 
 export function BillingTab() {
