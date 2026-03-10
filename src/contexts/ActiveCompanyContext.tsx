@@ -96,6 +96,17 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     fetchCompanies();
   }, [fetchCompanies]);
 
+  // Realtime: refresh when company_profiles change (e.g. logo upload)
+  useEffect(() => {
+    const channel = supabase
+      .channel('company-profiles-switcher')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'company_profiles' }, () => {
+        fetchCompanies();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchCompanies]);
+
   const switchCompany = useCallback(async (companyId: string) => {
     if (!user?.id) return;
     
