@@ -201,6 +201,9 @@ export function PaymentTracker({ subscriptionId, userId, planPrice, trialEndsAt 
               {status === 'na' && (
                 <span className="text-[10px] text-muted-foreground">N/A</span>
               )}
+              {status !== 'na' && status !== 'paid' && (
+                <span className="text-[10px] text-muted-foreground">Due {getDueDate(i).getDate()}{['st','nd','rd'][((getDueDate(i).getDate()+90)%100-10)%10-1]||'th'}</span>
+              )}
               {payment?.status === 'paid' && (
                 <span className="text-[10px] text-muted-foreground">{formatMaluti(payment.amount)}</span>
               )}
