@@ -229,12 +229,14 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
         {/* Quote Document */}
         <DocumentWrapper template={selectedTemplate} fontFamily={selectedTemplate.fontFamily} innerRef={quoteRef}>
+          <div data-pdf-section="header">
           <DocumentHeader
             template={selectedTemplate}
             company={company}
             documentTitle="Quote"
             fields={headerFields}
           />
+          </div>
 
           <ClientInfoSection template={selectedTemplate} label="To" fields={headerFields}>
             <h3 className="text-base font-bold text-gray-900">{data.client?.company || 'Customer Name'}</h3>
