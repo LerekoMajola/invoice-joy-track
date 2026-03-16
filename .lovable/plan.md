@@ -1,69 +1,48 @@
 
-Fix quote PDF export by addressing the real failure point, not the old save step.
 
-What I found
-- `QuotePreview.tsx` already has the `isDownloading` state and already calls `exportHighQualityPDF(...)`.
-- `src/lib/pdfExport.ts` already uses a blob URL download helper instead of relying only on `pdf.save(...)`.
-- So the current bug is not “the save call never triggers”.
-- Your screenshot and the current button state mean the export promise is getting stuck before completion, which is why the button stays on “Generating…”.
-- The quote path still captures the entire quote as one large `html2canvas` render, then slices it afterward. That is fragile for long quotes with many rows, logos, signatures, and custom fonts.
-- Other document flows in this codebase are already moving toward section-based export (`DeliveryNotePreview`, `HireOrderPreview`), which is a better fit here.
+## Create Edge Function + Update Hook to Fix Usage Counts
 
-Likely root cause
-- The quote exporter is trying to rasterize one very tall live DOM node at once.
-- On larger quotes, `html2canvas` can stall or take an extremely long time, so `exportHighQualityPDF(...)` never resolves and the UI never leaves the loading state.
-- In short: the download helper is fine, but the quote capture strategy is too heavy.
+### Problem
+Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
 
-Implementation plan
-1. Replace the quote export strategy with page-aware/section-aware capture
-- Stop using the single huge-canvas path for quotes.
-- Update `QuotePreview.tsx` to mark logical blocks with `data-pdf-section`:
-  - header/client block
-  - description block
-  - totals block
-  - terms / notes / signature / footer block
-- For the line-items table, do not export the whole table as one giant section on long quotes.
-- Instead, chunk rows into export-sized groups and render repeatable table headers per chunk during export so multi-page quotes stay reliable.
+### Solution
 
-2. Extend `src/lib/pdfExport.ts` with a quote-safe export path
-- Keep the current blob download helper.
-- Add a new export routine specifically for long documents/tables:
-  - validate measurable width/height first
-  - capture smaller sections/chunks instead of the full document at once
-  - add per-stage timeouts so the promise always resolves or throws
-  - surface clear errors when capture fails instead of hanging forever
-- Keep `exportHighQualityPDF(...)` for short/simple documents that still benefit from screenshot-mode output.
+**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
 
-3. Update quote UI feedback so it never gets stuck silently
-- In `QuotePreview.tsx`, keep the loading state but make failure visible:
-  - show a toast when generation starts
-  - show success/failure toast when done
-  - always reset `isDownloading` in error and timeout cases
-- Optionally disable other top-bar actions during export to avoid overlapping interactions.
+- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
+- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
+- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
+- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
 
-4. Keep a safe fallback for urgent sending
-- If the new export path fails, provide a visible fallback path instead of leaving the user blocked:
-  - either fall back to the browser print-to-PDF flow
-  - or show a clear “PDF generation failed, try Print” message
-- This is important because you need to send the document to clients, so the flow should degrade safely.
+**2. Add to `supabase/config.toml`:**
+```toml
+[functions.admin-get-tenant-counts]
+verify_jwt = false
+```
 
-Files to update
-- `src/components/quotes/QuotePreview.tsx`
-- `src/lib/pdfExport.ts`
-- Possibly a small helper extracted near the quote table rendering if row chunking needs shared markup
+**3. Update `src/hooks/useAdminTenants.tsx`:**
 
-Technical details
-- No backend/database changes are needed.
-- The main code change is architectural: quotes should stop exporting as one full-height screenshot and instead export in controlled chunks/pages.
-- This should also reduce memory pressure and make large quotes much more reliable on both preview and published environments.
+Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
+```typescript
+const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
+const tenantCounts = countsData || {};
+```
 
-Validation after implementation
-- Test with the current failing quote on `/quotes`
-- Test both preview and published URLs
-- Confirm:
-  - clicking Download starts once
-  - the spinner clears
-  - a `.pdf` file actually downloads
-  - long tables paginate correctly
-  - logo/signature still render correctly
-  - failure paths show a visible message instead of hanging
+Then in the tenant mapping (lines 161-173), use:
+```typescript
+usage: {
+  clients_count: tenantCounts[userId]?.clients || 0,
+  quotes_count: tenantCounts[userId]?.quotes || 0,
+  invoices_count: tenantCounts[userId]?.invoices || 0,
+  gym_members_count: tenantCounts[userId]?.gym_members || 0,
+  students_count: tenantCounts[userId]?.students || 0,
+}
+```
+
+### Files changed
+| File | Change |
+|------|--------|
+| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
+| `supabase/config.toml` | Add `verify_jwt = false` entry |
+| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
+

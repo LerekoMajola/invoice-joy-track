@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt } from 'lucide-react';
+import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { exportHighQualityPDF } from '@/lib/pdfExport';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import { toast } from '@/hooks/use-toast';
 import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
 import {
@@ -135,9 +136,11 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
     if (!quoteRef.current || isDownloading) return;
     setIsDownloading(true);
     try {
-      await exportHighQualityPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
+      await exportSectionBasedPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
+      toast({ title: 'PDF downloaded successfully' });
     } catch (error) {
       console.error('Error generating PDF:', error);
+      toast({ title: 'PDF generation failed', description: 'Try using Print instead.', variant: 'destructive' });
     } finally {
       setIsDownloading(false);
     }
@@ -220,18 +223,22 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2"><Pencil className="h-4 w-4" /> Edit</Button>
             )}
             <Button onClick={handleDownloadPDF} disabled={isDownloading} className="gap-2"><Download className="h-4 w-4" /> {isDownloading ? 'Generating…' : 'Download PDF'}</Button>
+            <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Print</Button>
           </div>
         </div>
 
         {/* Quote Document */}
         <DocumentWrapper template={selectedTemplate} fontFamily={selectedTemplate.fontFamily} innerRef={quoteRef}>
+          <div data-pdf-section="header">
           <DocumentHeader
             template={selectedTemplate}
             company={company}
             documentTitle="Quote"
             fields={headerFields}
           />
+          </div>
 
+          <div data-pdf-section="client">
           <ClientInfoSection template={selectedTemplate} label="To" fields={headerFields}>
             <h3 className="text-base font-bold text-gray-900">{data.client?.company || 'Customer Name'}</h3>
             {data.client?.contactPerson && <p className="text-sm text-gray-600">Contact: {data.client.contactPerson}</p>}
@@ -247,9 +254,10 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             {data.client?.phone && <p className="text-sm text-gray-600">Tel: {data.client.phone}</p>}
             {data.client?.email && <p className="text-sm text-gray-600">Email: {data.client.email}</p>}
           </ClientInfoSection>
+          </div>
 
           {/* Description */}
-          <div className="mb-8">
+          <div data-pdf-section="description" className="mb-8">
             <SectionLabel template={selectedTemplate}>Description / Scope of Work</SectionLabel>
             {isEditing ? (
               <Textarea
@@ -263,7 +271,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Line Items Table */}
-          <div className="mb-8">
+          <div data-pdf-section="line-items" className="mb-8">
             <table className="w-full" style={{ borderCollapse: selectedTemplate.tableStyle === 'bordered' ? 'collapse' : undefined }}>
               <thead>
                 <tr style={thStyle}>
@@ -312,6 +320,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Totals */}
+          <div data-pdf-section="totals">
           <TotalsSection template={selectedTemplate}>
             <div className="border-t border-gray-200 pt-4 space-y-2">
               <div className="flex justify-between">
@@ -337,7 +346,9 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               </div>
             </div>
           </TotalsSection>
+          </div>
 
+          <div data-pdf-section="footer">
           {/* Terms */}
           <div className="mb-6">
             <SectionLabel template={selectedTemplate}>Terms and Conditions</SectionLabel>
@@ -395,6 +406,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             email={profile?.email}
             website={profile?.website}
           />
+          </div>
         </DocumentWrapper>
       </div>
     </div>,

@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Palette } from 'lucide-react';
+import { Download, Printer, Palette, Loader2 } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
-import html2pdf from 'html2pdf.js';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import { toast } from '@/hooks/use-toast';
 import type { JobCard } from '@/hooks/useJobCards';
 import { TemplateSelector, templates, DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import {
@@ -33,6 +34,7 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Update template when profile loads
   useEffect(() => {
@@ -65,16 +67,17 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
   const total = subtotal + tax;
 
   const handleDownloadPDF = async () => {
-    if (!previewRef.current) return;
-    const opt = {
-      margin: 0,
-      filename: `${jobCard.jobCardNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-    };
-    try { await html2pdf().set(opt).from(previewRef.current).save(); }
-    catch (error) { console.error('Error generating PDF:', error); }
+    if (!previewRef.current || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await exportSectionBasedPDF(previewRef.current, `${jobCard.jobCardNumber}.pdf`);
+      toast({ title: 'PDF downloaded successfully' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({ title: 'PDF generation failed', description: 'Try using Print instead.', variant: 'destructive' });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (isLoading) {
@@ -104,7 +107,10 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
             </div>
           </PopoverContent>
         </Popover>
-        <Button onClick={handleDownloadPDF} variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Download PDF</Button>
+        <Button onClick={handleDownloadPDF} disabled={isDownloading} variant="outline" size="sm">
+          {isDownloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          {isDownloading ? 'Generating…' : 'Download PDF'}
+        </Button>
         <Button onClick={() => window.print()} variant="outline" size="sm"><Printer className="h-4 w-4 mr-2" />Print</Button>
       </div>
 
