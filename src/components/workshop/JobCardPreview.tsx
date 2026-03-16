@@ -107,7 +107,10 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
             </div>
           </PopoverContent>
         </Popover>
-        <Button onClick={handleDownloadPDF} variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Download PDF</Button>
+        <Button onClick={handleDownloadPDF} disabled={isDownloading} variant="outline" size="sm">
+          {isDownloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          {isDownloading ? 'Generating…' : 'Download PDF'}
+        </Button>
         <Button onClick={() => window.print()} variant="outline" size="sm"><Printer className="h-4 w-4 mr-2" />Print</Button>
       </div>
 
