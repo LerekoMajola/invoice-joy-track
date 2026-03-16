@@ -223,7 +223,7 @@ export async function exportHighQualityPDF(
       }
     }
 
-    pdf.save(filename);
+    triggerBlobDownload(pdf, filename);
   } finally {
     // 4. Restore original inline styles
     for (const s of savedStyles) {
