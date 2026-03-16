@@ -129,16 +129,13 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
   const handleSave = () => { onUpdate(data); setIsEditing(false); };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!quoteRef.current) return;
-    const opt = {
-      margin: 0,
-      filename: `${data.quoteNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, width: quoteRef.current.scrollWidth, windowWidth: quoteRef.current.scrollWidth },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-    html2pdf().set(opt).from(quoteRef.current).save();
+    try {
+      await exportHighQualityPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
   };
 
   const headerFields = [
