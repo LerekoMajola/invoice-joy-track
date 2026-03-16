@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import html2pdf from 'html2pdf.js';
+import { exportHighQualityPDF } from '@/lib/pdfExport';
 import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
 import {
