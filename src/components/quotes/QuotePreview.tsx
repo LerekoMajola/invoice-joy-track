@@ -348,6 +348,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </TotalsSection>
           </div>
 
+          <div data-pdf-section="footer">
           {/* Terms */}
           <div className="mb-6">
             <SectionLabel template={selectedTemplate}>Terms and Conditions</SectionLabel>
@@ -405,6 +406,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             email={profile?.email}
             website={profile?.website}
           />
+          </div>
         </DocumentWrapper>
       </div>
     </div>,
