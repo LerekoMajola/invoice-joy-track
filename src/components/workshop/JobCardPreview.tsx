@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Palette } from 'lucide-react';
+import { Download, Printer, Palette, Loader2 } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
-import html2pdf from 'html2pdf.js';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import { toast } from '@/hooks/use-toast';
 import type { JobCard } from '@/hooks/useJobCards';
 import { TemplateSelector, templates, DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import {
