@@ -238,6 +238,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           />
           </div>
 
+          <div data-pdf-section="client">
           <ClientInfoSection template={selectedTemplate} label="To" fields={headerFields}>
             <h3 className="text-base font-bold text-gray-900">{data.client?.company || 'Customer Name'}</h3>
             {data.client?.contactPerson && <p className="text-sm text-gray-600">Contact: {data.client.contactPerson}</p>}
@@ -253,6 +254,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             {data.client?.phone && <p className="text-sm text-gray-600">Tel: {data.client.phone}</p>}
             {data.client?.email && <p className="text-sm text-gray-600">Email: {data.client.email}</p>}
           </ClientInfoSection>
+          </div>
 
           {/* Description */}
           <div className="mb-8">
