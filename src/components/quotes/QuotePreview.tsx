@@ -129,12 +129,17 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
   const handleSave = () => { onUpdate(data); setIsEditing(false); };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownloadPDF = async () => {
-    if (!quoteRef.current) return;
+    if (!quoteRef.current || isDownloading) return;
+    setIsDownloading(true);
     try {
       await exportHighQualityPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
