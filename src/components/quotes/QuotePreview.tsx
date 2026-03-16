@@ -271,7 +271,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Line Items Table */}
-          <div className="mb-8">
+          <div data-pdf-section="line-items" className="mb-8">
             <table className="w-full" style={{ borderCollapse: selectedTemplate.tableStyle === 'bordered' ? 'collapse' : undefined }}>
               <thead>
                 <tr style={thStyle}>
