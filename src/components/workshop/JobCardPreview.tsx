@@ -34,6 +34,7 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Update template when profile loads
   useEffect(() => {
