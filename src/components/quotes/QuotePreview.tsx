@@ -257,7 +257,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Description */}
-          <div className="mb-8">
+          <div data-pdf-section="description" className="mb-8">
             <SectionLabel template={selectedTemplate}>Description / Scope of Work</SectionLabel>
             {isEditing ? (
               <Textarea
