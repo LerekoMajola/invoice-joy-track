@@ -223,6 +223,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2"><Pencil className="h-4 w-4" /> Edit</Button>
             )}
             <Button onClick={handleDownloadPDF} disabled={isDownloading} className="gap-2"><Download className="h-4 w-4" /> {isDownloading ? 'Generating…' : 'Download PDF'}</Button>
+            <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Print</Button>
           </div>
         </div>
 
