@@ -129,12 +129,17 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
 
   const handleSave = () => { onUpdate(data); setIsEditing(false); };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownloadPDF = async () => {
-    if (!quoteRef.current) return;
+    if (!quoteRef.current || isDownloading) return;
+    setIsDownloading(true);
     try {
       await exportHighQualityPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -214,7 +219,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
             ) : (
               <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2"><Pencil className="h-4 w-4" /> Edit</Button>
             )}
-            <Button onClick={handleDownloadPDF} className="gap-2"><Download className="h-4 w-4" /> Download PDF</Button>
+            <Button onClick={handleDownloadPDF} disabled={isDownloading} className="gap-2"><Download className="h-4 w-4" /> {isDownloading ? 'Generating…' : 'Download PDF'}</Button>
           </div>
         </div>
 
