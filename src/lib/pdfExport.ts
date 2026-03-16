@@ -98,7 +98,25 @@ export async function exportSectionBasedPDF(
     currentY += heightMM + SECTION_GAP_MM;
   }
 
-  pdf.save(filename);
+  triggerBlobDownload(pdf, filename);
+}
+
+/** Reliably trigger a file download from a jsPDF instance via blob URL. */
+function triggerBlobDownload(pdf: jsPDF, filename: string) {
+  try {
+    const blob = pdf.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {
+    // Fallback to built-in save
+    pdf.save(filename);
+  }
 }
 
 /**
