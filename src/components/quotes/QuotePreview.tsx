@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt } from 'lucide-react';
+import { Download, Plus, X, Pencil, Save, Palette, Send, CheckCircle, XCircle, RotateCcw, Receipt, Printer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { exportHighQualityPDF } from '@/lib/pdfExport';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import { toast } from '@/hooks/use-toast';
 import { formatMaluti } from '@/lib/currency';
 import { TemplateSelector, templates, DocumentTemplate } from './DocumentTemplates';
 import {
