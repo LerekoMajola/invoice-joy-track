@@ -23,7 +23,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem(LS_CASE) || '';
   });
   const [elapsed, setElapsed] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isRunning = timerStart !== null;
 
