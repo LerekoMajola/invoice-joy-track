@@ -320,6 +320,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
           </div>
 
           {/* Totals */}
+          <div data-pdf-section="totals">
           <TotalsSection template={selectedTemplate}>
             <div className="border-t border-gray-200 pt-4 space-y-2">
               <div className="flex justify-between">
@@ -345,6 +346,7 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
               </div>
             </div>
           </TotalsSection>
+          </div>
 
           {/* Terms */}
           <div className="mb-6">
