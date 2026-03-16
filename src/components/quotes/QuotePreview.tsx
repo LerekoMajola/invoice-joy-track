@@ -136,9 +136,11 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
     if (!quoteRef.current || isDownloading) return;
     setIsDownloading(true);
     try {
-      await exportHighQualityPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
+      await exportSectionBasedPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
+      toast({ title: 'PDF downloaded successfully' });
     } catch (error) {
       console.error('Error generating PDF:', error);
+      toast({ title: 'PDF generation failed', description: 'Try using Print instead.', variant: 'destructive' });
     } finally {
       setIsDownloading(false);
     }
