@@ -1,0 +1,1 @@
+UPDATE subscriptions SET status = 'active', current_period_start = NOW(), current_period_end = NOW() + INTERVAL '30 days', updated_at = NOW() WHERE user_id = 'ca1da623-5452-4f99-ab37-5fc0187ebbf1';
