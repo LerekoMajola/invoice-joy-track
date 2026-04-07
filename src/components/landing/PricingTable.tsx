@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Briefcase, Dumbbell } from 'lucide-react';
+import { Check, Briefcase, Scale, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGeoPricing, formatGeoPrice } from '@/hooks/useGeoPricing';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,7 @@ interface PlanCard {
 
 const plans: PlanCard[] = [
   { systemKey: 'business', label: 'BizPro', icon: <Briefcase className="h-5 w-5" />, gradient: 'from-primary to-violet' },
+  { systemKey: 'legal', label: 'LawPro', icon: <Scale className="h-5 w-5" />, gradient: 'from-purple-500 to-purple-700' },
   { systemKey: 'gym', label: 'GymPro', icon: <Dumbbell className="h-5 w-5" />, gradient: 'from-lime-500 to-green-600' },
 ];
 
@@ -77,28 +78,30 @@ function PricingCard({ tier, plan, symbol, rate, loading, currency }: { tier: Pa
 export function PricingTable() {
   const { symbol, rate, loading: geoLoading, currency } = useGeoPricing();
   const { tiers: bizTiers, isLoading: bizLoading } = usePackageTiers('business');
+  const { tiers: lawTiers, isLoading: lawLoading } = usePackageTiers('legal');
   const { tiers: gymTiers, isLoading: gymLoading } = usePackageTiers('gym');
 
-  const isLoading = bizLoading || gymLoading;
+  const isLoading = bizLoading || lawLoading || gymLoading;
   const allTiers: { tier: PackageTier; plan: PlanCard }[] = [];
   if (bizTiers[0]) allTiers.push({ tier: bizTiers[0], plan: plans[0] });
-  if (gymTiers[0]) allTiers.push({ tier: gymTiers[0], plan: plans[1] });
+  if (lawTiers[0]) allTiers.push({ tier: lawTiers[0], plan: plans[1] });
+  if (gymTiers[0]) allTiers.push({ tier: gymTiers[0], plan: plans[2] });
 
   return (
     <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-background to-secondary/30">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Two plans. One price each. No surprises at the end of the month.
+            Three plans. One price each. No surprises at the end of the month.
           </p>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {[1, 2].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-[500px] rounded-2xl" />
             ))}
           </div>

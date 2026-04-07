@@ -57,7 +57,7 @@ export function useAdminStats() {
       const uniqueProfiles = Array.from(uniqueUserProfiles.values());
 
       // Simple flat pricing: BizPro = M350, GymPro = M700
-      const FLAT_PRICES: Record<string, number> = { business: 350, gym: 700 };
+      const FLAT_PRICES: Record<string, number> = { business: 350, legal: 450, gym: 700 };
       const totalTenants = uniqueProfiles.length;
       const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
       const activeSubscriptions = subscriptions.filter(s => s.status === 'active' || s.status === 'active_awaiting_pop').length;
