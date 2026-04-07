@@ -106,7 +106,7 @@ export function PricingTable() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {allTiers.map(({ tier, plan }) => (
               <PricingCard key={tier.id} tier={tier} plan={plan} symbol={symbol} rate={rate} loading={geoLoading} currency={currency} />
             ))}
