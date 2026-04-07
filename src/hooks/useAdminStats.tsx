@@ -31,23 +31,18 @@ export function useAdminStats() {
     queryKey: ['admin-stats'],
     queryFn: async (): Promise<AdminStats> => {
       // Fetch all data in parallel
-      const [profilesRes, subsRes, userModulesRes, subPaymentsRes, adminInvoicesRes] = await Promise.all([
+      const [profilesRes, subsRes, subPaymentsRes, adminInvoicesRes] = await Promise.all([
         supabase.from('company_profiles').select('id, user_id, created_at').is('deleted_at', null),
         supabase.from('subscriptions').select('*').is('deleted_at', null),
-        supabase.from('user_modules')
-          .select('user_id, is_active, module:platform_modules(monthly_price)')
-          .eq('is_active', true),
         supabase.from('subscription_payments').select('amount, status, month'),
         supabase.from('admin_invoices').select('total, status, payment_date').eq('status', 'paid'),
       ]);
 
       if (profilesRes.error) throw profilesRes.error;
       if (subsRes.error) throw subsRes.error;
-      if (userModulesRes.error) throw userModulesRes.error;
 
       const profiles = profilesRes.data || [];
       const subscriptions = subsRes.data || [];
-      const userModulesData = userModulesRes.data || [];
       const subPayments = subPaymentsRes.data || [];
       const adminInvoices = adminInvoicesRes.data || [];
 
@@ -61,13 +56,8 @@ export function useAdminStats() {
       }
       const uniqueProfiles = Array.from(uniqueUserProfiles.values());
 
-      // Build user_id -> monthly_total map from active modules
-      const moduleTotals: Record<string, number> = {};
-      for (const um of userModulesData) {
-        const price = (um.module as any)?.monthly_price || 0;
-        moduleTotals[um.user_id] = (moduleTotals[um.user_id] || 0) + price;
-      }
-
+      // Simple flat pricing: BizPro = M350, GymPro = M700
+      const FLAT_PRICES: Record<string, number> = { business: 350, gym: 700 };
       const totalTenants = uniqueProfiles.length;
       const activeTrials = subscriptions.filter(s => s.status === 'trialing').length;
       const activeSubscriptions = subscriptions.filter(s => s.status === 'active' || s.status === 'active_awaiting_pop').length;
