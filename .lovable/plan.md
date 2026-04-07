@@ -5,8 +5,9 @@
 Complex module-based pricing leads to wrong totals at month-end. Too many tiers and verticals.
 
 ### Solution
-Two simple flat-rate plans:
-- **BizPro** — M350/month (covers Business, Workshop, Legal, Hire, Guesthouse, Fleet, School)
+Three simple flat-rate plans:
+- **BizPro** — M350/month (covers Business, Workshop, Hire, Guesthouse, Fleet, School)
+- **LawPro** — M450/month (Legal practice management)
 - **GymPro** — M700/month
 
 ### Changes
