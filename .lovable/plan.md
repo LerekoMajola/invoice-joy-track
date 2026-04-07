@@ -1,48 +1,34 @@
 
-
-## Create Edge Function + Update Hook to Fix Usage Counts
+## Simplify Pricing to Two Verticals
 
 ### Problem
-Direct client-side queries to `gym_members`, `students`, and `usage_tracking` return 0 rows for other tenants because RLS restricts access to `user_id = auth.uid()`. The admin sees empty usage for everyone.
+Complex module-based pricing leads to wrong totals at month-end. Too many tiers and verticals.
 
 ### Solution
+Two simple flat-rate plans:
+- **BizPro** — M350/month (covers Business, Workshop, Legal, Hire, Guesthouse, Fleet, School)
+- **GymPro** — M700/month
 
-**1. New edge function: `supabase/functions/admin-get-tenant-counts/index.ts`**
+### Changes
 
-- Verifies caller is `super_admin` (same pattern as `admin-get-tenant-data`)
-- Uses service role client to query 5 tables: `clients`, `quotes`, `invoices`, `gym_members`, `students`
-- For each table, selects `user_id` rows, aggregates counts per `user_id` in JS
-- Returns `{ [user_id]: { clients: N, quotes: N, invoices: N, gym_members: N, students: N } }`
+1. **Database: Deactivate old package tiers, keep only 2 active**
+   - Deactivate all existing `package_tiers` rows
+   - Insert/update two active tiers: BizPro (M350) and GymPro (M700)
 
-**2. Add to `supabase/config.toml`:**
-```toml
-[functions.admin-get-tenant-counts]
-verify_jwt = false
-```
+2. **Admin billing logic (`useAdminStats`, `useAdminTenants`, billing tab)**
+   - MRR calculation: simply count active BizPro × 350 + active GymPro × 700
+   - Remove complex bundle_price / module-sum fallback logic
 
-**3. Update `src/hooks/useAdminTenants.tsx`:**
+3. **Signup flow (`Auth.tsx`, `PackageTierSelector.tsx`)**
+   - Show only two options: BizPro or GymPro
+   - Remove multi-tier selection within each vertical
 
-Replace lines 60-80 (the three parallel queries for `usage_tracking`, `gym_members`, `students` + the counting loops) with a single call:
-```typescript
-const { data: countsData } = await supabase.functions.invoke('admin-get-tenant-counts');
-const tenantCounts = countsData || {};
-```
+4. **Billing page (`Billing.tsx`)**
+   - Show simple "Your plan: BizPro — M350/mo" or "GymPro — M700/mo"
+   - Remove package switching modal (only 1 tier per vertical)
 
-Then in the tenant mapping (lines 161-173), use:
-```typescript
-usage: {
-  clients_count: tenantCounts[userId]?.clients || 0,
-  quotes_count: tenantCounts[userId]?.quotes || 0,
-  invoices_count: tenantCounts[userId]?.invoices || 0,
-  gym_members_count: tenantCounts[userId]?.gym_members || 0,
-  students_count: tenantCounts[userId]?.students || 0,
-}
-```
+5. **Landing page pricing (`PricingTable.tsx`)**
+   - Two cards: BizPro M350 and GymPro M700
 
-### Files changed
-| File | Change |
-|------|--------|
-| `supabase/functions/admin-get-tenant-counts/index.ts` | New edge function |
-| `supabase/config.toml` | Add `verify_jwt = false` entry |
-| `src/hooks/useAdminTenants.tsx` | Replace direct queries with edge function call |
-
+6. **Admin constants**
+   - Keep all 8 system labels for display but map workshop/legal/hire/guesthouse/fleet/school → BizPro pricing
