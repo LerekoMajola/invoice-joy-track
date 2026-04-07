@@ -223,16 +223,6 @@ export default function Billing() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <Package className="h-5 w-5 text-primary" /> Your Package
               </CardTitle>
-              {hasPendingRequest ? (
-                <Badge variant="outline" className="border-warning/30 text-warning text-xs">
-                  <Clock className="h-3 w-3 mr-1" /> Switch Pending
-                </Badge>
-              ) : (
-                <Button variant="outline" size="sm" onClick={() => setSwitchOpen(true)}
-                  className="border-primary/30 text-primary hover:bg-primary/5">
-                  Switch Package <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              )}
             </div>
           </CardHeader>
           <CardContent className="pt-0">
