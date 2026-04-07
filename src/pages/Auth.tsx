@@ -43,7 +43,7 @@ export default function Auth() {
     const isCustom = searchParams.get('custom') === 'true';
     if (systemParam && ['business', 'gym'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
-      setSignupStep(isCustom ? 'custom-modules' : 'package');
+      setSignupStep('package');
       setIsLogin(false);
     }
   }, [searchParams]);
