@@ -9,7 +9,7 @@ import { Sparkles, ArrowRight } from 'lucide-react';
 import { formatMaluti } from '@/lib/currency';
 import { SYSTEM_ICONS, SYSTEM_LABELS } from './adminConstants';
 
-const ALL_SYSTEMS = ['business', 'workshop', 'school', 'legal', 'hire', 'guesthouse', 'fleet', 'gym'];
+const ALL_SYSTEMS = ['business', 'gym'];
 
 function WelcomeBanner({ stats }: { stats: { totalTenants: number; mrr: number } }) {
   return (

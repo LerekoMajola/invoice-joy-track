@@ -1,14 +1,14 @@
-import { Briefcase, Scale, Dumbbell, GraduationCap, ArrowRight } from 'lucide-react';
+import { Briefcase, Dumbbell, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlatformLogo } from '@/components/shared/PlatformLogo';
 
-export type SystemType = 'business' | 'legal' | 'gym' | 'school';
+export type SystemType = 'business' | 'gym';
 
 interface SystemOption {
   type: SystemType;
   label: string;
   description: string;
-  startingPrice: string;
+  price: string;
   icon: React.ElementType;
   gradient: string;
   iconBg: string;
@@ -19,37 +19,19 @@ const systems: SystemOption[] = [
     type: 'business',
     label: 'BizPro',
     description: 'Quotes, invoices, CRM, tenders, accounting & more for service companies',
-    startingPrice: 'M350',
+    price: 'M350',
     icon: Briefcase,
     gradient: 'from-orange-400 to-orange-600',
     iconBg: 'bg-orange-500/10 text-orange-600',
   },
   {
-    type: 'legal',
-    label: 'LawPro',
-    description: 'Case management, billable hours, court calendar & document management for law firms',
-    startingPrice: 'M500',
-    icon: Scale,
-    gradient: 'from-sky-400 to-sky-600',
-    iconBg: 'bg-sky-500/10 text-sky-600',
-  },
-  {
     type: 'gym',
     label: 'GymPro',
     description: 'Member management, class scheduling, attendance tracking & billing for gyms',
-    startingPrice: 'M500',
+    price: 'M700',
     icon: Dumbbell,
     gradient: 'from-lime-500 to-green-600',
     iconBg: 'bg-lime-500/10 text-lime-600',
-  },
-  {
-    type: 'school',
-    label: 'EduPro',
-    description: 'Student management, fee tracking, timetables & announcements for schools',
-    startingPrice: 'M720',
-    icon: GraduationCap,
-    gradient: 'from-cyan-400 to-teal-600',
-    iconBg: 'bg-teal-500/10 text-teal-600',
   },
 ];
 
@@ -59,7 +41,7 @@ interface SystemSelectorProps {
 
 export function SystemSelector({ onSelect }: SystemSelectorProps) {
   return (
-    <div className="w-full max-w-3xl mx-auto animate-slide-up">
+    <div className="w-full max-w-2xl mx-auto animate-slide-up">
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4">
           <PlatformLogo className="h-12 w-auto rounded-xl p-2 bg-white shadow-sm" />
@@ -68,11 +50,11 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
           What are you managing?
         </h1>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-          Choose the system that fits your industry. You'll pick a package next.
+          Choose the system that fits your business
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {systems.map((system) => {
           const Icon = system.icon;
           return (
@@ -81,12 +63,11 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
               type="button"
               onClick={() => onSelect(system.type)}
               className={cn(
-                'group relative flex flex-col items-center gap-4 p-6 sm:p-8 rounded-2xl border-2 border-border bg-card',
+                'group relative flex flex-col items-center gap-4 p-8 rounded-2xl border-2 border-border bg-card',
                 'transition-all duration-300 hover:border-primary/50 hover:shadow-elevated hover:-translate-y-1',
                 'text-center cursor-pointer'
               )}
             >
-              {/* Gradient top bar */}
               <div className={cn(
                 'absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity',
                 system.gradient
@@ -104,10 +85,8 @@ export function SystemSelector({ onSelect }: SystemSelectorProps) {
               </div>
 
               <div className="mt-auto pt-2">
-                <p className="text-sm text-muted-foreground">
-                  Starting from{' '}
-                  <span className="font-bold text-foreground">{system.startingPrice}/mo</span>
-                </p>
+                <span className="font-display text-2xl font-bold text-foreground">{system.price}</span>
+                <span className="text-sm text-muted-foreground">/mo</span>
               </div>
 
               <div className="flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">

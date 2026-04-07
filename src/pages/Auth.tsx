@@ -41,9 +41,9 @@ export default function Auth() {
   useEffect(() => {
     const systemParam = searchParams.get('system') as SystemType | null;
     const isCustom = searchParams.get('custom') === 'true';
-    if (systemParam && ['business', 'legal', 'gym', 'school'].includes(systemParam) && !selectedSystem) {
+    if (systemParam && ['business', 'gym'].includes(systemParam) && !selectedSystem) {
       setSelectedSystem(systemParam);
-      setSignupStep(isCustom ? 'custom-modules' : 'package');
+      setSignupStep('package');
       setIsLogin(false);
     }
   }, [searchParams]);
@@ -168,10 +168,7 @@ export default function Auth() {
         .select('id, key')
         .eq('is_core', true);
 
-      const NON_SCHOOL_CORE_KEYS = ['core_crm', 'hire_equipment'];
-      const coreKeys = (coreModules || [])
-        .map(m => m.key)
-        .filter(key => selectedSystem !== 'school' || !NON_SCHOOL_CORE_KEYS.includes(key));
+      const coreKeys = (coreModules || []).map(m => m.key);
       const allKeys = [...new Set([...selectedModuleKeys, ...coreKeys])];
       const moduleIds = (modules || [])
         .filter(m => allKeys.includes(m.key))
