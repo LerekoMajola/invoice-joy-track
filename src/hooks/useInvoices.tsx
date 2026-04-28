@@ -162,20 +162,8 @@ export function useInvoices() {
   }, [user, activeCompanyId]);
 
   const generateInvoiceNumber = async (): Promise<string> => {
-    const { data } = await supabase
-      .from('invoices')
-      .select('invoice_number')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    let lastNum = 0;
-    if (data && data.length > 0) {
-      const match = data[0].invoice_number.match(/INV-(\d+)/);
-      if (match) {
-        lastNum = parseInt(match[1], 10);
-      }
-    }
-    return `INV-${String(lastNum + 1).padStart(4, '0')}`;
+    const { companyProfileId } = await resolveOwnerIds(user?.id || '', activeCompany?.user_id, activeCompanyId);
+    return reserveDocumentNumber('invoice', companyProfileId);
   };
 
   const createInvoice = async (invoice: InvoiceInsert): Promise<Invoice | null> => {
