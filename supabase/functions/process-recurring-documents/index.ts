@@ -216,6 +216,8 @@ async function processQuote(supabase: any, rec: any) {
 
   const quoteNumber = await generateNextNumber(
     supabase,
+    "quote",
+    source.company_profile_id ?? null,
     "quotes",
     "quote_number",
     "QT"
