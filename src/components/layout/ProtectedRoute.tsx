@@ -52,14 +52,24 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .maybeSingle();
 
       if (!subscription) {
-        // Create free trial subscription for new users
+        // Fallback: create trial subscription for legacy users without a row.
+        // Auth.tsx now creates this up-front for new signups, but keep this as a safety net.
         const trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-        // Read system_type from user_metadata (set during signup)
         const systemType = currentUser.user_metadata?.system_type || 'business';
 
-        await supabase.from('subscriptions').insert({
+        // Look up the default tier for this system_type so packageTierId is never null
+        const { data: defaultTier } = await supabase
+          .from('package_tiers')
+          .select('id')
+          .eq('system_type', systemType)
+          .eq('is_active', true)
+          .order('sort_order')
+          .limit(1)
+          .maybeSingle();
+
+        await supabase.from('subscriptions').upsert({
           user_id: currentUser.id,
           plan: 'free_trial',
           status: 'trialing',
@@ -67,21 +77,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           current_period_start: new Date().toISOString(),
           current_period_end: trialEndsAt.toISOString(),
           system_type: systemType,
-        });
+          package_tier_id: defaultTier?.id ?? null,
+        }, { onConflict: 'user_id' });
 
         // Initialize usage tracking
         const periodStart = new Date();
         const periodEnd = new Date();
         periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-        await supabase.from('usage_tracking').insert({
+        await supabase.from('usage_tracking').upsert({
           user_id: currentUser.id,
           period_start: periodStart.toISOString().split('T')[0],
           period_end: periodEnd.toISOString().split('T')[0],
           clients_count: 0,
           quotes_count: 0,
           invoices_count: 0,
-        });
+        }, { onConflict: 'user_id,period_start' });
       } else {
         // Check if trial has expired and subscription is not active
         const isTrialing = subscription.status === 'trialing';
