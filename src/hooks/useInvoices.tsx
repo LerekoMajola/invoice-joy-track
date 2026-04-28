@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 import { resolveOwnerIds } from './useStaffOwnerIds';
+import { reserveDocumentNumber } from '@/lib/documentNumbering';
 
 export interface LineItem {
   id: string;
