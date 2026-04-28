@@ -25,6 +25,7 @@ interface Props {
 export function GenerateInvoiceDialog({ entries, cases, open, onOpenChange, onGenerated }: Props) {
   const { user } = useAuth();
   const { clients } = useClients();
+  const { activeCompanyId } = useActiveCompany();
   const unbilledEntries = useMemo(() => entries.filter(e => e.isBillable && !e.isInvoiced), [entries]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState(() => {
