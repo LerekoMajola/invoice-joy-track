@@ -228,6 +228,7 @@ async function processQuote(supabase: any, rec: any) {
     .from("quotes")
     .insert({
       user_id: rec.user_id,
+      company_profile_id: source.company_profile_id ?? null,
       quote_number: quoteNumber,
       client_id: source.client_id,
       client_name: source.client_name,
