@@ -1,114 +1,84 @@
-# Fix new-tenant BizPro bugs
+## Problem
 
-## What's actually broken (root cause)
+When migrating tenants come onboard, they already have established document numbering (e.g. their last invoice was `2024-0457` or `INV-1230`). Today the system hard-codes:
 
-The Leekay account works because it was created before the current signup flow and has all fields fully populated:
-- `package_tier_id = c50944ab` (BizPro tier)
-- `system_type = business`
-- `company_profile` exists
-- `user_modules` populated
+- Prefix: `INV-` (invoices), `QT-` (quotes)
+- Padding: 4 digits
+- Starting number: derived from the latest record, defaulting to `1` for new tenants
 
-New signups end up with **none of those properly set** because of a race in the code:
+A migrating client would be forced to restart at `INV-0001`, which breaks their accounting continuity and confuses their customers.
 
-1. `Auth.tsx → handleAuth()` calls `supabase.auth.signUp(...)` then immediately calls `saveSignupData(userId)`.
-2. `saveSignupData` does `UPDATE subscriptions SET system_type=..., package_tier_id=... WHERE user_id = userId`.
-3. **But the `subscriptions` row does not exist yet.** It is only created later by `ProtectedRoute.tsx → checkSubscription()` when the user first lands on a protected route. The UPDATE silently affects 0 rows.
-4. `ProtectedRoute` then INSERTs a fresh subscription with `plan = 'free_trial'`, `system_type` from metadata, but **no `package_tier_id`**.
-5. `saveSignupData` also inserts into `user_modules`, then `ProtectedRoute` runs its own auto-assign (it checks `if (!userModules || userModules.length === 0)` so this part is safe, but order is fragile).
+## Solution
 
-Confirmed in the database:
+Add per-tenant **Document Numbering Settings** with sensible defaults, configurable from Settings, applied wherever new numbers are generated.
 
-```
-leekay (works):    package_tier_id = c50944ab, 10 active modules, company exists
-optimum (broken):  package_tier_id = NULL,     9 active modules,  company exists
-recent signups:    no subscription, no company at all
-```
+### 1. Database — extend `company_profiles`
 
-Downstream effects users would experience as "bugs":
-- Billing page shows wrong/missing tier info, can't compute price → flat-rate fallback in `useAdminStats` works, but `Billing.tsx` UI keys off `packageTierId` and breaks.
-- Features gated by tier (`useSubscription().packageTierId`) silently disable.
-- `multi_company_enabled` and other tier-driven flags default to false.
-- New tenants who never visit a protected route also have no subscription row at all (visible in the query results — many `nil` plan/status rows).
+Add columns (all nullable, fall back to current defaults):
+- `invoice_prefix` (text, default `'INV-'`)
+- `invoice_next_number` (int, default `1`)
+- `invoice_padding` (int, default `4`)
+- `quote_prefix` (text, default `'QT-'`)
+- `quote_next_number` (int, default `1`)
+- `quote_padding` (int, default `4`)
+- `delivery_note_prefix` (text, default `'DN-'`)
+- `delivery_note_next_number` (int, default `1`)
+- `delivery_note_padding` (int, default `4`)
 
-## Fix
+Storing `next_number` (rather than only "last used") makes the migrating-client setup intuitive: *"Your next invoice will be #…"*.
 
-### 1. Create the subscription row at signup time, not on first protected-route visit
+### 2. Atomic number reservation — RPC
 
-Move the trial-subscription creation out of `ProtectedRoute.tsx` and into `Auth.tsx → saveSignupData()`. Insert a complete row in one go:
-
-```ts
-// in saveSignupData, before the user_modules insert
-const trialEndsAt = new Date();
-trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-await supabase.from('subscriptions').upsert({
-  user_id: userId,
-  plan: 'free_trial',
-  status: 'trialing',
-  system_type: selectedSystem,
-  package_tier_id: selectedTierId,           // <-- now actually set
-  trial_ends_at: trialEndsAt.toISOString(),
-  current_period_start: new Date().toISOString(),
-  current_period_end: trialEndsAt.toISOString(),
-}, { onConflict: 'user_id' });
-
-await supabase.from('usage_tracking').upsert({
-  user_id: userId,
-  period_start: today,
-  period_end: oneMonthLater,
-  clients_count: 0, quotes_count: 0, invoices_count: 0,
-}, { onConflict: 'user_id,period_start' });
-```
-
-### 2. Simplify `ProtectedRoute.tsx`
-
-Keep its insert as a fallback (for legacy users without a row), but make it idempotent with `upsert` and stop overwriting `package_tier_id` to null. The auto-module-assignment block stays as-is (it already guards on existing rows).
-
-### 3. Backfill existing broken accounts
-
-One-shot SQL migration to fix users who already signed up under the broken flow:
+Race-safe number generation via a `SECURITY DEFINER` function:
 
 ```sql
--- Set package_tier_id from system_type for any subscription missing it
-UPDATE subscriptions s
-SET package_tier_id = pt.id
-FROM package_tiers pt
-WHERE s.package_tier_id IS NULL
-  AND pt.is_active = true
-  AND pt.system_type = s.system_type;
-
--- Create trial subscriptions for auth users who have none
-INSERT INTO subscriptions (user_id, plan, status, system_type, trial_ends_at,
-                           current_period_start, current_period_end, package_tier_id)
-SELECT u.id,
-       'free_trial', 'trialing',
-       COALESCE(u.raw_user_meta_data->>'system_type', 'business'),
-       u.created_at + interval '7 days',
-       u.created_at,
-       u.created_at + interval '7 days',
-       (SELECT id FROM package_tiers
-        WHERE system_type = COALESCE(u.raw_user_meta_data->>'system_type','business')
-          AND is_active = true LIMIT 1)
-FROM auth.users u
-LEFT JOIN subscriptions s ON s.user_id = u.id
-WHERE s.id IS NULL;
+reserve_document_number(
+  p_company_profile_id uuid,
+  p_doc_type text  -- 'invoice' | 'quote' | 'delivery_note'
+) RETURNS text
 ```
 
-### 4. Verify
+It performs a single `UPDATE … RETURNING` that increments `*_next_number` by 1 and returns the formatted string `prefix + padded(current_value)`. This eliminates duplicate-number risk under concurrent creates (today's "fetch latest + 1" is racy).
 
-After deploy, sign up a fresh test account on BizPro and confirm:
-- `subscriptions` row appears immediately with `package_tier_id` set.
-- Billing page shows BizPro M350 correctly.
-- Dashboard onboarding dialog opens to create the company profile.
-- No console errors on Clients / Quotes / Invoices pages.
+### 3. Settings UI — new "Document Numbering" card
 
-## Files to edit
+Located in **Settings → Company** (existing settings page). Three rows (Invoice / Quote / Delivery Note), each with:
+- Prefix (text) — e.g. `INV-`, `2025/`, `LXC-INV-`
+- Next number (int) — e.g. `1231` for a migrating client
+- Padding (1–8) — e.g. `4` → `0042`, `0` → `42`
 
-- `src/pages/Auth.tsx` — write full subscription row in `saveSignupData`
-- `src/components/layout/ProtectedRoute.tsx` — make the fallback idempotent (upsert) and stop relying on it as the primary creator
-- One database migration for the backfill above
+Live preview underneath: *"Your next invoice will be: `INV-1231`"*.
 
-## Out of scope
+A friendly hint: *"Migrating from another system? Set Next Number to one above your last issued document."*
 
-- The "no `company_profile`" issue is handled by `CompanyOnboardingDialog` on Dashboard load — that already works. Not changing it.
-- Pricing/tier definitions stay as-is.
+### 4. Wire generators to use the RPC
+
+Replace the four existing inline generators with a single helper `generateDocumentNumber(companyProfileId, docType)` that calls the RPC. Edit:
+- `src/hooks/useInvoices.tsx` — `generateInvoiceNumber`
+- `src/hooks/useQuotes.tsx` — `generateQuoteNumber`
+- `src/hooks/useDeliveryNotes.tsx` — equivalent
+- `src/components/legal/GenerateInvoiceDialog.tsx` — inline `INV-` builder
+- `supabase/functions/process-recurring-documents/index.ts` — `generateNextNumber()` for both invoice and quote
+
+Backwards-compatible: if a company has no settings row yet, the migration fills defaults so existing tenants continue exactly where they are (we'll seed `*_next_number` to `MAX(existing) + 1` per tenant in the same migration).
+
+### 5. Validation guards
+
+- Trying to lower `next_number` below an already-used number → block with toast: *"Number 1230 is already in use."*
+- Prefix is freeform but trimmed; empty allowed (e.g. pure numeric `2025-0001`).
+
+### Out of scope (can come later)
+
+- Per-year auto-reset (`{YYYY}` token in prefix)
+- Separate sequences for credit notes / receipts
+- Bulk renaming of historical documents
+
+## Files Touched
+
+- New migration: add columns + `reserve_document_number` RPC + backfill `next_number` from existing data
+- `src/components/settings/` — new `DocumentNumberingCard.tsx`, wired into existing Settings page
+- `src/hooks/useInvoices.tsx`, `useQuotes.tsx`, `useDeliveryNotes.tsx`
+- `src/components/legal/GenerateInvoiceDialog.tsx`
+- `supabase/functions/process-recurring-documents/index.ts`
+
+Approve and I'll implement.
