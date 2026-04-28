@@ -139,6 +139,8 @@ async function processInvoice(supabase: any, rec: any) {
 
   const invoiceNumber = await generateNextNumber(
     supabase,
+    "invoice",
+    source.company_profile_id ?? null,
     "invoices",
     "invoice_number",
     "INV"
