@@ -184,20 +184,45 @@ export default function Auth() {
         if (error) throw error;
       }
 
-      // Save system_type and package_tier_id to subscription
+      // Create the trial subscription row up front (avoid race with ProtectedRoute)
       if (selectedSystem) {
-        const updateData: any = { system_type: selectedSystem };
-        if (selectedTierId) {
-          updateData.package_tier_id = selectedTierId;
-        }
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+        const nowIso = new Date().toISOString();
+
+        const subRow: any = {
+          user_id: userId,
+          plan: 'free_trial',
+          status: 'trialing',
+          system_type: selectedSystem,
+          trial_ends_at: trialEndsAt.toISOString(),
+          current_period_start: nowIso,
+          current_period_end: trialEndsAt.toISOString(),
+        };
+        if (selectedTierId) subRow.package_tier_id = selectedTierId;
+
         const { error: subError } = await supabase
           .from('subscriptions')
-          .update(updateData)
-          .eq('user_id', userId);
+          .upsert(subRow, { onConflict: 'user_id' });
 
         if (subError) {
-          console.error('Error updating subscription:', subError);
+          console.error('Error creating subscription:', subError);
         }
+
+        // Initialize usage tracking for the period
+        const periodStart = new Date().toISOString().split('T')[0];
+        const periodEndDate = new Date();
+        periodEndDate.setMonth(periodEndDate.getMonth() + 1);
+        const periodEnd = periodEndDate.toISOString().split('T')[0];
+
+        await supabase.from('usage_tracking').upsert({
+          user_id: userId,
+          period_start: periodStart,
+          period_end: periodEnd,
+          clients_count: 0,
+          quotes_count: 0,
+          invoices_count: 0,
+        }, { onConflict: 'user_id,period_start' });
       }
 
       toast.success('Your package is ready!');
