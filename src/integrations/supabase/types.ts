@@ -623,13 +623,22 @@ export type Database = {
           default_terms: string | null
           default_validity_days: number | null
           deleted_at: string | null
+          delivery_note_next_number: number
+          delivery_note_padding: number
+          delivery_note_prefix: string
           email: string | null
           footer_text: string | null
           header_info: string | null
           id: string
+          invoice_next_number: number
+          invoice_padding: number
+          invoice_prefix: string
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          quote_next_number: number
+          quote_padding: number
+          quote_prefix: string
           registration_number: string | null
           signature_url: string | null
           tax_clearance_expiry_date: string | null
@@ -667,13 +676,22 @@ export type Database = {
           default_terms?: string | null
           default_validity_days?: number | null
           deleted_at?: string | null
+          delivery_note_next_number?: number
+          delivery_note_padding?: number
+          delivery_note_prefix?: string
           email?: string | null
           footer_text?: string | null
           header_info?: string | null
           id?: string
+          invoice_next_number?: number
+          invoice_padding?: number
+          invoice_prefix?: string
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          quote_next_number?: number
+          quote_padding?: number
+          quote_prefix?: string
           registration_number?: string | null
           signature_url?: string | null
           tax_clearance_expiry_date?: string | null
@@ -711,13 +729,22 @@ export type Database = {
           default_terms?: string | null
           default_validity_days?: number | null
           deleted_at?: string | null
+          delivery_note_next_number?: number
+          delivery_note_padding?: number
+          delivery_note_prefix?: string
           email?: string | null
           footer_text?: string | null
           header_info?: string | null
           id?: string
+          invoice_next_number?: number
+          invoice_padding?: number
+          invoice_prefix?: string
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          quote_next_number?: number
+          quote_padding?: number
+          quote_prefix?: string
           registration_number?: string | null
           signature_url?: string | null
           tax_clearance_expiry_date?: string | null
@@ -5323,6 +5350,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reserve_document_number: {
+        Args: { p_company_profile_id: string; p_doc_type: string }
+        Returns: string
       }
     }
     Enums: {
