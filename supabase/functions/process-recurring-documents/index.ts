@@ -150,6 +150,7 @@ async function processInvoice(supabase: any, rec: any) {
     .from("invoices")
     .insert({
       user_id: rec.user_id,
+      company_profile_id: source.company_profile_id ?? null,
       invoice_number: invoiceNumber,
       client_id: source.client_id,
       client_name: source.client_name,
