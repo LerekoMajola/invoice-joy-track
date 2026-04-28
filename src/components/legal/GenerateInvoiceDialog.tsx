@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { type LegalTimeEntry } from '@/hooks/useLegalTimeEntries';
 import { type LegalCase } from '@/hooks/useLegalCases';
 import { useClients } from '@/hooks/useClients';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { reserveDocumentNumber } from '@/lib/documentNumbering';
 
 interface Props {
   entries: LegalTimeEntry[];
