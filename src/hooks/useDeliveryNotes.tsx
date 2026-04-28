@@ -131,20 +131,9 @@ export function useDeliveryNotes() {
   }, [user, activeCompanyId]);
 
   const generateNoteNumber = async (): Promise<string> => {
-    const { data } = await supabase
-      .from('delivery_notes')
-      .select('note_number')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    let lastNum = 0;
-    if (data && data.length > 0) {
-      const match = data[0].note_number.match(/DN-(\d+)/);
-      if (match) {
-        lastNum = parseInt(match[1], 10);
-      }
-    }
-    return `DN-${String(lastNum + 1).padStart(4, '0')}`;
+    const activeUser = await getActiveUser();
+    const { companyProfileId } = await resolveOwnerIds(activeUser?.id || '', activeCompany?.user_id, activeCompanyId);
+    return reserveDocumentNumber('delivery_note', companyProfileId);
   };
 
   const createDeliveryNote = async (note: DeliveryNoteInsert): Promise<DeliveryNote | null> => {
