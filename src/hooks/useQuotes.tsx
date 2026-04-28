@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
 import { resolveOwnerIds } from './useStaffOwnerIds';
+import { reserveDocumentNumber } from '@/lib/documentNumbering';
 
 export interface LineItem {
   id: string;
@@ -137,20 +138,8 @@ export function useQuotes() {
   }, [user, activeCompanyId]);
 
   const generateQuoteNumber = async (): Promise<string> => {
-    const { data } = await supabase
-      .from('quotes')
-      .select('quote_number')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    let lastNum = 0;
-    if (data && data.length > 0) {
-      const match = data[0].quote_number.match(/QT-(\d+)/);
-      if (match) {
-        lastNum = parseInt(match[1], 10);
-      }
-    }
-    return `QT-${String(lastNum + 1).padStart(4, '0')}`;
+    const { companyProfileId } = await resolveOwnerIds(user?.id || '', activeCompany?.user_id, activeCompanyId);
+    return reserveDocumentNumber('quote', companyProfileId);
   };
 
   const ensureValidSession = async (): Promise<boolean> => {

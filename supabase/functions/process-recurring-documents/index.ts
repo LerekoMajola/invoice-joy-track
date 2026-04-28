@@ -80,22 +80,34 @@ function advanceDate(
 
 async function generateNextNumber(
   supabase: any,
-  table: string,
-  column: string,
-  prefix: string
+  docType: 'invoice' | 'quote' | 'delivery_note',
+  companyProfileId: string | null,
+  legacyTable: string,
+  legacyColumn: string,
+  legacyPrefix: string
 ): Promise<string> {
+  // Prefer the per-company atomic reservation when we know the company
+  if (companyProfileId) {
+    const { data, error } = await supabase.rpc('reserve_document_number', {
+      p_company_profile_id: companyProfileId,
+      p_doc_type: docType,
+    });
+    if (!error && typeof data === 'string' && data.length > 0) return data;
+  }
+
+  // Legacy fallback (single-tenant accounts without a company_profile_id)
   const { data } = await supabase
-    .from(table)
-    .select(column)
+    .from(legacyTable)
+    .select(legacyColumn)
     .order("created_at", { ascending: false })
     .limit(1);
 
   let lastNum = 0;
   if (data && data.length > 0) {
-    const match = data[0][column].match(new RegExp(`${prefix}-(\\d+)`));
+    const match = data[0][legacyColumn].match(new RegExp(`${legacyPrefix}-(\\d+)`));
     if (match) lastNum = parseInt(match[1], 10);
   }
-  return `${prefix}-${String(lastNum + 1).padStart(4, "0")}`;
+  return `${legacyPrefix}-${String(lastNum + 1).padStart(4, "0")}`;
 }
 
 async function processInvoice(supabase: any, rec: any) {
@@ -127,6 +139,8 @@ async function processInvoice(supabase: any, rec: any) {
 
   const invoiceNumber = await generateNextNumber(
     supabase,
+    "invoice",
+    source.company_profile_id ?? null,
     "invoices",
     "invoice_number",
     "INV"
@@ -136,6 +150,7 @@ async function processInvoice(supabase: any, rec: any) {
     .from("invoices")
     .insert({
       user_id: rec.user_id,
+      company_profile_id: source.company_profile_id ?? null,
       invoice_number: invoiceNumber,
       client_id: source.client_id,
       client_name: source.client_name,
@@ -202,6 +217,8 @@ async function processQuote(supabase: any, rec: any) {
 
   const quoteNumber = await generateNextNumber(
     supabase,
+    "quote",
+    source.company_profile_id ?? null,
     "quotes",
     "quote_number",
     "QT"
@@ -211,6 +228,7 @@ async function processQuote(supabase: any, rec: any) {
     .from("quotes")
     .insert({
       user_id: rec.user_id,
+      company_profile_id: source.company_profile_id ?? null,
       quote_number: quoteNumber,
       client_id: source.client_id,
       client_name: source.client_name,

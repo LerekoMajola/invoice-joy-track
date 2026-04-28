@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.reserve_document_number(uuid, text) FROM PUBLIC, anon;

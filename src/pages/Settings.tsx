@@ -13,6 +13,7 @@ import { useCompanyProfile, CompanyProfileInput, DocumentType } from '@/hooks/us
 import { TemplateEditor } from '@/components/settings/TemplateEditor';
 import { TaxClearanceList } from '@/components/settings/TaxClearanceList';
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
+import { DocumentNumberingCard } from '@/components/settings/DocumentNumberingCard';
 import { Building2, CreditCard, FileText, Upload, X, Loader2, FileCheck, Briefcase, FileUser, ExternalLink, Bell, Database, Lock, Palette, Settings2, PenTool, Globe, ToggleRight, Receipt, FolderOpen } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SUPPORTED_CURRENCIES } from '@/lib/currency';
@@ -469,7 +470,8 @@ export default function Settings() {
           </TabsContent>
 
           {/* Defaults Tab */}
-          <TabsContent value="defaults">
+          <TabsContent value="defaults" className="space-y-6">
+            <DocumentNumberingCard />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Settings2 className="h-5 w-5 text-primary" />Document Defaults</CardTitle>

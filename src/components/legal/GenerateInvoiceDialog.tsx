@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { type LegalTimeEntry } from '@/hooks/useLegalTimeEntries';
 import { type LegalCase } from '@/hooks/useLegalCases';
 import { useClients } from '@/hooks/useClients';
+import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
+import { reserveDocumentNumber } from '@/lib/documentNumbering';
 
 interface Props {
   entries: LegalTimeEntry[];
@@ -23,6 +25,7 @@ interface Props {
 export function GenerateInvoiceDialog({ entries, cases, open, onOpenChange, onGenerated }: Props) {
   const { user } = useAuth();
   const { clients } = useClients();
+  const { activeCompanyId } = useActiveCompany();
   const unbilledEntries = useMemo(() => entries.filter(e => e.isBillable && !e.isInvoiced), [entries]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState(() => {
@@ -59,11 +62,8 @@ export function GenerateInvoiceDialog({ entries, cases, open, onOpenChange, onGe
     const firstCase = caseMap[selectedEntries[0].caseId];
     const client = firstCase?.clientId ? clients.find(c => c.id === firstCase.clientId) : null;
 
-    // Generate invoice number
-    const { data: lastInv } = await supabase.from('invoices').select('invoice_number').order('created_at', { ascending: false }).limit(1);
-    let lastNum = 0;
-    if (lastInv?.[0]) { const m = lastInv[0].invoice_number.match(/INV-(\d+)/); if (m) lastNum = parseInt(m[1], 10); }
-    const invNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+    // Generate invoice number using configured numbering
+    const invNumber = await reserveDocumentNumber('invoice', activeCompanyId);
 
     const lineItems = selectedEntries.map(e => ({
       description: `${(e.activityType || 'Service').replace('_', ' ')} - ${e.description}`,

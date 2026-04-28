@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useActiveCompany } from '@/contexts/ActiveCompanyContext';
 import { toast } from 'sonner';
+import { reserveDocumentNumber } from '@/lib/documentNumbering';
 
 export interface HireOrder {
   id: string;
@@ -177,19 +178,8 @@ export function useHireOrders() {
         const today = new Date().toISOString().split('T')[0];
         const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        // Generate next invoice number
-        const { data: lastInv } = await supabase
-          .from('invoices')
-          .select('invoice_number')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        let lastNum = 0;
-        if (lastInv && lastInv.length > 0) {
-          const match = lastInv[0].invoice_number.match(/INV-(\d+)/);
-          if (match) lastNum = parseInt(match[1], 10);
-        }
-        const invoiceNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+        // Generate next invoice number using configured numbering
+        const invoiceNumber = await reserveDocumentNumber('invoice', activeCompanyId);
 
         // Calculate hire days
         const hireDays = Math.max(1, Math.ceil(
