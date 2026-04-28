@@ -123,35 +123,38 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           .limit(1);
 
         if (!userModules || userModules.length === 0) {
-          const selectedKeys: string[] = currentUser.user_metadata?.selected_module_keys;
+          let selectedKeys: string[] = currentUser.user_metadata?.selected_module_keys || [];
 
-          if (selectedKeys && selectedKeys.length > 0) {
-            const { data: allModules } = await supabase
-              .from('platform_modules')
-              .select('id, key, is_core')
-              .eq('is_active', true);
-
-            if (allModules && allModules.length > 0) {
-              const modulesToAssign = allModules.filter(
-                (m) => selectedKeys.includes(m.key) || m.is_core
-              );
-              if (modulesToAssign.length > 0) {
-                const rows = modulesToAssign.map((m) => ({
-                  user_id: currentUser.id,
-                  module_id: m.id,
-                  is_active: true,
-                }));
-                await supabase.from('user_modules').insert(rows);
+          // Fallback: derive module keys from the user's package_tier
+          if (selectedKeys.length === 0) {
+            const { data: subRow } = await supabase
+              .from('subscriptions')
+              .select('package_tier_id')
+              .eq('user_id', currentUser.id)
+              .maybeSingle();
+            if (subRow?.package_tier_id) {
+              const { data: tier } = await supabase
+                .from('package_tiers')
+                .select('module_keys')
+                .eq('id', subRow.package_tier_id)
+                .maybeSingle();
+              if (tier?.module_keys?.length) {
+                selectedKeys = tier.module_keys as string[];
               }
             }
-          } else {
-            const { data: allModules } = await supabase
-              .from('platform_modules')
-              .select('id')
-              .eq('is_active', true);
+          }
 
-            if (allModules && allModules.length > 0) {
-              const rows = allModules.map((m) => ({
+          const { data: allModules } = await supabase
+            .from('platform_modules')
+            .select('id, key, is_core')
+            .eq('is_active', true);
+
+          if (allModules && allModules.length > 0) {
+            const modulesToAssign = selectedKeys.length > 0
+              ? allModules.filter((m) => selectedKeys.includes(m.key) || m.is_core)
+              : allModules;
+            if (modulesToAssign.length > 0) {
+              const rows = modulesToAssign.map((m) => ({
                 user_id: currentUser.id,
                 module_id: m.id,
                 is_active: true,
