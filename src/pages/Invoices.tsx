@@ -249,6 +249,7 @@ export default function Invoices() {
   const [showCreateDNDialog, setShowCreateDNDialog] = useState(false);
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [dnCurrentPage, setDnCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<string>('invoices');
 
   const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
   const paginatedInvoices = useMemo(() => invoices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [invoices, currentPage]);
