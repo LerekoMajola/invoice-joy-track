@@ -410,22 +410,28 @@ export default function Invoices() {
     });
   };
 
-  const handleGenerateDeliveryNote = (invoice: Invoice) => {
-    const deliveryNoteData = {
-      invoiceId: invoice.id,
-      clientId: invoice.clientId,
-      clientName: invoice.clientName,
-      deliveryAddress: invoice.clientAddress || '',
-      items: invoice.lineItems.map(item => ({
-        description: item.description,
-        quantity: item.quantity,
-      })),
-    };
-    
-    sessionStorage.setItem('newDeliveryNoteFromInvoice', JSON.stringify(deliveryNoteData));
-    toast.success('Creating delivery note from invoice');
-    // Stays on same page now, handled by useEffect
-    window.location.reload();
+  const handleGenerateDeliveryNote = async (invoice: Invoice) => {
+    if (isCreatingFromInvoice) return;
+    setIsCreatingFromInvoice(true);
+    try {
+      const created = await createDeliveryNote({
+        invoiceId: invoice.id,
+        clientId: invoice.clientId || undefined,
+        clientName: invoice.clientName,
+        date: new Date().toISOString().split('T')[0],
+        deliveryAddress: invoice.clientAddress || '',
+        status: 'pending',
+        items: invoice.lineItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+        })),
+      });
+      if (created) {
+        setActiveTab('delivery-notes');
+      }
+    } finally {
+      setIsCreatingFromInvoice(false);
+    }
   };
 
   // Delivery Notes handlers
