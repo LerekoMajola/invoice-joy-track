@@ -249,6 +249,7 @@ export default function Invoices() {
   const [showCreateDNDialog, setShowCreateDNDialog] = useState(false);
   const [isCreatingFromInvoice, setIsCreatingFromInvoice] = useState(false);
   const [dnCurrentPage, setDnCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<string>('invoices');
 
   const totalPages = Math.ceil(invoices.length / ITEMS_PER_PAGE);
   const paginatedInvoices = useMemo(() => invoices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [invoices, currentPage]);
@@ -292,27 +293,9 @@ export default function Invoices() {
     }
   }, [user]);
 
-  // Handle delivery note creation from invoice
+  // Clear any legacy sessionStorage entry from old flow
   useEffect(() => {
-    const newDeliveryNoteData = sessionStorage.getItem('newDeliveryNoteFromInvoice');
-    if (newDeliveryNoteData && !isCreatingFromInvoice) {
-      setIsCreatingFromInvoice(true);
-      const data = JSON.parse(newDeliveryNoteData);
-      sessionStorage.removeItem('newDeliveryNoteFromInvoice');
-      
-      createDeliveryNote({
-        invoiceId: data.invoiceId,
-        clientId: data.clientId,
-        clientName: data.clientName,
-        date: new Date().toISOString().split('T')[0],
-        deliveryAddress: data.deliveryAddress || '',
-        status: 'pending',
-        items: data.items,
-      }).then(() => {
-        toast.success('Delivery note created from invoice');
-        setIsCreatingFromInvoice(false);
-      });
-    }
+    sessionStorage.removeItem('newDeliveryNoteFromInvoice');
   }, []);
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -410,22 +393,28 @@ export default function Invoices() {
     });
   };
 
-  const handleGenerateDeliveryNote = (invoice: Invoice) => {
-    const deliveryNoteData = {
-      invoiceId: invoice.id,
-      clientId: invoice.clientId,
-      clientName: invoice.clientName,
-      deliveryAddress: invoice.clientAddress || '',
-      items: invoice.lineItems.map(item => ({
-        description: item.description,
-        quantity: item.quantity,
-      })),
-    };
-    
-    sessionStorage.setItem('newDeliveryNoteFromInvoice', JSON.stringify(deliveryNoteData));
-    toast.success('Creating delivery note from invoice');
-    // Stays on same page now, handled by useEffect
-    window.location.reload();
+  const handleGenerateDeliveryNote = async (invoice: Invoice) => {
+    if (isCreatingFromInvoice) return;
+    setIsCreatingFromInvoice(true);
+    try {
+      const created = await createDeliveryNote({
+        invoiceId: invoice.id,
+        clientId: invoice.clientId || undefined,
+        clientName: invoice.clientName,
+        date: new Date().toISOString().split('T')[0],
+        deliveryAddress: invoice.clientAddress || '',
+        status: 'pending',
+        items: invoice.lineItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+        })),
+      });
+      if (created) {
+        setActiveTab('delivery-notes');
+      }
+    } finally {
+      setIsCreatingFromInvoice(false);
+    }
   };
 
   // Delivery Notes handlers
@@ -517,7 +506,7 @@ export default function Invoices() {
       />
       
       <div className="p-4 md:p-6">
-        <Tabs defaultValue="invoices" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-xs">
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="delivery-notes">Delivery Notes</TabsTrigger>
