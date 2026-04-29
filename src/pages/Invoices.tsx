@@ -524,7 +524,7 @@ export default function Invoices() {
       />
       
       <div className="p-4 md:p-6">
-        <Tabs defaultValue="invoices" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-xs">
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="delivery-notes">Delivery Notes</TabsTrigger>
