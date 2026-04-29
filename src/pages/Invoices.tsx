@@ -293,27 +293,9 @@ export default function Invoices() {
     }
   }, [user]);
 
-  // Handle delivery note creation from invoice
+  // Clear any legacy sessionStorage entry from old flow
   useEffect(() => {
-    const newDeliveryNoteData = sessionStorage.getItem('newDeliveryNoteFromInvoice');
-    if (newDeliveryNoteData && !isCreatingFromInvoice) {
-      setIsCreatingFromInvoice(true);
-      const data = JSON.parse(newDeliveryNoteData);
-      sessionStorage.removeItem('newDeliveryNoteFromInvoice');
-      
-      createDeliveryNote({
-        invoiceId: data.invoiceId,
-        clientId: data.clientId,
-        clientName: data.clientName,
-        date: new Date().toISOString().split('T')[0],
-        deliveryAddress: data.deliveryAddress || '',
-        status: 'pending',
-        items: data.items,
-      }).then(() => {
-        toast.success('Delivery note created from invoice');
-        setIsCreatingFromInvoice(false);
-      });
-    }
+    sessionStorage.removeItem('newDeliveryNoteFromInvoice');
   }, []);
 
   const handleViewInvoice = (invoice: Invoice) => {
