@@ -34,13 +34,16 @@ import {
   Building2,
   Mail,
   Phone,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react';
 import { useCRMClients, CRMClient, CLIENT_STATUSES } from '@/hooks/useCRMClients';
 import { formatMaluti } from '@/lib/currency';
 import { format, parseISO } from 'date-fns';
 import { AddClientDialog } from '@/components/crm/AddClientDialog';
 import { ClientDetailDialog } from '@/components/crm/ClientDetailDialog';
+import { StatementOfAccountDialog } from '@/components/clients/StatementOfAccountDialog';
+import type { Client } from '@/hooks/useClients';
 
 export function ClientsTab() {
   const { clients, isLoading, deleteClient } = useCRMClients();
@@ -49,6 +52,7 @@ export function ClientsTab() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<CRMClient | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [statementClient, setStatementClient] = useState<Client | null>(null);
 
   const filteredClients = clients.filter((client) => {
     const matchesSearch = 
@@ -251,6 +255,19 @@ export function ClientsTab() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setStatementClient({
+                            id: client.id,
+                            company: client.company,
+                            contactPerson: client.contactPerson ?? null,
+                            email: client.email ?? null,
+                            phone: client.phone ?? null,
+                            address: (client as any).address ?? null,
+                            createdAt: (client as any).createdAt ?? new Date().toISOString(),
+                            updatedAt: (client as any).updatedAt ?? new Date().toISOString(),
+                          })}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Statement of Account
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             className="text-destructive"
@@ -306,6 +323,11 @@ export function ClientsTab() {
         open={detailDialogOpen} 
         onOpenChange={setDetailDialogOpen}
         client={selectedClient}
+      />
+      <StatementOfAccountDialog
+        client={statementClient}
+        open={!!statementClient}
+        onOpenChange={(open) => !open && setStatementClient(null)}
       />
     </div>
   );
