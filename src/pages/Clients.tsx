@@ -19,8 +19,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Building2, Mail, Phone, MapPin, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, MoreHorizontal, Pencil, Trash2, Loader2, FileText } from 'lucide-react';
 import { ClientDocumentsSection } from '@/components/clients/ClientDocumentsSection';
+import { StatementOfAccountDialog } from '@/components/clients/StatementOfAccountDialog';
 import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
@@ -36,10 +37,12 @@ import { useClients, Client } from '@/hooks/useClients';
 function ClientCard({ 
   client, 
   onEdit,
+  onStatement,
   onDelete 
 }: { 
   client: Client; 
   onEdit: (client: Client) => void;
+  onStatement: (client: Client) => void;
   onDelete: (id: string, company: string) => void 
 }) {
   return (
@@ -66,6 +69,10 @@ function ClientCard({
             <DropdownMenuItem onClick={() => onEdit(client)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onStatement(client)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Statement of Account
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-destructive"
@@ -107,6 +114,7 @@ export default function Clients() {
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const [isOpen, setIsOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [statementClient, setStatementClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({
     company: '',
     contactPerson: '',
