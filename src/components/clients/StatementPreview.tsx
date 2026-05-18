@@ -51,21 +51,14 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
 
     return (
       <DocumentWrapper template={template} fontFamily={template.fontFamily} innerRef={innerRef}>
-        <div className="flex justify-between items-end mb-6 pb-4 border-b-2" style={{ borderColor: template.primaryColor }}>
-          <h1 className="text-3xl font-light tracking-widest uppercase" style={{ color: template.primaryColor }}>
-            Statement of Account
-          </h1>
-          <div className="text-right text-xs">
-            {headerFields.map((f, i) => (
-              <div key={i} className="flex gap-2 justify-end">
-                <span style={{ color: template.accentColor }}>{f.label}:</span>
-                <span className="font-medium">{f.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <DocumentHeader
+          template={template}
+          company={company}
+          documentTitle="Statement of Account"
+          fields={headerFields}
+        />
 
-        <ClientInfoSection template={template} label="To" fields={[]}>
+        <ClientInfoSection template={template} label="To" fields={headerFields}>
           <h3 className="text-base font-bold text-gray-900">{client.company}</h3>
           {client.contactPerson && (
             <p className="text-sm text-gray-700">{client.contactPerson}</p>
