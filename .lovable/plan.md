@@ -1,84 +1,65 @@
-## Problem
+## Statement of Account
 
-When migrating tenants come onboard, they already have established document numbering (e.g. their last invoice was `2024-0457` or `INV-1230`). Today the system hard-codes:
+A printable/sendable summary per client showing invoices, payments, and outstanding balance over a selected period.
 
-- Prefix: `INV-` (invoices), `QT-` (quotes)
-- Padding: 4 digits
-- Starting number: derived from the latest record, defaulting to `1` for new tenants
+### Where it lives
+- **Clients page** → each client row gets a new "Statement" action (alongside existing actions).
+- **Client detail dialog** → new "Statement of Account" tab/section.
+- Optional shortcut from **Invoices page** → "Generate Statement" button filtered by selected client.
 
-A migrating client would be forced to restart at `INV-0001`, which breaks their accounting continuity and confuses their customers.
+### What the statement shows
+Header
+- Company branding (logo, name, address, contact) — reused from invoice/quote templates.
+- "STATEMENT OF ACCOUNT" title + statement number (auto: `STM-YYYYMM-####`).
+- Bill-to (client name, contact, address).
+- Statement date + period (From / To, defaults to last 90 days, user-adjustable).
 
-## Solution
+Opening balance
+- Sum of outstanding invoices dated before the period start.
 
-Add per-tenant **Document Numbering Settings** with sensible defaults, configurable from Settings, applied wherever new numbers are generated.
+Transactions table (chronological)
+| Date | Reference | Description | Debit (Invoice) | Credit (Payment) | Balance |
+- Each invoice in period → debit row.
+- Each recorded payment in period (from invoices with `payment_date` in range and status `paid`) → credit row.
 
-### 1. Database — extend `company_profiles`
+Summary footer
+- Opening balance
+- Total invoiced (period)
+- Total paid (period)
+- **Closing balance / Amount due**
+- Aging buckets: Current, 1–30, 31–60, 61–90, 90+ days overdue.
 
-Add columns (all nullable, fall back to current defaults):
-- `invoice_prefix` (text, default `'INV-'`)
-- `invoice_next_number` (int, default `1`)
-- `invoice_padding` (int, default `4`)
-- `quote_prefix` (text, default `'QT-'`)
-- `quote_next_number` (int, default `1`)
-- `quote_padding` (int, default `4`)
-- `delivery_note_prefix` (text, default `'DN-'`)
-- `delivery_note_next_number` (int, default `1`)
-- `delivery_note_padding` (int, default `4`)
+Actions
+- Download PDF (uses existing `exportSectionBasedPDF` pattern from invoice preview).
+- Send via Email (uses existing `send-email-notification` infra / Resend with PDF attachment).
+- Print.
 
-Storing `next_number` (rather than only "last used") makes the migrating-client setup intuitive: *"Your next invoice will be #…"*.
+### Technical Section
 
-### 2. Atomic number reservation — RPC
+**Data source (no schema changes needed)**
+- Pull from existing `invoices` table filtered by `client_id` + date range.
+- Payments derived from invoice fields `payment_date`, `total`, `status='paid'`, `payment_reference`, `payment_method` (current model — no separate payments table).
+- Outstanding = invoices where `status IN ('sent','overdue')` (and partials if introduced later).
 
-Race-safe number generation via a `SECURITY DEFINER` function:
+**New files**
+- `src/hooks/useClientStatement.tsx` — fetches invoices for client + range, computes opening balance, transactions, aging.
+- `src/components/clients/StatementOfAccountDialog.tsx` — dialog wrapping the preview with date pickers + actions.
+- `src/components/clients/StatementPreview.tsx` — print-ready layout (mirrors `InvoicePreview` styling for brand consistency).
+- `src/lib/statementCalculations.ts` — pure helpers (running balance, aging buckets).
+- `supabase/functions/send-statement-email/index.ts` — accepts client id + period, renders HTML, sends via Resend.
 
-```sql
-reserve_document_number(
-  p_company_profile_id uuid,
-  p_doc_type text  -- 'invoice' | 'quote' | 'delivery_note'
-) RETURNS text
-```
+**Edits**
+- `src/pages/Clients.tsx` — add "Statement" action.
+- `src/components/clients/` (existing client detail dialog) — add "Statement of Account" section.
+- Use `useCurrency()` for all amounts (never hardcode `M`).
+- PDF via `exportSectionBasedPDF` (html2canvas scale 2), solid background per design rules.
 
-It performs a single `UPDATE … RETURNING` that increments `*_next_number` by 1 and returns the formatted string `prefix + padded(current_value)`. This eliminates duplicate-number risk under concurrent creates (today's "fetch latest + 1" is racy).
+**Numbering**
+- Statement numbers are local-only (not persisted unless requested later) — generated as `STM-YYYYMMDD-<clientShortId>` at render time. No DB column needed initially.
 
-### 3. Settings UI — new "Document Numbering" card
+### Out of scope (for confirmation)
+- Recording partial payments (current model is one payment per invoice).
+- Persisting generated statements / statement history.
+- Recurring auto-statements (e.g. monthly auto-email) — can be added later via cron-like edge function.
 
-Located in **Settings → Company** (existing settings page). Three rows (Invoice / Quote / Delivery Note), each with:
-- Prefix (text) — e.g. `INV-`, `2025/`, `LXC-INV-`
-- Next number (int) — e.g. `1231` for a migrating client
-- Padding (1–8) — e.g. `4` → `0042`, `0` → `42`
-
-Live preview underneath: *"Your next invoice will be: `INV-1231`"*.
-
-A friendly hint: *"Migrating from another system? Set Next Number to one above your last issued document."*
-
-### 4. Wire generators to use the RPC
-
-Replace the four existing inline generators with a single helper `generateDocumentNumber(companyProfileId, docType)` that calls the RPC. Edit:
-- `src/hooks/useInvoices.tsx` — `generateInvoiceNumber`
-- `src/hooks/useQuotes.tsx` — `generateQuoteNumber`
-- `src/hooks/useDeliveryNotes.tsx` — equivalent
-- `src/components/legal/GenerateInvoiceDialog.tsx` — inline `INV-` builder
-- `supabase/functions/process-recurring-documents/index.ts` — `generateNextNumber()` for both invoice and quote
-
-Backwards-compatible: if a company has no settings row yet, the migration fills defaults so existing tenants continue exactly where they are (we'll seed `*_next_number` to `MAX(existing) + 1` per tenant in the same migration).
-
-### 5. Validation guards
-
-- Trying to lower `next_number` below an already-used number → block with toast: *"Number 1230 is already in use."*
-- Prefix is freeform but trimmed; empty allowed (e.g. pure numeric `2025-0001`).
-
-### Out of scope (can come later)
-
-- Per-year auto-reset (`{YYYY}` token in prefix)
-- Separate sequences for credit notes / receipts
-- Bulk renaming of historical documents
-
-## Files Touched
-
-- New migration: add columns + `reserve_document_number` RPC + backfill `next_number` from existing data
-- `src/components/settings/` — new `DocumentNumberingCard.tsx`, wired into existing Settings page
-- `src/hooks/useInvoices.tsx`, `useQuotes.tsx`, `useDeliveryNotes.tsx`
-- `src/components/legal/GenerateInvoiceDialog.tsx`
-- `supabase/functions/process-recurring-documents/index.ts`
-
-Approve and I'll implement.
+Confirm and I'll implement.
