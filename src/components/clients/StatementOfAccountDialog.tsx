@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import { CalendarIcon, Download, Printer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useInvoices } from '@/hooks/useInvoices';
