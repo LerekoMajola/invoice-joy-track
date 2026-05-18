@@ -488,10 +488,22 @@ export default function Invoices() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const totalInvoiced = invoices.reduce((sum, i) => sum + i.total, 0);
+  // Derive effective status: a 'sent' invoice past its due date is treated as overdue.
+  // Drafts are excluded from issued totals since they haven't been sent to the client.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isOverdue = (i: Invoice) =>
+    (i.status === 'sent' || i.status === 'overdue') &&
+    i.dueDate &&
+    new Date(i.dueDate) < today;
+
+  const issuedInvoices = invoices.filter(i => i.status !== 'draft');
+  const totalInvoiced = issuedInvoices.reduce((sum, i) => sum + i.total, 0);
   const paidTotal = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total, 0);
-  const pendingTotal = invoices.filter(i => i.status === 'sent' || i.status === 'draft').reduce((sum, i) => sum + i.total, 0);
-  const overdueTotal = invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.total, 0);
+  const overdueTotal = invoices.filter(i => isOverdue(i)).reduce((sum, i) => sum + i.total, 0);
+  const pendingTotal = invoices
+    .filter(i => (i.status === 'sent' || i.status === 'overdue') && !isOverdue(i))
+    .reduce((sum, i) => sum + i.total, 0);
 
   const totalDeliveries = deliveryNotes.length;
   const pendingDNCount = deliveryNotes.filter(n => n.status === 'pending').length;
