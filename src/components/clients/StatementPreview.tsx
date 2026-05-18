@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import type { RefObject } from 'react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useCurrency } from '@/hooks/useCurrency';
 import { buildStatement, buildStatementNumber } from '@/lib/statementCalculations';
@@ -21,10 +21,10 @@ interface StatementPreviewProps {
   invoices: Invoice[];
   periodStart: Date;
   periodEnd: Date;
+  innerRef?: RefObject<HTMLDivElement>;
 }
 
-export const StatementPreview = forwardRef<HTMLDivElement, StatementPreviewProps>(
-  ({ client, invoices, periodStart, periodEnd }, ref) => {
+export function StatementPreview({ client, invoices, periodStart, periodEnd, innerRef }: StatementPreviewProps) {
     const { profile, isLoading } = useCompanyProfile();
     const { fc } = useCurrency();
 
