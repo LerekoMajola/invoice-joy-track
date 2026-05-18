@@ -125,7 +125,7 @@ export function AddBankAccountDialog({ open, onOpenChange, accountId }: AddBankA
             <Input
               id="bank_name"
               {...register('bank_name')}
-              placeholder="e.g., Standard Lesotho Bank"
+              placeholder="e.g., Standard \n Bank"
             />
           </div>
 

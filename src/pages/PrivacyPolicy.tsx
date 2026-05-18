@@ -28,7 +28,7 @@ const sections = [
   {
     icon: UserCheck,
     title: 'Your Rights',
-    content: `You have the right to access, correct, or delete your personal data at any time. You can export your data from the Settings page using the Data Backup feature. To request data deletion, contact us at support@orionlabs.com. We will process requests within 30 days in accordance with applicable data protection regulations, including the Protection of Personal Information Act (POPIA) for South African and Lesotho-based users.`,
+    content: `You have the right to access, correct, or delete your personal data at any time. You can export your data from the Settings page using the Data Backup feature. To request data deletion, contact us at support@orionlabs.com. We will process requests within 30 days in accordance with applicable data protection regulations, including the Protection of Personal Information Act (POPIA) for South African and \n-based users.`,
   },
   {
     icon: Cookie,

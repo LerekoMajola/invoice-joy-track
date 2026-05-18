@@ -48,7 +48,7 @@ export function DocumentMiniPreview({ template }: DocumentMiniPreviewProps) {
           <ClientInfoSection template={template} label="Bill To" fields={SAMPLE_FIELDS}>
             <h3 className="text-base font-bold text-gray-900">Client Company Ltd</h3>
             <p className="text-sm text-gray-600">45 Commerce Ave, Maseru 100</p>
-            <p className="text-sm text-gray-600">Lesotho</p>
+            <p className="text-sm text-gray-600">{"\n"}</p>
           </ClientInfoSection>
 
           {/* Items Table */}

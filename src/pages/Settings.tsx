@@ -53,7 +53,7 @@ export default function Settings() {
     address_line_2: '',
     city: '',
     postal_code: '',
-    country: 'Lesotho',
+    country: '\n',
     phone: '',
     email: '',
     website: '',
@@ -109,7 +109,7 @@ export default function Settings() {
         address_line_2: profile.address_line_2 || '',
         city: profile.city || '',
         postal_code: profile.postal_code || '',
-        country: profile.country || 'Lesotho',
+        country: profile.country || '\n',
         phone: profile.phone || '',
         email: profile.email || '',
         website: profile.website || '',
@@ -280,7 +280,7 @@ export default function Settings() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
-                      <Input id="country" value={formData.country || 'Lesotho'} onChange={(e) => handleChange('country', e.target.value)} placeholder="Country" />
+                      <Input id="country" value={formData.country || '\n'} onChange={(e) => handleChange('country', e.target.value)} placeholder="Country" />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">

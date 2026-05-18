@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react';
 
 const countries = [
-  { name: 'Lesotho', flag: '🇱🇸' },
+  { name: '\n', flag: '🇱🇸' },
   { name: 'South Africa', flag: '🇿🇦' },
   { name: 'Botswana', flag: '🇧🇼' },
   { name: 'eSwatini', flag: '🇸🇿' },
