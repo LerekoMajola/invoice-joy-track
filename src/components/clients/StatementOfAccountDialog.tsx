@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import { CalendarIcon, Download, Printer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -25,15 +26,20 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
   const today = new Date();
   const [periodStart, setPeriodStart] = useState<Date>(subDays(today, 90));
   const [periodEnd, setPeriodEnd] = useState<Date>(today);
+  const [outstandingOnly, setOutstandingOnly] = useState(false);
 
   const clientInvoices = useMemo(() => {
     if (!client) return [];
-    return invoices.filter(
+    const filtered = invoices.filter(
       (inv) =>
         inv.clientId === client.id ||
         inv.clientName?.toLowerCase() === client.company.toLowerCase()
     );
-  }, [invoices, client]);
+    if (!outstandingOnly) return filtered;
+    return filtered.filter(
+      (inv) => inv.status !== 'paid' && inv.status !== 'draft'
+    );
+  }, [invoices, client, outstandingOnly]);
 
   const handleDownload = async () => {
     if (!previewRef.current || !client) return;
@@ -109,6 +115,16 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none">
+              <Switch
+                checked={outstandingOnly}
+                onCheckedChange={setOutstandingOnly}
+              />
+              Outstanding only
+            </label>
           </div>
 
           <div className="flex gap-2">
