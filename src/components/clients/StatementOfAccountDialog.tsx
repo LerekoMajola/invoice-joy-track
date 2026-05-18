@@ -26,6 +26,7 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
   const today = new Date();
   const [periodStart, setPeriodStart] = useState<Date>(subDays(today, 90));
   const [periodEnd, setPeriodEnd] = useState<Date>(today);
+  const [outstandingOnly, setOutstandingOnly] = useState(false);
 
   const clientInvoices = useMemo(() => {
     if (!client) return [];
