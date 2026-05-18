@@ -117,6 +117,17 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
             </Popover>
           </div>
 
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none">
+              <Switch
+                checked={outstandingOnly}
+                onCheckedChange={setOutstandingOnly}
+                size="sm"
+              />
+              Outstanding only
+            </label>
+          </div>
+
           <div className="flex gap-2">
             <Button onClick={handleDownload} variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" /> Download PDF
