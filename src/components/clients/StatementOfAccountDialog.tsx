@@ -30,12 +30,16 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
 
   const clientInvoices = useMemo(() => {
     if (!client) return [];
-    return invoices.filter(
+    const filtered = invoices.filter(
       (inv) =>
         inv.clientId === client.id ||
         inv.clientName?.toLowerCase() === client.company.toLowerCase()
     );
-  }, [invoices, client]);
+    if (!outstandingOnly) return filtered;
+    return filtered.filter(
+      (inv) => inv.status !== 'paid' && inv.status !== 'draft'
+    );
+  }, [invoices, client, outstandingOnly]);
 
   const handleDownload = async () => {
     if (!previewRef.current || !client) return;
