@@ -213,6 +213,7 @@ export default function Clients() {
                   key={client.id} 
                   client={client} 
                   onEdit={handleEditClick}
+                  onStatement={setStatementClient}
                   onDelete={handleDeleteClient} 
                 />
               ))}
@@ -283,6 +284,10 @@ export default function Clients() {
                             <DropdownMenuItem onClick={() => handleEditClick(client)}>
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setStatementClient(client)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Statement of Account
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
