@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
           </td>
           <td style="vertical-align:middle;width:100%">
             <h1 style="margin:0;font-size:24px">Orion Labs</h1>
-            <p style="margin:4px 0 0;opacity:0.8;font-size:14px">Pioneer Mall, Maseru, Lesotho</p>
+            <p style="margin:4px 0 0;opacity:0.8;font-size:14px">Pioneer Mall, Maseru, \n</p>
             <p style="margin:2px 0 0;opacity:0.7;font-size:13px">sales@orionlabslesotho.com</p>
           </td>
         </tr></table>
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
       </div>
       <div style="text-align:center;padding:20px;border:1px solid #eee;border-top:none;border-radius:0 0 8px 8px;background:#fafafa">
         <p style="margin:0;font-size:14px;font-weight:600;color:#333">Thank you for your business!</p>
-        <p style="margin:6px 0 0;color:#888;font-size:12px">Orion Labs &middot; Pioneer Mall, Maseru, Lesotho &middot; sales@orionlabslesotho.com</p>
+        <p style="margin:6px 0 0;color:#888;font-size:12px">Orion Labs &middot; Pioneer Mall, Maseru, \n &middot; sales@orionlabslesotho.com</p>
       </div>
     </div>`;
 

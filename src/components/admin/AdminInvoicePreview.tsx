@@ -200,7 +200,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
                     </td>
                     <td style={{ verticalAlign: 'middle', paddingLeft: '12px' }}>
                       <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px' }}>ORION LABS</div>
-                      <div style={{ color: '#93c5fd', fontSize: '10px', marginTop: '2px' }}>Pioneer Mall, Maseru, Lesotho</div>
+                      <div style={{ color: '#93c5fd', fontSize: '10px', marginTop: '2px' }}>Pioneer Mall, Maseru, {"\n"}</div>
                       <div style={{ color: '#93c5fd', fontSize: '10px' }}>sales@orionlabslesotho.com</div>
                     </td>
                     <td style={{ verticalAlign: 'middle', textAlign: 'right' }}>
@@ -360,7 +360,7 @@ export function AdminInvoicePreview({ invoice, open, onOpenChange }: AdminInvoic
             {/* Footer */}
             <div style={{ background: NAVY, padding: '14px 28px', textAlign: 'center', marginTop: 'auto' }}>
               <div style={{ fontSize: '12px', fontWeight: 500, color: 'white' }}>Thank you for your business!</div>
-              <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '4px' }}>Orion Labs · Pioneer Mall, Maseru, Lesotho · sales@orionlabslesotho.com</div>
+              <div style={{ fontSize: '10px', color: '#93c5fd', marginTop: '4px' }}>Orion Labs · Pioneer Mall, Maseru, {"\n"} · sales@orionlabslesotho.com</div>
             </div>
           </div>
         </div>
