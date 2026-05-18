@@ -65,7 +65,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
           </div>
         </div>
 
-        <ClientInfoSection template={template} label="To" fields={headerFields}>
+        <ClientInfoSection template={template} label="To" fields={[]}>
           <h3 className="text-base font-bold text-gray-900">{client.company}</h3>
           {client.contactPerson && (
             <p className="text-sm text-gray-700">{client.contactPerson}</p>
