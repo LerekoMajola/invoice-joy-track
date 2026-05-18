@@ -128,7 +128,7 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
           </div>
         ) : (
           <StatementPreview
-            ref={previewRef}
+            innerRef={previewRef}
             client={client}
             invoices={clientInvoices}
             periodStart={periodStart}
