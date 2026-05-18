@@ -280,7 +280,7 @@ export default function Settings() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
-                      <Input id="country" value={formData.country || 'Lesotho'} onChange={(e) => handleChange('country', e.target.value)} placeholder="Country" />
+                      <Input id="country" value={formData.country || '\n'} onChange={(e) => handleChange('country', e.target.value)} placeholder="Country" />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
