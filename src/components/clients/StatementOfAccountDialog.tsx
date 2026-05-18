@@ -122,7 +122,6 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
               <Switch
                 checked={outstandingOnly}
                 onCheckedChange={setOutstandingOnly}
-                size="sm"
               />
               Outstanding only
             </label>
