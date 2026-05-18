@@ -15,7 +15,7 @@ interface Country {
 }
 
 const COUNTRIES: Country[] = [
-  { code: 'LS', name: 'Lesotho', dial: '+266', flag: '🇱🇸' },
+  { code: 'LS', name: '\n', dial: '+266', flag: '🇱🇸' },
   { code: 'ZA', name: 'South Africa', dial: '+27', flag: '🇿🇦' },
   { code: 'BW', name: 'Botswana', dial: '+267', flag: '🇧🇼' },
   { code: 'SZ', name: 'Eswatini', dial: '+268', flag: '🇸🇿' },

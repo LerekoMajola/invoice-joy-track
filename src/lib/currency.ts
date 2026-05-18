@@ -10,7 +10,7 @@ export interface CurrencyConfig {
 }
 
 export const SUPPORTED_CURRENCIES: CurrencyConfig[] = [
-  { code: 'LSL', symbol: 'M', name: 'Lesotho Loti' },
+  { code: 'LSL', symbol: 'M', name: '\n Loti' },
   { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
   { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
