@@ -126,7 +126,7 @@ export default function Tenders() {
           <TabsContent value="discover" className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Auto-sourced tenders from across Lesotho's internet
+                Auto-sourced tenders from across {"\n"}'s internet
               </p>
               <Button
                 onClick={scanForTenders}
@@ -156,7 +156,7 @@ export default function Tenders() {
               <div className="text-center py-12">
                 <Globe className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-muted-foreground font-medium">No discovered tenders yet</p>
-                <p className="text-sm text-muted-foreground mt-1">Click "Scan for Tenders" to search across Lesotho sources</p>
+                <p className="text-sm text-muted-foreground mt-1">Click "Scan for Tenders" to search across {"\n"} sources</p>
               </div>
             ) : (
               unsavedDiscovered.map((tender, index) => (
