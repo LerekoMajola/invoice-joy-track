@@ -77,63 +77,72 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
         </DialogHeader>
 
         {/* Controls */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
-          <div className="flex flex-wrap gap-1">
-            {quickRanges.map((r) => (
-              <Button
-                key={r.label}
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setPeriodStart(r.from);
-                  setPeriodEnd(today);
-                }}
-                className={cn(
-                  periodStart.getTime() === r.from.getTime() && 'bg-muted'
-                )}
-              >
-                {r.label}
-              </Button>
-            ))}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(periodStart, 'MMM d')} – {format(periodEnd, 'MMM d, yyyy')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: periodStart, to: periodEnd }}
-                  onSelect={(range) => {
-                    if (range?.from) setPeriodStart(range.from);
-                    if (range?.to) setPeriodEnd(range.to);
+        <div className="flex flex-col gap-3 print:hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-1">
+              {quickRanges.map((r) => (
+                <Button
+                  key={r.label}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setPeriodStart(r.from);
+                    setPeriodEnd(today);
                   }}
-                  numberOfMonths={2}
-                  className={cn('p-3 pointer-events-auto')}
-                />
-              </PopoverContent>
-            </Popover>
+                  className={cn(
+                    periodStart.getTime() === r.from.getTime() && 'bg-muted'
+                  )}
+                >
+                  {r.label}
+                </Button>
+              ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {format(periodStart, 'MMM d')} – {format(periodEnd, 'MMM d, yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: periodStart, to: periodEnd }}
+                    onSelect={(range) => {
+                      if (range?.from) setPeriodStart(range.from);
+                      if (range?.to) setPeriodEnd(range.to);
+                    }}
+                    numberOfMonths={2}
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleDownload} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" /> Download PDF
+              </Button>
+              <Button onClick={handlePrint} variant="outline" size="sm">
+                <Printer className="h-4 w-4 mr-2" /> Print
+              </Button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none">
-              <Switch
-                checked={outstandingOnly}
-                onCheckedChange={setOutstandingOnly}
-              />
-              Outstanding only
-            </label>
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" /> Download PDF
-            </Button>
-            <Button onClick={handlePrint} variant="outline" size="sm">
-              <Printer className="h-4 w-4 mr-2" /> Print
-            </Button>
+          {/* Invoice filter toggle — full width row for visibility */}
+          <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-4 py-2.5">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">Show outstanding invoices only</span>
+              <span className="text-xs text-muted-foreground">
+                {outstandingOnly
+                  ? 'Hiding paid and draft invoices'
+                  : 'Showing all invoices (paid, unpaid, overdue)'}
+              </span>
+            </div>
+            <Switch
+              checked={outstandingOnly}
+              onCheckedChange={setOutstandingOnly}
+              aria-label="Toggle outstanding invoices only"
+            />
           </div>
         </div>
 
