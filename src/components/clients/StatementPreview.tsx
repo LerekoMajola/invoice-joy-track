@@ -50,7 +50,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
     ];
 
     return (
-      <DocumentWrapper template={template} fontFamily={template.fontFamily} innerRef={ref}>
+      <DocumentWrapper template={template} fontFamily={template.fontFamily} innerRef={innerRef}>
         <DocumentHeader
           template={template}
           company={company}
@@ -180,7 +180,5 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
         />
       </DocumentWrapper>
     );
-  }
-);
+}
 
-StatementPreview.displayName = 'StatementPreview';
