@@ -451,6 +451,12 @@ export default function Clients() {
         variant={confirmDialog?.variant}
         confirmLabel={confirmDialog?.confirmLabel}
       />
+
+      <StatementOfAccountDialog
+        client={statementClient}
+        open={!!statementClient}
+        onOpenChange={(open) => !open && setStatementClient(null)}
+      />
     </DashboardLayout>
   );
 }
