@@ -212,7 +212,7 @@ export default function Quotes() {
   const { restoredDraft, clearDraft, dismissDraft } = useAutoSaveDraft('quote-draft', draftData, {
     onRemoteSave,
     shouldRemoteSave,
-    onStatusChange: handleStatusChange,
+    onStatusChange: handleAutoSaveStatus,
     remoteIntervalMs: 20_000,
   });
 
