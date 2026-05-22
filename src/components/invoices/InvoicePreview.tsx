@@ -69,9 +69,28 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave,
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(invoice);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
 
-  // Auto-save invoice edits to localStorage
+  // Auto-save invoice edits to localStorage + (optional) backend
   const draftData = useMemo(() => isEditing ? invoiceData : null, [isEditing, invoiceData]);
-  const { restoredDraft, clearDraft } = useAutoSaveDraft(`invoice-edit-${invoice.invoiceNumber}`, draftData);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const handleAutoSaveStatus = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
+    setAutoSaveStatus(status);
+    if (savedAt) setAutoSavedAt(savedAt);
+  }, []);
+  const handleRemoteSave = useCallback(async (d: InvoiceData | null) => {
+    if (!d || !onAutoSave) return;
+    await onAutoSave(d);
+  }, [onAutoSave]);
+  const { restoredDraft, clearDraft } = useAutoSaveDraft(
+    `invoice-edit-${invoice.invoiceNumber}`,
+    draftData,
+    {
+      onRemoteSave: onAutoSave ? handleRemoteSave : undefined,
+      shouldRemoteSave: (d) => !!d && isEditing,
+      onStatusChange: handleAutoSaveStatus,
+      remoteIntervalMs: 20_000,
+    }
+  );
 
   useEffect(() => { setInvoiceData(invoice); }, [invoice]);
 
