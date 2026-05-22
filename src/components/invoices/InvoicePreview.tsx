@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
-import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useAutoSaveDraft, AutoSaveStatus } from '@/hooks/useAutoSaveDraft';
+import { AutoSaveIndicator } from '@/components/shared/AutoSaveIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
