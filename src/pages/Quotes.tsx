@@ -534,6 +534,9 @@ export default function Quotes() {
     setNotes('');
     setLineItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, costPrice: 0, inputMode: 'price', marginPercent: 0 }]);
     setValidityDays(profile?.default_validity_days ?? 90);
+    setAutoDraftId(null);
+    setAutoSaveStatus('idle');
+    setAutoSavedAt(null);
   };
 
   const handleEditQuote = (quote: Quote) => {
