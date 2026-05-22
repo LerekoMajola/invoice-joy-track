@@ -262,7 +262,7 @@ export function useQuotes() {
       };
 
       setQuotes((prev) => [newQuote, ...prev]);
-      toast.success('Quote created successfully');
+      if (!opts.silent) toast.success('Quote created successfully');
       return newQuote;
     } catch (error: any) {
       console.error('Error creating quote:', error);
