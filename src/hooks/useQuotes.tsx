@@ -171,9 +171,12 @@ export function useQuotes() {
     }
   };
 
-  const createQuote = async (quote: QuoteInsert): Promise<Quote | null> => {
+  const createQuote = async (
+    quote: QuoteInsert,
+    opts: { silent?: boolean } = {}
+  ): Promise<Quote | null> => {
     if (!user) {
-      toast.error('You must be logged in to create a quote');
+      if (!opts.silent) toast.error('You must be logged in to create a quote');
       return null;
     }
 
