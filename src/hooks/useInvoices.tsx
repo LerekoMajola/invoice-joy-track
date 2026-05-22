@@ -263,7 +263,8 @@ export function useInvoices() {
 
   const updateInvoice = async (
     id: string,
-    updates: Partial<Omit<InvoiceInsert, 'lineItems'>> & { lineItems?: LineItem[] }
+    updates: Partial<Omit<InvoiceInsert, 'lineItems'>> & { lineItems?: LineItem[] },
+    opts: { silent?: boolean } = {}
   ): Promise<boolean> => {
     try {
       const existingInvoice = invoices.find((i) => i.id === id);
