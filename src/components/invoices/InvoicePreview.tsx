@@ -188,6 +188,9 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave,
           ) : (
             <Button onClick={() => setIsEditing(true)} variant="outline" size="sm"><Pencil className="h-4 w-4 mr-2" /> Edit</Button>
           )}
+          {isEditing && (
+            <AutoSaveIndicator status={autoSaveStatus} lastSavedAt={autoSavedAt} className="ml-1" />
+          )}
           {onStatusChange && invoiceData.status === 'draft' && (
             <Button onClick={() => onStatusChange('sent')} variant="outline" size="sm" className="gap-2 text-info border-info/30 hover:bg-info/10">
               <Send className="h-4 w-4" /> Mark as Sent
