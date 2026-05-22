@@ -864,6 +864,7 @@ export default function Invoices() {
               }}
               hasDeliveryNote={invoicesWithDeliveryNotes.has(selectedInvoice.id)}
               onUpdate={handleUpdateInvoice}
+              onAutoSave={handleAutoSaveInvoice}
               onStatusChange={(newStatus) => {
                 if (newStatus === 'paid') {
                   handleStatusChangeWithConfirm(selectedInvoice.id, 'paid', selectedInvoice.invoiceNumber);
