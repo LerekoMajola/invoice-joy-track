@@ -602,22 +602,39 @@ export default function Quotes() {
     const validLineItems = lineItems.filter(item => 
       item.description.trim() !== '' || item.quantity > 0 || item.unitPrice > 0 || item.costPrice > 0
     );
+    const finalLineItems = validLineItems.length > 0
+      ? validLineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice }))
+      : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }];
 
-    const result = await createQuote({
-      clientId: client.id,
-      clientName: client.company,
-      date: today.toISOString().split('T')[0],
-      validUntil: validUntil.toISOString().split('T')[0],
-      status: 'draft',
-      taxRate: defaultTaxRate,
-      termsAndConditions: defaultTerms,
-      description: quoteDescription || undefined,
-      leadTime: leadTime || undefined,
-      notes: notes || undefined,
-      lineItems: validLineItems.length > 0 
-        ? validLineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice }))
-        : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }],
-    });
+    let result: any = null;
+    if (autoDraftId) {
+      // Auto-save already created a row — just update it.
+      result = await updateQuote(autoDraftId, {
+        clientId: client.id,
+        clientName: client.company,
+        date: today.toISOString().split('T')[0],
+        validUntil: validUntil.toISOString().split('T')[0],
+        status: 'draft',
+        description: quoteDescription || undefined,
+        leadTime: leadTime || undefined,
+        notes: notes || undefined,
+        lineItems: finalLineItems.map((li, idx) => ({ id: String(idx), ...li })),
+      });
+    } else {
+      result = await createQuote({
+        clientId: client.id,
+        clientName: client.company,
+        date: today.toISOString().split('T')[0],
+        validUntil: validUntil.toISOString().split('T')[0],
+        status: 'draft',
+        taxRate: defaultTaxRate,
+        termsAndConditions: defaultTerms,
+        description: quoteDescription || undefined,
+        leadTime: leadTime || undefined,
+        notes: notes || undefined,
+        lineItems: finalLineItems,
+      });
+    }
 
     if (result) clearDraft();
     toast.success('Quote saved as draft');
@@ -632,19 +649,36 @@ export default function Quotes() {
     const validUntil = new Date(today);
     validUntil.setDate(validUntil.getDate() + validityDays);
 
-    const result = await createQuote({
-      clientId: client.id,
-      clientName: client.company,
-      date: today.toISOString().split('T')[0],
-      validUntil: validUntil.toISOString().split('T')[0],
-      status: 'draft',
-      taxRate: defaultTaxRate,
-      termsAndConditions: defaultTerms,
-      description: quoteDescription || undefined,
-      leadTime: leadTime || undefined,
-      notes: notes || undefined,
-      lineItems: lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice })),
-    });
+    const cleanLineItems = lineItems.map(({ description, quantity, unitPrice, costPrice }) => ({ description, quantity, unitPrice, costPrice }));
+
+    let result: any = null;
+    if (autoDraftId) {
+      result = await updateQuote(autoDraftId, {
+        clientId: client.id,
+        clientName: client.company,
+        date: today.toISOString().split('T')[0],
+        validUntil: validUntil.toISOString().split('T')[0],
+        status: 'draft',
+        description: quoteDescription || undefined,
+        leadTime: leadTime || undefined,
+        notes: notes || undefined,
+        lineItems: cleanLineItems.map((li, idx) => ({ id: String(idx), ...li })),
+      });
+    } else {
+      result = await createQuote({
+        clientId: client.id,
+        clientName: client.company,
+        date: today.toISOString().split('T')[0],
+        validUntil: validUntil.toISOString().split('T')[0],
+        status: 'draft',
+        taxRate: defaultTaxRate,
+        termsAndConditions: defaultTerms,
+        description: quoteDescription || undefined,
+        leadTime: leadTime || undefined,
+        notes: notes || undefined,
+        lineItems: cleanLineItems,
+      });
+    }
 
     if (result) clearDraft();
     resetForm();
