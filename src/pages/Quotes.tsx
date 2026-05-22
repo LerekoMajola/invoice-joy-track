@@ -136,7 +136,7 @@ export default function Quotes() {
     validityDays,
   }), [selectedClientId, quoteDescription, leadTime, notes, lineItems, validityDays]);
 
-  const handleStatusChange = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
+  const handleAutoSaveStatus = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
     setAutoSaveStatus(status);
     if (savedAt) setAutoSavedAt(savedAt);
   }, []);
@@ -212,7 +212,7 @@ export default function Quotes() {
   const { restoredDraft, clearDraft, dismissDraft } = useAutoSaveDraft('quote-draft', draftData, {
     onRemoteSave,
     shouldRemoteSave,
-    onStatusChange: handleStatusChange,
+    onStatusChange: handleAutoSaveStatus,
     remoteIntervalMs: 20_000,
   });
 
@@ -324,16 +324,16 @@ export default function Quotes() {
     });
   };
 
-  const handleStatusChangeWithConfirm = (quoteId: string, newStatus: Quote['status'], quoteNumber: string) => {
+  const handleAutoSaveStatusWithConfirm = (quoteId: string, newStatus: Quote['status'], quoteNumber: string) => {
     if (newStatus === 'accepted' || newStatus === 'rejected') {
       openConfirmDialog({
         title: `Mark as ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
         description: `Are you sure you want to mark ${quoteNumber} as ${newStatus}? This indicates the final client decision.`,
         confirmLabel: `Mark as ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
-        action: () => handleStatusChange(quoteId, newStatus),
+        action: () => handleAutoSaveStatus(quoteId, newStatus),
       });
     } else {
-      handleStatusChange(quoteId, newStatus);
+      handleAutoSaveStatus(quoteId, newStatus);
     }
   };
 
@@ -683,7 +683,7 @@ export default function Quotes() {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const handleStatusChange = async (quoteId: string, newStatus: Quote['status']) => {
+  const handleAutoSaveStatus = async (quoteId: string, newStatus: Quote['status']) => {
     await updateQuote(quoteId, { status: newStatus });
     toast.success(`Quote marked as ${newStatus}`);
   };
@@ -733,7 +733,7 @@ export default function Quotes() {
                   onView={handleViewQuote}
                   onEdit={handleEditQuote}
                   onConvert={handleConvertToInvoice}
-                  onStatusChange={handleStatusChange}
+                  onStatusChange={handleAutoSaveStatus}
                   onDelete={deleteQuote}
                   onSetRecurring={(q) => { setRecurringTargetQuote(q); setRecurringDialogOpen(true); }}
                   isRecurring={!!getRecurringBySource('quote', quote.id)?.isActive}
@@ -780,19 +780,19 @@ export default function Quotes() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="bg-popover">
-                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'draft')} disabled={quote.status === 'draft'}>
+                          <DropdownMenuItem onClick={() => handleAutoSaveStatus(quote.id, 'draft')} disabled={quote.status === 'draft'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.draft)}>Draft</Badge>
                             Set as Draft
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(quote.id, 'sent')} disabled={quote.status === 'sent'}>
+                          <DropdownMenuItem onClick={() => handleAutoSaveStatus(quote.id, 'sent')} disabled={quote.status === 'sent'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.sent)}>Sent</Badge>
                             Set as Sent
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChangeWithConfirm(quote.id, 'accepted', quote.quoteNumber)} disabled={quote.status === 'accepted'}>
+                          <DropdownMenuItem onClick={() => handleAutoSaveStatusWithConfirm(quote.id, 'accepted', quote.quoteNumber)} disabled={quote.status === 'accepted'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.accepted)}>Accepted</Badge>
                             Set as Accepted
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChangeWithConfirm(quote.id, 'rejected', quote.quoteNumber)} disabled={quote.status === 'rejected'}>
+                          <DropdownMenuItem onClick={() => handleAutoSaveStatusWithConfirm(quote.id, 'rejected', quote.quoteNumber)} disabled={quote.status === 'rejected'}>
                             <Badge variant="outline" className={cn('mr-2', statusStyles.rejected)}>Rejected</Badge>
                             Set as Rejected
                           </DropdownMenuItem>
@@ -1174,7 +1174,7 @@ export default function Quotes() {
           linkedInvoiceNumber={getLinkedInvoiceNumber(previewQuote.id)}
           onUpdate={handleUpdateQuote}
           onStatusChange={async (newStatus) => {
-            await handleStatusChange(previewQuote.id, newStatus);
+            await handleAutoSaveStatus(previewQuote.id, newStatus);
             setPreviewQuote({ ...previewQuote, status: newStatus });
           }}
           onConvertToInvoice={() => handleConvertToInvoice(previewQuote)}
