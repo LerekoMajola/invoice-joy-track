@@ -266,6 +266,7 @@ export function useQuotes() {
       return newQuote;
     } catch (error: any) {
       console.error('Error creating quote:', error);
+      if (opts.silent) return null;
       const code = error?.code || '';
       if (code === '42501' || code === 'PGRST301') {
         toast.error(
