@@ -55,13 +55,14 @@ interface InvoicePreviewProps {
   invoice: InvoiceData;
   hasDeliveryNote?: boolean;
   onUpdate?: (data: InvoiceData) => void;
+  onAutoSave?: (data: InvoiceData) => Promise<void>;
   onStatusChange?: (status: InvoiceData['status']) => void;
   onGenerateDeliveryNote?: () => void;
   onViewReceipt?: () => void;
   onClose?: () => void;
 }
 
-export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusChange, onGenerateDeliveryNote, onViewReceipt, onClose }: InvoicePreviewProps) {
+export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave, onStatusChange, onGenerateDeliveryNote, onViewReceipt, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
