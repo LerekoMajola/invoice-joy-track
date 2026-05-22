@@ -136,7 +136,7 @@ export default function Quotes() {
     validityDays,
   }), [selectedClientId, quoteDescription, leadTime, notes, lineItems, validityDays]);
 
-  const handleStatusChange = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
+  const handleAutoSaveStatus = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
     setAutoSaveStatus(status);
     if (savedAt) setAutoSavedAt(savedAt);
   }, []);
