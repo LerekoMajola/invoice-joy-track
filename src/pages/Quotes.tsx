@@ -121,6 +121,11 @@ export default function Quotes() {
   const { confirmDialog, openConfirmDialog, closeConfirmDialog, handleConfirm } = useConfirmDialog();
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Track an in-progress DB draft so periodic auto-saves update the same row.
+  const [autoDraftId, setAutoDraftId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+
   // Auto-save draft data
   const draftData = useMemo(() => ({
     selectedClientId,
@@ -131,7 +136,85 @@ export default function Quotes() {
     validityDays,
   }), [selectedClientId, quoteDescription, leadTime, notes, lineItems, validityDays]);
 
-  const { restoredDraft, clearDraft, dismissDraft } = useAutoSaveDraft('quote-draft', draftData);
+  const handleStatusChange = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
+    setAutoSaveStatus(status);
+    if (savedAt) setAutoSavedAt(savedAt);
+  }, []);
+
+  const shouldRemoteSave = useCallback((d: typeof draftData) => {
+    if (!isOpen) return false;
+    if (!d.selectedClientId) return false;
+    const hasLine = d.lineItems.some(
+      (li) => li.description.trim() !== '' || li.unitPrice > 0 || li.quantity > 1
+    );
+    return hasLine;
+  }, [isOpen]);
+
+  const onRemoteSave = useCallback(async (d: typeof draftData) => {
+    const client = clients.find((c) => c.id === d.selectedClientId);
+    if (!client) return;
+
+    const today = new Date();
+    const validUntil = new Date(today);
+    validUntil.setDate(validUntil.getDate() + (d.validityDays || 30));
+
+    const cleanLineItems = d.lineItems
+      .filter((li) => li.description.trim() !== '' || li.unitPrice > 0 || li.costPrice > 0)
+      .map(({ description, quantity, unitPrice, costPrice }) => ({
+        description,
+        quantity,
+        unitPrice,
+        costPrice,
+      }));
+    const lineItemsToSave = cleanLineItems.length > 0
+      ? cleanLineItems
+      : [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }];
+
+    const targetId = editingQuote?.id ?? autoDraftId;
+
+    if (targetId) {
+      await updateQuote(
+        targetId,
+        {
+          clientId: client.id,
+          clientName: client.company,
+          date: today.toISOString().split('T')[0],
+          validUntil: validUntil.toISOString().split('T')[0],
+          description: d.quoteDescription || undefined,
+          leadTime: d.leadTime || undefined,
+          notes: d.notes || undefined,
+          status: 'draft',
+          lineItems: lineItemsToSave.map((li, idx) => ({ id: String(idx), ...li })),
+        },
+        { silent: true }
+      );
+    } else {
+      const created = await createQuote(
+        {
+          clientId: client.id,
+          clientName: client.company,
+          date: today.toISOString().split('T')[0],
+          validUntil: validUntil.toISOString().split('T')[0],
+          status: 'draft',
+          taxRate: defaultTaxRate,
+          termsAndConditions: defaultTerms,
+          description: d.quoteDescription || undefined,
+          leadTime: d.leadTime || undefined,
+          notes: d.notes || undefined,
+          lineItems: lineItemsToSave,
+        },
+        { silent: true }
+      );
+      if (created) setAutoDraftId(created.id);
+    }
+  }, [clients, editingQuote, autoDraftId]);
+
+  const { restoredDraft, clearDraft, dismissDraft } = useAutoSaveDraft('quote-draft', draftData, {
+    onRemoteSave,
+    shouldRemoteSave,
+    onStatusChange: handleStatusChange,
+    remoteIntervalMs: 20_000,
+  });
 
   // Show restore prompt when a draft is found and the form isn't already open
   const [draftRestoreShown, setDraftRestoreShown] = useState(false);
