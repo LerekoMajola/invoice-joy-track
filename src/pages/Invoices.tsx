@@ -335,6 +335,41 @@ export default function Invoices() {
     }
   };
 
+  const handleAutoSaveInvoice = async (data: {
+    invoiceNumber: string;
+    clientName: string;
+    clientAddress?: string;
+    date: string;
+    dueDate: string;
+    description?: string;
+    lineItems: { id: string; description: string; quantity: number; unitPrice: number }[];
+    taxRate: number;
+    status: 'draft' | 'sent' | 'paid' | 'overdue';
+    purchaseOrderNumber?: string;
+  }) => {
+    if (!selectedInvoice) return;
+    // Preserve costPrice (not edited in preview) by merging from existing line items.
+    const costById = new Map(selectedInvoice.lineItems.map(li => [li.id, li.costPrice]));
+    await updateInvoice(
+      selectedInvoice.id,
+      {
+        clientName: data.clientName,
+        clientAddress: data.clientAddress,
+        date: data.date,
+        dueDate: data.dueDate,
+        description: data.description,
+        taxRate: data.taxRate,
+        status: data.status,
+        purchaseOrderNumber: data.purchaseOrderNumber,
+        lineItems: data.lineItems.map(li => ({
+          ...li,
+          costPrice: costById.get(li.id) ?? 0,
+        })),
+      },
+      { silent: true }
+    );
+  };
+
   const handleDeleteInvoice = async (id: string, invoiceNumber: string) => {
     openConfirmDialog({
       title: 'Delete Invoice',
@@ -829,6 +864,7 @@ export default function Invoices() {
               }}
               hasDeliveryNote={invoicesWithDeliveryNotes.has(selectedInvoice.id)}
               onUpdate={handleUpdateInvoice}
+              onAutoSave={handleAutoSaveInvoice}
               onStatusChange={(newStatus) => {
                 if (newStatus === 'paid') {
                   handleStatusChangeWithConfirm(selectedInvoice.id, 'paid', selectedInvoice.invoiceNumber);

@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
-import { useAutoSaveDraft } from '@/hooks/useAutoSaveDraft';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useAutoSaveDraft, AutoSaveStatus } from '@/hooks/useAutoSaveDraft';
+import { AutoSaveIndicator } from '@/components/shared/AutoSaveIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -54,22 +55,42 @@ interface InvoicePreviewProps {
   invoice: InvoiceData;
   hasDeliveryNote?: boolean;
   onUpdate?: (data: InvoiceData) => void;
+  onAutoSave?: (data: InvoiceData) => Promise<void>;
   onStatusChange?: (status: InvoiceData['status']) => void;
   onGenerateDeliveryNote?: () => void;
   onViewReceipt?: () => void;
   onClose?: () => void;
 }
 
-export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusChange, onGenerateDeliveryNote, onViewReceipt, onClose }: InvoicePreviewProps) {
+export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave, onStatusChange, onGenerateDeliveryNote, onViewReceipt, onClose }: InvoicePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const { profile, isLoading } = useCompanyProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(invoice);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate>(templates[0]);
 
-  // Auto-save invoice edits to localStorage
+  // Auto-save invoice edits to localStorage + (optional) backend
   const draftData = useMemo(() => isEditing ? invoiceData : null, [isEditing, invoiceData]);
-  const { restoredDraft, clearDraft } = useAutoSaveDraft(`invoice-edit-${invoice.invoiceNumber}`, draftData);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const handleAutoSaveStatus = useCallback((status: AutoSaveStatus, savedAt: Date | null) => {
+    setAutoSaveStatus(status);
+    if (savedAt) setAutoSavedAt(savedAt);
+  }, []);
+  const handleRemoteSave = useCallback(async (d: InvoiceData | null) => {
+    if (!d || !onAutoSave) return;
+    await onAutoSave(d);
+  }, [onAutoSave]);
+  const { restoredDraft, clearDraft } = useAutoSaveDraft(
+    `invoice-edit-${invoice.invoiceNumber}`,
+    draftData,
+    {
+      onRemoteSave: onAutoSave ? handleRemoteSave : undefined,
+      shouldRemoteSave: (d) => !!d && isEditing,
+      onStatusChange: handleAutoSaveStatus,
+      remoteIntervalMs: 20_000,
+    }
+  );
 
   useEffect(() => { setInvoiceData(invoice); }, [invoice]);
 
@@ -166,6 +187,9 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onStatusCha
             <Button onClick={handleSave} size="sm"><Save className="h-4 w-4 mr-2" /> Save Changes</Button>
           ) : (
             <Button onClick={() => setIsEditing(true)} variant="outline" size="sm"><Pencil className="h-4 w-4 mr-2" /> Edit</Button>
+          )}
+          {isEditing && (
+            <AutoSaveIndicator status={autoSaveStatus} lastSavedAt={autoSavedAt} className="ml-1" />
           )}
           {onStatusChange && invoiceData.status === 'draft' && (
             <Button onClick={() => onStatusChange('sent')} variant="outline" size="sm" className="gap-2 text-info border-info/30 hover:bg-info/10">

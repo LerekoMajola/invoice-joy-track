@@ -171,9 +171,12 @@ export function useQuotes() {
     }
   };
 
-  const createQuote = async (quote: QuoteInsert): Promise<Quote | null> => {
+  const createQuote = async (
+    quote: QuoteInsert,
+    opts: { silent?: boolean } = {}
+  ): Promise<Quote | null> => {
     if (!user) {
-      toast.error('You must be logged in to create a quote');
+      if (!opts.silent) toast.error('You must be logged in to create a quote');
       return null;
     }
 
@@ -259,10 +262,11 @@ export function useQuotes() {
       };
 
       setQuotes((prev) => [newQuote, ...prev]);
-      toast.success('Quote created successfully');
+      if (!opts.silent) toast.success('Quote created successfully');
       return newQuote;
     } catch (error: any) {
       console.error('Error creating quote:', error);
+      if (opts.silent) return null;
       const code = error?.code || '';
       if (code === '42501' || code === 'PGRST301') {
         toast.error(
@@ -283,7 +287,8 @@ export function useQuotes() {
 
   const updateQuote = async (
     id: string,
-    updates: Partial<Omit<QuoteInsert, 'lineItems'>> & { lineItems?: LineItem[] }
+    updates: Partial<Omit<QuoteInsert, 'lineItems'>> & { lineItems?: LineItem[] },
+    opts: { silent?: boolean } = {}
   ): Promise<boolean> => {
     try {
       const total =
@@ -329,11 +334,11 @@ export function useQuotes() {
 
       // Refetch to get updated data
       await fetchQuotes();
-      toast.success('Quote updated successfully');
+      if (!opts.silent) toast.success('Quote updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating quote:', error);
-      toast.error('Failed to update quote');
+      if (!opts.silent) toast.error('Failed to update quote');
       return false;
     }
   };

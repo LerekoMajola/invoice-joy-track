@@ -263,7 +263,8 @@ export function useInvoices() {
 
   const updateInvoice = async (
     id: string,
-    updates: Partial<Omit<InvoiceInsert, 'lineItems'>> & { lineItems?: LineItem[] }
+    updates: Partial<Omit<InvoiceInsert, 'lineItems'>> & { lineItems?: LineItem[] },
+    opts: { silent?: boolean } = {}
   ): Promise<boolean> => {
     try {
       const existingInvoice = invoices.find((i) => i.id === id);
@@ -330,11 +331,11 @@ export function useInvoices() {
 
       // Refetch to get updated data
       await fetchInvoices();
-      toast.success('Invoice updated successfully');
+      if (!opts.silent) toast.success('Invoice updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating invoice:', error);
-      toast.error('Failed to update invoice');
+      if (!opts.silent) toast.error('Failed to update invoice');
       return false;
     }
   };
