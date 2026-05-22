@@ -42,6 +42,7 @@ import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { QuotePreview } from '@/components/quotes/QuotePreview';
+import { useEditingSession } from '@/hooks/useEditingSession';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuotes, Quote, LineItem } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
@@ -101,6 +102,7 @@ export default function Quotes() {
     return invoice?.invoiceNumber || null;
   };
   const [isOpen, setIsOpen] = useState(false);
+  useEditingSession(isOpen, 'quote-editor');
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [fromJobCard, setFromJobCard] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState('');

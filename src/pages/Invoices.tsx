@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useEditingSession } from '@/hooks/useEditingSession';
 import { cn } from '@/lib/utils';
 import { formatMaluti } from '@/lib/currency';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
@@ -235,6 +236,7 @@ export default function Invoices() {
   const { getRecurringBySource, setRecurring, stopRecurring } = useRecurringDocuments();
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  useEditingSession(previewOpen, 'invoice-editor');
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);

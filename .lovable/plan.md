@@ -1,49 +1,50 @@
+# Keep session alive while editing a document
+
+## Problem
+The 5-minute inactivity timer in `useInactivityLogout` logs the user out even when they're actively working in a Quote or Invoice dialog. The current listeners (`mousedown`, `keydown`, `scroll`, `touchstart`) can miss real typing activity (IME composition, dropdown autofill, dialogs that stop event propagation), and long pauses while thinking/pasting a price list still trip the timer — losing work mid‑entry.
+
 ## Goal
+Never end the session while the user has an in‑progress (dirty, unsaved) document open. Keep the 5‑minute idle logout for everything else.
 
-Make auto-save feel real and reliable while drafting long quotes (and invoices):
-1. Show a live **"Saving… / Saved HH:MM"** badge inside the quote and invoice dialogs.
-2. Periodically persist the in-progress document to the **database as a `draft`** (every ~20s, only if there are meaningful changes), so work survives browser crashes, device switches, and session expiry — not just localStorage.
+## Approach
 
-Keep the existing 1s-debounced localStorage backup as the fast layer; the DB draft is the durable layer.
+### 1. New `EditingActivityContext`
+Lightweight React context exposing:
+- `registerEditing(id)` / `unregisterEditing(id)` — called by document dialogs while they are open with dirty data.
+- `pingActivity()` — called on every keystroke / form change inside those dialogs.
+- Internal ref tracks the set of active editors and the last activity timestamp.
 
-## What changes
+### 2. Extend `useInactivityLogout`
+- Subscribe to the editing context.
+- Add `input` and `change` to the activity event list (capture phase, so dialogs that stop propagation still count).
+- When the 5‑minute timer fires:
+  - If any editor is registered as dirty OR last editing ping was < 5 min ago → **reschedule** the timer instead of signing out (silent extension).
+  - Otherwise → sign out as today.
+- On `visibilitychange` resume: same guard before logging out.
 
-### 1. Shared auto-save status hook
-New `src/hooks/useAutoSaveStatus.ts` — small state machine returning `{ status: 'idle' | 'saving' | 'saved' | 'error', lastSavedAt: Date | null }` plus a `markSaving()` / `markSaved()` / `markError()` API. Used by both the indicator UI and the save logic.
+### 3. Wire into Quote & Invoice dialogs
+In `Quotes.tsx` and `Invoices.tsx` (`InvoicePreview`):
+- On dialog open with content → `registerEditing(docKey)`.
+- On every field change / line item edit → `pingActivity()` (piggyback on the existing autosave debounce — already triggered by the same edits).
+- On Save / Send / Cancel / dialog close → `unregisterEditing(docKey)`.
+- Optional: also call `registerEditing` whenever the autosave hook reports `status === 'saving'` so anything else using `useAutoSaveDraft` benefits automatically.
 
-### 2. Extend `useAutoSaveDraft`
-Add an optional second persistence callback so the same hook can drive both localStorage (already there) and a remote save:
-- New option `onRemoteSave?: (data: T) => Promise<void>` and `remoteIntervalMs` (default 20000).
-- Skip the remote save when data is "empty" (no client + no line item with description/price) to avoid creating junk drafts.
-- Only call `onRemoteSave` when the serialized payload changed since the last successful remote save (hash compare).
-- Report progress via a callback so the UI can show Saving/Saved.
-
-### 3. Quote dialog (`src/pages/Quotes.tsx`)
-- Track `currentDraftId: string | null` in state. Set it when `editingQuote` is opened or after the first remote auto-save.
-- Provide `onRemoteSave` that:
-  - If `currentDraftId` exists → calls `updateQuote(currentDraftId, { ...draftData, status: 'draft' })`.
-  - Otherwise → calls `createQuote({ ...draftData, status: 'draft' })`, stores the returned id, and silently swaps the dialog into "edit existing draft" mode (so a second tick updates, not duplicates).
-  - Suppress the existing `toast.success('Quote created/updated')` for autosave-originated calls (add an `opts.silent` flag to `createQuote`/`updateQuote` in `useQuotes`).
-- Add a small `AutoSaveIndicator` in the `DialogHeader` row: spinner + "Saving…" while in flight, check icon + "Saved 14:32" otherwise, red dot + "Save failed — will retry" on error.
-- On successful manual Save / Send, `clearDraft()` and reset `currentDraftId` as today.
-
-### 4. Invoice dialog (`src/components/invoices/InvoicePreview.tsx` + `src/pages/Invoices.tsx`)
-- Mirror the quote behavior: the inline invoice editor already uses `useAutoSaveDraft`. Wire the same `onRemoteSave` against `useInvoices` (`createInvoice` / `updateInvoice` with `status: 'draft'`), track `currentDraftId`, and render the same `AutoSaveIndicator` in the editor header.
-- Add a `silent` option to `createInvoice` / `updateInvoice` to suppress toasts for autosave ticks.
-
-### 5. Reusable indicator
-New `src/components/shared/AutoSaveIndicator.tsx` — accepts `{ status, lastSavedAt }` and renders the badge using existing semantic tokens (`text-muted-foreground`, `text-success`, `text-destructive`), with a tiny `Loader2` spinner for the saving state.
-
-## Behavior summary
-
-- Typing pauses ≥ 1s → localStorage write (instant safety net).
-- Typing pauses ≥ 20s OR every 20s of continued editing → DB draft upsert (durable).
-- Header always shows the latest state: **Saving…** during the request, then **Saved HH:MM** afterward.
-- The draft shows up in `/drafts` immediately, because it lands in the `quotes` / `invoices` table with `status='draft'`.
-- Manual **Save as draft** / **Send** / **Save** still work exactly as today and clear the localStorage backup on success.
+### 4. Safety cap
+To avoid an effectively infinite session if a dialog is left open by accident, cap the extension at **8 hours total** since last real input. After that, log out normally.
 
 ## Out of scope
+- Auth/refresh token logic (Supabase refreshes silently while the tab is active — unaffected).
+- Portal‑side timers stay unchanged unless you also want this behavior in `/portal`.
+- No DB / RLS / schema changes.
 
-- No schema changes (the existing `quotes` / `invoices` `status='draft'` rows are reused).
-- No changes to numbering (drafts already consume a number via `reserve_document_number`; this matches the current "Save as draft" behavior).
-- Recurring documents, delivery notes, and other forms are not touched in this pass.
+## Files touched
+- `src/hooks/useInactivityLogout.tsx` — guard logout against active editing, add `input`/`change` capture listeners.
+- `src/contexts/EditingActivityContext.tsx` — new provider + `useEditingActivity` hook.
+- `src/contexts/AuthContext.tsx` (or `App.tsx`) — mount the provider above the routes that use the inactivity hook.
+- `src/pages/Quotes.tsx` — register/unregister + ping on edits.
+- `src/pages/Invoices.tsx` + `src/components/invoices/InvoicePreview.tsx` — same wiring.
+
+## Behavior after change
+- Typing or editing a quote/invoice → session stays alive indefinitely (up to the 8h safety cap).
+- Dialog closed or document saved → normal 5‑minute idle logout resumes.
+- No UI change; purely a stability fix.
