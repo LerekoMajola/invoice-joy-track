@@ -287,7 +287,8 @@ export function useQuotes() {
 
   const updateQuote = async (
     id: string,
-    updates: Partial<Omit<QuoteInsert, 'lineItems'>> & { lineItems?: LineItem[] }
+    updates: Partial<Omit<QuoteInsert, 'lineItems'>> & { lineItems?: LineItem[] },
+    opts: { silent?: boolean } = {}
   ): Promise<boolean> => {
     try {
       const total =
@@ -333,11 +334,11 @@ export function useQuotes() {
 
       // Refetch to get updated data
       await fetchQuotes();
-      toast.success('Quote updated successfully');
+      if (!opts.silent) toast.success('Quote updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating quote:', error);
-      toast.error('Failed to update quote');
+      if (!opts.silent) toast.error('Failed to update quote');
       return false;
     }
   };
