@@ -331,11 +331,11 @@ export function useInvoices() {
 
       // Refetch to get updated data
       await fetchInvoices();
-      toast.success('Invoice updated successfully');
+      if (!opts.silent) toast.success('Invoice updated successfully');
       return true;
     } catch (error) {
       console.error('Error updating invoice:', error);
-      toast.error('Failed to update invoice');
+      if (!opts.silent) toast.error('Failed to update invoice');
       return false;
     }
   };
