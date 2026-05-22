@@ -846,9 +846,12 @@ export default function Quotes() {
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsOpen(true); }}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">
-              {editingQuote ? `Edit Quote: ${editingQuote.quoteNumber}` : 'Create New Quote'}
-            </DialogTitle>
+            <div className="flex items-center justify-between gap-3 pr-8">
+              <DialogTitle className="font-display">
+                {editingQuote ? `Edit Quote: ${editingQuote.quoteNumber}` : 'Create New Quote'}
+              </DialogTitle>
+              <AutoSaveIndicator status={autoSaveStatus} lastSavedAt={autoSavedAt} />
+            </div>
           </DialogHeader>
           
           {/* Upload Document Button */}
