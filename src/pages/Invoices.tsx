@@ -551,7 +551,22 @@ export default function Invoices() {
       <Header 
         title="Invoices" 
         subtitle="Track and manage your invoices & deliveries"
-        action={{ label: 'New Invoice', onClick: () => {} }}
+        action={{ label: 'New Invoice', onClick: async () => {
+          const today = new Date().toISOString().split('T')[0];
+          const due = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const created = await createInvoice({
+            clientName: '',
+            date: today,
+            dueDate: due,
+            status: 'draft',
+            taxRate: 0,
+            lineItems: [{ description: '', quantity: 1, unitPrice: 0, costPrice: 0 }],
+          });
+          if (created) {
+            setSelectedInvoice(created);
+            setPreviewOpen(true);
+          }
+        } }}
       />
       
       <div className="p-4 md:p-6">
