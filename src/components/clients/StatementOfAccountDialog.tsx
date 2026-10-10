@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 import { useInvoices } from '@/hooks/useInvoices';
 import type { Client } from '@/hooks/useClients';
 import { StatementPreview } from './StatementPreview';
-import html2pdf from 'html2pdf.js';
+import { exportSectionBasedPDF } from '@/lib/pdfExport';
+import { toast } from 'sonner';
 import { buildStatementNumber } from '@/lib/statementCalculations';
 
 interface Props {
@@ -41,20 +42,21 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
     );
   }, [invoices, client, outstandingOnly]);
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownload = async () => {
-    if (!previewRef.current || !client) return;
+    if (!previewRef.current || !client || isDownloading) return;
     const num = buildStatementNumber(client.id, periodEnd);
-    const opt = {
-      margin: 0,
-      filename: `${num}-${client.company.replace(/\s+/g, '_')}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-    };
+    const filename = `${num}-${client.company.replace(/\s+/g, '_')}.pdf`;
+    setIsDownloading(true);
     try {
-      await html2pdf().set(opt).from(previewRef.current).save();
+      await exportSectionBasedPDF(previewRef.current, filename);
+      toast.success('Statement PDF downloaded');
     } catch (e) {
       console.error('Error generating PDF:', e);
+      toast.error('Could not generate the PDF. Please try the Print option instead.');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -119,8 +121,13 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleDownload} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" /> Download PDF
+              <Button onClick={handleDownload} variant="outline" size="sm" disabled={isDownloading}>
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isDownloading ? 'Generating…' : 'Download PDF'}
               </Button>
               <Button onClick={handlePrint} variant="outline" size="sm">
                 <Printer className="h-4 w-4 mr-2" /> Print

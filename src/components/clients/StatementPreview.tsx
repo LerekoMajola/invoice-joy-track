@@ -51,6 +51,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
 
     return (
       <DocumentWrapper template={template} fontFamily={template.fontFamily} innerRef={innerRef}>
+        <div data-pdf-section>
         <DocumentHeader
           template={template}
           company={company}
@@ -69,9 +70,10 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
           {client.email && <p className="text-sm text-gray-600">{client.email}</p>}
           {client.phone && <p className="text-sm text-gray-600">{client.phone}</p>}
         </ClientInfoSection>
+        </div>
 
         {/* Opening Balance */}
-        <div className="mb-4 flex justify-between items-center py-3 px-4 rounded" style={{ background: '#f5f5f5' }}>
+        <div data-pdf-section className="mb-4 flex justify-between items-center py-3 px-4 rounded" style={{ background: '#f5f5f5' }}>
           <span className="text-sm font-semibold" style={{ color: template.accentColor }}>
             Opening Balance (as at {periodStart.toLocaleDateString()})
           </span>
@@ -79,7 +81,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
         </div>
 
         {/* Transactions */}
-        <div className="mb-6">
+        <div data-pdf-section className="mb-6">
           <table className="w-full" style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr style={thStyle}>
@@ -115,7 +117,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
         </div>
 
         {/* Summary */}
-        <div className="mb-6 ml-auto" style={{ width: '60%' }}>
+        <div data-pdf-section className="mb-6 ml-auto" style={{ width: '60%' }}>
           <div className="flex justify-between py-2 border-b text-sm" style={{ borderColor: '#e5e5e5' }}>
             <span style={{ color: template.accentColor }}>Opening balance</span>
             <span>{fc(statement.openingBalance)}</span>
@@ -135,7 +137,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
         </div>
 
         {/* Aging */}
-        <div className="mb-6">
+        <div data-pdf-section className="mb-6">
           <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: template.accentColor }}>
             Aging Summary
           </h3>
@@ -171,6 +173,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
           </table>
         </div>
 
+        <div data-pdf-section>
         <DocumentFooter
           template={template}
           footerText={profile?.footer_text}
@@ -178,6 +181,7 @@ export function StatementPreview({ client, invoices, periodStart, periodEnd, inn
           email={profile?.email}
           website={profile?.website}
         />
+        </div>
       </DocumentWrapper>
     );
 }
