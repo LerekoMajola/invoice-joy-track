@@ -160,7 +160,8 @@ function triggerBlobDownload(pdf: jsPDF, filename: string) {
     action: {
       label: 'Open PDF',
       onClick: () => {
-        const win = window.open(openUrl, '_blank', 'noopener');
+        const win = window.open(openUrl, '_blank');
+        if (win) { try { win.opener = null; } catch { /* ignore */ } }
         if (!win) {
           // Popup blocked — navigate the top window as a last resort
           window.location.href = openUrl;
