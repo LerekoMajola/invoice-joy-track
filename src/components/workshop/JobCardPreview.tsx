@@ -71,7 +71,6 @@ export function JobCardPreview({ jobCard }: JobCardPreviewProps) {
     setIsDownloading(true);
     try {
       await exportSectionBasedPDF(previewRef.current, `${jobCard.jobCardNumber}.pdf`);
-      toast({ title: 'PDF downloaded successfully' });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({ title: 'PDF generation failed', description: 'Try using Print instead.', variant: 'destructive' });
