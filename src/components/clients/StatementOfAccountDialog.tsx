@@ -51,7 +51,6 @@ export function StatementOfAccountDialog({ client, open, onOpenChange }: Props) 
     setIsDownloading(true);
     try {
       await exportSectionBasedPDF(previewRef.current, filename);
-      toast.success('Statement PDF downloaded');
     } catch (e) {
       console.error('Error generating PDF:', e);
       toast.error('Could not generate the PDF. Please try the Print option instead.');

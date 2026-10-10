@@ -137,7 +137,6 @@ export function QuotePreview({ quoteData, isConverted, linkedInvoiceNumber, onUp
     setIsDownloading(true);
     try {
       await exportSectionBasedPDF(quoteRef.current, `${data.quoteNumber}.pdf`);
-      toast({ title: 'PDF downloaded successfully' });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({ title: 'PDF generation failed', description: 'Try using Print instead.', variant: 'destructive' });

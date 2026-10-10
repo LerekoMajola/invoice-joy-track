@@ -1,5 +1,6 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { toast } from 'sonner';
 
 // A4 dimensions in mm
 const A4_WIDTH_MM = 210;
@@ -101,22 +102,76 @@ export async function exportSectionBasedPDF(
   triggerBlobDownload(pdf, filename);
 }
 
-/** Reliably trigger a file download from a jsPDF instance via blob URL. */
+/** Strip characters that browsers/OSes reject in file names. */
+function sanitizeFilename(name: string) {
+  const cleaned = name.replace(/[\\/:*?"<>|\n\r\t]+/g, '-').replace(/\s+/g, ' ').trim();
+  const base = cleaned || 'document';
+  return base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`;
+}
+
+function isEmbeddedFrame() {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Reliably deliver a PDF to the user.
+ *
+ * Browsers silently drop programmatic downloads when the app runs inside an
+ * embedded frame (e.g. the editor preview) or when the click gesture has
+ * expired after a long async render. So we attempt the direct download AND
+ * always offer an "Open PDF" toast action — a fresh user click that opens the
+ * file in a new tab, from where it can be saved.
+ */
 function triggerBlobDownload(pdf: jsPDF, filename: string) {
+  const safeName = sanitizeFilename(filename);
+  let url: string | null = null;
+
   try {
     const blob = pdf.output('blob');
-    const url = URL.createObjectURL(blob);
+    const file = new File([blob], safeName, { type: 'application/pdf' });
+    url = URL.createObjectURL(file);
+
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
+    link.download = safeName;
+    link.rel = 'noopener';
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => link.remove(), 0);
   } catch {
-    // Fallback to built-in save
-    pdf.save(filename);
+    try {
+      pdf.save(safeName);
+    } catch { /* fall through to toast */ }
   }
+
+  const openUrl = url ?? (pdf.output('bloburl') as unknown as string);
+  const embedded = isEmbeddedFrame();
+
+  toast.success(embedded ? 'PDF ready' : `Downloaded ${safeName}`, {
+    description: embedded
+      ? 'Downloads are blocked inside this preview window. Click "Open PDF" to view and save it.'
+      : "Not in your Downloads folder? Click \"Open PDF\" to view and save it.",
+    duration: 20000,
+    action: {
+      label: 'Open PDF',
+      onClick: () => {
+        const win = window.open(openUrl, '_blank');
+        if (win) { try { win.opener = null; } catch { /* ignore */ } }
+        if (!win) {
+          // Popup blocked — navigate the top window as a last resort
+          window.location.href = openUrl;
+        }
+      },
+    },
+  });
+
+  // Keep the blob alive long enough for the "Open PDF" action.
+  setTimeout(() => { if (url) URL.revokeObjectURL(url); }, 5 * 60 * 1000);
 }
 
 /**
