@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Printer, Pencil, Save, Send, CheckCircle, Truck, Palette, FileText } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
-import html2pdf from 'html2pdf.js';
+import { exportHighQualityPDF } from '@/lib/pdfExport';
+import { toast } from 'sonner';
 import { TemplateSelector, templates, DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import {
   DocumentHeader,
@@ -130,17 +131,21 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave,
   const calculateTax = () => calculateSubtotal() * (invoiceData.taxRate / 100);
   const calculateTotal = () => calculateSubtotal() + calculateTax();
 
+  const [isCapturing, setIsCapturing] = useState(false);
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
-    const opt = {
-      margin: 0,
-      filename: `${invoiceData.invoiceNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-    try { await html2pdf().set(opt).from(previewRef.current).save(); }
-    catch (error) { console.error('Error generating PDF:', error); }
+    setIsCapturing(true);
+    try {
+      // Let React render plain-text values (dates, PO) instead of input boxes
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 50))));
+      if (!previewRef.current) return;
+      await exportHighQualityPDF(previewRef.current, `${invoiceData.invoiceNumber}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Could not create the PDF. Please use Print instead.');
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const handlePrint = () => { window.print(); };
@@ -156,23 +161,25 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave,
   const hasBankingDetails = profile?.bank_name || profile?.bank_account_number;
   const thStyle = getTableHeaderStyle(selectedTemplate);
 
+  const showEdit = isEditing && !isCapturing;
+
   const headerFields = [
     { label: 'Invoice #', value: invoiceData.invoiceNumber },
     {
       label: 'Invoice date',
-      value: isEditing ? (
+      value: showEdit ? (
         <Input type="date" value={invoiceData.date.split('T')[0]} onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })} className="text-sm w-32 h-7 border-dashed" />
       ) : new Date(invoiceData.date).toLocaleDateString()
     },
     {
       label: 'Due date',
-      value: isEditing ? (
+      value: showEdit ? (
         <Input type="date" value={invoiceData.dueDate.split('T')[0]} onChange={(e) => setInvoiceData({ ...invoiceData, dueDate: e.target.value })} className="text-sm w-32 h-7 border-dashed" />
       ) : new Date(invoiceData.dueDate).toLocaleDateString()
     },
     {
       label: 'PO #',
-      value: isEditing ? (
+      value: showEdit ? (
         <Input type="text" value={invoiceData.purchaseOrderNumber || ''} onChange={(e) => setInvoiceData({ ...invoiceData, purchaseOrderNumber: e.target.value })} placeholder="Enter PO #" className="text-sm w-32 h-7 border-dashed" />
       ) : (invoiceData.purchaseOrderNumber || '-')
     },
