@@ -169,13 +169,13 @@ export function InvoicePreview({ invoice, hasDeliveryNote, onUpdate, onAutoSave,
       label: 'Invoice date',
       value: showEdit ? (
         <Input type="date" value={invoiceData.date.split('T')[0]} onChange={(e) => setInvoiceData({ ...invoiceData, date: e.target.value })} className="text-sm w-32 h-7 border-dashed" />
-      ) : new Date(invoiceData.date).toLocaleDateString()
+      ) : new Date(invoiceData.date).toLocaleDateString('en-GB')
     },
     {
       label: 'Due date',
       value: showEdit ? (
         <Input type="date" value={invoiceData.dueDate.split('T')[0]} onChange={(e) => setInvoiceData({ ...invoiceData, dueDate: e.target.value })} className="text-sm w-32 h-7 border-dashed" />
-      ) : new Date(invoiceData.dueDate).toLocaleDateString()
+      ) : new Date(invoiceData.dueDate).toLocaleDateString('en-GB')
     },
     {
       label: 'PO #',
