@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Printer } from 'lucide-react';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { formatMaluti } from '@/lib/currency';
-import html2pdf from 'html2pdf.js';
+import { exportHighQualityPDF } from '@/lib/pdfExport';
 import { templates, DocumentTemplate } from '@/components/quotes/DocumentTemplates';
 import {
   DocumentHeader,
@@ -63,14 +63,7 @@ export function ReceiptPreview({ receipt }: ReceiptPreviewProps) {
 
   const handleDownloadPDF = async () => {
     if (!previewRef.current) return;
-    const opt = {
-      margin: 0,
-      filename: `${receiptNumber}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-    };
-    try { await html2pdf().set(opt).from(previewRef.current).save(); }
+    try { await exportHighQualityPDF(previewRef.current, `${receiptNumber}.pdf`); }
     catch (error) { console.error('Error generating PDF:', error); }
   };
 
